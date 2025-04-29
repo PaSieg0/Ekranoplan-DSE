@@ -10,7 +10,7 @@ class AircraftType(Enum):
 class MissionType(Enum):
     DESIGN = auto()
     FERRY = auto()
-    HARMONIC = auto()
+    ALTITUDE = auto()
 
 
 class ClassI:
@@ -29,18 +29,20 @@ class ClassI:
                  reserve_fuel: float
                  ) -> None:
         self.aircraft_type = aircraft_type
+        self.mission_type = mission_type
 
         if mission_type == MissionType.DESIGN:
-            self.range = 2800*1.852*1000
+            self.range = (2800+50)*1.852*1000
             self.payload = 90000
             self.crew = 5*85
         elif mission_type == MissionType.FERRY:
-            self.range = 6500*1.852*1000
+            self.range = (6500+100)*1.852*1000
             self.payload = 0
             self.crew = 5*85
-        elif mission_type == MissionType.HARMONIC5:
-            self.range = None
-            self.payload = 100000
+        elif mission_type == MissionType.ALTITUDE:
+            self.range_WIG = (550+100)*1.852*1000
+            self.range_WOG = 250*1.852*1000
+            self.payload = 90000
             self.crew = 5*85
 
         self.reference_aircraft_path = reference_aircraft_path
@@ -72,16 +74,33 @@ class ClassI:
             LD = np.sqrt(np.pi*self.A*self.e/(4*self.Cd0))
         return LD
 
-    def update_fuel_fractions(self) -> None:
-        if self.aircraft_type == AircraftType.JET:
+    def update_fuel_fractions_jet(self) -> None:
+        if self.mission_type == MissionType.DESIGN or self.mission_type == MissionType.FERRY:
             range_fraction = np.exp(-self.range*self.jet_consumption*9.81/self.cruise_speed * (1.5*self.LD)**-1)
-            self.fuel_fractions[5] = range_fraction
-        elif self.aircraft_type == AircraftType.PROP:
+        elif self.mission_type == MissionType.ALTITUDE:
+            range_fraction_1 = np.exp(-self.range_WIG*self.jet_consumption*9.81/self.cruise_speed * (1.5*self.LD)**-1)
+            range_fraction_2 = np.exp(-self.range_WOG*self.jet_consumption*9.81/self.cruise_speed * (self.LD)**-1)
+            range_fraction = range_fraction_1*range_fraction_2
+
+        self.fuel_fractions[5] = range_fraction
+
+    def update_fuel_fractions_prop(self) -> None:
+        if self.mission_type == MissionType.DESIGN or self.mission_type == MissionType.FERRY:
             range_fraction = np.exp(-self.range*self.prop_consumption*9.81/self.prop_efficiency * (1.5*self.LD)**-1)
-            self.fuel_fractions[5] = range_fraction
+        elif self.mission_type == MissionType.ALTITUDE:
+            range_fraction_1 = np.exp(-self.range_WIG*self.prop_consumption*9.81/self.prop_efficiency * (1.5*self.LD)**-1)
+            range_fraction_2 = np.exp(-self.range_WOG*self.prop_consumption*9.81/self.prop_efficiency * (self.LD)**-1)
+            range_fraction = range_fraction_1*range_fraction_2
+
+        self.fuel_fractions[5] = range_fraction
         
     def calculate_Mff(self) -> float:
-        self.update_fuel_fractions()
+
+        if self.aircraft_type == AircraftType.JET:
+            self.update_fuel_fractions_jet()
+        elif self.aircraft_type == AircraftType.PROP:
+            self.update_fuel_fractions_prop()
+
         Mff = 1
         for fraction in self.fuel_fractions.values():
             Mff *= fraction
@@ -102,6 +121,9 @@ class ClassI:
     def main(self):
         slope, intersect = self.linear_relation()
         Mff = self.calculate_Mff()
+        if self.mission_type == MissionType.DESIGN:
+            Mff **= 2
+
         self.MTOW = (self.payload*9.81 + self.crew*9.81 + intersect) / (1 - slope - (1-Mff) - (1-Mff)*self.reserve_fuel - self.tfo)
         self.fuel_used = self.MTOW * (1-Mff)
         self.fuel_res = self.MTOW * (1-Mff) * self.reserve_fuel
@@ -142,7 +164,7 @@ if __name__=="__main__":
         reserve_fuel=0.15
     )
 
-    print(f"{class_i.aircraft_type.name}")
+    print(f"{class_i.aircraft_type.name}: {class_i.mission_type.name}")
     print(f"MOTW: {class_i.MTOW/9.81:=,.2f} kg.")
     print(f"Fuel used: {class_i.fuel_used/9.81:=,.2f} kg.")
     print(f"Fuel reserve: {class_i.fuel_res/9.81:=,.2f} kg.")
