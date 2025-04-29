@@ -26,13 +26,14 @@ class ClassI:
                  e: float,
                  A: float,
                  tfo: float,
-                 reserve_fuel: float
+                 reserve_fuel: float,
+                 k: float
                  ) -> None:
         self.aircraft_type = aircraft_type
         self.mission_type = mission_type
 
         if mission_type == MissionType.DESIGN:
-            self.range = (2800+50)*1.852*1000
+            self.range = (1900+50)*1.852*1000
             self.payload = 90000
             self.crew = 5*85
         elif mission_type == MissionType.FERRY:
@@ -56,6 +57,7 @@ class ClassI:
         self.A = A
         self.tfo = tfo
         self.reserve_fuel = reserve_fuel
+        self.k = k
         self.fuel_fractions = {
             1: 0.992,
             2: 0.990,
@@ -76,9 +78,9 @@ class ClassI:
 
     def update_fuel_fractions_jet(self) -> None:
         if self.mission_type == MissionType.DESIGN or self.mission_type == MissionType.FERRY:
-            range_fraction = np.exp(-self.range*self.jet_consumption*9.81/self.cruise_speed * (1.5*self.LD)**-1)
+            range_fraction = np.exp(-self.range*self.jet_consumption*9.81/self.cruise_speed * (self.k*self.LD)**-1)
         elif self.mission_type == MissionType.ALTITUDE:
-            range_fraction_1 = np.exp(-self.range_WIG*self.jet_consumption*9.81/self.cruise_speed * (1.5*self.LD)**-1)
+            range_fraction_1 = np.exp(-self.range_WIG*self.jet_consumption*9.81/self.cruise_speed * (self.k*self.LD)**-1)
             range_fraction_2 = np.exp(-self.range_WOG*self.jet_consumption*9.81/self.cruise_speed * (self.LD)**-1)
             range_fraction = range_fraction_1*range_fraction_2
 
@@ -86,9 +88,9 @@ class ClassI:
 
     def update_fuel_fractions_prop(self) -> None:
         if self.mission_type == MissionType.DESIGN or self.mission_type == MissionType.FERRY:
-            range_fraction = np.exp(-self.range*self.prop_consumption*9.81/self.prop_efficiency * (1.5*self.LD)**-1)
+            range_fraction = np.exp(-self.range*self.prop_consumption*9.81/self.prop_efficiency * (self.k*self.LD)**-1)
         elif self.mission_type == MissionType.ALTITUDE:
-            range_fraction_1 = np.exp(-self.range_WIG*self.prop_consumption*9.81/self.prop_efficiency * (1.5*self.LD)**-1)
+            range_fraction_1 = np.exp(-self.range_WIG*self.prop_consumption*9.81/self.prop_efficiency * (self.k*self.LD)**-1)
             range_fraction_2 = np.exp(-self.range_WOG*self.prop_consumption*9.81/self.prop_efficiency * (self.LD)**-1)
             range_fraction = range_fraction_1*range_fraction_2
 
@@ -121,7 +123,7 @@ class ClassI:
     def main(self):
         slope, intersect = self.linear_relation()
         Mff = self.calculate_Mff()
-        if self.mission_type == MissionType.DESIGN:
+        if self.mission_type == MissionType.DESIGN or self.mission_type == MissionType.ALTITUDE:
             Mff **= 2
 
         self.MTOW = (self.payload*9.81 + self.crew*9.81 + intersect) / (1 - slope - (1-Mff) - (1-Mff)*self.reserve_fuel - self.tfo)
@@ -137,8 +139,6 @@ if __name__=="__main__":
 
     # CHANGE THESE VALUES
     # MIGHT WANT TO MAKE A .json FILE TO SAVE ALL PARAMETERS AND LOAD THEM
-    aircraft_type = AircraftType.PROP
-    mission_type = MissionType.DESIGN
     reference_aircraft_path = "ReferenceAircraft.xlsx"
     cruise_speed = 180*0.51444
     jet_consumption = 19e-6
@@ -146,29 +146,34 @@ if __name__=="__main__":
     prop_efficiency = 0.82
     Cd0 = 0.02
     e = 0.85
-    A = 12
+    A = 11
     tfo = 0.001
+    k = 1.4
 
-    class_i = ClassI(
-        aircraft_type=aircraft_type,
-        mission_type=mission_type,
-        reference_aircraft_path=reference_aircraft_path,
-        cruise_speed=cruise_speed,
-        jet_consumption=jet_consumption,
-        prop_consumption=prop_consumption,
-        prop_efficiency=prop_efficiency,
-        Cd0=Cd0,
-        e=e,
-        A=A,
-        tfo=tfo,
-        reserve_fuel=0.15
-    )
-
-    print(f"{class_i.aircraft_type.name}: {class_i.mission_type.name}")
-    print(f"MOTW: {class_i.MTOW/9.81:=,.2f} kg.")
-    print(f"Fuel used: {class_i.fuel_used/9.81:=,.2f} kg.")
-    print(f"Fuel reserve: {class_i.fuel_res/9.81:=,.2f} kg.")
-    print(f"Fuel: {class_i.fuel/9.81:=,.2f} kg.")
-    print(f"OEW: {class_i.OEW/9.81:=,.2f} kg.")
-    print(f"ZFW: {class_i.ZFW/9.81:=,.2f} kg.")
-    print(f"EW: {class_i.EW/9.81:=,.2f} kg.\n")
+    for type_i in AircraftType:
+        for mission_i in MissionType:
+            class_i = ClassI(
+                aircraft_type=type_i,
+                mission_type=mission_i,
+                reference_aircraft_path=reference_aircraft_path,
+                cruise_speed=cruise_speed,
+                jet_consumption=jet_consumption,
+                prop_consumption=prop_consumption,
+                prop_efficiency=prop_efficiency,
+                Cd0=Cd0,
+                e=e,
+                A=A,
+                tfo=tfo,
+                reserve_fuel=0.15,
+                k=k
+            )
+            print(f"{class_i.aircraft_type.name}: {class_i.mission_type.name}")
+            print(f"MOTW: {class_i.MTOW/9.81:=,.2f} kg.")
+        else:
+            print("\n")
+    # print(f"Fuel used: {class_i.fuel_used/9.81:=,.2f} kg.")
+    # print(f"Fuel reserve: {class_i.fuel_res/9.81:=,.2f} kg.")
+    # print(f"Fuel: {class_i.fuel/9.81:=,.2f} kg.")
+    # print(f"OEW: {class_i.OEW/9.81:=,.2f} kg.")
+    # print(f"ZFW: {class_i.ZFW/9.81:=,.2f} kg.")
+    # print(f"EW: {class_i.EW/9.81:=,.2f} kg.\n")
