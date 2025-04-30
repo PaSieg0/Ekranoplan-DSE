@@ -27,7 +27,8 @@ class ClassI:
                  A: float,
                  tfo: float,
                  reserve_fuel: float,
-                 k: float
+                 k: float,
+                 reference_aircraft_path: str='ReferenceAircraft.xlsx'
                  ) -> None:
         self.aircraft_type = aircraft_type
         self.mission_type = mission_type
