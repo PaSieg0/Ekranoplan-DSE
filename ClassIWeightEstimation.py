@@ -5,6 +5,7 @@ import numpy as np
 class AircraftType(Enum):
     JET = auto()
     PROP = auto()
+    MIXED = auto()
 
 
 class MissionType(Enum):
@@ -33,7 +34,7 @@ class ClassI:
         self.mission_type = mission_type
 
         if mission_type == MissionType.DESIGN:
-            self.range = (1900+50)*1.852*1000
+            self.range = (2800+50)*1.852*1000
             self.payload = 90000
             self.crew = 5*85
         elif mission_type == MissionType.FERRY:
@@ -74,6 +75,8 @@ class ClassI:
             LD = 3/4*np.sqrt(np.pi*self.A*self.e/(3*self.Cd0))
         elif self.aircraft_type == AircraftType.PROP:
             LD = np.sqrt(np.pi*self.A*self.e/(4*self.Cd0))
+        elif self.aircraft_type == AircraftType.MIXED:
+            LD = (3/4*np.sqrt(np.pi*self.A*self.e/(3*self.Cd0)) + np.sqrt(np.pi*self.A*self.e/(4*self.Cd0))) / 2
         return LD
 
     def update_fuel_fractions_jet(self) -> None:
@@ -95,6 +98,16 @@ class ClassI:
             range_fraction = range_fraction_1*range_fraction_2
 
         self.fuel_fractions[5] = range_fraction
+
+    def update_fuel_fractions_mixed(self) -> None:
+        if self.mission_type == MissionType.DESIGN or self.mission_type == MissionType.FERRY:
+            range_fraction = np.exp(-self.range*self.prop_consumption*9.81/self.prop_efficiency * (self.k*self.LD)**-1)
+        elif self.mission_type == MissionType.ALTITUDE:
+            range_fraction_1 = np.exp(-self.range_WIG*self.prop_consumption*9.81/self.prop_efficiency * (self.k*self.LD)**-1)
+            range_fraction_2 = np.exp(-self.range_WOG*self.jet_consumption*9.81/self.cruise_speed * (self.LD)**-1)
+            range_fraction = range_fraction_1*range_fraction_2
+
+        self.fuel_fractions[5] = range_fraction
         
     def calculate_Mff(self) -> float:
 
@@ -102,6 +115,8 @@ class ClassI:
             self.update_fuel_fractions_jet()
         elif self.aircraft_type == AircraftType.PROP:
             self.update_fuel_fractions_prop()
+        elif self.aircraft_type == AircraftType.MIXED:
+            self.update_fuel_fractions_mixed()
 
         Mff = 1
         for fraction in self.fuel_fractions.values():
@@ -146,11 +161,13 @@ if __name__=="__main__":
     prop_efficiency = 0.82
     Cd0 = 0.02
     e = 0.85
-    A = 11
+    A = 10
     tfo = 0.001
+    reserve_fuel = 0
     k = 1.4
 
     for type_i in AircraftType:
+        max_MTOM = float('inf')
         for mission_i in MissionType:
             class_i = ClassI(
                 aircraft_type=type_i,
@@ -164,9 +181,12 @@ if __name__=="__main__":
                 e=e,
                 A=A,
                 tfo=tfo,
-                reserve_fuel=0.15,
+                reserve_fuel=reserve_fuel,
                 k=k
             )
+            if class_i.MTOW/9.81 < max_MTOM:
+                max_MTOM = class_i.MTOW
+            
             print(f"{class_i.aircraft_type.name}: {class_i.mission_type.name}")
             print(f"MOTW: {class_i.MTOW/9.81:=,.2f} kg.")
         else:
