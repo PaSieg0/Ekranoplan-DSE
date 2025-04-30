@@ -69,7 +69,7 @@ class WingLoading:
         D = 0.5 * self.rho_water * (self.V_lof)**2 * Cd * self.hull_surface
         if self.aircraft_type == AircraftType.JET:
             print(f"Thrust shall be at least {D:=,.0f} N.")
-        if self.aircraft_type == AircraftType.PROP:
+        if self.aircraft_type == AircraftType.PROP or self.aircraft_type == AircraftType.MIXED:
             print(f"Power shall be at least {D*self.V_lof:=,.0f} W.")
 
         x = [CL*0.5*self.isa_cruise.rho * self.V_lof**2 for CL in CL_takeoff]
@@ -87,7 +87,7 @@ class WingLoading:
     def cruise_requirement(self):
         x = self.WS.copy()
         
-        if self.aircraft_type == AircraftType.PROP:
+        if self.aircraft_type == AircraftType.PROP or self.aircraft_type == AircraftType.MIXED:
             y = [0.9/0.8 * self.prop_efficiency * (self.isa_cruise.rho * self.isa_cruise.rho0)**0.75 * ((self.Cd0*0.5*self.isa_cruise.rho*self.cruise_speed**3)/(0.8*x) + 0.8*x/(np.pi*A*self.e*0.5*self.isa_cruise.rho*self.cruise_speed))**-1 for A in self.aspect_ratios]
         elif self.aircraft_type == AircraftType.JET:
             y = [0.8/0.9 * (self.isa_cruise.rho0 * self.isa_cruise.rho)**0.75 * ((self.Cd0*0.5*self.isa_cruise.rho*self.cruise_speed**2)/(0.8*x) + 0.8*x/(np.pi*A*self.e*0.5*self.isa_cruise.rho*self.cruise_speed**2)) for A in self.aspect_ratios]
@@ -99,7 +99,7 @@ class WingLoading:
         
         if self.aircraft_type == AircraftType.PROP:
             y = [0.9/0.8 * self.prop_efficiency * (self.isa_high.rho / self.isa_high.rho0)**0.75 * ((self.Cd0*0.5*self.isa_high.rho*self.cruise_speed**3)/(0.8*x) + 0.8*x/(np.pi*A*self.e*0.5*self.isa_high.rho*self.cruise_speed))**-1 for A in self.aspect_ratios]
-        elif self.aircraft_type == AircraftType.JET:
+        elif self.aircraft_type == AircraftType.JET or self.aircraft_type == AircraftType.MIXED:
             y = [0.8/0.9 * (self.isa_high.rho0 / self.isa_high.rho)**0.75 * ((self.Cd0*0.5*self.isa_high.rho*self.cruise_speed**2)/(0.8*x) + 0.8*x/(np.pi*A*self.e*0.5*self.isa_high.rho*self.cruise_speed**2)) for A in self.aspect_ratios]
 
         return y
@@ -113,7 +113,7 @@ class WingLoading:
 
         if self.aircraft_type == AircraftType.PROP:
             y = [self.prop_efficiency/(c+(np.sqrt(x)*np.sqrt(2/self.isa_cruise.rho))/(1.345*(A*self.e)**0.75/(self.Cd0**0.25))) for A in self.aspect_ratios]
-        elif self.aircraft_type == AircraftType.JET:
+        elif self.aircraft_type == AircraftType.JET or self.aircraft_type == AircraftType.MIXED:
             y = [c/(np.sqrt(2*x/(self.isa_cruise.rho*CL))) + Cd/CL for CL in Cl]
 
         return y
@@ -125,7 +125,7 @@ class WingLoading:
         if self.aircraft_type == AircraftType.PROP:
             y = [self.prop_efficiency/(np.sqrt(x)*(c_V+4*self.Cd0/CL)*np.sqrt(2/(self.isa_cruise.rho*CL))) for CL in self.CLmax_clean]
 
-        elif self.aircraft_type == AircraftType.JET:
+        elif self.aircraft_type == AircraftType.JET or self.aircraft_type == AircraftType.MIXED:
             y = [c_V + 2*np.sqrt(self.Cd0/(np.pi*A*self.e)) for A in self.aspect_ratios]
 
         return y
@@ -138,6 +138,53 @@ class WingLoading:
         cruise_high_req = self.cruise_requirement_high()
         climb_rate_req = self.climb_rate_requirement()
         climb_gradient_req = self.climb_gradient_requirement()
+
+        if self.aircraft_type == AircraftType.JET or self.aircraft_type == AircraftType.PROP:
+            all_vertical_lines = [take_off_req, landing_req, stall_req]
+            max_WS = float('inf')
+            for values in all_vertical_lines:
+                maxx = np.min(values)
+                if maxx < max_WS:
+                    max_WS = maxx
+
+            all_curves = [cruise_req, cruise_high_req, climb_rate_req]
+            intersections = []
+
+            for y_vals in all_curves:
+                for curve in y_vals:
+                    y_at_leftmost = np.interp(max_WS, self.WS, curve)
+                    intersections.append(y_at_leftmost)
+            if self.aircraft_type == AircraftType.JET:
+                print(f"T/W shall be at least {max(intersections)}")
+            elif self.aircraft_type == AircraftType.PROP:
+                print(f"W/P shall be at least {min(intersections)}")
+
+        elif self.aircraft_type == AircraftType.MIXED:
+            all_vertical_lines = [take_off_req, landing_req, stall_req]
+            max_WS = float('inf')
+            for values in all_vertical_lines:
+                maxx = np.min(values)
+                if maxx < max_WS:
+                    max_WS = maxx
+
+            all_curves_prop = [cruise_req]
+            all_curves_jet = [cruise_high_req, climb_rate_req]
+            intersections_prop = []
+            intersections_jet = []
+
+            for y_vals in all_curves_prop:
+                for curve in y_vals:
+                    y_at_leftmost = np.interp(max_WS, self.WS, curve)
+                    intersections_prop.append(y_at_leftmost)
+            for y_vals in all_curves_jet:
+                for curve in y_vals:
+                    y_at_leftmost = np.interp(max_WS, self.WS, curve)
+                    intersections_jet.append(y_at_leftmost)
+
+            intersections_jet.append(min(climb_gradient_req))
+            print(f"T/W shall be at least {max(intersections_jet)}")
+            print(f"W/P shall be at least {min(intersections_prop)}")
+                
 
         return stall_req, take_off_req, landing_req, cruise_req, cruise_high_req, climb_rate_req, climb_gradient_req
 
@@ -184,6 +231,28 @@ def main(plot_type, CLmax_clean, CLmax_takeoff, CLmax_landing, aspect_ratios, Cd
         kinematic_viscosity=kinematic_viscosity
     )
 
+    mixed = WingLoading(
+        aircraft_type=AircraftType.MIXED,
+        CLmax_clean=CLmax_clean,
+        CLmax_takeoff=CLmax_takeoff,
+        CLmax_landing=CLmax_landing,
+        aspect_ratios=aspect_ratios,
+        Cd0=Cd0,
+        e=e,
+        stall_speed_clean=stall_speed_clean,
+        stall_speed_takeoff=stall_speed_takeoff,
+        stall_speed_landing=stall_speed_landing,
+        cruise_altitude=cruise_altitude,
+        high_altitude=high_altitude,
+        cruise_speed=cruise_speed,
+        prop_efficiency=prop_efficiency,
+        hull_surface=hull_surface,
+        L=L,
+        rho_water=rho_water,
+        kinematic_viscosity=kinematic_viscosity
+    )
+
+
     if plot_type == AircraftType.PROP:
         __plot_prop(prop)
 
@@ -192,6 +261,8 @@ def main(plot_type, CLmax_clean, CLmax_takeoff, CLmax_landing, aspect_ratios, Cd
 
     elif plot_type == AircraftType.MIXED:
         __plot_mixed(prop, jet)
+        print("\n")
+        mixed.main()
 
 
 def __plot_prop(WL):
@@ -254,6 +325,7 @@ def __plot_jet(WL):
 
 def __plot_mixed(WL_prop, WL_jet):
     prop_stall, prop_take_off, prop_landing, prop_cruise, prop_cruise_high, prop_climb_rate, prop_climb_gradient = WL_prop.main()
+    print("\n")
     jet_stall, jet_take_off, jet_landing, jet_cruise, jet_cruise_high, jet_climb_rate, jet_climb_gradient = WL_jet.main()
     fig, ax = plt.subplots(2, 1, figsize=(10, 12))
 
