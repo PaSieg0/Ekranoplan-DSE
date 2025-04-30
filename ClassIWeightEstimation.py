@@ -17,7 +17,6 @@ class ClassI:
     def __init__(self,
                  aircraft_type: AircraftType,
                  mission_type: MissionType,
-                 reference_aircraft_path: str,
                  cruise_speed: float,
                  jet_consumption: float,
                  prop_consumption: float,
@@ -26,7 +25,8 @@ class ClassI:
                  e: float,
                  A: float,
                  tfo: float,
-                 reserve_fuel: float
+                 reserve_fuel: float,
+                 reference_aircraft_path: str='ReferenceAircraft.xslx'
                  ) -> None:
         self.aircraft_type = aircraft_type
 
@@ -109,6 +109,7 @@ class ClassI:
         self.OEW = slope * self.MTOW + intersect
         self.ZFW = self.MTOW - self.fuel
         self.EW = self.OEW - self.crew
+        self.MTOM = self.MTOW/9.81
 
 if __name__=="__main__":
 

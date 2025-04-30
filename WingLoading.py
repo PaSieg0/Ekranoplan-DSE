@@ -194,7 +194,7 @@ class WingLoading:
 
         return stall_req, take_off_req, landing_req, cruise_req, cruise_high_req, climb_rate_req, climb_gradient_req
 
-def main(plot_type, CLmax_clean, CLmax_takeoff, CLmax_landing, aspect_ratios, Cd0, e, stall_speed_clean, stall_speed_takeoff, stall_speed_landing, cruise_altitude, high_altitude, cruise_speed, prop_efficiency, hull_surface, L, rho_water, kinematic_viscosity):
+def main(plot_type, CLmax_clean, CLmax_takeoff, CLmax_landing, aspect_ratios, Cd0, e, stall_speed_clean, stall_speed_takeoff, stall_speed_landing, cruise_altitude, high_altitude, cruise_speed, prop_efficiency, hull_surface, L, rho_water, kinematic_viscosity, PLOT_OUTPUT: bool=False):
     prop = WingLoading(
         aircraft_type=AircraftType.PROP,
         CLmax_clean=CLmax_clean,
@@ -260,15 +260,18 @@ def main(plot_type, CLmax_clean, CLmax_takeoff, CLmax_landing, aspect_ratios, Cd
 
 
     if plot_type == AircraftType.PROP:
-        __plot_prop(prop)
+        if PLOT_OUTPUT:
+            __plot_prop(prop)
         return prop.WP, None
 
     elif plot_type == AircraftType.JET:
-        __plot_jet(jet)
+        if PLOT_OUTPUT:
+            __plot_jet(jet)
         return None, jet.TW
 
     elif plot_type == AircraftType.MIXED:
-        __plot_mixed(prop, jet)
+        if PLOT_OUTPUT:
+            __plot_mixed(prop, jet)
         print("\n")
         mixed.main()
         return prop.WP, jet.TW
@@ -423,5 +426,6 @@ if __name__ == "__main__":
          hull_surface=hull_surface,
          L=L,
          rho_water=rho_water,
-         kinematic_viscosity=kinematic_viscosity
+         kinematic_viscosity=kinematic_viscosity,
+         PLOT_OUTPUT=True
     )
