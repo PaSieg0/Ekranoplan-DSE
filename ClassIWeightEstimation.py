@@ -49,6 +49,7 @@ class ClassI:
 
         self.reference_aircraft_path = reference_aircraft_path
         self.reference_aircraft = self.load_reference_aircraft()
+        self.slope, self.intersection = self.linear_relation()
         self.cruise_speed = cruise_speed
         self.jet_consumption = jet_consumption
         self.prop_consumption = prop_consumption
@@ -67,8 +68,7 @@ class ClassI:
             6: 0.990,
             7: 0.990
         }
-        self.LD = self.calculate_LD()
-        self.main()
+
 
     def calculate_LD(self) -> float:
         if self.aircraft_type == AircraftType.JET:
@@ -77,9 +77,12 @@ class ClassI:
             LD = np.sqrt(np.pi*self.A*self.e/(4*self.Cd0))
         elif self.aircraft_type == AircraftType.MIXED:
             LD = (3/4*np.sqrt(np.pi*self.A*self.e/(3*self.Cd0)) + np.sqrt(np.pi*self.A*self.e/(4*self.Cd0))) / 2
+        else:
+            raise ValueError(f"Unsupported aircraft type: {self.aircraft_type}")
         return LD
 
     def update_fuel_fractions_jet(self) -> None:
+        self.LD = self.calculate_LD()
         if self.mission_type == MissionType.DESIGN or self.mission_type == MissionType.FERRY:
             range_fraction = np.exp(-self.range*self.jet_consumption*9.81/self.cruise_speed * (self.k*self.LD)**-1)
         elif self.mission_type == MissionType.ALTITUDE:
@@ -90,6 +93,7 @@ class ClassI:
         self.fuel_fractions[5] = range_fraction
 
     def update_fuel_fractions_prop(self) -> None:
+        self.LD = self.calculate_LD()
         if self.mission_type == MissionType.DESIGN or self.mission_type == MissionType.FERRY:
             range_fraction = np.exp(-self.range*self.prop_consumption*9.81/self.prop_efficiency * (self.k*self.LD)**-1)
         elif self.mission_type == MissionType.ALTITUDE:
@@ -100,6 +104,7 @@ class ClassI:
         self.fuel_fractions[5] = range_fraction
 
     def update_fuel_fractions_mixed(self) -> None:
+        self.LD = self.calculate_LD()
         if self.mission_type == MissionType.DESIGN or self.mission_type == MissionType.FERRY:
             range_fraction = np.exp(-self.range*self.prop_consumption*9.81/self.prop_efficiency * (self.k*self.LD)**-1)
         elif self.mission_type == MissionType.ALTITUDE:
@@ -109,7 +114,7 @@ class ClassI:
 
         self.fuel_fractions[5] = range_fraction
         
-    def calculate_Mff(self) -> float:
+    def calculate_Mff(self) -> None:
 
         if self.aircraft_type == AircraftType.JET:
             self.update_fuel_fractions_jet()
@@ -118,17 +123,20 @@ class ClassI:
         elif self.aircraft_type == AircraftType.MIXED:
             self.update_fuel_fractions_mixed()
 
-        Mff = 1
+        self.Mff = 1
         for fraction in self.fuel_fractions.values():
-            Mff *= fraction
-        return Mff
+            self.Mff *= fraction
+
+        if self.mission_type == MissionType.DESIGN or self.mission_type == MissionType.ALTITUDE:
+            self.Mff **= 2
+
 
     def linear_relation(self):
         x, y = self.reference_aircraft['MTOW'], self.reference_aircraft['EW']
         x *= 9.81
         y *= 9.81
-        slope, intersect = np.polyfit(x, y, 1)
-        return slope, intersect
+        self.slope, self.intersection = np.polyfit(x, y, 1)
+        return self.slope, self.intersection
     
     def load_reference_aircraft(self) -> pd.DataFrame:
         data = pd.read_excel(self.reference_aircraft_path)
@@ -136,16 +144,12 @@ class ClassI:
         return data
         
     def main(self):
-        slope, intersect = self.linear_relation()
-        Mff = self.calculate_Mff()
-        if self.mission_type == MissionType.DESIGN or self.mission_type == MissionType.ALTITUDE:
-            Mff **= 2
-
-        self.MTOW = (self.payload*9.81 + self.crew*9.81 + intersect) / (1 - slope - (1-Mff) - (1-Mff)*self.reserve_fuel - self.tfo)
-        self.fuel_used = self.MTOW * (1-Mff)
-        self.fuel_res = self.MTOW * (1-Mff) * self.reserve_fuel
+        self.calculate_Mff()
+        self.MTOW = (self.payload*9.81 + self.crew*9.81 + self.intersection) / (1 - self.slope - (1-self.Mff) - (1-self.Mff)*self.reserve_fuel - self.tfo)
+        self.fuel_used = self.MTOW * (1-self.Mff)
+        self.fuel_res = self.MTOW * (1-self.Mff) * self.reserve_fuel
         self.fuel = self.fuel_used + self.fuel_res
-        self.OEW = slope * self.MTOW + intersect
+        self.OEW = self.slope * self.MTOW + self.intersection
         self.ZFW = self.MTOW - self.fuel
         self.EW = self.OEW - self.crew
         self.MTOM = self.MTOW/9.81
@@ -165,7 +169,7 @@ if __name__=="__main__":
     A = 10
     tfo = 0.001
     reserve_fuel = 0
-    k = 1.4
+    k = np.sqrt(2)
 
     for type_i in AircraftType:
         max_MTOM = float('inf')
@@ -185,16 +189,8 @@ if __name__=="__main__":
                 reserve_fuel=reserve_fuel,
                 k=k
             )
-            if class_i.MTOW/9.81 < max_MTOM:
-                max_MTOM = class_i.MTOW
-            
+            class_i.main()
             print(f"{class_i.aircraft_type.name}: {class_i.mission_type.name}")
-            print(f"MOTW: {class_i.MTOW/9.81:=,.2f} kg.")
+            print(f"MOTM: {class_i.MTOM:=,.2f} kg.")
         else:
             print("\n")
-    # print(f"Fuel used: {class_i.fuel_used/9.81:=,.2f} kg.")
-    # print(f"Fuel reserve: {class_i.fuel_res/9.81:=,.2f} kg.")
-    # print(f"Fuel: {class_i.fuel/9.81:=,.2f} kg.")
-    # print(f"OEW: {class_i.OEW/9.81:=,.2f} kg.")
-    # print(f"ZFW: {class_i.ZFW/9.81:=,.2f} kg.")
-    # print(f"EW: {class_i.EW/9.81:=,.2f} kg.\n")
