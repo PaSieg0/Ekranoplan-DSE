@@ -9,6 +9,7 @@ class AircraftType(Enum):
     MIXED = auto()
 
 class WingLoading:
+    # TODO: CHECK ALL REQUIREMENTS!!
     def __init__(self,
                  aircraft_type: AircraftType,
                  CLmax_clean: list[float],
@@ -122,6 +123,7 @@ class WingLoading:
         x = self.WS.copy()
         c_V = 0.083
 
+        # TODO: FIX OEI
         if self.aircraft_type == AircraftType.PROP:
             y = [self.prop_efficiency/(np.sqrt(x)*(c_V+4*self.Cd0/CL)*np.sqrt(2/(self.isa_cruise.rho*CL))) for CL in self.CLmax_clean]
 
@@ -155,9 +157,11 @@ class WingLoading:
                     y_at_leftmost = np.interp(max_WS, self.WS, curve)
                     intersections.append(y_at_leftmost)
             if self.aircraft_type == AircraftType.JET:
-                print(f"T/W shall be at least {max(intersections)}")
+                self.TW = max(intersections)
+                print(f"T/W shall be at least {self.TW}")
             elif self.aircraft_type == AircraftType.PROP:
-                print(f"W/P shall be at least {min(intersections)}")
+                self.WP = min(intersections)
+                print(f"W/P shall be at least {self.WP}")
 
         elif self.aircraft_type == AircraftType.MIXED:
             all_vertical_lines = [take_off_req, landing_req, stall_req]
@@ -182,6 +186,8 @@ class WingLoading:
                     intersections_jet.append(y_at_leftmost)
 
             intersections_jet.append(min(climb_gradient_req))
+            self.TW = max(intersections_jet)
+            self.WP = max(intersections_prop)
             print(f"T/W shall be at least {max(intersections_jet)}")
             print(f"W/P shall be at least {min(intersections_prop)}")
                 
@@ -255,14 +261,19 @@ def main(plot_type, CLmax_clean, CLmax_takeoff, CLmax_landing, aspect_ratios, Cd
 
     if plot_type == AircraftType.PROP:
         __plot_prop(prop)
+        return prop.WP, None
 
     elif plot_type == AircraftType.JET:
         __plot_jet(jet)
+        return None, jet.TW
 
     elif plot_type == AircraftType.MIXED:
         __plot_mixed(prop, jet)
         print("\n")
         mixed.main()
+        return prop.WP, jet.TW
+
+    
 
 
 def __plot_prop(WL):
@@ -414,6 +425,3 @@ if __name__ == "__main__":
          rho_water=rho_water,
          kinematic_viscosity=kinematic_viscosity
     )
-    
-
-        
