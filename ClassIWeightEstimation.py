@@ -159,17 +159,20 @@ if __name__=="__main__":
 
     # CHANGE THESE VALUES
     # MIGHT WANT TO MAKE A .json FILE TO SAVE ALL PARAMETERS AND LOAD THEM
-    reference_aircraft_path = "ReferenceAircraft.xlsx"
+    aircraft_type = AircraftType.PROP
+    mission_type = MissionType.DESIGN
     cruise_speed = 180*0.51444
     jet_consumption = 19e-6
     prop_consumption = 90e-9
     prop_efficiency = 0.82
     Cd0 = 0.02
     e = 0.85
-    A = 10
+    A = 8
     tfo = 0.001
     reserve_fuel = 0
-    k = np.sqrt(2)
+    k = 1
+ 
+    
 
     for type_i in AircraftType:
         max_MTOM = float('inf')
@@ -177,7 +180,6 @@ if __name__=="__main__":
             class_i = ClassI(
                 aircraft_type=type_i,
                 mission_type=mission_i,
-                reference_aircraft_path=reference_aircraft_path,
                 cruise_speed=cruise_speed,
                 jet_consumption=jet_consumption,
                 prop_consumption=prop_consumption,

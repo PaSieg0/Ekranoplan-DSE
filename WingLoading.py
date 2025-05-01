@@ -2,11 +2,10 @@ from enum import Enum, auto
 from ISA_Class import ISA
 import numpy as np
 import matplotlib.pyplot as plt
-from ClassIWeightEstimation import AircraftType
+from ClassIWeightEstimation import AircraftType, MissionType
 
 
 class WingLoading:
-    # TODO: CHECK ALL REQUIREMENTS!!
     def __init__(self,
                  aircraft_type: AircraftType,
                  CLmax_clean: list[float],
@@ -124,11 +123,13 @@ class WingLoading:
 
     def climb_gradient_requirement(self):
         x = self.WS.copy()
-        c_V = 0.083
+        c_V = 0.032
 
-        # TODO: FIX OEI
+        CLs = [np.sqrt(3*self.Cd0*np.pi*A*self.e) for A in self.aspect_ratios]
+        CD = 4*self.Cd0
+
         if self.aircraft_type == AircraftType.PROP:
-            y = [self.prop_efficiency/(np.sqrt(x)*(c_V+4*self.Cd0/CL)*np.sqrt(2/(self.isa_cruise.rho*CL))) for CL in self.CLmax_clean]
+            y = [self.prop_efficiency/(np.sqrt(x)*(c_V+CD/CL)*np.sqrt(2/(self.isa_cruise.rho*CL))) for CL in CLs]
 
         elif self.aircraft_type == AircraftType.JET or self.aircraft_type == AircraftType.MIXED:
             y = [c_V + 2*np.sqrt(self.Cd0/(np.pi*A*self.e)) for A in self.aspect_ratios]
@@ -160,6 +161,10 @@ class WingLoading:
                 for curve in y_vals:
                     y_at_leftmost = np.interp(self.max_WS, self.WS, curve)
                     intersections.append(y_at_leftmost)
+
+
+
+            
             if self.aircraft_type == AircraftType.JET:
                 self.TW = max(intersections)
                 print(f"T/W shall be at least {self.TW}")
@@ -196,7 +201,7 @@ class WingLoading:
             print(f"W/P shall be at least {min(intersections_prop)}")
                 
 
-        return stall_req, take_off_req, landing_req, cruise_req, cruise_high_req, climb_rate_req, climb_gradient_req
+        return stall_req, stall_req_high, take_off_req, landing_req, cruise_req, cruise_high_req, climb_rate_req, climb_gradient_req
 
 def main(plot_type, CLmax_clean, CLmax_takeoff, CLmax_landing, aspect_ratios, Cd0, e, k, stall_speed_clean, stall_speed_takeoff, stall_speed_landing, cruise_altitude, high_altitude, cruise_speed, prop_efficiency, hull_surface, L, rho_water, kinematic_viscosity, PLOT_OUTPUT: bool=False):
     prop = WingLoading(
@@ -288,10 +293,11 @@ def main(plot_type, CLmax_clean, CLmax_takeoff, CLmax_landing, aspect_ratios, Cd
 
 
 def __plot_prop(WL, PLOT_OUTPUT: bool=False):
-    prop_stall, prop_take_off, prop_landing, prop_cruise, prop_cruise_high, prop_climb_rate, prop_climb_gradient = WL.main()
+    prop_stall, prop_stall_high, prop_take_off, prop_landing, prop_cruise, prop_cruise_high, prop_climb_rate, prop_climb_gradient = WL.main()
     fig, ax = plt.subplots(figsize=(10, 8))
 
-    linestyles = ['-', '--', '-.', ':']
+    linestyles = ['-', '--', '-.', ':', (0, (1, 1)), (0, (3, 5, 1, 5, 1, 5))]
+
 
     for i, take_off in enumerate(prop_take_off):
         ax.axvline(x=take_off, label=f"Takeoff: CL={WL.CLmax_takeoff[i]}", linestyle=linestyles[i], color='tab:blue')
@@ -307,16 +313,19 @@ def __plot_prop(WL, PLOT_OUTPUT: bool=False):
         ax.axvline(x=landing, label=f"Landing: CL={WL.CLmax_landing[i]}", linestyle=linestyles[i], color='tab:cyan')
     for i, stall in enumerate(prop_stall):
         ax.axvline(x=stall, label=f"Stall: CL={WL.CLmax_clean[i]}", linestyle=linestyles[i], color='tab:pink')
+    for i, stall in enumerate(prop_stall_high):
+        ax.axvline(x=stall, label=f"Stall high: CL={WL.CLmax_clean[i]}", linestyle=linestyles[i], color='tab:brown')
 
-    plt.suptitle("Wing Loading Requirements")
+    plt.suptitle(f"Wing Loading Requirements k={WL.k}")
     ax.set_xlim(0, 8000)
     ax.set_ylim(0, 0.6)
     ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
     plt.tight_layout()
-    plt.show()
+    if PLOT_OUTPUT:
+        plt.show()
 
 def __plot_jet(WL, PLOT_OUTPUT: bool=False):
-    jet_stall, jet_take_off, jet_landing, jet_cruise, jet_cruise_high, jet_climb_rate, jet_climb_gradient = WL.main()
+    jet_stall, jet_stall_high, jet_take_off, jet_landing, jet_cruise, jet_cruise_high, jet_climb_rate, jet_climb_gradient = WL.main()
 
     fig, ax = plt.subplots(figsize=(10, 8))
 
@@ -336,18 +345,21 @@ def __plot_jet(WL, PLOT_OUTPUT: bool=False):
         ax.axvline(x=landing, label=f"Landing: CL={WL.CLmax_landing[i]}", linestyle=linestyles[i], color='tab:cyan')
     for i, stall in enumerate(jet_stall):
         ax.axvline(x=stall, label=f"Stall: CL={WL.CLmax_clean[i]}", linestyle=linestyles[i], color='tab:pink')
+    for i, stall in enumerate(jet_stall_high):
+        ax.axvline(x=stall, label=f"Stall high: CL={WL.CLmax_clean[i]}", linestyle=linestyles[i], color='tab:brown')
 
     plt.suptitle("Wing Loading Requirements")
     ax.set_xlim(0, 8000)
     ax.set_ylim(0, 0.6)
     ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
     plt.tight_layout()
-    plt.show()
+    if PLOT_OUTPUT:
+        plt.show()
 
 
 def __plot_mixed(WL_prop, WL_jet, PLOT_OUTPUT: bool=False):
-    prop_stall, prop_take_off, prop_landing, prop_cruise, prop_cruise_high, prop_climb_rate, prop_climb_gradient = WL_prop.main()
-    jet_stall, jet_take_off, jet_landing, jet_cruise, jet_cruise_high, jet_climb_rate, jet_climb_gradient = WL_jet.main()
+    prop_stall, prop_stall_high, prop_take_off, prop_landing, prop_cruise, prop_cruise_high, prop_climb_rate, prop_climb_gradient = WL_prop.main()
+    jet_stall, jet_stall_high, jet_take_off, jet_landing, jet_cruise, jet_cruise_high, jet_climb_rate, jet_climb_gradient = WL_jet.main()
     fig, ax = plt.subplots(2, 1, figsize=(10, 12))
 
     linestyles = ['-', '--', '-.', ':']
@@ -366,6 +378,8 @@ def __plot_mixed(WL_prop, WL_jet, PLOT_OUTPUT: bool=False):
         ax[0].axvline(x=landing, label=f"Landing: CL={WL_prop.CLmax_landing[i]}", linestyle=linestyles[i], color='tab:cyan')
     for i, stall in enumerate(prop_stall):
         ax[0].axvline(x=stall, label=f"Stall: CL={WL_prop.CLmax_clean[i]}", linestyle=linestyles[i], color='tab:pink')
+    for i, stall in enumerate(prop_stall_high):
+        ax[0].axvline(x=stall, label=f"Stall high: CL={WL_prop.CLmax_clean[i]}", linestyle=linestyles[i], color='tab:brown')
 
     
     # for i, take_off in enumerate(jet_take_off):
@@ -377,11 +391,13 @@ def __plot_mixed(WL_prop, WL_jet, PLOT_OUTPUT: bool=False):
     # for i, cruise in enumerate(jet_cruise):
     #     ax[1].plot(WL_jet.WS, cruise, label=f"Cruise: Aspect ratio={WL_jet.aspect_ratios[i]}", linestyle=linestyles[i], color='tab:red')
     for i, cruise in enumerate(jet_cruise_high):
-        ax[1].plot(WL_jet.WS, cruise, label=f"Cruise: Aspect ratio={WL_jet.aspect_ratios[i]}", linestyle=linestyles[i], color='tab:purple')
+        ax[1].plot(WL_jet.WS, cruise, label=f"Cruise high: Aspect ratio={WL_jet.aspect_ratios[i]}", linestyle=linestyles[i], color='tab:purple')
     # for i, landing in enumerate(jet_landing):
     #     ax[1].axvline(x=landing, label=f"Landing: CL={WL_jet.CLmax_landing[i]}", linestyle=linestyles[i], color='tab:cyan')
     for i, stall in enumerate(jet_stall):
         ax[1].axvline(x=stall, label=f"Stall: CL={WL_jet.CLmax_clean[i]}", linestyle=linestyles[i], color='tab:pink')
+    for i, stall in enumerate(jet_stall_high):
+        ax[1].axvline(x=stall, label=f"Stall high: CL={WL_jet.CLmax_clean[i]}", linestyle=linestyles[i], color='tab:brown')
 
 
     plt.suptitle("Wing Loading Requirements")
@@ -394,31 +410,40 @@ def __plot_mixed(WL_prop, WL_jet, PLOT_OUTPUT: bool=False):
     ax[0].legend(bbox_to_anchor=(1.05, 1), loc='upper left')
     ax[1].legend(bbox_to_anchor=(1.05, 1), loc='upper left')
     plt.tight_layout()
-    plt.show()
+    if PLOT_OUTPUT:
+        plt.show()
     
 
 if __name__ == "__main__":
-    CLmax_clean=[1.5, 1.6, 1.7]
-    CLmax_takeoff=[1.6, 1.8, 2.0, 2.2]
-    CLmax_landing=[1.6, 1.9, 2.2]
-    aspect_ratios=[6, 7, 8]
-    Cd0=0.02
-    e=0.85
-    k = 1.4
-    stall_speed_clean=110*0.5144
-    stall_speed_takeoff=140*0.5144
-    stall_speed_landing=140*0.5144
-    cruise_altitude=100*0*0.3148
-    high_altitude=10000*0.3148
-    cruise_speed=180*0.5144
-    prop_efficiency=0.8
+    aircraft_type = AircraftType.PROP
+    mission_type = MissionType.DESIGN
+    cruise_speed = 180*0.51444
+    jet_consumption = 19e-6
+    prop_consumption = 90e-9
+    prop_efficiency = 0.82
+    Cd0 = 0.02
+    e = 0.85
+    A = 10
+    tfo = 0.001
+    reserve_fuel = 0
+    k = 1.42
+
+    CLmax_clean=[1.5]
+    CLmax_takeoff=[1.6]
+    CLmax_landing=[1.6]
+    aspect_ratios=[A]
+    stall_speed_clean=100*0.5144
+    stall_speed_takeoff=110*0.5144
+    stall_speed_landing=120*0.5144
+    cruise_altitude=100*0*0.3048
+    high_altitude=10000*0.3048
     hull_surface=400
     L=30
     rho_water=1000.0
     kinematic_viscosity=1.002e-6
 
     WP, TW, WS = main(
-        plot_type=AircraftType.MIXED,
+        plot_type=aircraft_type,
         CLmax_clean=CLmax_clean,
         CLmax_takeoff=CLmax_takeoff,
         CLmax_landing=CLmax_landing,
