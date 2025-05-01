@@ -1,18 +1,34 @@
 {
     "design": {
         "aircraft_type": "MIXED",
-        "A": 10,
-        "L": 40,
-        "r": 3
+        "wing_aspect_ratio": 10,
+        "fuselage_length": 40,
+        "fuselage_radius": 3,
+        "wing_area": 0,
+        "taper_ratio": 0,
+        "root_chord": 0,
+        "tip_chord": 0,
+        "wing_span": 0,
+        "wing_sweep": 0,
+        "wing_dihedral": 0,
+        "wing_twist": 0,
+        "wing_airfoil": "NACA0012"
     },
-    
+    "weights": {
+        "max_takeoff_mass": 100000,
+        "operating_empty_mass": 90000,
+        "empty_mass": 50000,
+        "payload_mass": 20000,
+        "fuel_mass": 30000
+
+    },
+    "Cd0": 0.02,
+    "e": 0.85,
     "mission_type": "DESIGN",
     "cruise_speed": 144.0432,
     "jet_consumption": 1.9e-05,
     "prop_consumption": 9.0e-08,
     "prop_efficiency": 0.82,
-    "Cd0": 0.02,
-    "e": 0.85,
     "tfo": 0.001,
     "reserve_fuel": 0,
     "k": 1,
