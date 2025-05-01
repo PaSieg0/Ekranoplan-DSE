@@ -1,13 +1,32 @@
 {
-    "Design": {
-        "wing_area": 60.0,
-        "aspect_ratio": 8.0,
-        "wing_span": 20.0
+    "design": {
+        "aircraft_type": "MIXED",
+        "A": 10,
+        "L": 40,
+        "r": 3
     },
-    "Requirements": {
-        "c": 50,
-        "c_V": 0.5,
-        "cruise_speed": 92.6,
-        "cruise_altitude": 100
-    }
-}
+    
+    "mission_type": "DESIGN",
+    "cruise_speed": 144.0432,
+    "jet_consumption": 1.9e-05,
+    "prop_consumption": 9.0e-08,
+    "prop_efficiency": 0.82,
+    "Cd0": 0.02,
+    "e": 0.85,
+    "tfo": 0.001,
+    "reserve_fuel": 0,
+    "k": 1,
+    "CLmax_clean": [1.5, 1.6, 1.7],
+    "CLmax_takeoff": [1.6, 1.8, 2.0, 2.2],
+    "CLmax_landing": [1.8, 1.9, 2.2],
+    "aspect_ratios": [10],
+    "stall_speed_clean": 77.16,
+    "stall_speed_takeoff": 61.728,
+    "stall_speed_landing": 51.44,
+    "cruise_altitude": 4,
+    "high_altitude": 3048.0,
+    "hull_surface": 251.32741228718345,
+    "rho_water": 1000.0,
+    "kinematic_viscosity": 1.002e-06
+  }
+  

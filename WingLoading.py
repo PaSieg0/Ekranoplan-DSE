@@ -275,19 +275,19 @@ def main(plot_type, CLmax_clean, CLmax_takeoff, CLmax_landing, aspect_ratios, Cd
         if PLOT_OUTPUT:
             __plot_prop(prop, True)
         prop.main()
-        return prop.WP, None, prop.max_WS
+        return 0.98*prop.WP, None, 0.98*prop.max_WS
 
     elif plot_type == AircraftType.JET:
         if PLOT_OUTPUT:
             __plot_jet(jet, True)
         jet.main()
-        return None, jet.TW, jet.max_WS
+        return None, 1.02*jet.TW, 0.98*jet.max_WS
 
     elif plot_type == AircraftType.MIXED:
         if PLOT_OUTPUT:
             __plot_mixed(prop, jet, True)
         mixed.main()
-        return mixed.WP, mixed.TW, mixed.max_WS
+        return 0.98*mixed.WP, 1.02*mixed.TW, 0.98*mixed.max_WS
 
     
 
@@ -304,7 +304,7 @@ def __plot_prop(WL, PLOT_OUTPUT: bool=False):
     for i, climb_rate in enumerate(prop_climb_rate):
         ax.plot(WL.WS, climb_rate, label=f"Climb rate: Aspect ratio={WL.aspect_ratios[i]}", linestyle=linestyles[i], color='tab:orange')
     for i, climb_gradient in enumerate(prop_climb_gradient):
-        ax.plot(WL.WS, climb_gradient, label=f"Climb gradient: CL={WL.CLmax_clean[i]}", linestyle=linestyles[i], color='tab:green')
+        ax.plot(WL.WS, climb_gradient, label=f"Climb gradient: Aspect ratio={WL.aspect_ratios[i]}", linestyle=linestyles[i], color='tab:green')
     for i, cruise in enumerate(prop_cruise):
         ax.plot(WL.WS, cruise, label=f"Cruise: Aspect ratio={WL.aspect_ratios[i]}", linestyle=linestyles[i], color='tab:red')
     for i, cruise in enumerate(prop_cruise_high):
@@ -369,7 +369,7 @@ def __plot_mixed(WL_prop, WL_jet, PLOT_OUTPUT: bool=False):
     # for i, climb_rate in enumerate(prop_climb_rate):
     #     ax[0].plot(WL_prop.WS, climb_rate, label=f"Climb rate: Aspect ratio={WL_prop.aspect_ratios[i]}", linestyle=linestyles[i], color='tab:orange')
     # for i, climb_gradient in enumerate(prop_climb_gradient):
-    #     ax[0].plot(WL_prop.WS, climb_gradient, label=f"Climb gradient: CL={WL_prop.CLmax_clean[i]}", linestyle=linestyles[i], color='tab:green')
+    #     ax[0].plot(WL_prop.WS, climb_gradient, label=f"Climb gradient: Aspect ratio={WL.aspect_ratios[i]}", linestyle=linestyles[i], color='tab:green')
     for i, cruise in enumerate(prop_cruise):
         ax[0].plot(WL_prop.WS, cruise, label=f"Cruise: Aspect ratio={WL_prop.aspect_ratios[i]}", linestyle=linestyles[i], color='tab:red')
     # for i, cruise in enumerate(prop_cruise_high):

@@ -154,6 +154,9 @@ def iteration(aircraft_type,
 
         if diff_ratio < tolerance or iteration >= max_iterations:
             print(f"Final MTOM: {CLASS_I.MTOM:=,.2f} kg")
+            print(f"Final fuel economy: {CLASS_I.fuel_used/9.81*0.82/90/(2800*1.852):.4f} L/ton/km")
+            print()
+            print()
             print(f"Final MTOW: {CLASS_I.MTOW:=,.2f} N")
             print(f"Final OEW: {CLASS_I.OEW/9.81:=,.2f} kg")
             print(f"Final ZFW: {CLASS_I.ZFW/9.81:=,.2f} kg")
@@ -162,6 +165,7 @@ def iteration(aircraft_type,
             print(f"Final Fuel: {CLASS_I.fuel/9.81:=,.2f} kg")
             print(f"Final Fuel used: {CLASS_I.fuel_used/9.81:=,.2f} kg")
             print(f"Final Fuel reserve: {CLASS_I.fuel_res/9.81:=,.2f} kg")
+
 
             print(f"Final S: {S:=,.2f} m^2")
             print(f"Final A: {A:=,.2f}")
@@ -206,7 +210,7 @@ def iteration(aircraft_type,
 if __name__=='__main__':
     aircraft_type = AircraftType.MIXED
     mission_type = MissionType.DESIGN
-    cruise_speed = 250*0.51444
+    cruise_speed = 280*0.51444
     jet_consumption = 19e-6
     prop_consumption = 90e-9
     prop_efficiency = 0.82
@@ -221,13 +225,13 @@ if __name__=='__main__':
     CLmax_takeoff=[1.6, 1.8, 2.0, 2.2]
     CLmax_landing=[1.8, 1.9, 2.2]
     aspect_ratios=[A]
-    stall_speed_clean=162*0.5144
-    stall_speed_takeoff=130*0.5144
-    stall_speed_landing=120*0.5144
-    cruise_altitude=30*0.3048
+    stall_speed_clean=150*0.5144
+    stall_speed_takeoff=120*0.5144
+    stall_speed_landing=100*0.5144
+    cruise_altitude=6
     high_altitude=10000*0.3048
     L=40
-    r = 3
+    r=3
     hull_surface=2*np.pi*L*r / 3
     rho_water=1000.0
     kinematic_viscosity=1.002e-6
