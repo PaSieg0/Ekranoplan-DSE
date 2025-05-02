@@ -66,9 +66,10 @@ def iteration(aircraft_type,
     CLASS_I.main()
     
     prev_MTOM = CLASS_I.MTOM
+    print(f"Initial MTOM: {prev_MTOM:=,.2f} kg")
 
     tolerance = 0.0001
-    max_iterations = 50
+    max_iterations = 10
     iteration = 0
 
     
@@ -98,6 +99,8 @@ def iteration(aircraft_type,
     MTOM_history = []
     MTOM_history.append(prev_MTOM)
 
+    print(f"Initial MTOM: {CLASS_I.MTOM:=,.2f} kg")
+
 
     while True:
         iteration += 1
@@ -107,6 +110,13 @@ def iteration(aircraft_type,
         h_b = cruise_altitude/b
         A_ratio = Ainf_Ah(h_b)
         new_k = np.sqrt(1/A_ratio)
+        fuel_economy = CLASS_I.fuel_used/9.81*0.82/90/(2800*1.852)
+        print(f"S={S}")
+        print(f"b={b}")
+        print(f"h_b={h_b}")
+        print(f"A_ratio={A_ratio}")
+        print(f"new_k={new_k}")
+
         CLASS_I = ClassI(
             aircraft_type=aircraft_type,
             mission_type=mission_type,
@@ -204,13 +214,13 @@ def iteration(aircraft_type,
     
     take_off_requirement()
 
-    return MTOM_history
+    return fuel_economy, MTOM_history
 
 
 if __name__=='__main__':
-    aircraft_type = AircraftType.MIXED
+    aircraft_type = AircraftType.PROP
     mission_type = MissionType.DESIGN
-    cruise_speed = 280*0.51444
+    cruise_speed = 225*0.51444
     jet_consumption = 19e-6
     prop_consumption = 90e-9
     prop_efficiency = 0.82
@@ -228,38 +238,42 @@ if __name__=='__main__':
     stall_speed_clean=150*0.5144
     stall_speed_takeoff=120*0.5144
     stall_speed_landing=100*0.5144
-    cruise_altitude=6
+    cruise_altitude=5
     high_altitude=10000*0.3048
     L=40
     r=3
     hull_surface=2*np.pi*L*r / 3
     rho_water=1000.0
     kinematic_viscosity=1.002e-6
-    MTOM_history = iteration(
-                        aircraft_type=aircraft_type,
-                        mission_type=mission_type,
-                        cruise_speed=cruise_speed,
-                        jet_consumption=jet_consumption,
-                        prop_consumption=prop_consumption,
-                        prop_efficiency=prop_efficiency,
-                        Cd0=Cd0,
-                        e=e,
-                        A=A,
-                        tfo=tfo,
-                        k=k,
-                        reserve_fuel=reserve_fuel,
-                        CLmax_clean=CLmax_clean,
-                        CLmax_takeoff=CLmax_takeoff,
-                        CLmax_landing=CLmax_landing,
-                        aspect_ratios=[A],
-                        stall_speed_clean=stall_speed_clean,
-                        stall_speed_takeoff=stall_speed_takeoff,
-                        stall_speed_landing=stall_speed_landing,
-                        cruise_altitude=cruise_altitude,
-                        high_altitude=high_altitude,
-                        hull_surface=hull_surface,
-                        L=L,
-                        rho_water=rho_water,
-                        kinematic_viscosity=kinematic_viscosity
-                        )
+    final_MTOMS = []
+    for A in range(10, 11, 1):
+        fuel_economy, MTOM_history = iteration(
+                            aircraft_type=aircraft_type,
+                            mission_type=mission_type,
+                            cruise_speed=cruise_speed,
+                            jet_consumption=jet_consumption,
+                            prop_consumption=prop_consumption,
+                            prop_efficiency=prop_efficiency,
+                            Cd0=Cd0,
+                            e=e,
+                            A=A,
+                            tfo=tfo,
+                            k=k,
+                            reserve_fuel=reserve_fuel,
+                            CLmax_clean=CLmax_clean,
+                            CLmax_takeoff=CLmax_takeoff,
+                            CLmax_landing=CLmax_landing,
+                            aspect_ratios=[A],
+                            stall_speed_clean=stall_speed_clean,
+                            stall_speed_takeoff=stall_speed_takeoff,
+                            stall_speed_landing=stall_speed_landing,
+                            cruise_altitude=cruise_altitude,
+                            high_altitude=high_altitude,
+                            hull_surface=hull_surface,
+                            L=L,
+                            rho_water=rho_water,
+                            kinematic_viscosity=kinematic_viscosity
+                            )
+        final_MTOMS.append(round(MTOM_history[-1]))
+    print(final_MTOMS)
 

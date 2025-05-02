@@ -54,7 +54,7 @@ class WingLoading:
         self.WS = np.arange(1, 10000, 1)
 
     def stall_requirement(self):
-        x = 0.5*self.isa_cruise.rho * self.stall_speed_clean**2 * self.k * self.CLmax_clean
+        x = 0.5*self.isa_cruise.rho * self.stall_speed_clean**2 * self.CLmax_clean
         return x
     
     def stall_requirement_high(self):
@@ -67,7 +67,7 @@ class WingLoading:
         return Cd
     
     def take_off_requirement(self):
-        CL_takeoff = self.k * self.CLmax_takeoff/1.21
+        CL_takeoff = self.CLmax_takeoff/1.21
         Cd = self.calculate_Cd()
         D = 0.5 * self.rho_water * (self.V_lof)**2 * Cd * self.hull_surface
         if self.aircraft_type == AircraftType.JET:
@@ -81,9 +81,9 @@ class WingLoading:
     
     def landing_requirement(self):
         V_land = self.stall_speed_landing * 1.3
-        f = 0.8
+        f = 1
 
-        x = self.k * self.CLmax_landing * self.isa_cruise.rho * V_land**2 / (2*f)
+        x = self.CLmax_landing * self.isa_cruise.rho * V_land**2 / (2*f)
 
         return x
 
@@ -112,10 +112,10 @@ class WingLoading:
         c = 5.08
 
         Cd = 4*self.Cd0
-        Cl = [np.sqrt(3*self.Cd0*np.pi*A*self.e) for A in self.aspect_ratios]
+        Cl = [np.sqrt(3*self.Cd0*np.pi*A*self.e) for A in self.k**2 * self.aspect_ratios]
 
         if self.aircraft_type == AircraftType.PROP:
-            y = [self.prop_efficiency/(c+(np.sqrt(x)*np.sqrt(2/self.isa_cruise.rho))/(1.345*(A*self.e)**0.75/(self.Cd0**0.25))) for A in self.aspect_ratios]
+            y = [self.prop_efficiency/(c+(np.sqrt(x)*np.sqrt(2/self.isa_cruise.rho))/(1.345*(A*self.e)**0.75/(self.Cd0**0.25))) for A in self.k**2 * self.aspect_ratios]
         elif self.aircraft_type == AircraftType.JET or self.aircraft_type == AircraftType.MIXED:
             y = [c/(np.sqrt(2*x/(self.isa_cruise.rho*CL))) + Cd/CL for CL in Cl]
 

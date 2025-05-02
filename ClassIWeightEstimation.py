@@ -34,7 +34,7 @@ class ClassI:
         self.mission_type = mission_type
 
         if mission_type == MissionType.DESIGN:
-            self.range = (2500+50)*1.852*1000
+            self.range = (2000+50)*1.852*1000
             self.payload = 90000
             self.crew = 5*85
         elif mission_type == MissionType.FERRY:
@@ -159,18 +159,36 @@ if __name__=="__main__":
 
     # CHANGE THESE VALUES
     # MIGHT WANT TO MAKE A .json FILE TO SAVE ALL PARAMETERS AND LOAD THEM
-    aircraft_type = AircraftType.PROP
-    mission_type = MissionType.DESIGN
-    cruise_speed = 180*0.51444
+    aircraft_type = AircraftType.MIXED
+    mission_type = MissionType.FERRY
+    cruise_speed = 225*0.51444
     jet_consumption = 19e-6
     prop_consumption = 90e-9
     prop_efficiency = 0.82
     Cd0 = 0.02
     e = 0.85
-    A = 8
+    A = 6
     tfo = 0.001
     reserve_fuel = 0
     k = 1
+
+    class_i = ClassI(
+        aircraft_type=aircraft_type,
+        mission_type=mission_type,
+        cruise_speed=cruise_speed,
+        jet_consumption=jet_consumption,
+        prop_consumption=prop_consumption,
+        prop_efficiency=prop_efficiency,
+        Cd0=Cd0,
+        e=e,
+        A=A,
+        tfo=tfo,
+        reserve_fuel=reserve_fuel,
+        k=k
+    )
+    class_i.main()
+    print(f"{class_i.aircraft_type.name}: {class_i.mission_type.name}")
+    print(f"MTOM: {class_i.MTOM:=,.2f} kg.")
  
     
 
