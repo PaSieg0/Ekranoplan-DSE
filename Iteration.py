@@ -32,6 +32,7 @@ def iteration(aircraft_type,
               A,
               tfo,
               k,
+              n_engines,
               reserve_fuel,
               CLmax_clean,
               CLmax_takeoff,
@@ -82,6 +83,7 @@ def iteration(aircraft_type,
         Cd0=Cd0,
         e=e,
         k=k,
+        n_engines = n_engines,
         stall_speed_clean=stall_speed_clean,
         stall_speed_takeoff=stall_speed_takeoff,
         stall_speed_landing=stall_speed_landing,
@@ -144,6 +146,7 @@ def iteration(aircraft_type,
             Cd0=Cd0,
             e=e,
             k=new_k,
+            n_engines=n_engines,
             stall_speed_clean=stall_speed_clean,
             stall_speed_takeoff=stall_speed_takeoff,
             stall_speed_landing=stall_speed_landing,
@@ -234,6 +237,7 @@ if __name__=='__main__':
     CLmax_clean=[1.5, 1.6, 1.7]
     CLmax_takeoff=[1.6, 1.8, 2.0, 2.2]
     CLmax_landing=[1.8, 1.9, 2.2]
+    n_engines = [4,6,8]
     aspect_ratios=[A]
     stall_speed_clean=150*0.5144
     stall_speed_takeoff=120*0.5144
@@ -259,6 +263,7 @@ if __name__=='__main__':
                             A=A,
                             tfo=tfo,
                             k=k,
+                            n_engines=n_engines,
                             reserve_fuel=reserve_fuel,
                             CLmax_clean=CLmax_clean,
                             CLmax_takeoff=CLmax_takeoff,

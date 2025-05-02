@@ -15,6 +15,7 @@ class WingLoading:
                  Cd0: float,
                  e: float,
                  k: float,
+                 n_engines: list[int],
                  stall_speed_clean: float,
                  stall_speed_takeoff: float,
                  stall_speed_landing: float,
@@ -35,6 +36,7 @@ class WingLoading:
         self.Cd0 = Cd0
         self.e = e
         self.k = k
+        self.n_engines = n_engines
         self.stall_speed_clean = stall_speed_clean
         self.stall_speed_takeoff = stall_speed_takeoff
         self.stall_speed_landing = stall_speed_landing
@@ -125,14 +127,29 @@ class WingLoading:
         x = self.WS.copy()
         c_V = 0.032
 
-        CLs = [np.sqrt(3*self.Cd0*np.pi*A*self.e) for A in self.aspect_ratios]
+        CLs = [np.sqrt(3*self.Cd0*np.pi*A*self.e) for A in self.k**2 * self.aspect_ratios]
         CD = 4*self.Cd0
 
         if self.aircraft_type == AircraftType.PROP:
             y = [self.prop_efficiency/(np.sqrt(x)*(c_V+CD/CL)*np.sqrt(2/(self.isa_cruise.rho*CL))) for CL in CLs]
 
         elif self.aircraft_type == AircraftType.JET or self.aircraft_type == AircraftType.MIXED:
-            y = [c_V + 2*np.sqrt(self.Cd0/(np.pi*A*self.e)) for A in self.aspect_ratios]
+            y = [c_V + 2*np.sqrt(self.Cd0/(np.pi*A*self.e)) for A in self.k**2 * self.aspect_ratios]
+
+        return y
+    
+    def climb_gradient_requirement_OEI(self):
+        x = self.WS.copy()
+        c_V = 0.024
+
+        CLs = [np.sqrt(3*self.Cd0*np.pi*A*self.e) for A in self.k**2 * self.aspect_ratios]
+        CD = 4*self.Cd0
+
+        if self.aircraft_type == AircraftType.PROP:
+            y = [(n-1)/n*self.prop_efficiency/(np.sqrt(x)*((c_V+0.003*n)+CD/CL)*np.sqrt(2/(self.isa_cruise.rho*CL))) for CL in CLs for n in self.n_engines]
+
+        elif self.aircraft_type == AircraftType.JET or self.aircraft_type == AircraftType.MIXED:
+            y = [n/(n-1)*(c_V+0.003*n + 2*np.sqrt(self.Cd0/(np.pi*A*self.e))) for A in self.k**2 * self.aspect_ratios for n in self.n_engines]
 
         return y
 
@@ -145,6 +162,7 @@ class WingLoading:
         cruise_high_req = self.cruise_requirement_high()
         climb_rate_req = self.climb_rate_requirement()
         climb_gradient_req = self.climb_gradient_requirement()
+        climb_gradient_req_OEI = self.climb_gradient_requirement_OEI()
 
         if self.aircraft_type == AircraftType.JET or self.aircraft_type == AircraftType.PROP:
             all_vertical_lines = [take_off_req, landing_req, stall_req, stall_req_high]
@@ -154,7 +172,8 @@ class WingLoading:
                 if maxx < self.max_WS:
                     self.max_WS = maxx
 
-            all_curves = [cruise_req, cruise_high_req, climb_rate_req]
+            all_curves = [cruise_req, cruise_high_req, climb_rate_req, climb_gradient_req, climb_gradient_req_OEI]
+            
             intersections = []
 
             for y_vals in all_curves:
@@ -162,9 +181,6 @@ class WingLoading:
                     y_at_leftmost = np.interp(self.max_WS, self.WS, curve)
                     intersections.append(y_at_leftmost)
 
-
-
-            
             if self.aircraft_type == AircraftType.JET:
                 self.TW = max(intersections)
                 print(f"T/W shall be at least {self.TW}")
@@ -181,7 +197,7 @@ class WingLoading:
                     self.max_WS = maxx
 
             all_curves_prop = [cruise_req]
-            all_curves_jet = [cruise_high_req, climb_rate_req]
+            all_curves_jet = [cruise_high_req, climb_rate_req, climb_gradient_req, climb_gradient_req_OEI]
             intersections_prop = []
             intersections_jet = []
 
@@ -201,9 +217,9 @@ class WingLoading:
             print(f"W/P shall be at least {min(intersections_prop)}")
                 
 
-        return stall_req, stall_req_high, take_off_req, landing_req, cruise_req, cruise_high_req, climb_rate_req, climb_gradient_req
+        return stall_req, stall_req_high, take_off_req, landing_req, cruise_req, cruise_high_req, climb_rate_req, climb_gradient_req, climb_gradient_req_OEI
 
-def main(plot_type, CLmax_clean, CLmax_takeoff, CLmax_landing, aspect_ratios, Cd0, e, k, stall_speed_clean, stall_speed_takeoff, stall_speed_landing, cruise_altitude, high_altitude, cruise_speed, prop_efficiency, hull_surface, L, rho_water, kinematic_viscosity, PLOT_OUTPUT: bool=False):
+def main(plot_type, CLmax_clean, CLmax_takeoff, CLmax_landing, aspect_ratios, Cd0, e, k, n_engines, stall_speed_clean, stall_speed_takeoff, stall_speed_landing, cruise_altitude, high_altitude, cruise_speed, prop_efficiency, hull_surface, L, rho_water, kinematic_viscosity, PLOT_OUTPUT: bool=False):
     prop = WingLoading(
         aircraft_type=AircraftType.PROP,
         CLmax_clean=CLmax_clean,
@@ -213,6 +229,7 @@ def main(plot_type, CLmax_clean, CLmax_takeoff, CLmax_landing, aspect_ratios, Cd
         Cd0=Cd0,
         e=e,
         k=k,
+        n_engines=n_engines,
         stall_speed_clean=stall_speed_clean,
         stall_speed_takeoff=stall_speed_takeoff,
         stall_speed_landing=stall_speed_landing,
@@ -235,6 +252,7 @@ def main(plot_type, CLmax_clean, CLmax_takeoff, CLmax_landing, aspect_ratios, Cd
         Cd0=Cd0,
         e=e,
         k=k,
+        n_engines=n_engines,
         stall_speed_clean=stall_speed_clean,
         stall_speed_takeoff=stall_speed_takeoff,
         stall_speed_landing=stall_speed_landing,
@@ -257,6 +275,7 @@ def main(plot_type, CLmax_clean, CLmax_takeoff, CLmax_landing, aspect_ratios, Cd
         Cd0=Cd0,
         e=e,
         k=k,
+        n_engines=n_engines,
         stall_speed_clean=stall_speed_clean,
         stall_speed_takeoff=stall_speed_takeoff,
         stall_speed_landing=stall_speed_landing,
@@ -293,7 +312,7 @@ def main(plot_type, CLmax_clean, CLmax_takeoff, CLmax_landing, aspect_ratios, Cd
 
 
 def __plot_prop(WL, PLOT_OUTPUT: bool=False):
-    prop_stall, prop_stall_high, prop_take_off, prop_landing, prop_cruise, prop_cruise_high, prop_climb_rate, prop_climb_gradient = WL.main()
+    prop_stall, prop_stall_high, prop_take_off, prop_landing, prop_cruise, prop_cruise_high, prop_climb_rate, prop_climb_gradient, prop_climb_gradient_OEI = WL.main()
     fig, ax = plt.subplots(figsize=(10, 8))
 
     linestyles = ['-', '--', '-.', ':', (0, (1, 1)), (0, (3, 5, 1, 5, 1, 5))]
@@ -305,6 +324,10 @@ def __plot_prop(WL, PLOT_OUTPUT: bool=False):
         ax.plot(WL.WS, climb_rate, label=f"Climb rate: Aspect ratio={WL.aspect_ratios[i]}", linestyle=linestyles[i], color='tab:orange')
     for i, climb_gradient in enumerate(prop_climb_gradient):
         ax.plot(WL.WS, climb_gradient, label=f"Climb gradient: Aspect ratio={WL.aspect_ratios[i]}", linestyle=linestyles[i], color='tab:green')
+    for i, climb_gradient in enumerate(prop_climb_gradient_OEI):
+        A_idx = i % len(WL.aspect_ratios)
+        n_idx = i // len(WL.aspect_ratios)
+        ax.plot(WL.WS, climb_gradient, label=f"Climb gradient OEI: Aspect ratio={WL.aspect_ratios[A_idx]}\nEngine={WL.n_engines[n_idx]}", linestyle=linestyles[i], color='tab:olive')
     for i, cruise in enumerate(prop_cruise):
         ax.plot(WL.WS, cruise, label=f"Cruise: Aspect ratio={WL.aspect_ratios[i]}", linestyle=linestyles[i], color='tab:red')
     for i, cruise in enumerate(prop_cruise_high):
@@ -325,11 +348,11 @@ def __plot_prop(WL, PLOT_OUTPUT: bool=False):
         plt.show()
 
 def __plot_jet(WL, PLOT_OUTPUT: bool=False):
-    jet_stall, jet_stall_high, jet_take_off, jet_landing, jet_cruise, jet_cruise_high, jet_climb_rate, jet_climb_gradient = WL.main()
+    jet_stall, jet_stall_high, jet_take_off, jet_landing, jet_cruise, jet_cruise_high, jet_climb_rate, jet_climb_gradient, jet_climb_gradient_OEI = WL.main()
 
     fig, ax = plt.subplots(figsize=(10, 8))
 
-    linestyles = ['-', '--', '-.', ':']
+    linestyles = ['-', '--', '-.', ':', (0, (1, 1)), (0, (3, 5, 1, 5, 1, 5))]
 
     for i, take_off in enumerate(jet_take_off):
         ax.axvline(x=take_off, label=f"Takeoff: CL={WL.CLmax_takeoff[i]}", linestyle=linestyles[i], color='tab:blue')
@@ -337,6 +360,10 @@ def __plot_jet(WL, PLOT_OUTPUT: bool=False):
         ax.plot(WL.WS, climb_rate, label=f"Climb rate: Aspect ratio={WL.aspect_ratios[i]}", linestyle=linestyles[i], color='tab:orange')
     for i, climb_gradient in enumerate(jet_climb_gradient):
         ax.axhline(y=climb_gradient, label=f"Climb gradient: Aspect ratio={WL.aspect_ratios[i]}", linestyle=linestyles[i], color='tab:green')
+    for i, climb_gradient in enumerate(jet_climb_gradient_OEI):
+        A_idx = i % len(WL.aspect_ratios)
+        n_idx = i // len(WL.aspect_ratios)
+        ax.plot(WL.WS, climb_gradient, label=f"Climb gradient OEI: Aspect ratio={WL.aspect_ratios[A_idx]}\nEngine={WL.n_engines[n_idx]}", linestyle=linestyles[i], color='tab:olive')
     for i, cruise in enumerate(jet_cruise):
         ax.plot(WL.WS, cruise, label=f"Cruise: Aspect ratio={WL.aspect_ratios[i]}", linestyle=linestyles[i], color='tab:red')
     for i, cruise in enumerate(jet_cruise_high):
@@ -359,10 +386,10 @@ def __plot_jet(WL, PLOT_OUTPUT: bool=False):
 
 def __plot_mixed(WL_prop, WL_jet, PLOT_OUTPUT: bool=False):
     prop_stall, prop_stall_high, prop_take_off, prop_landing, prop_cruise, prop_cruise_high, prop_climb_rate, prop_climb_gradient = WL_prop.main()
-    jet_stall, jet_stall_high, jet_take_off, jet_landing, jet_cruise, jet_cruise_high, jet_climb_rate, jet_climb_gradient = WL_jet.main()
+    jet_stall, jet_stall_high, jet_take_off, jet_landing, jet_cruise, jet_cruise_high, jet_climb_rate, jet_climb_gradient, jet_climb_gradient_OEI = WL_jet.main()
     fig, ax = plt.subplots(2, 1, figsize=(10, 12))
 
-    linestyles = ['-', '--', '-.', ':']
+    linestyles = ['-', '--', '-.', ':', (0, (1, 1)), (0, (3, 5, 1, 5, 1, 5))]
 
     for i, take_off in enumerate(prop_take_off):
         ax[0].axvline(x=take_off, label=f"Takeoff: CL={WL_prop.CLmax_takeoff[i]}", linestyle=linestyles[i], color='tab:blue')
@@ -388,6 +415,10 @@ def __plot_mixed(WL_prop, WL_jet, PLOT_OUTPUT: bool=False):
         ax[1].plot(WL_jet.WS, climb_rate, label=f"Climb rate: Aspect ratio={WL_jet.aspect_ratios[i]}", linestyle=linestyles[i], color='tab:orange')
     for i, climb_gradient in enumerate(jet_climb_gradient):
         ax[1].axhline(y=climb_gradient, label=f"Climb gradient: Aspect ratio={WL_jet.aspect_ratios[i]}", linestyle=linestyles[i], color='tab:green')
+    for i, climb_gradient in enumerate(jet_climb_gradient_OEI):
+        A_idx = i % len(WL_jet.aspect_ratios)
+        n_idx = i // len(WL_jet.aspect_ratios)
+        ax.plot(WL_jet.WS, climb_gradient, label=f"Climb gradient OEI: Aspect ratio={WL_jet.aspect_ratios[A_idx]}\nEngine={WL_jet.n_engines[n_idx]}", linestyle=linestyles[i], color='tab:olive')
     # for i, cruise in enumerate(jet_cruise):
     #     ax[1].plot(WL_jet.WS, cruise, label=f"Cruise: Aspect ratio={WL_jet.aspect_ratios[i]}", linestyle=linestyles[i], color='tab:red')
     for i, cruise in enumerate(jet_cruise_high):
@@ -431,6 +462,7 @@ if __name__ == "__main__":
     CLmax_clean=[1.5]
     CLmax_takeoff=[1.6]
     CLmax_landing=[1.6]
+    n_engines = [4,6,8]
     aspect_ratios=[A]
     stall_speed_clean=100*0.5144
     stall_speed_takeoff=110*0.5144
@@ -451,6 +483,7 @@ if __name__ == "__main__":
         Cd0=Cd0,
         e=e,
         k=k,
+        n_engines=n_engines,
         stall_speed_clean=stall_speed_clean,
         stall_speed_takeoff=stall_speed_takeoff,
         stall_speed_landing=stall_speed_landing,
