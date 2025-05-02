@@ -34,7 +34,7 @@ class ClassI:
         self.mission_type = mission_type
 
         if mission_type == MissionType.DESIGN:
-            self.range = (2000+50)*1.852*1000
+            self.range = (2800+50)*1.852*1000
             self.payload = 90000
             self.crew = 5*85
         elif mission_type == MissionType.FERRY:
@@ -145,6 +145,7 @@ class ClassI:
         
     def main(self):
         self.calculate_Mff()
+        print(f"Fuel fractions: {self.fuel_fractions}")
         self.MTOW = (self.payload*9.81 + self.crew*9.81 + self.intersection) / (1 - self.slope - (1-self.Mff) - (1-self.Mff)*self.reserve_fuel - self.tfo)
         self.fuel_used = self.MTOW * (1-self.Mff)
         self.fuel_res = self.MTOW * (1-self.Mff) * self.reserve_fuel
