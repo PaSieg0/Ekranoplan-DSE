@@ -4,7 +4,6 @@ from Iteration import iteration
 from ClassIWeightEstimation import MissionType, AircraftType
 
 
-
 def plot_A(
         aircraft_type,
               mission_type,
@@ -76,7 +75,7 @@ def plot_A(
     plt.ylabel('Fuel Economy [L/mt/km]')
     plt.title('Fuel Economy vs Range')
     plt.grid()
-    plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left', title=f'Altitude = {cruise_altitude}')
+    plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left', title=f'Altitude = {cruise_altitude} m')
     plt.tight_layout()
     plt.show()
 
@@ -143,7 +142,7 @@ def plot_h(
                             kinematic_viscosity=kinematic_viscosity
                             )
             fuel_economies.append(fuel_economy)
-        plt.plot(range(2000, 2900, 100), fuel_economies, label=f'Altitude {h}')
+        plt.plot(range(2000, 2900, 100), fuel_economies, label=f'Altitude {h} m')
 
     plt.plot([2800, 2000,], [0.24, 0.24], 'r--', label='Fuel Economy Limit')
     plt.xlabel('Range [nmi]')
@@ -153,11 +152,6 @@ def plot_h(
     plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left', title=f'Aspect Ratio = {A}')
     plt.tight_layout()
     plt.show()
-
-
-
-import numpy as np
-import matplotlib.pyplot as plt
 
 def plot_A_h(
         aircraft_type,
@@ -251,8 +245,6 @@ def plot_A_h(
     plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
     plt.tight_layout()
     plt.show()
-
-
 
 
 
