@@ -8,6 +8,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import Iteration
 from ClassIWeightEstimation import MissionType, AircraftType
 from utils import Data
+from ISA_Class import ISA
 
 def calculate_n(rho, CL, W, S, V):
     L = CL*1/2*rho*V**2*S
@@ -38,7 +39,20 @@ def max_n(W):
 def min_n():
     return -1.0
 
-def plot_load_diagram(rho, CLmax_clean, CLmax_flapped, W, S, nmax, nmin, V_cruise, V_dive, V_flapped):
+def plot_load_diagram(aircraft_data):
+    rho = ISA(0).rho  # kg/m^3 (air density at sea level)
+    g = aircraft_data.data["gravitational_acceleration"]  # m/s^2 (acceleration due to gravity)
+    CLmax_clean = aircraft_data.data["CLmax_clean"]  # Maximum lift coefficient
+    CLmax_flapped = aircraft_data.data["CLmax_landing"]  # Maximum lift coefficient during landing
+    W = aircraft_data.data["MTOM"] * g  # Weight in N
+    S = aircraft_data.data["MTOM"] * g / aircraft_data.data["WS"]  # Wing area in m^2
+    nmax = max_n(W)  # Maximum load factor
+    nmin = min_n()  # Minimum load factor
+    V_cruise = aircraft_data.data["cruise_speed"]  # Cruise speed in m/s
+    V_dive = aircraft_data.data["cruise_speed"]/0.8  # Minimum dive speed as stipulated by CS25
+    V_flapped = 80  # Flapped speed as stipulated by CS25
+
+    rho, CLmax_clean, CLmax_flapped, W, S, nmax, nmin, V_cruise, V_dive, V_flapped
     V_range = np.arange(0, V_dive, 0.1)  # Define a range of velocities
     n_positive = [calculante_n_limits(rho, CLmax_clean, W, S, V, nmax, nmin, V_cruise, V_dive) for V in V_range]  # Calculate positive load factor for each velocity
     n_negative = [calculante_n_limits(rho, -CLmax_clean, W, S, V, nmax, nmin, V_cruise, V_dive) for V in V_range]  # Calculate negative load factor for each velocity
@@ -86,18 +100,4 @@ if __name__ == "__main__":
     aircraft_data = Data("design1.json")
     constants = Data("constants.json")
 
-    rho = constants.data["air_density"]  # kg/m^3 (air density at sea level)
-    g = constants.data["gravitational_acceleration"]  # m/s^2 (acceleration due to gravity)
-
-    CLmax_clean = 1.5  # Maximum lift coefficient
-    CLmax_flapped = 2.0  # Maximum lift coefficient during landing
-    W = aircraft_data.data["MTOM"] * g  # Weight in N
-    S = 1400  # Wing area in m^2
-    nmax = max_n(W)  # Maximum load factor
-    nmin = min_n()  # Minimum load factor
-    dive_speed = aircraft_data.data["cruise_speed"]/0.8  # Minimum dive speed as stipulated by CS25
-    flapped_speed = 80  # Flapped speed as stipulated by CS25
-
-    print(f"MTOM = {W/g/1000} mt", f"\nS = {S} m^2")
-
-    plot_load_diagram(rho, CLmax_clean, CLmax_flapped, W, S, nmax, nmin, V_cruise=aircraft_data.data["cruise_speed"], V_dive=dive_speed, V_flapped=flapped_speed)
+    plot_load_diagram(aircraft_data)
