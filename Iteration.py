@@ -254,7 +254,7 @@ if __name__=='__main__':
     fuel_economy, MTOM_history, S_final = iteration(
                         aircraft_type=aircraft_type,
                         mission_type=mission_type,
-                        Range=2800*1.852*1000,
+                        Range=2400*1.852*1000,
                         cruise_speed=cruise_speed,
                         jet_consumption=jet_consumption,
                         prop_consumption=prop_consumption,

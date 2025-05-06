@@ -1,6 +1,7 @@
 from enum import Enum, auto
 import pandas as pd
 import numpy as np
+from utils import Data
 
 class AircraftType(Enum):
     JET = auto()
@@ -16,50 +17,39 @@ class MissionType(Enum):
 
 class ClassI:
     def __init__(self,
-                 aircraft_type: AircraftType,
-                 mission_type: MissionType,
-                 cruise_speed: float,
-                 jet_consumption: float,
-                 prop_consumption: float,
-                 prop_efficiency: float,
-                 Cd0: float,
-                 e: float,
-                 A: float,
-                 tfo: float,
-                 reserve_fuel: float,
-                 k: float,
+                 aircraft_data: Data,
                  reference_aircraft_path: str='ReferenceAircraft.xlsx'
                  ) -> None:
-        self.aircraft_type = aircraft_type
-        self.mission_type = mission_type
+        self.aircraft_data = aircraft_data
 
-        if mission_type == MissionType.DESIGN:
-            self.range = (2800+50)*1.852*1000
-            self.payload = 90000
-            self.crew = 5*85
-        elif mission_type == MissionType.FERRY:
-            self.range = (6500+100)*1.852*1000
-            self.payload = 0
-            self.crew = 5*85
-        elif mission_type == MissionType.ALTITUDE:
-            self.range_WIG = (550+100)*1.852*1000
-            self.range_WOG = 250*1.852*1000
-            self.payload = 90000
-            self.crew = 5*85
+        self.aircraft_type = AircraftType[self.aircraft_data.data['aircraft_type']]
+        self.mission_type = MissionType[self.aircraft_data.data['mission_type']]
+
+        self.design_range = self.aircraft_data.data['design_range']
+        self.design_payload = self.aircraft_data.data['design_payload']
+        self.design_crew = self.aircraft_data.data['design_crew']
+        self.ferry_range = self.aircraft_data.data['ferry_range']
+        self.ferry_payload = self.aircraft_data.data['ferry_payload']
+        self.ferry_crew = self.aircraft_data.data['ferry_crew']
+        self.altitude_range_WIG = self.aircraft_data.data['altitude_range_WIG']
+        self.altitude_range_WOG = self.aircraft_data.data['altitude_range_WOG']
+        self.altitude_payload = self.aircraft_data.data['altitude_payload']
+        self.altitude_crew = self.aircraft_data.data['altitude_crew']
+
+        self.cruise_speed = self.aircraft_data.data['cruise_speed']
+        self.jet_consumption = self.aircraft_data.data['jet_consumption']
+        self.prop_consumption = self.aircraft_data.data['prop_consumption']
+        self.prop_efficiency = self.aircraft_data.data['prop_efficiency']
+        self.Cd0 = self.aircraft_data.data['Cd0']
+        self.e = self.aircraft_data.data['oswald_factor']
+        self.A = self.aircraft_data.data['aspect_ratio']
+        self.tfo = self.aircraft_data.data['tfo']
+        self.reserve_fuel = self.aircraft_data.data['reserve_fuel']
+        self.k = self.aircraft_data.data['k']
 
         self.reference_aircraft_path = reference_aircraft_path
         self.reference_aircraft = self.load_reference_aircraft()
         self.slope, self.intersection = self.linear_relation()
-        self.cruise_speed = cruise_speed
-        self.jet_consumption = jet_consumption
-        self.prop_consumption = prop_consumption
-        self.prop_efficiency = prop_efficiency
-        self.Cd0 = Cd0
-        self.e = e
-        self.A = A
-        self.tfo = tfo
-        self.reserve_fuel = reserve_fuel
-        self.k = k
         self.fuel_fractions = {
             1: 0.992,
             2: 0.990,
@@ -94,8 +84,10 @@ class ClassI:
 
     def update_fuel_fractions_prop(self) -> None:
         self.LD = self.calculate_LD()
-        if self.mission_type == MissionType.DESIGN or self.mission_type == MissionType.FERRY:
-            range_fraction = np.exp(-self.range*self.prop_consumption*9.81/self.prop_efficiency * (self.k*self.LD)**-1)
+        if self.mission_type == MissionType.DESIGN:
+            range_fraction = np.exp(-self.design_range*self.prop_consumption*9.81/self.prop_efficiency * (self.k*self.LD)**-1)
+        if self.mission_type == MissionType.FERRY:
+            range_fraction = np.exp(-self.ferry_range*self.prop_consumption*9.81/self.prop_efficiency * (self.k*self.LD)**-1)
         elif self.mission_type == MissionType.ALTITUDE:
             range_fraction_1 = np.exp(-self.range_WIG*self.prop_consumption*9.81/self.prop_efficiency * (self.k*self.LD)**-1)
             range_fraction_2 = np.exp(-self.range_WOG*self.prop_consumption*9.81/self.prop_efficiency * (self.LD)**-1)
@@ -145,74 +137,48 @@ class ClassI:
         
     def main(self):
         self.calculate_Mff()
-        # print(f"Fuel fractions: {self.fuel_fractions}")
-        self.MTOW = (self.payload*9.81 + self.crew*9.81 + self.intersection) / (1 - self.slope - (1-self.Mff) - (1-self.Mff)*self.reserve_fuel - self.tfo)
-        self.fuel_used = self.MTOW * (1-self.Mff)
-        self.fuel_res = self.MTOW * (1-self.Mff) * self.reserve_fuel
-        self.fuel = self.fuel_used + self.fuel_res
-        self.OEW = self.slope * self.MTOW + self.intersection
-        self.ZFW = self.MTOW - self.fuel
-        self.EW = self.OEW - self.crew
-        self.MTOM = self.MTOW/9.81
+        if self.mission_type == MissionType.DESIGN:
+            self.MTOW = (self.design_payload*9.81 + self.design_crew*9.81 + self.intersection) / (1 - self.slope - (1-self.Mff) - (1-self.Mff)*self.reserve_fuel - self.tfo)
+            self.fuel_used = self.MTOW * (1-self.Mff)
+            self.fuel_res = self.MTOW * (1-self.Mff) * self.reserve_fuel
+            self.fuel = self.fuel_used + self.fuel_res
+            self.OEW = self.slope * self.MTOW + self.intersection
+            self.EW = self.OEW - self.design_crew
+            self.ZFW = self.MTOW - self.fuel
+            self.MTOM = self.MTOW/9.81
+        elif self.mission_type == MissionType.FERRY:
+            self.MTOW = (self.ferry_payload*9.81 + self.design_crew*9.81 + self.intersection) / (1 - self.slope - (1-self.Mff) - (1-self.Mff)*self.reserve_fuel - self.tfo)
+            self.fuel_used = self.MTOW * (1-self.Mff)
+            self.fuel_res = self.MTOW * (1-self.Mff) * self.reserve_fuel
+            self.fuel = self.fuel_used + self.fuel_res
+            self.OEW = self.slope * self.MTOW + self.intersection
+            self.EW = self.OEW - self.ferry_crew
+            self.ZFW = self.MTOW - self.fuel
+            self.MTOM = self.MTOW/9.81
+        elif self.mission_type == MissionType.ALTITUDE:
+            self.MTOW = (self.altitude_payload*9.81 + self.design_crew*9.81 + self.intersection) / (1 - self.slope - (1-self.Mff) - (1-self.Mff)*self.reserve_fuel - self.tfo)
+            self.fuel_used = self.MTOW * (1-self.Mff)
+            self.fuel_res = self.MTOW * (1-self.Mff) * self.reserve_fuel
+            self.fuel = self.fuel_used + self.fuel_res
+            self.OEW = self.slope * self.MTOW + self.intersection
+            self.EW = self.OEW - self.altitude_crew
+            self.ZFW = self.MTOW - self.fuel
+            self.MTOM = self.MTOW/9.81
+
+
+        self.aircraft_data.data['MTOW'] = self.MTOW
+        self.aircraft_data.data['fuel_used'] = self.fuel_used
+        self.aircraft_data.data['fuel_res'] = self.fuel_res
+        self.aircraft_data.data['fuel'] = self.fuel
+        self.aircraft_data.data['OEW'] = self.OEW
+        self.aircraft_data.data['ZFW'] = self.ZFW
+        self.aircraft_data.data['EW'] = self.EW
+        self.aircraft_data.data['MTOM'] = self.MTOM
+
+        self.aircraft_data.save_design("design1.json")
 
 if __name__=="__main__":
-
-
-    # CHANGE THESE VALUES
-    # MIGHT WANT TO MAKE A .json FILE TO SAVE ALL PARAMETERS AND LOAD THEM
-    aircraft_type = AircraftType.MIXED
-    mission_type = MissionType.FERRY
-    cruise_speed = 225*0.51444
-    jet_consumption = 19e-6
-    prop_consumption = 90e-9
-    prop_efficiency = 0.82
-    Cd0 = 0.02
-    e = 0.85
-    A = 6
-    tfo = 0.001
-    reserve_fuel = 0
-    k = 1
-
-    class_i = ClassI(
-        aircraft_type=aircraft_type,
-        mission_type=mission_type,
-        cruise_speed=cruise_speed,
-        jet_consumption=jet_consumption,
-        prop_consumption=prop_consumption,
-        prop_efficiency=prop_efficiency,
-        Cd0=Cd0,
-        e=e,
-        A=A,
-        tfo=tfo,
-        reserve_fuel=reserve_fuel,
-        k=k
-    )
-    class_i.main()
-    # print(f"{class_i.aircraft_type.name}: {class_i.mission_type.name}")
-    # print(f"MTOM: {class_i.MTOM:=,.2f} kg.")
- 
+    data = Data("design1.json")
     
-
-    for type_i in AircraftType:
-        max_MTOM = float('inf')
-        for mission_i in MissionType:
-            class_i = ClassI(
-                aircraft_type=type_i,
-                mission_type=mission_i,
-                cruise_speed=cruise_speed,
-                jet_consumption=jet_consumption,
-                prop_consumption=prop_consumption,
-                prop_efficiency=prop_efficiency,
-                Cd0=Cd0,
-                e=e,
-                A=A,
-                tfo=tfo,
-                reserve_fuel=reserve_fuel,
-                k=k
-            )
-            class_i.main()
-            # print(f"{class_i.aircraft_type.name}: {class_i.mission_type.name}")
-            # print(f"MOTM: {class_i.MTOM:=,.2f} kg.")
-        else:
-            # print("\n")
-            pass
+    classI = ClassI(data)
+    classI.main()
