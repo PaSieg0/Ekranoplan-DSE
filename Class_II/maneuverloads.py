@@ -38,19 +38,31 @@ def max_n(W):
 def min_n():
     return -1.0
 
-def plot_load_diagram(rho, CLmax, W, S, nmax, nmin, V_cruise, V_dive):
+def plot_load_diagram(rho, CLmax_clean, CLmax_flapped, W, S, nmax, nmin, V_cruise, V_dive, V_flapped):
     V_range = np.arange(0, V_dive, 0.1)  # Define a range of velocities
-    n_positive = [calculante_n_limits(rho, CLmax, W, S, V, nmax, nmin, V_cruise, V_dive) for V in V_range]  # Calculate positive load factor for each velocity
-    n_negative = [calculante_n_limits(rho, -CLmax, W, S, V, nmax, nmin, V_cruise, V_dive) for V in V_range]  # Calculate negative load factor for each velocity
+    n_positive = [calculante_n_limits(rho, CLmax_clean, W, S, V, nmax, nmin, V_cruise, V_dive) for V in V_range]  # Calculate positive load factor for each velocity
+    n_negative = [calculante_n_limits(rho, -CLmax_clean, W, S, V, nmax, nmin, V_cruise, V_dive) for V in V_range]  # Calculate negative load factor for each velocity
+
+    V_range_flapped = np.arange(0, V_flapped, 0.1)  # Define a range of velocities
+    n_positive_flapped = [calculante_n_limits(rho, CLmax_flapped, W, S, V, nmax, nmin, V_cruise, V_flapped) for V in V_range_flapped]  # Calculate positive load factor for each velocity
     plt.figure(figsize=(10, 6))  # Set a larger figure size for better readability
 
     # Plot positive and negative load factors
     plt.plot(V_range, n_positive, color='blue', label='Positive Load Factor')
     plt.plot(V_range, n_negative, color='orange', label='Negative Load Factor')
 
+    plt.plot(V_range_flapped, n_positive_flapped, color='purple', label='Flapped Load Factor')
+
     # Highlight dive speed and cruise speed
     plt.axvline(x=V_dive, color='red', linestyle='-', label='Dive Speed', linewidth=1.5)
-    plt.axvline(x=V_cruise, color='green', linestyle='-', label='Cruise Speed', linewidth=1.5)
+    plt.axvline(x=V_cruise, color='green', linestyle='--', label='Cruise Speed', linewidth=1.5)
+    # Find the velocity where n_positive is equal to 1
+    for i, n in enumerate(n_positive):
+        if n >= 1:
+            V_at_n1 = V_range[i]
+            plt.axvline(x=V_at_n1, color='magenta', linestyle='--', label='Stall Speed', linewidth=1.5)
+            print(f"Stall Speed (V at n=1): {V_at_n1:.2f} m/s")
+            break
 
     # Add horizontal lines for key load factors
     plt.axhline(y=0, color='black', linestyle='--', label='Zero Load Factor', linewidth=1)
@@ -70,79 +82,22 @@ def plot_load_diagram(rho, CLmax, W, S, nmax, nmin, V_cruise, V_dive):
     plt.show()
 
 if __name__ == "__main__":
-
-    aircraft_type = AircraftType.PROP
-    mission_type = MissionType.DESIGN
-    cruise_speed = 225*0.51444
-    jet_consumption = 19e-6
-    prop_consumption = 90e-9
-    prop_efficiency = 0.82
-    Cd0 = 0.02
-    e = 0.85
-    A = 10
-    tfo = 0.001
-    reserve_fuel = 0
-    k = 1
-    n_engines = [4, 6, 8, 10]
-
-    CLmax_clean=[1.5]
-    CLmax_takeoff=[1.6, 1.8, 2.0, 2.2]
-    CLmax_landing=[1.8, 1.9, 2.2]
-    aspect_ratios=[A]
-    stall_speed_clean=150*0.5144
-    stall_speed_takeoff=120*0.5144
-    stall_speed_landing=100*0.5144
-    cruise_altitude=5
-    high_altitude=10000*0.3048
-    L=40
-    r=3
-    hull_surface=2*np.pi*L*r / 3
-    rho_water=1000.0
-    kinematic_viscosity=1.002e-6
     
-    aircraft = Data("design1.json")
+    aircraft_data = Data("design1.json")
+    constants = Data("constants.json")
 
-    final_MTOMS = []
-    fuel_economy, MTOM_history, S_final = Iteration.iteration(
-                        aircraft_type=aircraft_type,
-                        mission_type=mission_type,
-                        Range=2800*1.852*1000,
-                        cruise_speed=cruise_speed,
-                        jet_consumption=jet_consumption,
-                        prop_consumption=prop_consumption,
-                        prop_efficiency=prop_efficiency,
-                        Cd0=Cd0,
-                        e=e,
-                        A=A,
-                        tfo=tfo,
-                        k=k,
-                        n_engines=n_engines,
-                        reserve_fuel=reserve_fuel,
-                        CLmax_clean=CLmax_clean,
-                        CLmax_takeoff=CLmax_takeoff,
-                        CLmax_landing=CLmax_landing,
-                        aspect_ratios=[A],
-                        stall_speed_clean=stall_speed_clean,
-                        stall_speed_takeoff=stall_speed_takeoff,
-                        stall_speed_landing=stall_speed_landing,
-                        cruise_altitude=cruise_altitude,
-                        high_altitude=high_altitude,
-                        hull_surface=hull_surface,
-                        L=L,
-                        rho_water=rho_water,
-                        kinematic_viscosity=kinematic_viscosity
-                        )
+    rho = constants.data["air_density"]  # kg/m^3 (air density at sea level)
+    g = constants.data["gravitational_acceleration"]  # m/s^2 (acceleration due to gravity)
 
-    
-    # Example usage
-    rho = 1.225  # kg/m^3 (air density at sea level)
-    CLmax = 1.5  # Maximum lift coefficient
-    W = MTOM_history[-1] * 9.81  # Weight in N
-    S = S_final  # Wing area in m^2
+    CLmax_clean = 1.5  # Maximum lift coefficient
+    CLmax_flapped = 2.0  # Maximum lift coefficient during landing
+    W = aircraft_data.data["MTOM"] * g  # Weight in N
+    S = 1400  # Wing area in m^2
     nmax = max_n(W)  # Maximum load factor
     nmin = min_n()  # Minimum load factor
-    dive_speed = 300*0.51444  # Dive speed in m/s (example value)
+    dive_speed = aircraft_data.data["cruise_speed"]/0.8  # Minimum dive speed as stipulated by CS25
+    flapped_speed = 80  # Flapped speed as stipulated by CS25
 
-    print(f"MTOM = {W/9.81/1000} kg", f"\nS = {S} m^2")
+    print(f"MTOM = {W/g/1000} mt", f"\nS = {S} m^2")
 
-    plot_load_diagram(rho, CLmax, W, S, nmax, nmin, V_cruise=cruise_speed, V_dive=dive_speed)
+    plot_load_diagram(rho, CLmax_clean, CLmax_flapped, W, S, nmax, nmin, V_cruise=aircraft_data.data["cruise_speed"], V_dive=dive_speed, V_flapped=flapped_speed)
