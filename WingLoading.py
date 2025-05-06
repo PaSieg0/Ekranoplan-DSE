@@ -198,6 +198,11 @@ class WingLoading:
             intersections_jet.append(max([max(climb_gradient_req),max(climb_gradient_req_OEI)]))
             self.TW = max(intersections_jet)
             self.WP = max(intersections_prop)
+
+            self.aircraft_data.data['TW'] = self.TW
+            self.aircraft_data.data['WP'] = self.WP
+            self.aircraft_data.data['WS'] = self.max_WS
+            self.aircraft_data.save_design('design1.json')
             # print(f"T/W shall be at least {max(intersections_jet)}")
             # print(f"W/P shall be at least {min(intersections_prop)}")
                 
@@ -294,11 +299,11 @@ def __plot_jet(WL, PLOT_OUTPUT: bool=False):
     for i, climb_gradient in enumerate(jet_climb_gradient):
         A_idx = i % len(WL.aspect_ratios)
         n_idx = i // len(WL.aspect_ratios)
-        ax.plot(WL.WS, climb_gradient, label=f"Climb gradient: Aspect ratio={WL.aspect_ratios[A_idx]}\nEngine={WL.n_engines[n_idx]}", linestyle=linestyles[i], color='tab:green')
+        ax.axhline(y=climb_gradient, label=f"Climb gradient: Aspect ratio={WL.aspect_ratios[A_idx]}\nEngine={WL.n_engines[n_idx]}", linestyle=linestyles[i], color='tab:green')
     for i, climb_gradient in enumerate(jet_climb_gradient_OEI):
         A_idx = i % len(WL.aspect_ratios)
         n_idx = i // len(WL.aspect_ratios)
-        ax.plot(WL.WS, climb_gradient, label=f"Climb gradient OEI: Aspect ratio={WL.aspect_ratios[A_idx]}\nEngine={WL.n_engines[n_idx]}", linestyle=linestyles[i], color='tab:olive')
+        ax.axhline(y=climb_gradient, label=f"Climb gradient OEI: Aspect ratio={WL.aspect_ratios[A_idx]}\nEngine={WL.n_engines[n_idx]}", linestyle=linestyles[i], color='tab:olive')
     for i, cruise in enumerate(jet_cruise):
         ax.plot(WL.WS, cruise, label=f"Cruise: Aspect ratio={WL.aspect_ratios[i]}", linestyle=linestyles[i], color='tab:red')
     for i, cruise in enumerate(jet_cruise_high):
@@ -352,11 +357,11 @@ def __plot_mixed(WL_prop, WL_jet, PLOT_OUTPUT: bool=False):
     for i, climb_gradient in enumerate(jet_climb_gradient):
         A_idx = i % len(WL_jet.aspect_ratios)
         n_idx = i // len(WL_jet.aspect_ratios)
-        ax[1].plot(WL_jet.WS, climb_gradient, label=f"Climb gradient: Aspect ratio={WL_jet.aspect_ratios[A_idx]}\nEngine={WL_jet.n_engines[n_idx]}", linestyle=linestyles[i], color='tab:green')
+        ax[1].axhline(y=climb_gradient, label=f"Climb gradient: Aspect ratio={WL_jet.aspect_ratios[A_idx]}\nEngine={WL_jet.n_engines[n_idx]}", linestyle=linestyles[i], color='tab:green')
     for i, climb_gradient in enumerate(jet_climb_gradient_OEI):
         A_idx = i % len(WL_jet.aspect_ratios)
         n_idx = i // len(WL_jet.aspect_ratios)
-        ax[1].plot(WL_jet.WS, climb_gradient, label=f"Climb gradient OEI: Aspect ratio={WL_jet.aspect_ratios[A_idx]}\nEngine={WL_jet.n_engines[n_idx]}", linestyle=linestyles[i], color='tab:olive')
+        ax[1].axhline(y=climb_gradient, label=f"Climb gradient OEI: Aspect ratio={WL_jet.aspect_ratios[A_idx]}\nEngine={WL_jet.n_engines[n_idx]}", linestyle=linestyles[i], color='tab:olive')
     # for i, cruise in enumerate(jet_cruise):
     #     ax[1].plot(WL_jet.WS, cruise, label=f"Cruise: Aspect ratio={WL_jet.aspect_ratios[i]}", linestyle=linestyles[i], color='tab:red')
     for i, cruise in enumerate(jet_cruise_high):
