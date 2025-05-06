@@ -7,9 +7,11 @@ from utils import Data
 
 class WingLoading:
     def __init__(self,
-                aircraft_data: Data
+                aircraft_data: Data,
+                mission_type: MissionType
                  ) -> None:
         self.aircraft_data = aircraft_data
+        self.mission_type = mission_type
         self.aircraft_type = AircraftType[self.aircraft_data.data['aircraft_type']]
         self.CLmax_clean = np.array([self.aircraft_data.data['CLmax_clean']])
         self.CLmax_takeoff = np.array([self.aircraft_data.data['CLmax_takeoff']])
@@ -57,14 +59,14 @@ class WingLoading:
         Cd = self.calculate_Cd()
         D = 0.5 * self.rho_water * (self.V_lof)**2 * Cd * self.hull_surface
         if self.aircraft_type == AircraftType.JET:
-            self.aircraft_data.data['take_off_thrust'] = D
-            self.aircraft_data.data['take_off_power'] = None
+            self.aircraft_data.data[self.mission_type.name.lower()]['take_off_thrust'] = D
+            self.aircraft_data.data[self.mission_type.name.lower()]['take_off_power'] = None
         elif self.aircraft_type == AircraftType.PROP or self.aircraft_type == AircraftType.MIXED:
-            self.aircraft_data.data['take_off_power'] = D * self.V_lof / self.prop_efficiency
-            self.aircraft_data.data['take_off_thrust'] = None
+            self.aircraft_data.data[self.mission_type.name.lower()]['take_off_power'] = D * self.V_lof / self.prop_efficiency
+            self.aircraft_data.data[self.mission_type.name.lower()]['take_off_thrust'] = None
         elif self.aircraft_type == AircraftType.MIXED:
-            self.aircraft_data.data['take_off_thrust'] = D
-            self.aircraft_data.data['take_off_power'] = D * self.V_lof / self.prop_efficiency
+            self.aircraft_data.data[self.mission_type.name.lower()]['take_off_thrust'] = D
+            self.aircraft_data.data[self.mission_type.name.lower()]['take_off_power'] = D * self.V_lof / self.prop_efficiency
         
 
         x = [CL*0.5*self.isa_cruise.rho * self.V_lof**2 for CL in CL_takeoff]
@@ -215,18 +217,23 @@ class WingLoading:
 
         return stall_req, stall_req_high, take_off_req, landing_req, cruise_req, cruise_high_req, climb_rate_req, climb_gradient_req, climb_gradient_req_OEI
 
-def main(aircraft_data: Data, PLOT_OUTPUT: bool=False):
+def main(aircraft_data: Data, 
+         mission_type: MissionType,
+         PLOT_OUTPUT: bool=False):
     plot_type = AircraftType[aircraft_data.data['aircraft_type']]
     prop = WingLoading(
         aircraft_data=aircraft_data,
+        mission_type=mission_type,
     )
 
     jet = WingLoading(
         aircraft_data=aircraft_data,
+        mission_type=mission_type,
     )
 
     mixed = WingLoading(
         aircraft_data=aircraft_data,
+        mission_type=mission_type,
     )
 
 
@@ -398,6 +405,7 @@ if __name__ == "__main__":
     aircraft_data = Data("design1.json")
     WP, TW, WS = main(
         aircraft_data=aircraft_data,
+        mission_type=MissionType.DESIGN,
         PLOT_OUTPUT=True
     )
 

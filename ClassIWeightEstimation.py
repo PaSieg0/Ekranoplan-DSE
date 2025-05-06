@@ -92,8 +92,8 @@ class ClassI:
         if self.mission_type == MissionType.FERRY:
             range_fraction = np.exp(-self.ferry_range*self.prop_consumption*9.81/self.prop_efficiency * (self.k*self.LD)**-1)
         elif self.mission_type == MissionType.ALTITUDE:
-            range_fraction_1 = np.exp(-self.range_WIG*self.prop_consumption*9.81/self.prop_efficiency * (self.k*self.LD)**-1)
-            range_fraction_2 = np.exp(-self.range_WOG*self.prop_consumption*9.81/self.prop_efficiency * (self.LD)**-1)
+            range_fraction_1 = np.exp(-self.altitude_range_WIG*self.prop_consumption*9.81/self.prop_efficiency * (self.k*self.LD)**-1)
+            range_fraction_2 = np.exp(-self.altitude_range_WOG*self.prop_consumption*9.81/self.prop_efficiency * (self.LD)**-1)
             range_fraction = range_fraction_1*range_fraction_2
 
         self.fuel_fractions[5] = range_fraction

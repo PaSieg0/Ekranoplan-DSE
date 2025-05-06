@@ -40,6 +40,7 @@ class AircraftIteration:
         self.prev_MTOM = self.class_i.MTOM
         self.MTOM_history = [self.prev_MTOM]
         self.WP, self.TW, self.WS = main(aircraft_data=self.aircraft_data,
+                                         mission_type=self.mission_type,
                                          PLOT_OUTPUT=False)
         self.S = self.class_i.MTOW / self.WS
         self.b = np.sqrt(self.S * self.class_i.A)
@@ -58,6 +59,7 @@ class AircraftIteration:
             self.class_i.main()
             self.curr_MTOM = self.class_i.MTOM
             self.WP, self.TW, self.WS = main(aircraft_data=self.aircraft_data,
+                                            mission_type=self.mission_type,
                                              PLOT_OUTPUT=False)
             stop_condition = abs((self.curr_MTOM - self.prev_MTOM) / self.prev_MTOM) < self.tolerance or self.iteration >= self.max_iterations
             if stop_condition:
@@ -79,39 +81,41 @@ class AircraftIteration:
         
             
     def update_attributes(self):
-        self.aircraft_data.data['MTOM'] = self.class_i.MTOM
-        self.aircraft_data.data['MTOW'] = self.class_i.MTOW
-        self.aircraft_data.data['OEW'] = self.class_i.OEW
-        self.aircraft_data.data['ZFW'] = self.class_i.ZFW
-        self.aircraft_data.data['EW'] = self.class_i.EW
-        self.aircraft_data.data['Fuel'] = self.class_i.fuel
-        self.aircraft_data.data['Fuel_used'] = self.class_i.fuel_used
-        self.aircraft_data.data['Fuel_reserve'] = self.class_i.fuel_res
-        self.aircraft_data.data['S'] = self.S
-        self.aircraft_data.data['aspect_ratio'] = self.class_i.A
-        self.aircraft_data.data['b'] = self.b
-        self.aircraft_data.data['MAC'] = self.S / self.b
-        self.aircraft_data.data['cruise_altitude'] = self.aircraft_data.data['cruise_altitude']
-        self.aircraft_data.data['h_b'] = self.h_b
-        self.aircraft_data.data['k'] = self.new_k
-        self.aircraft_data.data['WP'] = self.WP
-        self.aircraft_data.data['TW'] = self.TW
-        self.aircraft_data.data['WS'] = self.WS
+        mission_type = self.mission_type.name.lower()
+        self.aircraft_data.data[mission_type]['MTOM'] = self.class_i.MTOM
+        self.aircraft_data.data[mission_type]['MTOW'] = self.class_i.MTOW
+        self.aircraft_data.data[mission_type]['OEW'] = self.class_i.OEW
+        self.aircraft_data.data[mission_type]['ZFW'] = self.class_i.ZFW
+        self.aircraft_data.data[mission_type]['EW'] = self.class_i.EW
+        self.aircraft_data.data[mission_type]['Fuel'] = self.class_i.fuel
+        self.aircraft_data.data[mission_type]['Fuel_used'] = self.class_i.fuel_used
+        self.aircraft_data.data[mission_type]['Fuel_reserve'] = self.class_i.fuel_res
+        self.aircraft_data.data[mission_type]['S'] = self.S
+        self.aircraft_data.data[mission_type]['aspect_ratio'] = self.class_i.A
+        self.aircraft_data.data[mission_type]['b'] = self.b
+        self.aircraft_data.data[mission_type]['MAC'] = self.S / self.b
+        self.aircraft_data.data[mission_type]['cruise_altitude'] = self.aircraft_data.data['cruise_altitude']
+        self.aircraft_data.data[mission_type]['h_b'] = self.h_b
+        self.aircraft_data.data[mission_type]['k'] = self.new_k
+        self.aircraft_data.data[mission_type]['WP'] = self.WP
+        self.aircraft_data.data[mission_type]['TW'] = self.TW
+        self.aircraft_data.data[mission_type]['WS'] = self.WS
+
         if self.mission_type == MissionType.DESIGN:
-            self.aircraft_data.data['fuel_economy'] = self.class_i.fuel_used / 9.81 * 0.82 / 90 / (self.class_i.design_range / 1000)
-            self.aircraft_data.data['design_payload'] = self.class_i.design_payload
+            self.aircraft_data.data[mission_type]['fuel_economy'] = self.class_i.fuel_used / 9.81 * 0.82 / 90 / (self.class_i.design_range / 1000)
+            self.aircraft_data.data[mission_type]['design_payload'] = self.class_i.design_payload
         elif self.mission_type == MissionType.FERRY:
-            self.aircraft_data.data['fuel_economy'] = self.class_i.fuel_used / 9.81 * 0.82 / 90 / (self.class_i.ferry_range / 1000)
-            self.aircraft_data.data['ferry_payload'] = self.class_i.ferry_payload
+            self.aircraft_data.data[mission_type]['fuel_economy'] = self.class_i.fuel_used / 9.81 * 0.82 / 90 / (self.class_i.ferry_range / 1000)
+            self.aircraft_data.data[mission_type]['ferry_payload'] = self.class_i.ferry_payload
         elif self.mission_type == MissionType.ALTITUDE:
-            self.aircraft_data.data['fuel_economy'] = self.class_i.fuel_used / 9.81 * 0.82 / 90 / (self.class_i.altitude_range / 1000)
-            self.aircraft_data.data['altitude_payload'] = self.class_i.altitude_payload
+            self.aircraft_data.data[mission_type]['fuel_economy'] = self.class_i.fuel_used / 9.81 * 0.82 / 90 / ((self.class_i.altitude_range_WIG+self.class_i.altitude_range_WOG) / 1000)
+            self.aircraft_data.data[mission_type]['altitude_payload'] = self.class_i.altitude_payload
         
 
 if __name__=='__main__':
     iteration = AircraftIteration(
         aircraft_data=Data('design1.json'),
-        mission_type=MissionType.DESIGN
+        mission_type=MissionType.FERRY
     )
 
     iteration.run_iteration()
