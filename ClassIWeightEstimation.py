@@ -145,7 +145,7 @@ class ClassI:
         
     def main(self):
         self.calculate_Mff()
-        print(f"Fuel fractions: {self.fuel_fractions}")
+        # print(f"Fuel fractions: {self.fuel_fractions}")
         self.MTOW = (self.payload*9.81 + self.crew*9.81 + self.intersection) / (1 - self.slope - (1-self.Mff) - (1-self.Mff)*self.reserve_fuel - self.tfo)
         self.fuel_used = self.MTOW * (1-self.Mff)
         self.fuel_res = self.MTOW * (1-self.Mff) * self.reserve_fuel
@@ -188,8 +188,8 @@ if __name__=="__main__":
         k=k
     )
     class_i.main()
-    print(f"{class_i.aircraft_type.name}: {class_i.mission_type.name}")
-    print(f"MTOM: {class_i.MTOM:=,.2f} kg.")
+    # print(f"{class_i.aircraft_type.name}: {class_i.mission_type.name}")
+    # print(f"MTOM: {class_i.MTOM:=,.2f} kg.")
  
     
 
@@ -211,7 +211,8 @@ if __name__=="__main__":
                 k=k
             )
             class_i.main()
-            print(f"{class_i.aircraft_type.name}: {class_i.mission_type.name}")
-            print(f"MOTM: {class_i.MTOM:=,.2f} kg.")
+            # print(f"{class_i.aircraft_type.name}: {class_i.mission_type.name}")
+            # print(f"MOTM: {class_i.MTOM:=,.2f} kg.")
         else:
-            print("\n")
+            # print("\n")
+            pass

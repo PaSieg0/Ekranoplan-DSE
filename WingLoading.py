@@ -72,10 +72,10 @@ class WingLoading:
         CL_takeoff = self.CLmax_takeoff/1.21
         Cd = self.calculate_Cd()
         D = 0.5 * self.rho_water * (self.V_lof)**2 * Cd * self.hull_surface
-        if self.aircraft_type == AircraftType.JET:
-            print(f"Thrust shall be at least {D:=,.0f} N.")
-        if self.aircraft_type == AircraftType.PROP or self.aircraft_type == AircraftType.MIXED:
-            print(f"Power shall be at least {D*self.V_lof:=,.0f} W.")
+        # if self.aircraft_type == AircraftType.JET:
+        #     print(f"Thrust shall be at least {D:=,.0f} N.")
+        # if self.aircraft_type == AircraftType.PROP or self.aircraft_type == AircraftType.MIXED:
+        #     print(f"Power shall be at least {D*self.V_lof:=,.0f} W.")
 
         x = [CL*0.5*self.isa_cruise.rho * self.V_lof**2 for CL in CL_takeoff]
         return x
@@ -183,10 +183,10 @@ class WingLoading:
 
             if self.aircraft_type == AircraftType.JET:
                 self.TW = max(intersections)
-                print(f"T/W shall be at least {self.TW}")
+                # print(f"T/W shall be at least {self.TW}")
             elif self.aircraft_type == AircraftType.PROP:
                 self.WP = min(intersections)
-                print(f"W/P shall be at least {self.WP}")
+                # print(f"W/P shall be at least {self.WP}")
 
         elif self.aircraft_type == AircraftType.MIXED:
             all_vertical_lines = [take_off_req, landing_req, stall_req, stall_req_high]
@@ -213,8 +213,8 @@ class WingLoading:
             intersections_jet.append(min(climb_gradient_req))
             self.TW = max(intersections_jet)
             self.WP = max(intersections_prop)
-            print(f"T/W shall be at least {max(intersections_jet)}")
-            print(f"W/P shall be at least {min(intersections_prop)}")
+            # print(f"T/W shall be at least {max(intersections_jet)}")
+            # print(f"W/P shall be at least {min(intersections_prop)}")
                 
 
         return stall_req, stall_req_high, take_off_req, landing_req, cruise_req, cruise_high_req, climb_rate_req, climb_gradient_req, climb_gradient_req_OEI
