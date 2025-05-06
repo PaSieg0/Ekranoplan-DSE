@@ -184,11 +184,11 @@ def plot_A_h(
     ranges_nmi = list(range(2000, 2900, 100))
     ranges_m = [r * 1.852 * 1000 for r in ranges_nmi]
 
-    markers = ['o', 's', '^']                    # Circle, square, triangle
-    colors = ['tab:blue', 'tab:green', 'tab:orange']         # One for each h
+    markers = ['o', 's', '^', 'x']
+    colors = ['tab:blue', 'tab:green', 'tab:orange', 'tab:red', 'tab:purple']
 
-    altitudes = list(np.arange(4, 6, 1))         # h = 3, 4, 5
-    aspect_ratios = list(range(9, 11, 1))        # A = 8, 9, 10
+    altitudes = list(np.arange(3, 6, 1))
+    aspect_ratios = list(range(9, 13, 1))
 
     for h_index, h in enumerate(altitudes):
         color = colors[h_index % len(colors)]
@@ -258,7 +258,7 @@ if __name__ == "__main__":
     prop_efficiency = 0.82
     Cd0 = 0.02
     e = 0.85
-    A = 10
+    A = 11
     tfo = 0.001
     reserve_fuel = 0
     k = 1
@@ -271,7 +271,7 @@ if __name__ == "__main__":
     stall_speed_clean=150*0.5144
     stall_speed_takeoff=120*0.5144
     stall_speed_landing=100*0.5144
-    cruise_altitude=5
+    cruise_altitude=3
     high_altitude=10000*0.3048
     L=40
     r=3
@@ -335,31 +335,31 @@ if __name__ == "__main__":
         rho_water=rho_water,
         kinematic_viscosity=kinematic_viscosity
     )
-#     plot_A_h(
-#     aircraft_type=aircraft_type,
-#     mission_type=mission_type,
-#     cruise_speed=cruise_speed,
-#     jet_consumption=jet_consumption,
-#     prop_consumption=prop_consumption,
-#     prop_efficiency=prop_efficiency,
-#     Cd0=Cd0,
-#     e=e,
-#     A=A,
-#     tfo=tfo,
-#     k=k,
-#     n_engines=n_engines,
-#     reserve_fuel=reserve_fuel,
-#     CLmax_clean=CLmax_clean,
-#     CLmax_takeoff=CLmax_takeoff,
-#     CLmax_landing=CLmax_landing,
-#     aspect_ratios=[A],
-#     stall_speed_clean=stall_speed_clean,
-#     stall_speed_takeoff=stall_speed_takeoff,
-#     stall_speed_landing=stall_speed_landing,
-#     cruise_altitude=cruise_altitude,
-#     high_altitude=high_altitude,
-#     hull_surface=hull_surface,
-#     L=L,
-#     rho_water=rho_water,
-#     kinematic_viscosity=kinematic_viscosity
-# )
+    plot_A_h(
+    aircraft_type=aircraft_type,
+    mission_type=mission_type,
+    cruise_speed=cruise_speed,
+    jet_consumption=jet_consumption,
+    prop_consumption=prop_consumption,
+    prop_efficiency=prop_efficiency,
+    Cd0=Cd0,
+    e=e,
+    A=A,
+    tfo=tfo,
+    k=k,
+    n_engines=n_engines,
+    reserve_fuel=reserve_fuel,
+    CLmax_clean=CLmax_clean,
+    CLmax_takeoff=CLmax_takeoff,
+    CLmax_landing=CLmax_landing,
+    aspect_ratios=[A],
+    stall_speed_clean=stall_speed_clean,
+    stall_speed_takeoff=stall_speed_takeoff,
+    stall_speed_landing=stall_speed_landing,
+    cruise_altitude=cruise_altitude,
+    high_altitude=high_altitude,
+    hull_surface=hull_surface,
+    L=L,
+    rho_water=rho_water,
+    kinematic_viscosity=kinematic_viscosity
+)

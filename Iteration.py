@@ -114,7 +114,7 @@ def iteration(aircraft_type,
         h_b = cruise_altitude/b
         A_ratio = Ainf_Ah(h_b)
         new_k = np.sqrt(1/A_ratio)
-        fuel_economy = CLASS_I.fuel_used/9.81*0.82/90/(2800*1.852)
+        fuel_economy = CLASS_I.fuel_used/9.81*0.82/90/(Range/1000)
         print(f"S={S}")
         print(f"b={b}")
         print(f"h_b={h_b}")
@@ -166,12 +166,10 @@ def iteration(aircraft_type,
 
         diff_ratio = abs((curr_MTOM - prev_MTOM) / prev_MTOM)
         print(f"Iteration {iteration}, MTOM= {curr_MTOM}: ΔMTOM ratio = {diff_ratio:.5f}")
-        print(f"k: {new_k}")
 
         if diff_ratio < tolerance or iteration >= max_iterations:
             print(f"Final MTOM: {CLASS_I.MTOM:=,.2f} kg")
-            print(f"Final fuel economy: {CLASS_I.fuel_used/9.81*0.82/90/(2800*1.852):.4f} L/ton/km")
-            print()
+            print(f"Final fuel economy: {fuel_economy:.4f} L/ton/km")
             print()
             print(f"Final MTOW: {CLASS_I.MTOW:=,.2f} N")
             print(f"Final OEW: {CLASS_I.OEW/9.81:=,.2f} kg")
@@ -225,7 +223,7 @@ def iteration(aircraft_type,
 
 if __name__=='__main__':
     aircraft_type = AircraftType.PROP
-    mission_type = MissionType.ALTITUDE
+    mission_type = MissionType.DESIGN
     cruise_speed = 225*0.51444
     jet_consumption = 19e-6
     prop_consumption = 90e-9
