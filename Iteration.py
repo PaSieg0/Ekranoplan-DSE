@@ -77,7 +77,6 @@ class AircraftIteration:
             self.aircraft_data.data['k'] = self.new_k
             
 
-            print(f"Iteration {self.iteration} | MTOM= {self.prev_MTOM:=,.0f} kg | ΔMTOM ratio = {abs((self.curr_MTOM - self.prev_MTOM) / self.prev_MTOM):.8f}")
         
             
     def update_attributes(self):

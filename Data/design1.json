@@ -1,7 +1,6 @@
 {
     "aircraft_type": "MIXED",
     "cruise_altitude": 5,
-    "aspect_ratio": 10,
     "design_range": 3704000,
     "design_payload": 90000,
     "design_crew": 425,
@@ -18,6 +17,7 @@
     "prop_efficiency": 0.82,
     "Cd0": 0.02,
     "oswald_factor": 0.85,
+    "aspect_ratio": 10,
     "Cl_alpha": 5.0,
     "tfo": 0.001,
     "reserve_fuel": 0,
