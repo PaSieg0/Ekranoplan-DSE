@@ -17,6 +17,7 @@
     "Cd0": 0.02,
     "oswald_factor": 0.85,
     "aspect_ratio": 8,
+    "Cl_alpha": 5.0,
     "tfo": 0.001,
     "reserve_fuel": 0,
     "k": 1.5688095017271526,
