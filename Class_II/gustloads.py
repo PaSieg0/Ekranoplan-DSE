@@ -40,12 +40,12 @@ def point_determination(aircraft_data, h):
     CL_alpha = aircraft_data.data["Cl_alpha"] # rad/s, TBD aerodynamics   
     w = aircraft_data.data["WS"] # N/m^2
     w = w*2.20462262/(g*3.2808399**2) # lb/ft^2
-    b = np.sqrt(aircraft_data.data["A"]*S)
+    b = np.sqrt(aircraft_data.data["aspect_ratio"]*S)
     chord = S/b # m
     mu = Calculate_mu(w, rho*0.0019403203319541, chord, CL_alpha, g)
     K_g = Calculate_K_g(mu)
     V_b = Calculate_V_b(aircraft_data.data["stall_speed_clean"], K_g, U_ref, aircraft_data.data["cruise_speed"], CL_alpha, w)
-    dive_speed = 300*0.51444 # m/s, TBD
+    dive_speed = aircraft_data.data["cruise_speed"] / 0.8 # m/s, TBD
     V = [[float(V_b), U_ref], [aircraft_data.data["cruise_speed"], U_ref], [dive_speed, U_ref/2]]
 
     for i, (V_eas, U_gust) in enumerate(V):
@@ -97,9 +97,6 @@ def plot_gust_load_diagrams(V):
     plt.plot([max_V, max_V],
              [neg_n_at_maxV, pos_n_at_maxV],
              color="black", lw=1.5)
-
-    # centre-line n = 1 g
-    plt.axhline(1.0, color="black", ls="--", lw=0.8)
 
     plt.grid(True, which="both", ls=":")
     plt.legend()
