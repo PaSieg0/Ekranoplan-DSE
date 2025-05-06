@@ -211,7 +211,7 @@ class WingLoading:
                     y_at_leftmost = np.interp(self.max_WS, self.WS, curve)
                     intersections_jet.append(y_at_leftmost)
 
-            intersections_jet.append(min([min(climb_gradient_req),min(climb_gradient_req_OEI)]))
+            intersections_jet.append(max([max(climb_gradient_req),max(climb_gradient_req_OEI)]))
             self.TW = max(intersections_jet)
             self.WP = max(intersections_prop)
             print(f"T/W shall be at least {max(intersections_jet)}")
