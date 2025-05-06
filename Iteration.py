@@ -222,7 +222,7 @@ def iteration(aircraft_type,
 
 
 if __name__=='__main__':
-    aircraft_type = AircraftType.MIXED
+    aircraft_type = AircraftType.PROP
     mission_type = MissionType.DESIGN
     cruise_speed = 225*0.51444
     jet_consumption = 19e-6
