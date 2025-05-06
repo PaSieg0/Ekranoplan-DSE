@@ -69,7 +69,7 @@ def iteration(aircraft_type,
     CLASS_I.main()
     
     prev_MTOM = CLASS_I.MTOM
-    print(f"Initial MTOM: {prev_MTOM:=,.2f} kg")
+    # print(f"Initial MTOM: {prev_MTOM:=,.2f} kg")
 
     tolerance = 0.0001
     max_iterations = 10
@@ -103,7 +103,7 @@ def iteration(aircraft_type,
     MTOM_history = []
     MTOM_history.append(prev_MTOM)
 
-    print(f"Initial MTOM: {CLASS_I.MTOM:=,.2f} kg")
+    # print(f"Initial MTOM: {CLASS_I.MTOM:=,.2f} kg")
 
 
     while True:
@@ -115,11 +115,11 @@ def iteration(aircraft_type,
         A_ratio = Ainf_Ah(h_b)
         new_k = np.sqrt(1/A_ratio)
         fuel_economy = CLASS_I.fuel_used/9.81*0.82/90/(Range/1000)
-        print(f"S={S}")
-        print(f"b={b}")
-        print(f"h_b={h_b}")
-        print(f"A_ratio={A_ratio}")
-        print(f"new_k={new_k}")
+        # print(f"S={S}")
+        # print(f"b={b}")
+        # print(f"h_b={h_b}")
+        # print(f"A_ratio={A_ratio}")
+        # print(f"new_k={new_k}")
 
         CLASS_I = ClassI(
             aircraft_type=aircraft_type,
@@ -165,34 +165,34 @@ def iteration(aircraft_type,
         )
 
         diff_ratio = abs((curr_MTOM - prev_MTOM) / prev_MTOM)
-        print(f"Iteration {iteration}, MTOM= {curr_MTOM}: ΔMTOM ratio = {diff_ratio:.5f}")
+        # print(f"Iteration {iteration}, MTOM= {curr_MTOM}: ΔMTOM ratio = {diff_ratio:.5f}")
 
         if diff_ratio < tolerance or iteration >= max_iterations:
-            print(f"Final MTOM: {CLASS_I.MTOM:=,.2f} kg")
-            print(f"Final fuel economy: {fuel_economy:.4f} L/ton/km")
-            print()
-            print(f"Final MTOW: {CLASS_I.MTOW:=,.2f} N")
-            print(f"Final OEW: {CLASS_I.OEW/9.81:=,.2f} kg")
-            print(f"Final ZFW: {CLASS_I.ZFW/9.81:=,.2f} kg")
-            print(f"Final EW: {CLASS_I.EW/9.81:=,.2f} kg")
-            print(f"Final Payload: {CLASS_I.payload:=,.2f} kg")
-            print(f"Final Fuel: {CLASS_I.fuel/9.81:=,.2f} kg")
-            print(f"Final Fuel used: {CLASS_I.fuel_used/9.81:=,.2f} kg")
-            print(f"Final Fuel reserve: {CLASS_I.fuel_res/9.81:=,.2f} kg")
+            # print(f"Final MTOM: {CLASS_I.MTOM:=,.2f} kg")
+            # print(f"Final fuel economy: {fuel_economy:.4f} L/ton/km")
+            # print()
+            # print(f"Final MTOW: {CLASS_I.MTOW:=,.2f} N")
+            # print(f"Final OEW: {CLASS_I.OEW/9.81:=,.2f} kg")
+            # print(f"Final ZFW: {CLASS_I.ZFW/9.81:=,.2f} kg")
+            # print(f"Final EW: {CLASS_I.EW/9.81:=,.2f} kg")
+            # print(f"Final Payload: {CLASS_I.payload:=,.2f} kg")
+            # print(f"Final Fuel: {CLASS_I.fuel/9.81:=,.2f} kg")
+            # print(f"Final Fuel used: {CLASS_I.fuel_used/9.81:=,.2f} kg")
+            # print(f"Final Fuel reserve: {CLASS_I.fuel_res/9.81:=,.2f} kg")
 
 
-            print(f"Final S: {S:=,.2f} m^2")
-            print(f"Final A: {A:=,.2f}")
-            print(f"Final b: {b:=,.2f} m")
-            print(f"Final cruise_altitude: {cruise_altitude:=,.2f} m")
-            print(f"Final h_b: {h_b:=,.2f}")
-            print(f"Final k: {new_k:=,.2f}")
-            if aircraft_type == AircraftType.JET or aircraft_type == AircraftType.MIXED:
-                print(f"Final TW: {TW:=,.2f} ")
-                print(f"Final T: {TW*CLASS_I.MTOW:=,.2f} N")
-            if aircraft_type == AircraftType.PROP or aircraft_type == AircraftType.MIXED:
-                print(f"Final WP: {WP:=,.2f} ")
-                print(f"Final P: {CLASS_I.MTOW/WP:=,.2f} ")
+            # print(f"Final S: {S:=,.2f} m^2")
+            # print(f"Final A: {A:=,.2f}")
+            # print(f"Final b: {b:=,.2f} m")
+            # print(f"Final cruise_altitude: {cruise_altitude:=,.2f} m")
+            # print(f"Final h_b: {h_b:=,.2f}")
+            # print(f"Final k: {new_k:=,.2f}")
+            # if aircraft_type == AircraftType.JET or aircraft_type == AircraftType.MIXED:
+            #     print(f"Final TW: {TW:=,.2f} ")
+            #     print(f"Final T: {TW*CLASS_I.MTOW:=,.2f} N")
+            # if aircraft_type == AircraftType.PROP or aircraft_type == AircraftType.MIXED:
+            #     print(f"Final WP: {WP:=,.2f} ")
+            #     print(f"Final P: {CLASS_I.MTOW/WP:=,.2f} ")
             break
 
         prev_MTOM = curr_MTOM
@@ -206,11 +206,11 @@ def iteration(aircraft_type,
     def take_off_requirement():
         CL_takeoff = k * np.array(CLmax_takeoff)/1.21
         Cd = calculate_Cd()
-        print(f"Cd: {Cd:.4f}")
+        # print(f"Cd: {Cd:.4f}")
         D = 0.5 * rho_water * (1.05*stall_speed_takeoff)**2 * Cd * hull_surface
 
-        print(f"Thrust shall be at least {D:=,.0f} N.")
-        print(f"Power shall be at least {D*1.05*stall_speed_takeoff:=,.0f} W.")
+        # print(f"Thrust shall be at least {D:=,.0f} N.")
+        # print(f"Power shall be at least {D*1.05*stall_speed_takeoff:=,.0f} W.")
         
 
         x = [CL*0.5*ISA(cruise_altitude).rho * (1.05*stall_speed_takeoff)**2 for CL in CL_takeoff]
@@ -251,7 +251,7 @@ if __name__=='__main__':
     rho_water=1000.0
     kinematic_viscosity=1.002e-6
     final_MTOMS = []
-    fuel_economy, MTOM_history, final_S = iteration(
+    fuel_economy, MTOM_history, S_final = iteration(
                         aircraft_type=aircraft_type,
                         mission_type=mission_type,
                         Range=2800*1.852*1000,

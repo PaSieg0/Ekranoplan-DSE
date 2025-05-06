@@ -1,5 +1,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
+
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 import Iteration
 from ClassIWeightEstimation import MissionType, AircraftType
 
@@ -7,17 +12,21 @@ def calculate_n(rho, CL, W, S, V):
     L = CL*1/2*rho*V**2*S
     return L/W
 
-def calculante_n_limits(rho, CLmax, W, S, V, nmax, nmin):
-    n=calculate_n(rho, CLmax, W, S, V)
-    if n > nmax:
-        return nmax
-    elif n < nmin:
-        return nmin
+def calculante_n_limits(rho, CLmax, W, S, V, nmax, nmin, V_cruise, V_dive):
+    if V < V_cruise or CLmax > 0:
+        n=calculate_n(rho, CLmax, W, S, V)
+        if n > nmax:
+            return nmax
+        elif n < nmin:
+            return nmin
+        else:
+            return n
     else:
-        return n
+        return nmin + (0 - nmin) * (V - V_cruise) / (V_dive - V_cruise)
     
 def max_n(W):
-    n = 2.1 + (24000/(W + 10000))
+    W = W / 4.44822  # Convert weight from newtons to pounds
+    n = 2.1 + (24000 / (W + 10000))
     if n < 2.5:
         return 2.5
     elif n > 3.8:
@@ -28,17 +37,35 @@ def max_n(W):
 def min_n():
     return -1.0
 
-def plot_load_diagram(rho, CLmax, W, S, V, nmax, nmin):
-    V = np.linspace(0, 100, 100)  # Define a range of velocities
-    n = [calculate_n(rho, CLmax, W, S, v) for v in V]  # Calculate load factor for each velocity
-    plt.plot(V, n)
-    plt.axhline(y=nmax, color='r', linestyle='--', label='nmax')
-    plt.axhline(y=nmin, color='b', linestyle='--', label='nmin')
-    plt.xlabel('Velocity (V) [m/s]')
-    plt.ylabel('Load Factor (n)')
-    plt.title('Load Diagram')
-    plt.legend()
-    plt.grid()
+def plot_load_diagram(rho, CLmax, W, S, nmax, nmin, V_cruise, V_dive):
+    V_range = np.arange(0, V_dive, 0.1)  # Define a range of velocities
+    n_positive = [calculante_n_limits(rho, CLmax, W, S, V, nmax, nmin, V_cruise, V_dive) for V in V_range]  # Calculate positive load factor for each velocity
+    n_negative = [calculante_n_limits(rho, -CLmax, W, S, V, nmax, nmin, V_cruise, V_dive) for V in V_range]  # Calculate negative load factor for each velocity
+    plt.figure(figsize=(10, 6))  # Set a larger figure size for better readability
+
+    # Plot positive and negative load factors
+    plt.plot(V_range, n_positive, color='blue', label='Positive Load Factor')
+    plt.plot(V_range, n_negative, color='orange', label='Negative Load Factor')
+
+    # Highlight dive speed and cruise speed
+    plt.axvline(x=V_dive, color='red', linestyle='-', label='Dive Speed', linewidth=1.5)
+    plt.axvline(x=V_cruise, color='green', linestyle='-', label='Cruise Speed', linewidth=1.5)
+
+    # Add horizontal lines for key load factors
+    plt.axhline(y=0, color='black', linestyle='--', label='Zero Load Factor', linewidth=1)
+    # plt.axhline(y=1, color='cyan', linestyle='--', label='Load Factor = 1', linewidth=1)
+    # plt.axhline(y=nmax, color='purple', linestyle='--', label=f'Max Load Factor (nmax = {nmax:.2f})', linewidth=1)
+    # plt.axhline(y=nmin, color='brown', linestyle='--', label=f'Min Load Factor (nmin = {nmin:.2f})', linewidth=1)
+
+    # Add labels, title, and legend
+    plt.xlabel('Velocity (V) [m/s]', fontsize=12)
+    plt.ylabel('Load Factor (n)', fontsize=12)
+    plt.title('Load Diagram', fontsize=14, fontweight='bold')
+    plt.legend(loc='best', fontsize=10)
+    plt.grid(True, linestyle='--', alpha=0.7)
+
+    # Show the plot
+    plt.tight_layout()  # Adjust layout to prevent overlap
     plt.show()
 
 if __name__ == "__main__":
@@ -57,7 +84,7 @@ if __name__ == "__main__":
     k = 1
     n_engines = [4, 6, 8, 10]
 
-    CLmax_clean=[1.5, 1.6, 1.7]
+    CLmax_clean=[1.5]
     CLmax_takeoff=[1.6, 1.8, 2.0, 2.2]
     CLmax_landing=[1.8, 1.9, 2.2]
     aspect_ratios=[A]
@@ -100,17 +127,19 @@ if __name__ == "__main__":
                         L=L,
                         rho_water=rho_water,
                         kinematic_viscosity=kinematic_viscosity
-        )
+                        )
 
     
     
     # Example usage
     rho = 1.225  # kg/m^3 (air density at sea level)
-    CLmax = 2.0  # Maximum lift coefficient
-    W = MTOM_history[-1]  # Weight in newtons (MTOW from ClassIWeightEstimation)
+    CLmax = 1.5  # Maximum lift coefficient
+    W = MTOM_history[-1] * 9.81  # Weight in N
     S = S_final  # Wing area in m^2
-    V = 50  # Velocity in m/s
     nmax = max_n(W)  # Maximum load factor
     nmin = min_n()  # Minimum load factor
+    dive_speed = 300*0.51444  # Dive speed in m/s (example value)
 
-    plot_load_diagram(rho, CLmax, W, S, V, nmax, nmin)
+    print(f"MTOM = {W/9.81/1000} kg", f"\nS = {S} m^2")
+
+    plot_load_diagram(rho, CLmax, W, S, nmax, nmin, V_cruise=cruise_speed, V_dive=dive_speed)
