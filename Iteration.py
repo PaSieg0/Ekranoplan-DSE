@@ -46,8 +46,10 @@ class AircraftIteration:
         self.h_b = self.aircraft_data.data['cruise_altitude'] / self.b
         self.A_ratio = Ainf_Ah(self.h_b)
         self.new_k = np.sqrt(1 / self.A_ratio)
+
+
         
-    def run_iteration(self):
+    def run_iteration(self) -> list[float]:
         self.get_initial_conditions()
         while True:
             self.iteration += 1
@@ -61,7 +63,6 @@ class AircraftIteration:
             if stop_condition:
                 self.update_attributes()
                 self.aircraft_data.save_design('design1.json')
-                break
 
             self.prev_MTOM = self.curr_MTOM
             self.MTOM_history.append(self.curr_MTOM)
@@ -73,8 +74,8 @@ class AircraftIteration:
             self.aircraft_data.data['k'] = self.new_k
             
 
-            print(f"Iteration {self.iteration} | MTOM= {self.prev_MTOM:=,.0f} kg | ΔMTOM ratio = {abs((self.curr_MTOM - self.prev_MTOM) / self.prev_MTOM):.5f}")
-
+            print(f"Iteration {self.iteration} | MTOM= {self.prev_MTOM:=,.0f} kg | ΔMTOM ratio = {abs((self.curr_MTOM - self.prev_MTOM) / self.prev_MTOM):.8f}")
+        
             
     def update_attributes(self):
         self.aircraft_data.data['MTOM'] = self.class_i.MTOM
@@ -86,7 +87,7 @@ class AircraftIteration:
         self.aircraft_data.data['Fuel_used'] = self.class_i.fuel_used
         self.aircraft_data.data['Fuel_reserve'] = self.class_i.fuel_res
         self.aircraft_data.data['S'] = self.S
-        self.aircraft_data.data['A'] = self.class_i.A
+        self.aircraft_data.data['aspect_ratio'] = self.class_i.A
         self.aircraft_data.data['b'] = self.b
         self.aircraft_data.data['MAC'] = self.S / self.b
         self.aircraft_data.data['cruise_altitude'] = self.aircraft_data.data['cruise_altitude']

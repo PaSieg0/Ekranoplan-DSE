@@ -14,7 +14,7 @@ class WingLoading:
         self.CLmax_clean = np.array([self.aircraft_data.data['CLmax_clean']])
         self.CLmax_takeoff = np.array([self.aircraft_data.data['CLmax_takeoff']])
         self.CLmax_landing = np.array([self.aircraft_data.data['CLmax_landing']])
-        self.aspect_ratios = np.array([self.aircraft_data.data['aspect_ratios']])
+        self.aspect_ratios = np.array([self.aircraft_data.data['aspect_ratio']])
         self.Cd0 = self.aircraft_data.data['Cd0']
         self.e = self.aircraft_data.data['oswald_factor']
         self.k = self.aircraft_data.data['k']
