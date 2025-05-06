@@ -18,12 +18,13 @@ class MissionType(Enum):
 class ClassI:
     def __init__(self,
                  aircraft_data: Data,
+                 mission_type: MissionType,
                  reference_aircraft_path: str='ReferenceAircraft.xlsx'
                  ) -> None:
         self.aircraft_data = aircraft_data
 
         self.aircraft_type = AircraftType[self.aircraft_data.data['aircraft_type']]
-        self.mission_type = MissionType[self.aircraft_data.data['mission_type']]
+        self.mission_type = mission_type
 
         self.design_range = self.aircraft_data.data['design_range']
         self.design_payload = self.aircraft_data.data['design_payload']
@@ -73,11 +74,13 @@ class ClassI:
 
     def update_fuel_fractions_jet(self) -> None:
         self.LD = self.calculate_LD()
-        if self.mission_type == MissionType.DESIGN or self.mission_type == MissionType.FERRY:
-            range_fraction = np.exp(-self.range*self.jet_consumption*9.81/self.cruise_speed * (self.k*self.LD)**-1)
+        if self.mission_type == MissionType.DESIGN:
+            range_fraction = np.exp(-self.design_range*self.jet_consumption*9.81/self.cruise_speed * (self.k*self.LD)**-1)
+        elif self.mission_type == MissionType.FERRY:
+            range_fraction = np.exp(-self.ferry_range*self.jet_consumption*9.81/self.cruise_speed * (self.k*self.LD)**-1)
         elif self.mission_type == MissionType.ALTITUDE:
-            range_fraction_1 = np.exp(-self.range_WIG*self.jet_consumption*9.81/self.cruise_speed * (self.k*self.LD)**-1)
-            range_fraction_2 = np.exp(-self.range_WOG*self.jet_consumption*9.81/self.cruise_speed * (self.LD)**-1)
+            range_fraction_1 = np.exp(-self.altitude_range_WIG*self.jet_consumption*9.81/self.cruise_speed * (self.k*self.LD)**-1)
+            range_fraction_2 = np.exp(-self.altitude_range_WOG*self.jet_consumption*9.81/self.cruise_speed * (self.LD)**-1)
             range_fraction = range_fraction_1*range_fraction_2
 
         self.fuel_fractions[5] = range_fraction
@@ -180,5 +183,9 @@ class ClassI:
 if __name__=="__main__":
     data = Data("design1.json")
     
-    classI = ClassI(data)
+    classI = ClassI(
+        aircraft_data=data,
+        mission_type=MissionType.DESIGN
+    )
     classI.main()
+    print(classI.MTOM)
