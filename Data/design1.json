@@ -1,5 +1,5 @@
 {
-    "aircraft_type": "PROP",
+    "aircraft_type": "MIXED",
     "mission_type": "DESIGN",
     "design_range": 3704000,
     "design_payload": 90000,
