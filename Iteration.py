@@ -63,6 +63,7 @@ class AircraftIteration:
             if stop_condition:
                 self.update_attributes()
                 self.aircraft_data.save_design('design1.json')
+                break
 
             self.prev_MTOM = self.curr_MTOM
             self.MTOM_history.append(self.curr_MTOM)

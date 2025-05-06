@@ -100,11 +100,13 @@ class ClassI:
 
     def update_fuel_fractions_mixed(self) -> None:
         self.LD = self.calculate_LD()
-        if self.mission_type == MissionType.DESIGN or self.mission_type == MissionType.FERRY:
-            range_fraction = np.exp(-self.range*self.prop_consumption*9.81/self.prop_efficiency * (self.k*self.LD)**-1)
+        if self.mission_type == MissionType.DESIGN:
+            range_fraction = np.exp(-self.design_range*self.prop_consumption*9.81/self.prop_efficiency * (self.k*self.LD)**-1)
+        elif self.mission_type == MissionType.FERRY:
+            range_fraction = np.exp(-self.ferry_range*self.prop_consumption*9.81/self.prop_efficiency * (self.k*self.LD)**-1)
         elif self.mission_type == MissionType.ALTITUDE:
-            range_fraction_1 = np.exp(-self.range_WIG*self.prop_consumption*9.81/self.prop_efficiency * (self.k*self.LD)**-1)
-            range_fraction_2 = np.exp(-self.range_WOG*self.jet_consumption*9.81/self.cruise_speed * (self.LD)**-1)
+            range_fraction_1 = np.exp(-self.altitude_range_WIG*self.prop_consumption*9.81/self.prop_efficiency * (self.k*self.LD)**-1)
+            range_fraction_2 = np.exp(-self.altitude_range_WOG*self.jet_consumption*9.81/self.cruise_speed * (self.LD)**-1)
             range_fraction = range_fraction_1*range_fraction_2
 
         self.fuel_fractions[5] = range_fraction
