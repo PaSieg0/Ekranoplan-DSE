@@ -8,6 +8,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import Iteration
 from ClassIWeightEstimation import MissionType, AircraftType
 from utils import Data
+from ISA_Class import ISA
 
 def calculate_n(rho, CL, W, S, V):
     L = CL*1/2*rho*V**2*S
@@ -39,7 +40,7 @@ def min_n():
     return -1.0
 
 def plot_load_diagram(aircraft_data):
-    rho = 1.225  # kg/m^3 (air density at sea level)
+    rho = ISA(0).rho  # kg/m^3 (air density at sea level)
     g = aircraft_data.data["gravitational_acceleration"]  # m/s^2 (acceleration due to gravity)
     CLmax_clean = aircraft_data.data["CLmax_clean"]  # Maximum lift coefficient
     CLmax_flapped = aircraft_data.data["CLmax_landing"]  # Maximum lift coefficient during landing
@@ -50,7 +51,6 @@ def plot_load_diagram(aircraft_data):
     V_cruise = aircraft_data.data["cruise_speed"]  # Cruise speed in m/s
     V_dive = aircraft_data.data["cruise_speed"]/0.8  # Minimum dive speed as stipulated by CS25
     V_flapped = 80  # Flapped speed as stipulated by CS25
-
 
     rho, CLmax_clean, CLmax_flapped, W, S, nmax, nmin, V_cruise, V_dive, V_flapped
     V_range = np.arange(0, V_dive, 0.1)  # Define a range of velocities
