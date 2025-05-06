@@ -218,7 +218,7 @@ def iteration(aircraft_type,
     
     take_off_requirement()
 
-    return fuel_economy, MTOM_history
+    return fuel_economy, MTOM_history, S
 
 
 if __name__=='__main__':
@@ -251,7 +251,7 @@ if __name__=='__main__':
     rho_water=1000.0
     kinematic_viscosity=1.002e-6
     final_MTOMS = []
-    fuel_economy, MTOM_history = iteration(
+    fuel_economy, MTOM_history, final_S = iteration(
                         aircraft_type=aircraft_type,
                         mission_type=mission_type,
                         Range=2800*1.852*1000,
