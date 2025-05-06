@@ -56,10 +56,16 @@ class WingLoading:
         CL_takeoff = self.CLmax_takeoff/1.21
         Cd = self.calculate_Cd()
         D = 0.5 * self.rho_water * (self.V_lof)**2 * Cd * self.hull_surface
-        # if self.aircraft_type == AircraftType.JET:
-        #     print(f"Thrust shall be at least {D:=,.0f} N.")
-        # if self.aircraft_type == AircraftType.PROP or self.aircraft_type == AircraftType.MIXED:
-        #     print(f"Power shall be at least {D*self.V_lof:=,.0f} W.")
+        if self.aircraft_type == AircraftType.JET:
+            self.aircraft_data.data['take_off_thrust'] = D
+            self.aircraft_data.data['take_off_power'] = None
+        elif self.aircraft_type == AircraftType.PROP or self.aircraft_type == AircraftType.MIXED:
+            self.aircraft_data.data['take_off_power'] = D * self.V_lof / self.prop_efficiency
+            self.aircraft_data.data['take_off_thrust'] = None
+        elif self.aircraft_type == AircraftType.MIXED:
+            self.aircraft_data.data['take_off_thrust'] = D
+            self.aircraft_data.data['take_off_power'] = D * self.V_lof / self.prop_efficiency
+        
 
         x = [CL*0.5*self.isa_cruise.rho * self.V_lof**2 for CL in CL_takeoff]
         return x
