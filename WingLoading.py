@@ -148,7 +148,7 @@ class WingLoading:
         climb_gradient_req = self.climb_gradient_requirement()
         climb_gradient_req_OEI = self.climb_gradient_requirement_OEI()
 
-        if self.aircraft_type == AircraftType.JET or self.aircraft_type == AircraftType.PROP:
+        if self.aircraft_type == AircraftType.PROP:
             all_vertical_lines = [take_off_req, landing_req, stall_req, stall_req_high]
             self.max_WS = float('inf')
             for values in all_vertical_lines:
@@ -172,16 +172,17 @@ class WingLoading:
                 self.WP = min(intersections)
                 # print(f"W/P shall be at least {self.WP}")
 
-        elif self.aircraft_type == AircraftType.MIXED:
+        else:
             all_vertical_lines = [take_off_req, landing_req, stall_req, stall_req_high]
             self.max_WS = float('inf')
+            
             for values in all_vertical_lines:
                 maxx = np.min(values)
                 if maxx < self.max_WS:
                     self.max_WS = maxx
 
             all_curves_prop = [cruise_req]
-            all_curves_jet = [cruise_high_req, climb_rate_req, climb_gradient_req, climb_gradient_req_OEI]
+            all_curves_jet = [cruise_high_req, climb_rate_req]
             intersections_prop = []
             intersections_jet = []
 
@@ -194,7 +195,7 @@ class WingLoading:
                     y_at_leftmost = np.interp(self.max_WS, self.WS, curve)
                     intersections_jet.append(y_at_leftmost)
 
-            intersections_jet.append(min(climb_gradient_req))
+            intersections_jet.append(max([max(climb_gradient_req),max(climb_gradient_req_OEI)]))
             self.TW = max(intersections_jet)
             self.WP = max(intersections_prop)
             # print(f"T/W shall be at least {max(intersections_jet)}")
