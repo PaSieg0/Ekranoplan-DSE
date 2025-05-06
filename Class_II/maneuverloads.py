@@ -57,18 +57,18 @@ def plot_load_diagram(aircraft_data):
     n_positive = [calculante_n_limits(rho, CLmax_clean, W, S, V, nmax, nmin, V_cruise, V_dive) for V in V_range]  # Calculate positive load factor for each velocity
     n_negative = [calculante_n_limits(rho, -CLmax_clean, W, S, V, nmax, nmin, V_cruise, V_dive) for V in V_range]  # Calculate negative load factor for each velocity
 
-    V_range_flapped = np.arange(0, V_flapped, 0.1)  # Define a range of velocities
-    n_positive_flapped = [calculante_n_limits(rho, CLmax_flapped, W, S, V, nmax, nmin, V_cruise, V_flapped) for V in V_range_flapped]  # Calculate positive load factor for each velocity
+    # V_range_flapped = np.arange(0, V_flapped, 0.1)  # Define a range of velocities
+    # n_positive_flapped = [calculante_n_limits(rho, CLmax_flapped, W, S, V, nmax, nmin, V_cruise, V_flapped) for V in V_range_flapped]  # Calculate positive load factor for each velocity
     plt.figure(figsize=(10, 6))  # Set a larger figure size for better readability
 
     # Plot positive and negative load factors
     plt.plot(V_range, n_positive, color='blue', label='Positive Load Factor')
     plt.plot(V_range, n_negative, color='orange', label='Negative Load Factor')
 
-    plt.plot(V_range_flapped, n_positive_flapped, color='purple', label='Flapped Load Factor')
+    # plt.plot(V_range_flapped, n_positive_flapped, color='purple', label='Flapped Load Factor')
 
     # Highlight dive speed and cruise speed
-    plt.axvline(x=V_dive, color='red', linestyle='-', label='Dive Speed', linewidth=1.5)
+    plt.plot([V_dive, V_dive], [0, nmax], color='red', linestyle='-', label='Dive Speed', linewidth=1.5)
     plt.axvline(x=V_cruise, color='green', linestyle='--', label='Cruise Speed', linewidth=1.5)
     # Find the velocity where n_positive is equal to 1
     for i, n in enumerate(n_positive):
@@ -98,6 +98,5 @@ def plot_load_diagram(aircraft_data):
 if __name__ == "__main__":
     
     aircraft_data = Data("design1.json")
-    constants = Data("constants.json")
 
     plot_load_diagram(aircraft_data)
