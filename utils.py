@@ -1,6 +1,7 @@
 import json
 import os
 from enum import Enum, auto
+from typing import Any
 
 class AircraftType(Enum):
     JET = auto()
@@ -26,22 +27,34 @@ class EnumEncoder(json.JSONEncoder):
 
 class Data:
     def __init__(self, design_file):
-        self.load_design(design_file)
+        self.data = self.load_design(design_file)
 
-    def load_design(self, design_file):
+    def load_design(self, design_file) -> dict[str, Any]:
         file_path = os.path.join("Data", design_file)
         try:
             with open(file_path, 'r') as file:
-                design_data = json.load(file)
-                for key, value in design_data.items():
-                    setattr(self, key, value)
+                return json.load(file)
         except FileNotFoundError:
             print(f"Error: {file_path} not found.")
         except json.JSONDecodeError:
             print(f"Error: Failed to decode JSON from {file_path}.")
+        return {}
+
+    def save_design(self, design_file):
+        file_path = os.path.join("Data", design_file)
+        try:
+            with open(file_path, 'w') as file:
+                json.dump(self.data, file, cls=EnumEncoder, indent=4)
+        except IOError as e:
+            print(f"Error: Failed to write to {file_path}. {e}")
 
 
 # Example usage
 if __name__ == "__main__":
     aircraft = Data("design1.json")
-    print(aircraft.__dict__)
+    print(aircraft.data)
+    aircraft.data["aircraft_type"] = AircraftType.JET.name
+    aircraft.save_design("design1.json")
+    print(aircraft.data)
+
+    print("Aircraft Type:", AircraftType[aircraft.data["aircraft_type"]])
