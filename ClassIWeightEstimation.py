@@ -34,7 +34,7 @@ class ClassI:
         self.mission_type = mission_type
 
         if mission_type == MissionType.DESIGN:
-            self.range = (2800+50)*1.852*1000
+            self.range = (2000+50)*1.852*1000
             self.payload = 90000
             self.crew = 5*85
         elif mission_type == MissionType.FERRY:

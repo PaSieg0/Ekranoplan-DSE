@@ -164,7 +164,7 @@ class WingLoading:
         climb_gradient_req = self.climb_gradient_requirement()
         climb_gradient_req_OEI = self.climb_gradient_requirement_OEI()
 
-        if self.aircraft_type == AircraftType.JET or self.aircraft_type == AircraftType.PROP:
+        if self.aircraft_type == AircraftType.PROP:
             all_vertical_lines = [take_off_req, landing_req, stall_req, stall_req_high]
             self.max_WS = float('inf')
             for values in all_vertical_lines:
@@ -188,16 +188,17 @@ class WingLoading:
                 self.WP = min(intersections)
                 print(f"W/P shall be at least {self.WP}")
 
-        elif self.aircraft_type == AircraftType.MIXED:
+        else:
             all_vertical_lines = [take_off_req, landing_req, stall_req, stall_req_high]
             self.max_WS = float('inf')
+            
             for values in all_vertical_lines:
                 maxx = np.min(values)
                 if maxx < self.max_WS:
                     self.max_WS = maxx
 
             all_curves_prop = [cruise_req]
-            all_curves_jet = [cruise_high_req, climb_rate_req, climb_gradient_req, climb_gradient_req_OEI]
+            all_curves_jet = [cruise_high_req, climb_rate_req]
             intersections_prop = []
             intersections_jet = []
 
@@ -210,7 +211,7 @@ class WingLoading:
                     y_at_leftmost = np.interp(self.max_WS, self.WS, curve)
                     intersections_jet.append(y_at_leftmost)
 
-            intersections_jet.append(min(climb_gradient_req))
+            intersections_jet.append(min([min(climb_gradient_req),min(climb_gradient_req_OEI)]))
             self.TW = max(intersections_jet)
             self.WP = max(intersections_prop)
             print(f"T/W shall be at least {max(intersections_jet)}")
@@ -389,7 +390,7 @@ def __plot_jet(WL, PLOT_OUTPUT: bool=False):
 
 
 def __plot_mixed(WL_prop, WL_jet, PLOT_OUTPUT: bool=False):
-    prop_stall, prop_stall_high, prop_take_off, prop_landing, prop_cruise, prop_cruise_high, prop_climb_rate, prop_climb_gradient = WL_prop.main()
+    prop_stall, prop_stall_high, prop_take_off, prop_landing, prop_cruise, prop_cruise_high, prop_climb_rate, prop_climb_gradient,prop_climb_gradient_OEI = WL_prop.main()
     jet_stall, jet_stall_high, jet_take_off, jet_landing, jet_cruise, jet_cruise_high, jet_climb_rate, jet_climb_gradient, jet_climb_gradient_OEI = WL_jet.main()
     fig, ax = plt.subplots(2, 1, figsize=(10, 12))
 
@@ -420,11 +421,11 @@ def __plot_mixed(WL_prop, WL_jet, PLOT_OUTPUT: bool=False):
     for i, climb_gradient in enumerate(jet_climb_gradient):
         A_idx = i % len(WL_jet.aspect_ratios)
         n_idx = i // len(WL_jet.aspect_ratios)
-        ax.plot(WL_jet.WS, climb_gradient, label=f"Climb gradient: Aspect ratio={WL_jet.aspect_ratios[A_idx]}\nEngine={WL_jet.n_engines[n_idx]}", linestyle=linestyles[i], color='tab:green')
+        ax[1].axhline(y=climb_gradient, label=f"Climb gradient: Aspect ratio={WL_jet.aspect_ratios[A_idx]}\nEngine={WL_jet.n_engines[n_idx]}", linestyle=linestyles[i], color='tab:green')
     for i, climb_gradient in enumerate(jet_climb_gradient_OEI):
         A_idx = i % len(WL_jet.aspect_ratios)
         n_idx = i // len(WL_jet.aspect_ratios)
-        ax.plot(WL_jet.WS, climb_gradient, label=f"Climb gradient OEI: Aspect ratio={WL_jet.aspect_ratios[A_idx]}\nEngine={WL_jet.n_engines[n_idx]}", linestyle=linestyles[i], color='tab:olive')
+        ax[1].axhline(y=climb_gradient, label=f"Climb gradient OEI: Aspect ratio={WL_jet.aspect_ratios[A_idx]}\nEngine={WL_jet.n_engines[n_idx]}", linestyle=linestyles[i], color='tab:olive')
     # for i, cruise in enumerate(jet_cruise):
     #     ax[1].plot(WL_jet.WS, cruise, label=f"Cruise: Aspect ratio={WL_jet.aspect_ratios[i]}", linestyle=linestyles[i], color='tab:red')
     for i, cruise in enumerate(jet_cruise_high):
@@ -452,7 +453,7 @@ def __plot_mixed(WL_prop, WL_jet, PLOT_OUTPUT: bool=False):
     
 
 if __name__ == "__main__":
-    aircraft_type = AircraftType.PROP
+    aircraft_type = AircraftType.MIXED
     mission_type = MissionType.DESIGN
     cruise_speed = 180*0.51444
     jet_consumption = 19e-6
