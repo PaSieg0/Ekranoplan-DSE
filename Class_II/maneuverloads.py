@@ -7,6 +7,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 import Iteration
 from ClassIWeightEstimation import MissionType, AircraftType
+from utils import Data
 
 def calculate_n(rho, CL, W, S, V):
     L = CL*1/2*rho*V**2*S
@@ -98,6 +99,9 @@ if __name__ == "__main__":
     hull_surface=2*np.pi*L*r / 3
     rho_water=1000.0
     kinematic_viscosity=1.002e-6
+    
+    aircraft = Data("design1.json")
+
     final_MTOMS = []
     fuel_economy, MTOM_history, S_final = Iteration.iteration(
                         aircraft_type=aircraft_type,
@@ -129,7 +133,6 @@ if __name__ == "__main__":
                         kinematic_viscosity=kinematic_viscosity
                         )
 
-    
     
     # Example usage
     rho = 1.225  # kg/m^3 (air density at sea level)
