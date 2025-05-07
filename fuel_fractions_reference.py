@@ -1,7 +1,7 @@
 import numpy as np
 
 def fuel_fraction(R, c, V_eta, L_D):
-    return 1-np.exp(-R*9.81*c/V_eta/L_D)
+    return (1-np.exp(-R*9.81*c/V_eta/L_D)) / 0.9
 
 def fuel_used(fraction, MTOM):
     return fraction*MTOM
@@ -9,9 +9,9 @@ def fuel_used(fraction, MTOM):
 def fuel_economy(fuel_mass, range, payload):
     return fuel_mass/0.82/(range/1000)/(payload/1000)
 
-C5 = fuel_fraction(3981800, 8.9e-6, 230.55, 15)
-C17 = fuel_fraction(4480000, 3.788e-5, 251.94, 15)
-C130 = fuel_fraction(3789000, 9.22e-8, 0.82, 15)
+C5 = fuel_fraction(3981800, 8.9e-6, 230.55, 12.4)
+C17 = fuel_fraction(4480000, 3.788e-5, 251.94, 11.1)
+C130 = fuel_fraction(3789000, 9.22e-8, 0.85, 12.8)
 
 print(C5)
 print(C17)

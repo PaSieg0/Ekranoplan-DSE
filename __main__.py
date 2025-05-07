@@ -27,6 +27,6 @@ def main(create_excel: bool = False) -> None:
 if __name__ == "__main__":
     main(create_excel=False)
     df = generate_df()
-    plot = plot_bar_graph(df, 'fuel_economy')
+    plot = plot_bar_graph(df, 'MTOM')
     print(df['fuel_economy'])
     plot.show()

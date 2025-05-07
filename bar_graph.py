@@ -41,6 +41,7 @@ def plot_bar_graph(df, parameter: str):
          + gg.xlab('Design')
          + gg.ylab(parameter)
          + gg.scale_fill_manual(values=['#FF9999', '#66B3FF', '#99FF99'])
+         + gg.geom_line(gg.aes(y=500000), color='red', linetype='dashed')
          )
     return p
 
