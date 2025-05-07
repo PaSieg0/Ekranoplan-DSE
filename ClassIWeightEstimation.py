@@ -22,7 +22,7 @@ class ClassI:
                  mission_type: MissionType,
                  reference_aircraft_path: str='ReferenceAircraft.xlsx'
                  ) -> None:
-        self.design_file = f'design{aircraft_data.data['design_id']}.json'
+        self.design_file = f'design{aircraft_data.data["design_id"]}.json'
         self.aircraft_data = aircraft_data
 
         self.aircraft_type = AircraftType[self.aircraft_data.data['aircraft_type']]

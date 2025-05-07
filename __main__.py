@@ -10,9 +10,6 @@ def main():
         print(f"Running iteration for design {i}...")
         file_path = f"design{i}.json"
         print(file_path)
-        # if not os.path.exists(file_path):
-        #     print(f"File {file_path} does not exist. Skipping.")
-        #     continue
     
         aircraft_data = Data(file_path)
         aircraft_data.load_design(file_path)

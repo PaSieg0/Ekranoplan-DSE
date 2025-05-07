@@ -5,8 +5,6 @@ import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-import Iteration
-from ClassIWeightEstimation import MissionType, AircraftType
 from utils import Data
 from ISA_Class import ISA
 
@@ -69,12 +67,15 @@ def plot_load_diagram(aircraft_data):
 
     # Highlight dive speed and cruise speed
     plt.plot([V_dive, V_dive], [0, nmax], color='red', linestyle='-', label='Dive Speed', linewidth=1.5)
-    plt.axvline(x=V_cruise, color='green', linestyle='--', label='Cruise Speed', linewidth=1.5)
+
+    # Plot the cruise speed line with the calculated ymax and ymin
+    plt.plot([V_cruise, V_cruise], [nmax, nmin], color='green', linestyle='--', label='Cruise Speed', linewidth=1.5)
+    
     # Find the velocity where n_positive is equal to 1
     for i, n in enumerate(n_positive):
         if n >= 1:
             V_at_n1 = V_range[i]
-            plt.axvline(x=V_at_n1, color='magenta', linestyle='--', label='Stall Speed', linewidth=1.5)
+            plt.plot([V_at_n1, V_at_n1], [-1, 1], color='magenta', linestyle='--', label='Stall Speed', linewidth=1.5)
             print(f"Stall Speed (V at n=1): {V_at_n1:.2f} m/s")
             break
 

@@ -1,5 +1,5 @@
-from maneuverloads import calculate_n, calculante_n_limits, max_n, min_n
-from gustloads import point_determination, Calculate_K_g, Calculate_mu, Calculate_V_b, Calculate_U_ref
+from maneuverloads import calculante_n_limits, max_n, min_n
+from gustloads import Calculate_K_g, Calculate_mu, Calculate_V_b, Calculate_U_ref
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -58,7 +58,7 @@ def plot_complete_load_diagram(aircraft_data, h):
 
     # Maneuver envelope
     plt.plot(V_range, n_positive, label="Maneuver Envelope", color="blue")
-    plt.plot(V_range, n_negative)
+    plt.plot(V_range, n_negative, color="blue")
     plt.plot([V_dive, V_dive], [0, nmax], color='blue', linestyle='-', linewidth=1.5)
 
     # ====== Gust Envelope ======
@@ -95,6 +95,12 @@ def plot_complete_load_diagram(aircraft_data, h):
     n_lower = np.minimum(n_maneuver_negative, n_gust_negative)
 
     plt.fill_between(V_combined, n_lower, n_upper, color="lightgreen", alpha=0.5, label="Allowable Condition")
+
+    # Annotate vertical limits for the green region
+    max_n_allowable = np.max(n_upper)
+    min_n_allowable = np.min(n_lower)
+    plt.axhline(max_n_allowable, color="green", linestyle="--", linewidth=1.2, label=f"Max Allowable n = {max_n_allowable:.2f}")
+    plt.axhline(min_n_allowable, color="green", linestyle="--", linewidth=1.2, label=f"Min Allowable n = {min_n_allowable:.2f}")
 
     plt.grid(True, linestyle=":", alpha=0.7)
     plt.legend()
