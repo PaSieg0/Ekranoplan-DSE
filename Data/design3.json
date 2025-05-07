@@ -2,6 +2,7 @@
     "design_id": 3,
     "aircraft_type": "PROP",
     "cruise_altitude": 7,
+    "n_wings": 1,
     "design_range": 3704000,
     "design_payload": 90000,
     "design_crew": 425,

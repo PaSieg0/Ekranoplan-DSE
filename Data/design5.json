@@ -2,6 +2,7 @@
     "design_id": 5,
     "aircraft_type": "MIXED",
     "cruise_altitude": 5,
+    "n_wings": 1,
     "design_range": 3704000,
     "design_payload": 90000,
     "design_crew": 425,

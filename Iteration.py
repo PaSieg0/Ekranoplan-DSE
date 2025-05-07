@@ -24,7 +24,8 @@ def Ainf_Ah(h_b):
 
 class AircraftIteration:
     def __init__(self, aircraft_data: Data, mission_type: MissionType) -> None:
-        self.design_file = f'design{aircraft_data.data['design_id']}.json'
+        self.design_number = aircraft_data.data['design_id']
+        self.design_file = f'design{self.design_number}.json'
         self.aircraft_data = aircraft_data
         self.mission_type = mission_type
 
@@ -45,7 +46,10 @@ class AircraftIteration:
                                          mission_type=self.mission_type,
                                          PLOT_OUTPUT=False)
         self.S = self.class_i.MTOW / self.WS
-        self.b = np.sqrt(self.S * self.class_i.A)
+        if self.design_number == 4:
+            self.b = np.sqrt(self.S/2 * self.class_i.A)
+        else:
+            self.b = np.sqrt(self.S * self.class_i.A)
         self.h_b = self.aircraft_data.data['cruise_altitude'] / self.b
         self.A_ratio = Ainf_Ah(self.h_b)
         self.new_k = np.sqrt(1 / self.A_ratio)
@@ -72,7 +76,7 @@ class AircraftIteration:
             self.prev_MTOM = self.curr_MTOM
             self.MTOM_history.append(self.curr_MTOM)
             self.S = self.class_i.MTOW / self.WS
-            self.b = np.sqrt(self.S * self.class_i.A)
+            self.b = np.sqrt(self.S/self.aircraft_data.data['n_wings'] * self.class_i.A)
             self.h_b = self.aircraft_data.data['cruise_altitude'] / self.b
             self.A_ratio = Ainf_Ah(self.h_b)
             self.new_k = np.sqrt(1 / self.A_ratio)
