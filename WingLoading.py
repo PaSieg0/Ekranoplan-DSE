@@ -1,3 +1,4 @@
+import os
 from enum import Enum, auto
 from ISA_Class import ISA
 import numpy as np
@@ -10,6 +11,7 @@ class WingLoading:
                 aircraft_data: Data,
                 mission_type: MissionType
                  ) -> None:
+        self.design_file = f'design{aircraft_data.data['design_id']}.json'
         self.aircraft_data = aircraft_data
         self.mission_type = mission_type
         self.aircraft_type = AircraftType[self.aircraft_data.data['aircraft_type']]
@@ -210,7 +212,7 @@ class WingLoading:
             self.aircraft_data.data['TW'] = self.TW
             self.aircraft_data.data['WP'] = self.WP
             self.aircraft_data.data['WS'] = self.max_WS
-            self.aircraft_data.save_design('design1.json')
+            self.aircraft_data.save_design(self.design_file)
             # print(f"T/W shall be at least {max(intersections_jet)}")
             # print(f"W/P shall be at least {min(intersections_prop)}")
                 

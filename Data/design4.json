@@ -1,4 +1,5 @@
 {
+    "design_id": 4,
     "aircraft_type": "PROP",
     "cruise_altitude": 5,
     "design_range": 3704000,
@@ -12,7 +13,7 @@
     "altitude_payload": 90000,
     "altitude_crew": 425,
     "cruise_speed": 115.749,
-    "jet_consumption": 1.9e-05,
+    "jet_consumption": 2.7e-05,
     "prop_consumption": 2.18e-08,
     "prop_efficiency": 0.82,
     "Cd0": 0.02,
@@ -55,7 +56,9 @@
         "TW": null,
         "WS": 3332.77241396741,
         "fuel_economy": 0.1061315579629067,
-        "design_payload": 90000
+        "design_payload": 90000,
+        "P": 25525950.155222867,
+        "T": null
     },
     "ferry": {
         "take_off_power": 53392355.25717556,
@@ -79,7 +82,9 @@
         "TW": null,
         "WS": 3332.77241396741,
         "fuel_economy": 0.009768672262015797,
-        "ferry_payload": 0
+        "ferry_payload": 0,
+        "P": 7514393.6926184315,
+        "T": null
     },
     "altitude": {
         "take_off_power": 53392355.25717556,
@@ -103,7 +108,9 @@
         "TW": null,
         "WS": 3332.77241396741,
         "fuel_economy": 0.2091210154934956,
-        "altitude_payload": 90000
+        "altitude_payload": 90000,
+        "P": 24156769.72359265,
+        "T": null
     },
     "gravitational_acceleration": 9.81,
     "kinematic_viscosity": 1.002e-06,

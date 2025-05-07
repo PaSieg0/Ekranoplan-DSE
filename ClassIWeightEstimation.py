@@ -1,3 +1,4 @@
+import os
 from enum import Enum, auto
 import pandas as pd
 import numpy as np
@@ -21,6 +22,7 @@ class ClassI:
                  mission_type: MissionType,
                  reference_aircraft_path: str='ReferenceAircraft.xlsx'
                  ) -> None:
+        self.design_file = f'design{aircraft_data.data['design_id']}.json'
         self.aircraft_data = aircraft_data
 
         self.aircraft_type = AircraftType[self.aircraft_data.data['aircraft_type']]
@@ -180,7 +182,7 @@ class ClassI:
         self.aircraft_data.data['EW'] = self.EW
         self.aircraft_data.data['MTOM'] = self.MTOM
 
-        self.aircraft_data.save_design("design1.json")
+        self.aircraft_data.save_design(self.design_file)
 
 if __name__=="__main__":
     data = Data("design1.json")

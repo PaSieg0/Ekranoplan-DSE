@@ -2,15 +2,17 @@ import os
 from utils import Data
 from Iteration import AircraftIteration
 from ClassIWeightEstimation import MissionType
+from bar_graph import generate_df, plot_bar_graph
 
 
 def main():
     for i in range(1, 6):
         print(f"Running iteration for design {i}...")
-        file_path = os.path.join(os.path.dirname(__file__), "Data", f"design{i}.json")
-        if not os.path.exists(file_path):
-            print(f"File {file_path} does not exist. Skipping.")
-            continue
+        file_path = f"design{i}.json"
+        print(file_path)
+        # if not os.path.exists(file_path):
+        #     print(f"File {file_path} does not exist. Skipping.")
+        #     continue
     
         aircraft_data = Data(file_path)
         aircraft_data.load_design(file_path)
@@ -25,3 +27,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+    df = generate_df()
+    plot = plot_bar_graph(df, 'fuel_economy')
+    plot.show()
