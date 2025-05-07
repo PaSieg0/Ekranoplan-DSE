@@ -1,5 +1,8 @@
 import numpy as np
 
-def Cg():
-    Cg=0
-    return Cg
+class cg_estimation:
+    def __init__(self, Type):
+        self.type = type
+
+    def two(self):
+        if self.type = 2:
