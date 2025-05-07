@@ -85,22 +85,44 @@ def plot_complete_load_diagram(aircraft_data, h):
         if n >= 1:
             V_at_n1 = V_range[i]
             break
-    V_combined = np.linspace(V_at_n1, V_dive, 1000)
-    n_maneuver_positive = np.interp(V_combined, V_range, n_positive)
-    n_maneuver_negative = np.interp(V_combined, V_range, n_negative)
-    n_gust_positive = np.interp(V_combined, pos_V, pos_n)
-    n_gust_negative = np.interp(V_combined, neg_V, neg_n)
+    # Find the velocity where n_maneuver_positive first reaches 2.5
+    for i, n in enumerate(n_positive):
+        if n >= 2.5:
+            V_at_n2_5 = V_range[i]
+            break
+    V_combined1 = np.linspace(V_at_n1, V_at_n2_5, 1000)
+    V_combined2 = np.linspace(V_at_n2_5, V_dive, 1000)
 
-    n_upper = np.maximum(n_maneuver_positive, n_gust_positive)
-    n_lower = np.minimum(n_maneuver_negative, n_gust_negative)
+    n_maneuver_positive_1 = np.interp(V_combined1, V_range, n_positive)
+    n_maneuver_negative_1 = np.interp(V_combined1, V_range, n_negative)
+    n_gust_positive_1 = np.interp(V_combined1, pos_V, pos_n)
+    n_gust_negative_1 = np.interp(V_combined1, neg_V, neg_n)
 
-    plt.fill_between(V_combined, n_lower, n_upper, color="lightgreen", alpha=0.5, label="Allowable Condition")
+    # Adjust the upper and lower bounds to respect n_positive as a hard limit
+    n_upper_1 = np.minimum(n_maneuver_positive_1, n_gust_positive_1)
+    n_lower_1 = np.minimum(n_maneuver_negative_1, n_gust_negative_1)
+
+    plt.fill_between(V_combined1, n_lower_1, n_upper_1, color="lime", alpha=0.5, label="Allowable Condition")
+
+    n_maneuver_positive_2 = np.interp(V_combined2, V_range, n_positive)
+    n_maneuver_negative_2 = np.interp(V_combined2, V_range, n_negative)
+    n_gust_positive_2 = np.interp(V_combined2, pos_V, pos_n)
+    n_gust_negative_2 = np.interp(V_combined2, neg_V, neg_n)
+
+    # Adjust the upper and lower bounds to respect n_positive as a hard limit
+    n_upper_2 = np.maximum(n_maneuver_positive_2, n_gust_positive_2)
+    n_lower_2 = np.minimum(n_maneuver_negative_2, n_gust_negative_2)
+
+    plt.fill_between(V_combined2, n_lower_2, n_upper_2, color="lime", alpha=0.5)
 
     # Annotate vertical limits for the green region
-    max_n_allowable = np.max(n_upper)
-    min_n_allowable = np.min(n_lower)
+    max_n_allowable = np.max([*n_upper_1, *n_upper_2])
+    min_n_allowable = np.min([*n_lower_1, *n_lower_2])
     plt.axhline(max_n_allowable, color="green", linestyle="--", linewidth=1.2, label=f"Max Allowable n = {max_n_allowable:.2f}")
     plt.axhline(min_n_allowable, color="green", linestyle="--", linewidth=1.2, label=f"Min Allowable n = {min_n_allowable:.2f}")
+
+    # Find the velocity where n_positive is equal to 1
+    plt.plot([V_at_n1, V_at_n1], [-1, 1], color='magenta', linestyle='--', label='Stall Speed', linewidth=1.5)
 
     plt.grid(True, linestyle=":", alpha=0.7)
     plt.legend()
