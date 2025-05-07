@@ -1,3 +1,4 @@
+import os
 import numpy as np
 from scipy.optimize import fsolve
 from WingLoading import main
@@ -23,6 +24,7 @@ def Ainf_Ah(h_b):
 
 class AircraftIteration:
     def __init__(self, aircraft_data: Data, mission_type: MissionType) -> None:
+        self.design_file = f'design{aircraft_data.data['design_id']}.json'
         self.aircraft_data = aircraft_data
         self.mission_type = mission_type
 
@@ -64,7 +66,7 @@ class AircraftIteration:
             stop_condition = abs((self.curr_MTOM - self.prev_MTOM) / self.prev_MTOM) < self.tolerance or self.iteration >= self.max_iterations
             if stop_condition:
                 self.update_attributes()
-                self.aircraft_data.save_design('design1.json')
+                self.aircraft_data.save_design(self.design_file)
                 break
 
             self.prev_MTOM = self.curr_MTOM
@@ -77,9 +79,7 @@ class AircraftIteration:
             self.aircraft_data.data['k'] = self.new_k
             
 
-            print(f"Iteration {self.iteration} | MTOM= {self.prev_MTOM:=,.0f} kg | ΔMTOM ratio = {abs((self.curr_MTOM - self.prev_MTOM) / self.prev_MTOM):.8f}")
-        
-            
+      
     def update_attributes(self):
         mission_type = self.mission_type.name.lower()
         self.aircraft_data.data[mission_type]['MTOM'] = self.class_i.MTOM
@@ -100,6 +100,14 @@ class AircraftIteration:
         self.aircraft_data.data[mission_type]['WP'] = self.WP
         self.aircraft_data.data[mission_type]['TW'] = self.TW
         self.aircraft_data.data[mission_type]['WS'] = self.WS
+        if self.WP:
+            self.aircraft_data.data[mission_type]['P'] = self.class_i.MTOW / self.WP
+        else: 
+            self.aircraft_data.data[mission_type]['P'] = None
+        if self.TW:
+            self.aircraft_data.data[mission_type]['T'] = self.class_i.MTOW * self.TW
+        else:
+            self.aircraft_data.data[mission_type]['T'] = None
 
         if self.mission_type == MissionType.DESIGN:
             self.aircraft_data.data[mission_type]['fuel_economy'] = self.class_i.fuel_used / 9.81 * 0.82 / 90 / (self.class_i.design_range / 1000)
