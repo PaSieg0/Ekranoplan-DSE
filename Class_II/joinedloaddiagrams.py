@@ -1,5 +1,5 @@
-from maneuverloads import calculate_n, calculante_n_limits, max_n, min_n
-from gustloads import point_determination, Calculate_K_g, Calculate_mu, Calculate_V_b, Calculate_U_ref
+from maneuverloads import calculante_n_limits, max_n, min_n
+from gustloads import Calculate_K_g, Calculate_mu, Calculate_V_b, Calculate_U_ref
 
 import numpy as np
 import matplotlib.pyplot as plt

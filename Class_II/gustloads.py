@@ -5,8 +5,6 @@ import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-import Iteration
-from ClassIWeightEstimation import MissionType, AircraftType
 from ISA_Class import ISA
 from utils import Data
 
