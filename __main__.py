@@ -3,14 +3,16 @@ from utils import Data
 from Iteration import AircraftIteration
 from ClassIWeightEstimation import MissionType
 from bar_graph import generate_df, plot_bar_graph
+from Json_to_excel import json_to_excel
 
 
-def main():
-    for i in range(1, 6):
+def main(create_excel: bool = False) -> None:
+    for i in range(1, 5):
         print(f"Running iteration for design {i}...")
         file_path = f"design{i}.json"
         print(file_path)
-    
+        if create_excel:
+            json_to_excel(file_path, f"Concept_Data.xlsx")
         aircraft_data = Data(file_path)
         aircraft_data.load_design(file_path)
         for mission in MissionType:
@@ -23,7 +25,8 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    main(create_excel=False)
     df = generate_df()
     plot = plot_bar_graph(df, 'fuel_economy')
+    print(df['fuel_economy'])
     plot.show()
