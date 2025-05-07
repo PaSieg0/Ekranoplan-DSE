@@ -24,7 +24,7 @@ def Ainf_Ah(h_b):
 
 class AircraftIteration:
     def __init__(self, aircraft_data: Data, mission_type: MissionType) -> None:
-        self.design_file = f'design{aircraft_data.data['design_id']}.json'
+        self.design_file = f'design{aircraft_data.data["design_id"]}.json'
         self.aircraft_data = aircraft_data
         self.mission_type = mission_type
 
