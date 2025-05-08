@@ -31,14 +31,14 @@ import matplotlib.pyplot as plt
 def point_determination(aircraft_data, h):
     # Example usage
     g = aircraft_data.data["gravitational_acceleration"]
-    W_final = aircraft_data.data["MTOM"] * g  # Weight in N
+    W_final = aircraft_data.data["design"]["MTOM"] * g  # Weight in N
     U_ref = Calculate_U_ref(h/0.3048)  # Reference speed in m/s
-    S = aircraft_data.data["MTOM"] * g / aircraft_data.data["WS"]  # Wing area in m^2   
+    S = aircraft_data.data["design"]["MTOM"] * g / aircraft_data.data["design"]["WS"]  # Wing area in m^2   
     rho = ISA(h).rho
     CL_alpha = aircraft_data.data["Cl_alpha"] # rad/s, TBD aerodynamics   
-    w = aircraft_data.data["WS"] # N/m^2
+    w = aircraft_data.data["design"]["WS"] # N/m^2
     w = w*2.20462262/(g*3.2808399**2) # lb/ft^2
-    b = np.sqrt(aircraft_data.data["aspect_ratio"]*S)
+    b = np.sqrt(aircraft_data.data["design"]["aspect_ratio"]*S)
     chord = S/b # m
     mu = Calculate_mu(w, rho*0.0019403203319541, chord, CL_alpha, g)
     K_g = Calculate_K_g(mu)

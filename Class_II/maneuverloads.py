@@ -42,8 +42,8 @@ def plot_load_diagram(aircraft_data):
     g = aircraft_data.data["gravitational_acceleration"]  # m/s^2 (acceleration due to gravity)
     CLmax_clean = aircraft_data.data["CLmax_clean"]  # Maximum lift coefficient
     CLmax_flapped = aircraft_data.data["CLmax_landing"]  # Maximum lift coefficient during landing
-    W = aircraft_data.data["MTOM"] * g  # Weight in N
-    S = aircraft_data.data["MTOM"] * g / aircraft_data.data["WS"]  # Wing area in m^2
+    W = aircraft_data.data["design"]["MTOM"] * g  # Weight in N
+    S = aircraft_data.data["design"]["MTOM"] * g / aircraft_data.data["design"]["WS"]  # Wing area in m^2
     nmax = max_n(W)  # Maximum load factor
     nmin = min_n()  # Minimum load factor
     V_cruise = aircraft_data.data["cruise_speed"]  # Cruise speed in m/s
