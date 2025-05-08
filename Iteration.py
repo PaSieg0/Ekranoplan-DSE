@@ -95,6 +95,7 @@ class AircraftIteration:
         self.aircraft_data.data[mission_type]['Fuel'] = self.class_i.fuel
         self.aircraft_data.data[mission_type]['Fuel_used'] = self.class_i.fuel_used
         self.aircraft_data.data[mission_type]['Fuel_reserve'] = self.class_i.fuel_res
+        self.aircraft_data.data[mission_type]['Fuel_max'] = self.class_i.fuel_max
         self.aircraft_data.data[mission_type]['S'] = self.S
         self.aircraft_data.data[mission_type]['b'] = self.b
         self.aircraft_data.data[mission_type]['MAC'] = self.S / self.b

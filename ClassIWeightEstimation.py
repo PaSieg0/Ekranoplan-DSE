@@ -154,6 +154,7 @@ class ClassI:
             self.EW = self.OEW - self.design_crew*9.81
             self.ZFW = self.MTOW - self.fuel
             self.MTOM = self.MTOW/9.81
+            self.fuel_max = 1.1 * self.fuel
         elif self.mission_type == MissionType.FERRY:
             self.MTOW = (self.ferry_payload*9.81 + self.design_crew*9.81 + self.intersection) / (1 - self.slope - (1-self.Mff) - (1-self.Mff)*self.reserve_fuel - self.tfo)
             self.fuel_used = self.MTOW * (1-self.Mff)
@@ -164,6 +165,7 @@ class ClassI:
             self.EW = self.OEW - self.ferry_crew*9.81
             self.ZFW = self.MTOW - self.fuel
             self.MTOM = self.MTOW/9.81
+            self.fuel_max = 1.1 * self.fuel
         elif self.mission_type == MissionType.ALTITUDE:
             self.MTOW = (self.altitude_payload*9.81 + self.design_crew*9.81 + self.intersection) / (1 - self.slope - (1-self.Mff) - (1-self.Mff)*self.reserve_fuel - self.tfo)
             self.fuel_used = self.MTOW * (1-self.Mff)
@@ -174,6 +176,7 @@ class ClassI:
             self.EW = self.OEW - self.altitude_crew*9.81
             self.ZFW = self.MTOW - self.fuel
             self.MTOM = self.MTOW/9.81
+            self.fuel_max = 1.1 * self.fuel
 
 
         self.aircraft_data.save_design(self.design_file)
