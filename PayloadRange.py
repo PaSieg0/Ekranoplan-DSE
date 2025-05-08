@@ -46,6 +46,7 @@ if __name__ == "__main__":
 
     print(f"Range (Harmonic): {range_harmonic} m")
     print(f"Range (Design): {range_design} m")
+    print(f"Range (Max): {range_max} m")
     print(f"Range (Ferry): {range_ferry} m")
 
     points = [(0, data.data['max_payload']), 
