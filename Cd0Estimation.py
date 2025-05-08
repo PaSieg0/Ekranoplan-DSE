@@ -22,11 +22,12 @@ class Cd0Estimation:
         )
     
     def wing_wet(self) -> float:
+        print('S', self.aircraft_data.data['max']['S'])
         return 1.07*2*self.aircraft_data.data['max']['S']
         
     def fuselage_wet(self) -> float:
         #very preliminary estimate
-        return (2*np.pi*self.aircraft_data.data['L']*self.aircraft_data.data['r'] + 2*np.pi*self.aircraft_data.data['r']**2)*self.aircraft_data.data['n_fuselages']
+        return (2*np.pi*self.aircraft_data.data['L']*self.aircraft_data.data['r_fuselage'] + 2*np.pi*self.aircraft_data.data['r_fuselage']**2)*self.aircraft_data.data['n_fuselages']
 
     def tail_wet(self) -> float:
         #very preliminary estimate, implement actual tail area's and such later, horizontal + vertical
@@ -97,6 +98,11 @@ class Cd0Estimation:
             S_ref = self.get_S_ref()
             coefficient = self.get_Cfc()
 
+            print(wing_wet)
+            print(tail_wet)
+            print('fus', fuselage_wet)
+            print(S_ref)
+
             self.Cd0 = coefficient*(wing_wet + tail_wet + fuselage_wet)/S_ref * 1.2
             self.iteration.aircraft_data.data['Cd0'] = self.Cd0
             self.iteration.run_iteration()
@@ -112,7 +118,7 @@ class Cd0Estimation:
         
 
 if __name__ == '__main__':
-    data = Data('design4.json')
+    data = Data('design3.json')
     est = Cd0Estimation(
         aircraft_data=data,
         mission_type=MissionType.DESIGN
