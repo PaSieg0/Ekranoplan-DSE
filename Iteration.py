@@ -1,7 +1,7 @@
 import os
 import numpy as np
 from scipy.optimize import fsolve
-from WingLoading import main
+from WingLoading import main, WingLoading
 from ClassIWeightEstimation import ClassI, MissionType, AircraftType
 import matplotlib.pyplot as plt
 from ISA_Class import ISA
@@ -32,6 +32,8 @@ class AircraftIteration:
         self.tolerance = 0.00015
         self.max_iterations = 10
         self.iteration = 0
+
+        self.V_lof = 1.05 * self.aircraft_data.data['stall_speed_takeoff']
 
         self.class_i = ClassI(
             aircraft_data=self.aircraft_data,
@@ -71,6 +73,7 @@ class AircraftIteration:
             stop_condition = abs((self.curr_MTOM - self.prev_MTOM) / self.prev_MTOM) < self.tolerance or self.iteration >= self.max_iterations
             if stop_condition:
                 self.update_attributes()
+                print(self.aircraft_data.data)
                 self.aircraft_data.save_design(self.design_file)
                 break
 
@@ -103,6 +106,9 @@ class AircraftIteration:
         self.aircraft_data.data[mission_type]['WP'] = self.WP
         self.aircraft_data.data[mission_type]['TW'] = self.TW
         self.aircraft_data.data[mission_type]['WS'] = self.WS
+        print(self.aircraft_data.data['stall_speed_takeoff'] * 1.05)
+        self.aircraft_data.data['V_lof'] = self.aircraft_data.data['stall_speed_takeoff'] * 1.05
+        self.aircraft_data.data[mission_type]['Re'] = self.aircraft_data.data['V_lof'] * self.aircraft_data.data['L'] / self.aircraft_data.data['kinematic_viscosity']
         if self.WP:
             self.aircraft_data.data[mission_type]['P'] = self.class_i.MTOW / self.WP
         else: 

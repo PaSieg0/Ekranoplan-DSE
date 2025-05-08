@@ -79,6 +79,7 @@ class WingLoading:
         self.aircraft_data.data[self.mission_type.name.lower()]['Cd'] = Cd
         self.aircraft_data.data[self.mission_type.name.lower()]['hull_surface'] = self.hull_surface
         D = 0.5 * self.rho_water * (self.V_lof)**2 * Cd * self.hull_surface * self.n_fuselages
+        print(D * self.V_lof / self.prop_efficiency)
 
         if self.aircraft_type == AircraftType.JET:
             self.aircraft_data.data[self.mission_type.name.lower()]['take_off_thrust'] = D
