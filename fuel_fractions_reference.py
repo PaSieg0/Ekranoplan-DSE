@@ -10,7 +10,7 @@ def fuel_economy(fuel_mass, range, payload):
     return fuel_mass/0.82/(range/1000)/(payload/1000)
 
 C5 = fuel_fraction(2200*1.852*1000, 8.9e-6, 241.4, 11.28)
-C17 = fuel_fraction(4480000, 9.3e-6, 230.55, 10)
+C17 = fuel_fraction(4480000, 9.3e-6, 230.55, 10.77)
 C130 = fuel_fraction(3789000, 9.22e-8, 0.82, 14.13)
 
 print(C5)
