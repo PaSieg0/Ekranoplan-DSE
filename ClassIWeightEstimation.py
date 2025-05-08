@@ -151,7 +151,7 @@ class ClassI:
             self.fuel = self.fuel_used + self.fuel_res
             # self.OEW = self.slope * self.MTOW + self.intersection
             self.OEW = self.MTOW - self.design_payload*9.81 - self.fuel
-            self.EW = self.OEW - self.design_crew
+            self.EW = self.OEW - self.design_crew*9.81
             self.ZFW = self.MTOW - self.fuel
             self.MTOM = self.MTOW/9.81
         elif self.mission_type == MissionType.FERRY:
@@ -161,7 +161,7 @@ class ClassI:
             self.fuel = self.fuel_used + self.fuel_res
             # self.OEW = self.slope * self.MTOW + self.intersection
             self.OEW = self.MTOW - self.design_payload*9.81 - self.fuel
-            self.EW = self.OEW - self.ferry_crew
+            self.EW = self.OEW - self.ferry_crew*9.81
             self.ZFW = self.MTOW - self.fuel
             self.MTOM = self.MTOW/9.81
         elif self.mission_type == MissionType.ALTITUDE:
@@ -171,7 +171,7 @@ class ClassI:
             self.fuel = self.fuel_used + self.fuel_res
             # self.OEW = self.slope * self.MTOW + self.intersection
             self.OEW = self.MTOW - self.design_payload*9.81 - self.fuel
-            self.EW = self.OEW - self.altitude_crew
+            self.EW = self.OEW - self.altitude_crew*9.81
             self.ZFW = self.MTOW - self.fuel
             self.MTOM = self.MTOW/9.81
 

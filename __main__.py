@@ -3,7 +3,7 @@ from utils import Data
 from Iteration import AircraftIteration
 from ClassIWeightEstimation import MissionType
 from bar_graph import generate_df, plot_bar_graph
-from Json_to_excel import json_to_excel
+from Json_to_excel import design_json_to_excel as json_to_excel
 
 
 def main(create_excel: bool = False) -> None:
