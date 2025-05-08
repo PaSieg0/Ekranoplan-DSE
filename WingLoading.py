@@ -36,7 +36,8 @@ class WingLoading:
         self.isa_high = ISA(self.high_altitude)
         self.prop_efficiency = self.aircraft_data.data['prop_efficiency']
         self.rho_water = self.aircraft_data.data['rho_water']
-        self.r = self.aircraft_data.data['r']
+        self.r_fuselage = self.aircraft_data.data['r_fuselage'] 
+        self.r_float = self.aircraft_data.data['r_float'] 
         self.L = self.aircraft_data.data['L']
         self.depth = self.aircraft_data.data['depth']
         self.kinematic_viscosity = self.aircraft_data.data['kinematic_viscosity']
@@ -67,7 +68,7 @@ class WingLoading:
         return Cd
     
     def calculate_hull_surface(self):
-        return 2*abs(np.arccos(1-2*self.depth))*self.r*self.L
+        return 2*abs(np.arccos(1-2*self.depth))*self.r_float*self.L
     
     def take_off_requirement(self):
         CL_takeoff = self.CLmax_takeoff/1.21
@@ -75,11 +76,9 @@ class WingLoading:
         self.hull_surface = self.calculate_hull_surface()
         if self.design_number == 3:
             self.hull_surface *= 2
-        print(f"hull_surface: {self.hull_surface}")
         self.aircraft_data.data[self.mission_type.name.lower()]['Cd'] = Cd
         self.aircraft_data.data[self.mission_type.name.lower()]['hull_surface'] = self.hull_surface
         D = 0.5 * self.rho_water * (self.V_lof)**2 * Cd * self.hull_surface * self.n_fuselages
-        print(D * self.V_lof / self.prop_efficiency)
 
         if self.aircraft_type == AircraftType.JET:
             self.aircraft_data.data[self.mission_type.name.lower()]['take_off_thrust'] = D

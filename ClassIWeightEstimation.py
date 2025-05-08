@@ -24,6 +24,7 @@ class ClassI:
                  ) -> None:
         self.design_file = f'design{aircraft_data.data["design_id"]}.json'
         self.aircraft_data = aircraft_data
+        self.mission_type = mission_type
 
         self.aircraft_type = AircraftType[self.aircraft_data.data['aircraft_type']]
         self.mission_type = mission_type
@@ -72,6 +73,7 @@ class ClassI:
             LD = (3/4*np.sqrt(np.pi*self.A*self.e/(3*self.Cd0)) + np.sqrt(np.pi*self.A*self.e/(4*self.Cd0))) / 2
         else:
             raise ValueError(f"Unsupported aircraft type: {self.aircraft_type}")
+        self.aircraft_data.data[self.mission_type.name.lower()]['LD'] = LD
         return LD
 
     def update_fuel_fractions_jet(self) -> None:

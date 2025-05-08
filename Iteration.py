@@ -73,7 +73,6 @@ class AircraftIteration:
             stop_condition = abs((self.curr_MTOM - self.prev_MTOM) / self.prev_MTOM) < self.tolerance or self.iteration >= self.max_iterations
             if stop_condition:
                 self.update_attributes()
-                print(self.aircraft_data.data)
                 self.aircraft_data.save_design(self.design_file)
                 break
 
