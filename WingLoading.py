@@ -60,6 +60,7 @@ class WingLoading:
         CL_takeoff = self.CLmax_takeoff/1.21
         Cd = self.calculate_Cd()
         D = 0.5 * self.rho_water * (self.V_lof)**2 * Cd * self.hull_surface
+
         if self.aircraft_type == AircraftType.JET:
             self.aircraft_data.data[self.mission_type.name.lower()]['take_off_thrust'] = D
             self.aircraft_data.data[self.mission_type.name.lower()]['take_off_power'] = None
@@ -70,7 +71,6 @@ class WingLoading:
             self.aircraft_data.data[self.mission_type.name.lower()]['take_off_thrust'] = D
             self.aircraft_data.data[self.mission_type.name.lower()]['take_off_power'] = D * self.V_lof / self.prop_efficiency
         
-
         x = [CL*0.5*self.isa_cruise.rho * self.V_lof**2 for CL in CL_takeoff]
         return x
 
@@ -209,12 +209,7 @@ class WingLoading:
             self.TW = max(intersections_jet)
             self.WP = max(intersections_prop)
 
-            self.aircraft_data.data['TW'] = self.TW
-            self.aircraft_data.data['WP'] = self.WP
-            self.aircraft_data.data['WS'] = self.max_WS
             self.aircraft_data.save_design(self.design_file)
-            # print(f"T/W shall be at least {max(intersections_jet)}")
-            # print(f"W/P shall be at least {min(intersections_prop)}")
                 
 
         return stall_req, stall_req_high, take_off_req, landing_req, cruise_req, cruise_high_req, climb_rate_req, climb_gradient_req, climb_gradient_req_OEI

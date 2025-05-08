@@ -7,7 +7,7 @@ from ClassIWeightEstimation import MissionType, AircraftType
 
 def generate_df():
     all_rows = []
-    for i in range(1, 6):
+    for i in range(1, 5):
         file_path = os.path.join(os.path.dirname(__file__), "Data", f"design{i}.json")
         if not os.path.exists(file_path):
             print(f"File {file_path} does not exist. Skipping.")
@@ -41,7 +41,7 @@ def plot_bar_graph(df, parameter: str):
          + gg.xlab('Design')
          + gg.ylab(parameter)
          + gg.scale_fill_manual(values=['#FF9999', '#66B3FF', '#99FF99'])
-         + gg.geom_line(gg.aes(y=500000), color='red', linetype='dashed')
+        #  + gg.geom_line(gg.aes(y=500000), color='red', linetype='dashed')
          )
     return p
 

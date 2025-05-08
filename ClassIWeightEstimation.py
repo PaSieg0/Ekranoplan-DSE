@@ -173,15 +173,6 @@ class ClassI:
             self.MTOM = self.MTOW/9.81
 
 
-        self.aircraft_data.data['MTOW'] = self.MTOW
-        self.aircraft_data.data['fuel_used'] = self.fuel_used
-        self.aircraft_data.data['fuel_res'] = self.fuel_res
-        self.aircraft_data.data['fuel'] = self.fuel
-        self.aircraft_data.data['OEW'] = self.OEW
-        self.aircraft_data.data['ZFW'] = self.ZFW
-        self.aircraft_data.data['EW'] = self.EW
-        self.aircraft_data.data['MTOM'] = self.MTOM
-
         self.aircraft_data.save_design(self.design_file)
 
 if __name__=="__main__":
