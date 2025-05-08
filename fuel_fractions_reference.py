@@ -9,9 +9,9 @@ def fuel_used(fraction, MTOM):
 def fuel_economy(fuel_mass, range, payload):
     return fuel_mass/0.82/(range/1000)/(payload/1000)
 
-C5 = fuel_fraction(3981800, 8.9e-6, 230.55, 12.016)
-C17 = fuel_fraction(4480000, 3.788e-5, 251.94, 11.1)
-C130 = fuel_fraction(3789000, 9.22e-8, 0.85, 12.8)
+C5 = fuel_fraction(2200*1.852*1000, 8.9e-6, 241.4, 11.28)
+C17 = fuel_fraction(4480000, 9.3e-6, 230.55, 10)
+C130 = fuel_fraction(3789000, 9.22e-8, 0.82, 14.13)
 
 print(C5)
 print(C17)
@@ -21,12 +21,12 @@ C5_mass = fuel_used(C5, 397655)
 C17_mass = fuel_used(C17, 265352)
 C130_mass = fuel_used(C130, 70305)
 
-print(C5_mass)
-print(C17_mass)
-print(C130_mass)
+print(C5_mass/0.82)
+print(C17_mass/0.82)
+print(C130_mass/0.82)
 
-C5_eco = fuel_economy(C5_mass, 3981800, 127460)
-C17_eco = fuel_economy(C17_mass, 4480000, 77519)
+C5_eco = fuel_economy(C5_mass, 3981800, 122500)
+C17_eco = fuel_economy(C17_mass, 4480000, 71214)
 C130_eco = fuel_economy(C130_mass, 3789000, 19356)
 
 print(C5_eco)
