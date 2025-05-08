@@ -30,7 +30,7 @@ class AircraftIteration:
         self.mission_type = mission_type
 
         self.tolerance = 0.00015
-        self.max_iterations = 10
+        self.max_iterations = 20
         self.iteration = 0
 
         self.class_i = ClassI(
@@ -113,13 +113,16 @@ class AircraftIteration:
             self.aircraft_data.data[mission_type]['T'] = None
 
         if self.mission_type == MissionType.DESIGN:
-            print(self.class_i.fuel_used/9.81/0.82)
-            print(self.aircraft_data.data['design_payload']/1000)
-            print(self.class_i.design_range/1000)
             self.aircraft_data.data[mission_type]['fuel_economy'] = self.class_i.fuel_used / 9.81 / 0.82 / (self.aircraft_data.data['design_payload']/1000) / (self.class_i.design_range / 1000)
         elif self.mission_type == MissionType.ALTITUDE:
             self.aircraft_data.data[mission_type]['fuel_economy'] = self.class_i.fuel_used / 9.81 / 0.82 / (self.aircraft_data.data['altitude_payload']/1000) / ((self.class_i.altitude_range_WIG+self.class_i.altitude_range_WOG) / 1000)
         
+
+        self.aircraft_data.data['max']['MTOM'] = max(self.aircraft_data.data['design']['MTOM'], self.aircraft_data.data['ferry']['MTOM'], self.aircraft_data.data['altitude']['MTOM'])
+        self.aircraft_data.data['max']['S'] = max(self.aircraft_data.data['design']['S'], self.aircraft_data.data['ferry']['S'], self.aircraft_data.data['altitude']['S'])
+        self.aircraft_data.data['max']['b'] = max(self.aircraft_data.data['design']['b'], self.aircraft_data.data['ferry']['b'], self.aircraft_data.data['altitude']['b'])
+        self.aircraft_data.data['max']['MAC'] = max(self.aircraft_data.data['design']['MAC'], self.aircraft_data.data['ferry']['MAC'], self.aircraft_data.data['altitude']['MAC'])
+        self.aircraft_data.data['max']['fuel_economy'] = min(self.aircraft_data.data['design']['fuel_economy'], self.aircraft_data.data['altitude']['fuel_economy'])
 
 if __name__=='__main__':
     iteration = AircraftIteration(

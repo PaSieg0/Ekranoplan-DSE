@@ -22,6 +22,8 @@ C17_mass = fuel_used(C17, 265352)
 C130_mass = fuel_used(C130, 70305)
 
 print(C5_mass)
+print(C17_mass)
+print(C130_mass)
 
 C5_eco = fuel_economy(C5_mass, 3981800, 127460)
 C17_eco = fuel_economy(C17_mass, 4480000, 77519)
