@@ -11,7 +11,8 @@ class WingLoading:
                 aircraft_data: Data,
                 mission_type: MissionType
                  ) -> None:
-        self.design_file = f'design{aircraft_data.data["design_id"]}.json'
+        self.design_number = aircraft_data.data['design_id']
+        self.design_file = f'design{self.design_number}.json'
         self.aircraft_data = aircraft_data
         self.mission_type = mission_type
         self.aircraft_type = AircraftType[self.aircraft_data.data['aircraft_type']]
@@ -23,6 +24,7 @@ class WingLoading:
         self.e = self.aircraft_data.data['oswald_factor']
         self.k = self.aircraft_data.data['k']
         self.n_engines = np.array([self.aircraft_data.data['n_engines']])
+        self.n_fuselages = self.aircraft_data.data['n_fuselages']
         self.stall_speed_clean = self.aircraft_data.data['stall_speed_clean']
         self.stall_speed_takeoff = self.aircraft_data.data['stall_speed_takeoff']
         self.stall_speed_landing = self.aircraft_data.data['stall_speed_landing']
@@ -34,9 +36,13 @@ class WingLoading:
         self.isa_high = ISA(self.high_altitude)
         self.prop_efficiency = self.aircraft_data.data['prop_efficiency']
         self.rho_water = self.aircraft_data.data['rho_water']
-        self.hull_surface = self.aircraft_data.data['hull_surface']
+        self.r = self.aircraft_data.data['r']
         self.L = self.aircraft_data.data['L']
+        self.depth = self.aircraft_data.data['depth']
         self.kinematic_viscosity = self.aircraft_data.data['kinematic_viscosity']
+
+
+        self.aircraft_data.data[self.mission_type.name.lower()]['stall_speed_clean'] = self.stall_speed_clean
 
         self.WS = np.arange(1, 10000, 1)
         self.TW = None
@@ -50,16 +56,29 @@ class WingLoading:
     def stall_requirement_high(self):
         x = 0.5*self.isa_high.rho * self.stall_speed_clean**2 * self.CLmax_clean
         return x
-    
+
+    def calculate_Re(self):
+        return self.V_lof*self.L / self.kinematic_viscosity
+         
     def calculate_Cd(self):
-        Re = self.V_lof*self.L / self.kinematic_viscosity
-        Cd = 0.075 / (np.log10(Re) - 2)**2
+        self.Re = self.calculate_Re()
+        self.aircraft_data.data[self.mission_type.name.lower()]['Re'] = self.Re
+        Cd = 0.075 / (np.log10(self.Re) - 2)**2
         return Cd
+    
+    def calculate_hull_surface(self):
+        return 2*abs(np.arccos(1-2*self.depth))*self.r*self.L
     
     def take_off_requirement(self):
         CL_takeoff = self.CLmax_takeoff/1.21
         Cd = self.calculate_Cd()
-        D = 0.5 * self.rho_water * (self.V_lof)**2 * Cd * self.hull_surface
+        self.hull_surface = self.calculate_hull_surface()
+        if self.design_number == 3:
+            self.hull_surface *= 2
+        print(f"hull_surface: {self.hull_surface}")
+        self.aircraft_data.data[self.mission_type.name.lower()]['Cd'] = Cd
+        self.aircraft_data.data[self.mission_type.name.lower()]['hull_surface'] = self.hull_surface
+        D = 0.5 * self.rho_water * (self.V_lof)**2 * Cd * self.hull_surface * self.n_fuselages
 
         if self.aircraft_type == AircraftType.JET:
             self.aircraft_data.data[self.mission_type.name.lower()]['take_off_thrust'] = D
@@ -177,10 +196,8 @@ class WingLoading:
 
             if self.aircraft_type == AircraftType.JET:
                 self.TW = max(intersections)
-                # print(f"T/W shall be at least {self.TW}")
             elif self.aircraft_type == AircraftType.PROP:
                 self.WP = min(intersections)
-                # print(f"W/P shall be at least {self.WP}")
 
         else:
             all_vertical_lines = [take_off_req, landing_req, stall_req, stall_req_high]

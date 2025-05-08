@@ -28,5 +28,6 @@ if __name__ == "__main__":
     main(create_excel=False)
     df = generate_df()
     plot = plot_bar_graph(df, 'MTOM')
-    print(df['fuel_economy'])
+    # print(df.columns)
+    print(df[['design_id', 'mission_type', 'MTOM', 'fuel_economy', 'aspect_ratio', 'S', 'b', 'MAC']])
     plot.show()
