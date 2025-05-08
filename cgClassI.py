@@ -2,19 +2,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from utils import Data
 
-def compute_x_lemac(
-    X_fcg,         # X_FCG (fuselage center of gravity)
-    c_bar,         # Mean aerodynamic chord
-    x_cg_wcg,      # (x/c)_WCG (normalized CG of wing center of gravity)
-    x_cg_oewcg,    # (x/c)_OEWCG (normalized CG of operating empty weight CG) design decision
-    m_w,           # Wing mass
-    m_f            # Fuselage mass
-):
-    term1 = (x_cg_wcg * m_w / m_f)
-    term2 = x_cg_oewcg * (1 + m_w / m_f)
-    X_lemac = X_fcg + c_bar * (term1 - term2)
-    return X_lemac
-
 def compute_x_cg(
     x_cg_components,  # Dictionary of components and their x/cg values
     weight_components  # Dictionary of components and their weights
