@@ -10,14 +10,14 @@ from ISA_Class import ISA
 def plot_complete_load_diagram(aircraft_data, h):
     # ====== Gust Load Point Calculation ======
     g = 9.80665  # m/s²
-    W_final = aircraft_data.data["MTOM"] * g
+    W_final = aircraft_data.data["design"]["MTOM"] * g
     U_ref = Calculate_U_ref(h / 0.3048)  # Altitude in ft
-    S = W_final / aircraft_data.data["WS"]
+    S = W_final / aircraft_data.data["design"]["WS"]
     rho = ISA(h).rho
     CL_alpha = aircraft_data.data["Cl_alpha"]
-    w = aircraft_data.data["WS"]  # N/m^2
+    w = aircraft_data.data["design"]["WS"]  # N/m^2
     w = w * 2.20462262 / (g * 3.2808399**2)  # lb/ft^2
-    b = np.sqrt(aircraft_data.data["aspect_ratio"] * S)
+    b = np.sqrt(aircraft_data.data["design"]["aspect_ratio"] * S)
     chord = S / b
     mu = Calculate_mu(w, rho * 0.0019403203319541, chord, CL_alpha, g)
     K_g = Calculate_K_g(mu)
