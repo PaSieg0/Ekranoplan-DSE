@@ -7,6 +7,8 @@ class Fuselage:
                  ) -> None:
                  
         self.aircraft_data = aircraft_data
+        self.design_number = self.aircraft_data.data['design_id']
+        self.design_file = f"design{self.design_number}.json"
 
         # from Raymer's book
         self.ltcd = 4.5 
@@ -22,7 +24,7 @@ class Fuselage:
         self.upsweep = self.aircraft_data.data['inputs']['upsweep']
         self.n_fuselages = self.aircraft_data.data['inputs']['n_fuselages']
 
-    def get_cargo_bay_length(self):
+    def get_tot_fus_length(self):
         return self.payload/self.cargo_density/self.cargo_width/self.cargo_height/self.n_fuselages
 
     def get_minimum_diameter(self):
@@ -40,25 +42,26 @@ class Fuselage:
             return Dmin #minimum needed to satisfy the rEqUirEmeNt of cargo hold area
 
     def CalcFuseLen(self):   #length of cargo bay in "straight body region", upsweep of tail, lf/d, ltc/d, ln/d
-        self.l = self.get_cargo_bay_length()
+        self.l = self.get_tot_fus_length()
+        print(self.l)
         self.d = self.CalcFuseDia()
         self.lf = self.lfd*self.d
         self.ltc = self.ltcd*self.d
         self.ln = self.lnd*self.d
-        self.total_length = self.lf + self.ltc + self.ln
 
         self.update_attributes()
+        self.aircraft_data.save_design(self.design_file)
 
     def update_attributes(self):
-        self.aircraft_data.data['inputs']['d_fuselage'] = self.d
-        self.aircraft_data.data['inputs']['r_fuselage'] = self.d/2
-        self.aircraft_data.data['inputs']['l_fuselage'] = self.lf
-        self.aircraft_data.data['inputs']['l_tailcone'] = self.ltc
-        self.aircraft_data.data['inputs']['l_nose'] = self.ln
-        self.aircraft_data.data['inputs']['L'] = self.total_length
+        self.aircraft_data.data['outputs']['general']['d_fuselage'] = self.d
+        self.aircraft_data.data['outputs']['general']['r_fuselage'] = self.d/2
+        self.aircraft_data.data['outputs']['general']['l_fuselage'] = self.lf
+        self.aircraft_data.data['outputs']['general']['l_tailcone'] = self.ltc
+        self.aircraft_data.data['outputs']['general']['l_nose'] = self.ln
+
 
 if __name__ == "__main__":
-    aircraft_data = Data("design1.json")
+    aircraft_data = Data("design4.json")
     fuselage = Fuselage(aircraft_data=aircraft_data)
     fuselage.CalcFuseLen()
     print(f"Fuselage Diameter: {fuselage.d} m")
