@@ -24,31 +24,32 @@ class ClassI:
                  ) -> None:
         self.design_file = f'design{aircraft_data.data["design_id"]}.json'
         self.aircraft_data = aircraft_data
-
-        self.aircraft_type = AircraftType[self.aircraft_data.data['aircraft_type']]
         self.mission_type = mission_type
 
-        self.design_range = self.aircraft_data.data['design_range']
-        self.design_payload = self.aircraft_data.data['design_payload']
-        self.design_crew = self.aircraft_data.data['design_crew']
-        self.ferry_range = self.aircraft_data.data['ferry_range']
-        self.ferry_payload = self.aircraft_data.data['ferry_payload']
-        self.ferry_crew = self.aircraft_data.data['ferry_crew']
-        self.altitude_range_WIG = self.aircraft_data.data['altitude_range_WIG']
-        self.altitude_range_WOG = self.aircraft_data.data['altitude_range_WOG']
-        self.altitude_payload = self.aircraft_data.data['altitude_payload']
-        self.altitude_crew = self.aircraft_data.data['altitude_crew']
+        self.aircraft_type = AircraftType[self.aircraft_data.data['inputs']['aircraft_type']]
+        self.mission_type = mission_type
 
-        self.cruise_speed = self.aircraft_data.data['cruise_speed']
-        self.jet_consumption = self.aircraft_data.data['jet_consumption']
-        self.prop_consumption = self.aircraft_data.data['prop_consumption']
-        self.prop_efficiency = self.aircraft_data.data['prop_efficiency']
-        self.Cd0 = self.aircraft_data.data['Cd0']
-        self.e = self.aircraft_data.data['oswald_factor']
-        self.A = self.aircraft_data.data['aspect_ratio']
-        self.tfo = self.aircraft_data.data['tfo']
-        self.reserve_fuel = self.aircraft_data.data['reserve_fuel']
-        self.k = self.aircraft_data.data['k']
+        self.design_range = self.aircraft_data.data['requirements']['design_range'] + self.aircraft_data.data['requirements']['reserve_range']/2
+        self.design_payload = self.aircraft_data.data['requirements']['design_payload']
+        self.design_crew = self.aircraft_data.data['requirements']['design_crew']
+        self.ferry_range = self.aircraft_data.data['requirements']['ferry_range'] + self.aircraft_data.data['requirements']['reserve_range']
+        self.ferry_payload = self.aircraft_data.data['requirements']['ferry_payload']
+        self.ferry_crew = self.aircraft_data.data['requirements']['ferry_crew']
+        self.altitude_range_WIG = self.aircraft_data.data['requirements']['altitude_range_WIG'] + self.aircraft_data.data['requirements']['reserve_range']
+        self.altitude_range_WOG = self.aircraft_data.data['requirements']['altitude_range_WOG']
+        self.altitude_payload = self.aircraft_data.data['requirements']['altitude_payload']
+        self.altitude_crew = self.aircraft_data.data['requirements']['altitude_crew']
+
+        self.cruise_speed = self.aircraft_data.data['requirements']['cruise_speed']
+        self.jet_consumption = self.aircraft_data.data['inputs']['jet_consumption']
+        self.prop_consumption = self.aircraft_data.data['inputs']['prop_consumption']
+        self.prop_efficiency = self.aircraft_data.data['inputs']['prop_efficiency']
+        self.Cd0 = self.aircraft_data.data['inputs']['Cd0']
+        self.e = self.aircraft_data.data['inputs']['oswald_factor']
+        self.A = self.aircraft_data.data['inputs']['aspect_ratio']
+        self.tfo = self.aircraft_data.data['inputs']['tfo']
+        self.reserve_fuel = self.aircraft_data.data['inputs']['reserve_fuel']
+        self.k = self.aircraft_data.data['inputs']['k']
 
         self.reference_aircraft_path = reference_aircraft_path
         self.reference_aircraft = self.load_reference_aircraft()
@@ -69,6 +70,7 @@ class ClassI:
             LD = (3/4*np.sqrt(np.pi*self.A*self.e/(3*self.Cd0)) + np.sqrt(np.pi*self.A*self.e/(4*self.Cd0))) / 2
         else:
             raise ValueError(f"Unsupported aircraft type: {self.aircraft_type}")
+        self.aircraft_data.data['outputs']['general']['LD'] = LD
         return LD
 
     def update_fuel_fractions_jet(self) -> None:
@@ -175,7 +177,20 @@ class ClassI:
             self.fuel_max = 1.1 * self.fuel
 
 
+            
+        self.update_attributes()
         self.aircraft_data.save_design(self.design_file)
+
+    def update_attributes(self):
+        self.aircraft_data.data['outputs'][self.mission_type.name.lower()]['MTOW'] = self.MTOW
+        self.aircraft_data.data['outputs'][self.mission_type.name.lower()]['fuel_used'] = self.fuel_used
+        self.aircraft_data.data['outputs'][self.mission_type.name.lower()]['fuel_res'] = self.fuel_res
+        self.aircraft_data.data['outputs'][self.mission_type.name.lower()]['fuel'] = self.fuel
+        self.aircraft_data.data['outputs'][self.mission_type.name.lower()]['OEW'] = self.OEW
+        self.aircraft_data.data['outputs'][self.mission_type.name.lower()]['EW'] = self.EW
+        self.aircraft_data.data['outputs'][self.mission_type.name.lower()]['ZFW'] = self.ZFW
+
+
 
 if __name__=="__main__":
     data = Data("design1.json")
