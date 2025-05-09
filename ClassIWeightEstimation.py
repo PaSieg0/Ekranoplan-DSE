@@ -54,12 +54,9 @@ class ClassI:
         self.reference_aircraft = self.load_reference_aircraft()
         self.slope, self.intersection = self.linear_relation()
         self.fuel_fractions = {
-            1: 0.992,
-            2: 0.990,
-            3: 0.996,
-            4: 0.985,
-            6: 0.990,
-            7: 0.990
+            1: 0.970,
+            2: 0.985,
+            3: 0.995
         }
 
 
@@ -128,7 +125,6 @@ class ClassI:
 
         if self.mission_type == MissionType.DESIGN or self.mission_type == MissionType.ALTITUDE:
             self.Mff **= 2
-
 
     def linear_relation(self):
         x, y = self.reference_aircraft['MTOW'], self.reference_aircraft['EW']
