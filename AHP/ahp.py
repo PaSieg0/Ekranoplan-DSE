@@ -98,16 +98,16 @@ def AHP_1_Participant(arr):
                 pi_pi_A2[i, j] = 0
     Consistency_ratio = list(pi_pi_A2[np.triu_indices(n, k = 1)])
     std = np.array(pd.DataFrame(evt).std(1))
-    plt.title('A')
-    g1 = sns.heatmap(pd.DataFrame(np.tril(A)), annot=True, cmap = "viridis", cbar=False)
-    g1.set_xticklabels(x_ticks)
-    g1.set_yticklabels(x_ticks)
-    plt.show()
-    plt.title('Consistency Ratio Matrix')
-    g2 = sns.heatmap(pd.DataFrame(np.tril(pi_pi_A2)), annot=True, cmap = "viridis", cbar=False)
-    g2.set_yticklabels(x_ticks)
-    g2.set_xticklabels(x_ticks)
-    plt.show()
+    # plt.title('A')
+    # g1 = sns.heatmap(pd.DataFrame(np.tril(A)), annot=True, cmap = "viridis", cbar=False)
+    # g1.set_xticklabels(x_ticks)
+    # g1.set_yticklabels(x_ticks)
+    # plt.show()
+    # plt.title('Consistency Ratio Matrix')
+    # g2 = sns.heatmap(pd.DataFrame(np.tril(pi_pi_A2)), annot=True, cmap = "viridis", cbar=False)
+    # g2.set_yticklabels(x_ticks)
+    # g2.set_xticklabels(x_ticks)
+    # plt.show()
     p = pd.DataFrame(p, columns = ['Weights'])
     p.index = p.index + 1
     p.index = 'Crit-' + p.index.astype(str)
@@ -118,8 +118,8 @@ def AHP_1_Participant(arr):
     p['RGMM'] = p['RGMM'].astype(float).map("{:.2%}".format)
     p['+/-'] = plus_minus
     p['+/-'] = p['+/-'].astype(float).map("{:.2%}".format)
-    print(p)
-    print(' ')
+    # print(p)
+    # print(' ')
     print('Consistency Ratio: {:.2%} & Consistency Ratio of Weighted: {:.2%}'.format(cr0, cr))
     return A, p, cr, rggm
 
@@ -190,7 +190,7 @@ def AHP_Consolidated(A, rggm, w = 1):
     g = sns.heatmap(pd.DataFrame(np.tril(cons_exp)), annot=True, cmap = "viridis", cbar=False)
     g.set_xticklabels(x_ticks)
     g.set_yticklabels(x_ticks)
-    plt.show()
+    # plt.show()
     p.index = p.index + 1
     p.index = 'Crit-' + p.index.astype(str)
     p['Cons Weights'] = p['Cons Weights'].astype(float).map("{:.2%}".format)
@@ -236,9 +236,10 @@ def extract_weights_csv(excel_path):
 
 A_list = []
 rggm_list = []
-n_participants = 3  # Number of participants
+n_participants = 10  # Number of participants
 for i in range(1, n_participants+1):
     arr = extract_weights_csv(f'AHP/ahp{i}.xlsx'.format(i+1))
+    print(f"Participant {i}:")
     A, p, cr, rggm = AHP_1_Participant(arr)
     A_list.append(A)
     rggm_list.append(rggm)
