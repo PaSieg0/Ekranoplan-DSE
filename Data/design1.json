@@ -1,6 +1,7 @@
 {
     "design_id": 1,
     "aircraft_type": "PROP",
+    "wing_type": "HIGH",
     "cruise_altitude": 4,
     "n_wings": 1,
     "n_fuselages": 1,
@@ -132,6 +133,17 @@
         "b": 88.06627882623444,
         "MAC": 8.806627882623443,
         "fuel_economy": 0.15706073603018214
+    },
+    "wing_design": {
+        "taper_ratio": 0.4,
+        "sweep_c_4": 0,
+        "dihedral": 1,
+        "sweep_x_c": 2.454031674527076,
+        "chord_root": 12.58089697517635,
+        "chord_tip": 5.03235879007054,
+        "y_MAC": 18.871345462764523,
+        "X_LEMAC": 21.056440000000002,
+        "X_LE": 20.24766805159581
     },
     "gravitational_acceleration": 9.81,
     "kinematic_viscosity": 1.002e-06,
