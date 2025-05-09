@@ -143,6 +143,7 @@ class ClassI:
         data = pd.read_excel(self.reference_aircraft_path)
         data.dropna(inplace=True)
         return data
+
         
     def main(self):
         self.calculate_Mff()

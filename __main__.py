@@ -12,7 +12,6 @@ def main(create_excel: bool = False) -> None:
     for i in range(1, 5):
         print(f"Running iteration for design {i}...")
         file_path = f"design{i}.json"
-        print(file_path)
         if create_excel:
             design_json_to_excel(file_path, f"Concept_Data.xlsx")
         aircraft_data = Data(file_path)
