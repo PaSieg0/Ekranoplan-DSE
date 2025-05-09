@@ -37,18 +37,20 @@ if __name__ == "__main__":
     for fraction in fuefracs_no_cruise.values():
         Mff_nocruise *= fraction
 
-    Mff_harmonic = (data.data['design']['ZFW'] + (data.data['max_payload'] - data.data['design_payload'])*g) / data.data['design']['MTOW']
-    Mff_design = data.data['design']['ZFW'] / data.data['design']['MTOW']
-    Mff_maxrange = (data.data['design']['ZFW']- (data.data['design']['Fuel_max'] - data.data['design']['Fuel'])) / (data.data['design']['MTOW'])
-    Mff_ferry = (data.data['design']['MTOW']- data.data['design_payload']*g - data.data['design']['Fuel']) / (data.data['design']['MTOW']- data.data['design_payload']*g)
+    Mff_harmonic = 1 - (data.data['design']['Fuel_used'] - (data.data['max_payload'] - data.data['design_payload'])*g) / data.data['design']['MTOW']
+    Mff_design = 1 - (data.data['design']['Fuel_used'] / data.data['design']['MTOW'])
+    Mff_maxrange = 1 - (data.data['design']['Fuel_max']) / (data.data['design']['MTOW'])
+    Mff_ferry = 1 - (data.data['design']['Fuel_max']) / (data.data['design']['MTOW']- data.data['design_payload']*g)
+
+    print(f"Design Mff (Harmonic): {Mff_harmonic}")
+    print(f"Design Mff (Design): {Mff_design}")
+    print(f"Design Mff (Max Range): {Mff_maxrange}")
+    print(f"Design Mff (Ferry): {Mff_ferry}")
 
     W4_W5_harmonic = np.sqrt(1/Mff_harmonic * Mff_nocruise**2)
     W4_W5_design = np.sqrt(1/Mff_design * Mff_nocruise**2)
     W4_W5_maxrange = np.sqrt(1/Mff_maxrange * Mff_nocruise**2)
     W4_W5_ferry = np.sqrt(1/Mff_ferry * Mff_nocruise**2)
-
-    print(f"design W4/W5 (Design): {1/W4_W5_design}")
-    print(f"design Mff: {Mff_design}")
 
     range_harmonic = range_equation(data.data['aircraft_type'], W4_W5_harmonic, data.data['prop_efficiency'], L_D, cp, cj, V, g)
     range_design = range_equation(data.data['aircraft_type'], W4_W5_design, data.data['prop_efficiency'], L_D, cp, cj, V, g)
