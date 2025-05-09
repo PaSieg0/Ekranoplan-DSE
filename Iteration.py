@@ -1,9 +1,11 @@
+import os
 import numpy as np
 from scipy.optimize import fsolve
-from WingLoading import main
+from WingLoading import main, WingLoading
 from ClassIWeightEstimation import ClassI, MissionType, AircraftType
 import matplotlib.pyplot as plt
 from ISA_Class import ISA
+from utils import Data
 
 
 def solve_hb(target_A_A):
@@ -20,295 +22,117 @@ def solve_hb(target_A_A):
 def Ainf_Ah(h_b):
     return 1 - np.exp(-4.74*h_b**0.814) - h_b**2*np.exp(-3.88*h_b**0.758)
 
+class AircraftIteration:
+    def __init__(self, aircraft_data: Data, mission_type: MissionType) -> None:
+        self.design_number = aircraft_data.data['design_id']
+        self.design_file = f'design{self.design_number}.json'
+        self.aircraft_data = aircraft_data
+        self.mission_type = mission_type
 
-def iteration(aircraft_type,
-              mission_type,
-              Range,
-              cruise_speed,
-              jet_consumption,
-              prop_consumption,
-              prop_efficiency,
-              Cd0,
-              e,
-              A,
-              tfo,
-              k,
-              n_engines,
-              reserve_fuel,
-              CLmax_clean,
-              CLmax_takeoff,
-              CLmax_landing,
-              aspect_ratios,
-              stall_speed_clean,
-              stall_speed_takeoff,
-              stall_speed_landing,
-              cruise_altitude,
-              high_altitude,
-              hull_surface,
-              L,
-              rho_water,
-              kinematic_viscosity
-              ):
-    CLASS_I = ClassI(
-        aircraft_type=aircraft_type,
-        mission_type=mission_type,
-        cruise_speed=cruise_speed,
-        jet_consumption=jet_consumption,
-        prop_consumption=prop_consumption,
-        prop_efficiency=prop_efficiency,
-        Cd0=Cd0,
-        e=e,
-        A=A,
-        tfo=tfo,
-        k=k,
-        reserve_fuel=reserve_fuel
-    )
-    CLASS_I.range = Range
-    
+        self.tolerance = 0.00015
+        self.max_iterations = 20
+        self.iteration = 0
 
-    CLASS_I.main()
-    
-    prev_MTOM = CLASS_I.MTOM
-    print(f"Initial MTOM: {prev_MTOM:=,.2f} kg")
+        self.V_lof = 1.05 * self.aircraft_data.data['stall_speed_takeoff']
 
-    tolerance = 0.0001
-    max_iterations = 10
-    iteration = 0
-
-    
-    WP, TW, WS = main(
-        plot_type=aircraft_type,
-        CLmax_clean=CLmax_clean,
-        CLmax_takeoff=CLmax_takeoff,
-        CLmax_landing=CLmax_landing,
-        aspect_ratios=aspect_ratios,
-        Cd0=Cd0,
-        e=e,
-        k=k,
-        n_engines=n_engines,
-        stall_speed_clean=stall_speed_clean,
-        stall_speed_takeoff=stall_speed_takeoff,
-        stall_speed_landing=stall_speed_landing,
-        cruise_altitude=cruise_altitude,
-        high_altitude=high_altitude,
-        cruise_speed=cruise_speed,
-        prop_efficiency=prop_efficiency,
-        hull_surface=hull_surface,
-        L=L,
-        rho_water=rho_water,
-        kinematic_viscosity=kinematic_viscosity,
-        PLOT_OUTPUT=False
-    )
-
-    MTOM_history = []
-    MTOM_history.append(prev_MTOM)
-
-    print(f"Initial MTOM: {CLASS_I.MTOM:=,.2f} kg")
-
-
-    while True:
-        iteration += 1
-
-        S = CLASS_I.MTOW/WS
-        b = np.sqrt(S*A)
-        h_b = cruise_altitude/b
-        A_ratio = Ainf_Ah(h_b)
-        new_k = np.sqrt(1/A_ratio)
-        fuel_economy = CLASS_I.fuel_used/9.81*0.82/90/(Range/1000)
-        print(f"S={S}")
-        print(f"b={b}")
-        print(f"h_b={h_b}")
-        print(f"A_ratio={A_ratio}")
-        print(f"new_k={new_k}")
-
-        CLASS_I = ClassI(
-            aircraft_type=aircraft_type,
-            mission_type=mission_type,
-            cruise_speed=cruise_speed,
-            jet_consumption=jet_consumption,
-            prop_consumption=prop_consumption,
-            prop_efficiency=prop_efficiency,
-            Cd0=Cd0,
-            e=e,
-            A=A,
-            tfo=tfo,
-            k=new_k,
-            reserve_fuel=reserve_fuel
-        )
-        CLASS_I.range = Range
-        CLASS_I.main()
-        curr_MTOM = CLASS_I.MTOM
-        MTOM_history.append(curr_MTOM)
-
-        WP, TW, WS = main(
-            plot_type=aircraft_type,
-            CLmax_clean=CLmax_clean,
-            CLmax_takeoff=CLmax_takeoff,
-            CLmax_landing=CLmax_landing,
-            aspect_ratios=[A],
-            Cd0=Cd0,
-            e=e,
-            k=new_k,
-            n_engines=n_engines,
-            stall_speed_clean=stall_speed_clean,
-            stall_speed_takeoff=stall_speed_takeoff,
-            stall_speed_landing=stall_speed_landing,
-            cruise_altitude=cruise_altitude,
-            high_altitude=high_altitude,
-            cruise_speed=cruise_speed,
-            prop_efficiency=prop_efficiency,
-            hull_surface=hull_surface,
-            L=L,
-            rho_water=rho_water,
-            kinematic_viscosity=kinematic_viscosity,
-            PLOT_OUTPUT=False
+        self.class_i = ClassI(
+            aircraft_data=self.aircraft_data,
+            mission_type=self.mission_type,
         )
 
-        diff_ratio = abs((curr_MTOM - prev_MTOM) / prev_MTOM)
-        print(f"Iteration {iteration}, MTOM= {curr_MTOM}: ΔMTOM ratio = {diff_ratio:.5f}")
-
-        if diff_ratio < tolerance or iteration >= max_iterations:
-            print(f"Final MTOM: {CLASS_I.MTOM:=,.2f} kg")
-            print(f"Final fuel economy: {fuel_economy:.4f} L/ton/km")
-            print()
-            print(f"Final MTOW: {CLASS_I.MTOW:=,.2f} N")
-            print(f"Final OEW: {CLASS_I.OEW/9.81:=,.2f} kg")
-            print(f"Final ZFW: {CLASS_I.ZFW/9.81:=,.2f} kg")
-            print(f"Final EW: {CLASS_I.EW/9.81:=,.2f} kg")
-            print(f"Final Payload: {CLASS_I.payload:=,.2f} kg")
-            print(f"Final Fuel: {CLASS_I.fuel/9.81:=,.2f} kg")
-            print(f"Final Fuel used: {CLASS_I.fuel_used/9.81:=,.2f} kg")
-            print(f"Final Fuel reserve: {CLASS_I.fuel_res/9.81:=,.2f} kg")
-
-
-            print(f"Final S: {S:=,.2f} m^2")
-            print(f"Final A: {A:=,.2f}")
-            print(f"Final b: {b:=,.2f} m")
-            print(f"Final cruise_altitude: {cruise_altitude:=,.2f} m")
-            print(f"Final h_b: {h_b:=,.2f}")
-            print(f"Final k: {new_k:=,.2f}")
-            if aircraft_type == AircraftType.JET or aircraft_type == AircraftType.MIXED:
-                print(f"Final TW: {TW:=,.2f} ")
-                print(f"Final T: {TW*CLASS_I.MTOW:=,.2f} N")
-            if aircraft_type == AircraftType.PROP or aircraft_type == AircraftType.MIXED:
-                print(f"Final WP: {WP:=,.2f} ")
-                print(f"Final P: {CLASS_I.MTOW/WP:=,.2f} ")
-            break
-
-        prev_MTOM = curr_MTOM
+    def get_initial_conditions(self):
+        self.class_i.main()
+        self.prev_MTOM = self.class_i.MTOM
+        self.MTOM_history = [self.prev_MTOM]
+        self.WP, self.TW, self.WS = main(aircraft_data=self.aircraft_data,
+                                         mission_type=self.mission_type,
+                                         PLOT_OUTPUT=False)
+        self.S = self.class_i.MTOW / self.WS
+        if self.design_number == 4:
+            self.b = np.sqrt(self.S/2 * self.class_i.A)
+        else:
+            self.b = np.sqrt(self.S * self.class_i.A)
+        self.h_b = self.aircraft_data.data['cruise_altitude'] / self.b
+        self.A_ratio = Ainf_Ah(self.h_b)
+        self.new_k = np.sqrt(1 / self.A_ratio)
 
 
-    def calculate_Cd():
-        Re = 1.05*stall_speed_takeoff*L / kinematic_viscosity
-        Cd = 0.075 / (np.log10(Re) - 2)**2
-        return Cd
-    
-    def take_off_requirement():
-        CL_takeoff = k * np.array(CLmax_takeoff)/1.21
-        Cd = calculate_Cd()
-        print(f"Cd: {Cd:.4f}")
-        D = 0.5 * rho_water * (1.05*stall_speed_takeoff)**2 * Cd * hull_surface
+        
+    def run_iteration(self) -> list[float]:
+        self.get_initial_conditions()
 
-        print(f"Thrust shall be at least {D:=,.0f} N.")
-        print(f"Power shall be at least {D*1.05*stall_speed_takeoff:=,.0f} W.")
+        while True:
+            self.iteration += 1
+            self.class_i.k = self.new_k
+
+            self.class_i.main()
+            self.curr_MTOM = self.class_i.MTOM
+            self.WP, self.TW, self.WS = main(aircraft_data=self.aircraft_data,
+                                            mission_type=self.mission_type,
+                                             PLOT_OUTPUT=False)
+            stop_condition = abs((self.curr_MTOM - self.prev_MTOM) / self.prev_MTOM) < self.tolerance or self.iteration >= self.max_iterations
+            if stop_condition:
+                self.update_attributes()
+                self.aircraft_data.save_design(self.design_file)
+                break
+
+            self.prev_MTOM = self.curr_MTOM
+            self.MTOM_history.append(self.curr_MTOM)
+            self.S = self.class_i.MTOW / self.WS
+            self.b = np.sqrt(self.S/self.aircraft_data.data['n_wings'] * self.class_i.A)
+            self.h_b = self.aircraft_data.data['cruise_altitude'] / self.b
+            self.A_ratio = Ainf_Ah(self.h_b)
+            self.new_k = np.sqrt(1 / self.A_ratio)
+            self.aircraft_data.data['k'] = self.new_k
+            
+
+      
+    def update_attributes(self):
+        mission_type = self.mission_type.name.lower()
+        self.aircraft_data.data[mission_type]['MTOM'] = self.class_i.MTOM
+        self.aircraft_data.data[mission_type]['MTOW'] = self.class_i.MTOW
+        self.aircraft_data.data[mission_type]['OEW'] = self.class_i.OEW
+        self.aircraft_data.data[mission_type]['ZFW'] = self.class_i.ZFW
+        self.aircraft_data.data[mission_type]['EW'] = self.class_i.EW
+        self.aircraft_data.data[mission_type]['Fuel'] = self.class_i.fuel
+        self.aircraft_data.data[mission_type]['Fuel_used'] = self.class_i.fuel_used
+        self.aircraft_data.data[mission_type]['Fuel_reserve'] = self.class_i.fuel_res
+        self.aircraft_data.data[mission_type]['S'] = self.S
+        self.aircraft_data.data[mission_type]['b'] = self.b
+        self.aircraft_data.data[mission_type]['MAC'] = self.S / self.b
+        self.aircraft_data.data[mission_type]['h_b'] = self.h_b
+        self.aircraft_data.data[mission_type]['k'] = self.new_k
+        self.aircraft_data.data[mission_type]['WP'] = self.WP
+        self.aircraft_data.data[mission_type]['TW'] = self.TW
+        self.aircraft_data.data[mission_type]['WS'] = self.WS
+        print(self.aircraft_data.data['stall_speed_takeoff'] * 1.05)
+        self.aircraft_data.data['V_lof'] = self.aircraft_data.data['stall_speed_takeoff'] * 1.05
+        self.aircraft_data.data[mission_type]['Re'] = self.aircraft_data.data['V_lof'] * self.aircraft_data.data['L'] / self.aircraft_data.data['kinematic_viscosity']
+        if self.WP:
+            self.aircraft_data.data[mission_type]['P'] = self.class_i.MTOW / self.WP
+        else: 
+            self.aircraft_data.data[mission_type]['P'] = None
+        if self.TW:
+            self.aircraft_data.data[mission_type]['T'] = self.class_i.MTOW * self.TW
+        else:
+            self.aircraft_data.data[mission_type]['T'] = None
+
+        if self.mission_type == MissionType.DESIGN:
+            self.aircraft_data.data[mission_type]['fuel_economy'] = self.class_i.fuel_used / 9.81 / 0.82 / (self.aircraft_data.data['design_payload']/1000) / (self.class_i.design_range / 1000)
+        elif self.mission_type == MissionType.ALTITUDE:
+            self.aircraft_data.data[mission_type]['fuel_economy'] = self.class_i.fuel_used / 9.81 / 0.82 / (self.aircraft_data.data['altitude_payload']/1000) / ((self.class_i.altitude_range_WIG+self.class_i.altitude_range_WOG) / 1000)
         
 
-        x = [CL*0.5*ISA(cruise_altitude).rho * (1.05*stall_speed_takeoff)**2 for CL in CL_takeoff]
-        return x
-    
-    take_off_requirement()
-
-    return fuel_economy, MTOM_history
-
+        self.aircraft_data.data['max']['MTOM'] = max(self.aircraft_data.data['design']['MTOM'], self.aircraft_data.data['ferry']['MTOM'], self.aircraft_data.data['altitude']['MTOM'])
+        self.aircraft_data.data['max']['S'] = max(self.aircraft_data.data['design']['S'], self.aircraft_data.data['ferry']['S'], self.aircraft_data.data['altitude']['S'])
+        self.aircraft_data.data['max']['b'] = max(self.aircraft_data.data['design']['b'], self.aircraft_data.data['ferry']['b'], self.aircraft_data.data['altitude']['b'])
+        self.aircraft_data.data['max']['MAC'] = max(self.aircraft_data.data['design']['MAC'], self.aircraft_data.data['ferry']['MAC'], self.aircraft_data.data['altitude']['MAC'])
+        self.aircraft_data.data['max']['fuel_economy'] = min(self.aircraft_data.data['design']['fuel_economy'], self.aircraft_data.data['altitude']['fuel_economy'])
 
 if __name__=='__main__':
-    aircraft_type = AircraftType.PROP
-    mission_type = MissionType.DESIGN
-    cruise_speed = 225*0.51444
-    jet_consumption = 19e-6
-    prop_consumption = 90e-9
-    prop_efficiency = 0.82
-    Cd0 = 0.02
-    e = 0.85
-    A = 10
-    tfo = 0.001
-    reserve_fuel = 0
-    k = 1
-    n_engines = [4, 6, 8, 10]
+    iteration = AircraftIteration(
+        aircraft_data=Data('design1.json'),
+        mission_type=MissionType.DESIGN
+    )
 
-    CLmax_clean=[1.5, 1.6, 1.7]
-    CLmax_takeoff=[1.6, 1.8, 2.0, 2.2]
-    CLmax_landing=[1.8, 1.9, 2.2]
-    aspect_ratios=[A]
-    stall_speed_clean=150*0.5144
-    stall_speed_takeoff=120*0.5144
-    stall_speed_landing=100*0.5144
-    cruise_altitude=5
-    high_altitude=10000*0.3048
-    L=40
-    r=3
-    hull_surface=2*np.pi*L*r / 3
-    rho_water=1000.0
-    kinematic_viscosity=1.002e-6
-    final_MTOMS = []
-    fuel_economy, MTOM_history = iteration(
-                        aircraft_type=aircraft_type,
-                        mission_type=mission_type,
-                        Range=2800*1.852*1000,
-                        cruise_speed=cruise_speed,
-                        jet_consumption=jet_consumption,
-                        prop_consumption=prop_consumption,
-                        prop_efficiency=prop_efficiency,
-                        Cd0=Cd0,
-                        e=e,
-                        A=A,
-                        tfo=tfo,
-                        k=k,
-                        n_engines=n_engines,
-                        reserve_fuel=reserve_fuel,
-                        CLmax_clean=CLmax_clean,
-                        CLmax_takeoff=CLmax_takeoff,
-                        CLmax_landing=CLmax_landing,
-                        aspect_ratios=[A],
-                        stall_speed_clean=stall_speed_clean,
-                        stall_speed_takeoff=stall_speed_takeoff,
-                        stall_speed_landing=stall_speed_landing,
-                        cruise_altitude=cruise_altitude,
-                        high_altitude=high_altitude,
-                        hull_surface=hull_surface,
-                        L=L,
-                        rho_water=rho_water,
-                        kinematic_viscosity=kinematic_viscosity
-                         )
-    print(fuel_economy)
-    # for A in range(10, 11, 1):
-    #     fuel_economy, MTOM_history = iteration(
-    #                         aircraft_type=aircraft_type,
-    #                         mission_type=mission_type,
-    #                         cruise_speed=cruise_speed,
-    #                         jet_consumption=jet_consumption,
-    #                         prop_consumption=prop_consumption,
-    #                         prop_efficiency=prop_efficiency,
-    #                         Cd0=Cd0,
-    #                         e=e,
-    #                         A=A,
-    #                         tfo=tfo,
-    #                         k=k,
-    #                         reserve_fuel=reserve_fuel,
-    #                         CLmax_clean=CLmax_clean,
-    #                         CLmax_takeoff=CLmax_takeoff,
-    #                         CLmax_landing=CLmax_landing,
-    #                         aspect_ratios=[A],
-    #                         stall_speed_clean=stall_speed_clean,
-    #                         stall_speed_takeoff=stall_speed_takeoff,
-    #                         stall_speed_landing=stall_speed_landing,
-    #                         cruise_altitude=cruise_altitude,
-    #                         high_altitude=high_altitude,
-    #                         hull_surface=hull_surface,
-    #                         L=L,
-    #                         rho_water=rho_water,
-    #                         kinematic_viscosity=kinematic_viscosity
-    #                         )
-    #     final_MTOMS.append(round(MTOM_history[-1]))
-    # print(final_MTOMS)
-
+    iteration.run_iteration()
