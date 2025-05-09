@@ -8,7 +8,7 @@ def apply_number_format(cell, value):
         if abs(value) >= 0.001:
             cell.number_format = '#,##0.000'  # Locale-dependent: assumes Excel settings use comma for decimals
         else:
-            cell.number_format = '0,000E+00'
+            cell.number_format = '0.000E+00'
         cell.value = value
     else:
         cell.value = value
@@ -42,7 +42,7 @@ def design_json_to_excel(json_file: str, excel_file: str) -> None:
         "l_fuselage": "[m]", "l_cargo_straight": "[m]", "r_fuselage": "[m]", "d_fuselage": "[m]", "l_tailcone": "[m]", "l_nose": "[m]",
         "V_lof": "[m/s]", "cargo_width": "[m]", "cargo_height": "[m]", "cargo_length": "[m]", "cargo_density": "[kg/m³]",
         "sweep_c_4": "[deg]", "dihedral": "[deg]", "sweep_x_c": "[deg]", "sweep_TE": "[deg]", "chord_root": "[m]", "chord_tip": "[m]",
-        "y_MAC": "[m]", "X_LEMAC": "[m]", "X_LE": "[m]"
+        "y_MAC": "[m]", "X_LEMAC": "[m]", "X_LE": "[m]", "total_fuel": "[N]", "fuel_mission": "[N]"
     }
 
     requirements = data.get('requirements', {})
