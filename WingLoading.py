@@ -1,82 +1,95 @@
+import os
 from enum import Enum, auto
 from ISA_Class import ISA
 import numpy as np
 import matplotlib.pyplot as plt
 from ClassIWeightEstimation import AircraftType, MissionType
-
+from utils import Data
 
 class WingLoading:
     def __init__(self,
-                 aircraft_type: AircraftType,
-                 CLmax_clean: list[float],
-                 CLmax_takeoff: list[float],
-                 CLmax_landing: list[float],
-                 aspect_ratios: list[float],
-                 Cd0: float,
-                 e: float,
-                 k: float,
-                 n_engines: list[int],
-                 stall_speed_clean: float,
-                 stall_speed_takeoff: float,
-                 stall_speed_landing: float,
-                 cruise_altitude: float,
-                 high_altitude: float,
-                 cruise_speed: float,
-                 prop_efficiency: float,
-                 hull_surface: float,
-                 L: float,
-                 rho_water: float,
-                 kinematic_viscosity: float
+                aircraft_data: Data,
+                mission_type: MissionType
                  ) -> None:
-        self.aircraft_type = aircraft_type
-        self.CLmax_clean = np.array(CLmax_clean)
-        self.CLmax_takeoff = np.array(CLmax_takeoff)
-        self.CLmax_landing = np.array(CLmax_landing)
-        self.aspect_ratios = np.array(aspect_ratios)
-        self.Cd0 = Cd0
-        self.e = e
-        self.k = k
-        self.n_engines = n_engines
-        self.stall_speed_clean = stall_speed_clean
-        self.stall_speed_takeoff = stall_speed_takeoff
-        self.stall_speed_landing = stall_speed_landing
+        self.design_number = aircraft_data.data['design_id']
+        self.design_file = f'design{self.design_number}.json'
+        self.aircraft_data = aircraft_data
+        self.mission_type = mission_type
+        self.aircraft_type = AircraftType[self.aircraft_data.data['aircraft_type']]
+        self.CLmax_clean = np.array([self.aircraft_data.data['CLmax_clean']])
+        self.CLmax_takeoff = np.array([self.aircraft_data.data['CLmax_takeoff']])
+        self.CLmax_landing = np.array([self.aircraft_data.data['CLmax_landing']])
+        self.aspect_ratios = np.array([self.aircraft_data.data['aspect_ratio']])
+        self.Cd0 = self.aircraft_data.data['Cd0']
+        self.e = self.aircraft_data.data['oswald_factor']
+        self.k = self.aircraft_data.data['k']
+        self.n_engines = np.array([self.aircraft_data.data['n_engines']])
+        self.n_fuselages = self.aircraft_data.data['n_fuselages']
+        self.stall_speed_clean = self.aircraft_data.data['stall_speed_clean']
+        self.stall_speed_takeoff = self.aircraft_data.data['stall_speed_takeoff']
+        self.stall_speed_landing = self.aircraft_data.data['stall_speed_landing']
         self.V_lof = 1.05*self.stall_speed_takeoff
-        self.cruise_altitude = cruise_altitude
-        self.high_altitude = high_altitude
-        self.cruise_speed = cruise_speed
+        self.cruise_altitude = self.aircraft_data.data['cruise_altitude']
+        self.high_altitude = self.aircraft_data.data['high_altitude']
+        self.cruise_speed = self.aircraft_data.data['cruise_speed']
         self.isa_cruise = ISA(self.cruise_altitude)
         self.isa_high = ISA(self.high_altitude)
-        self.prop_efficiency = prop_efficiency
-        self.rho_water = rho_water
-        self.hull_surface = hull_surface
-        self.L = L
-        self.kinematic_viscosity = kinematic_viscosity
+        self.prop_efficiency = self.aircraft_data.data['prop_efficiency']
+        self.rho_water = self.aircraft_data.data['rho_water']
+        self.r_fuselage = self.aircraft_data.data['r_fuselage'] 
+        self.r_float = self.aircraft_data.data['r_float'] 
+        self.L = self.aircraft_data.data['L']
+        self.depth = self.aircraft_data.data['depth']
+        self.kinematic_viscosity = self.aircraft_data.data['kinematic_viscosity']
 
+
+        self.aircraft_data.data[self.mission_type.name.lower()]['stall_speed_clean'] = self.stall_speed_clean
 
         self.WS = np.arange(1, 10000, 1)
+        self.TW = None
+        self.WP = None
+        self.max_WS = None
 
     def stall_requirement(self):
         x = 0.5*self.isa_cruise.rho * self.stall_speed_clean**2 * self.CLmax_clean
         return x
     
     def stall_requirement_high(self):
-        x = 0.5*self.isa_cruise.rho * self.stall_speed_clean**2 * self.CLmax_clean
+        x = 0.5*self.isa_high.rho * self.stall_speed_clean**2 * self.CLmax_clean
         return x
-    
+
+    def calculate_Re(self):
+        return self.V_lof*self.L / self.kinematic_viscosity
+         
     def calculate_Cd(self):
-        Re = self.V_lof*self.L / self.kinematic_viscosity
-        Cd = 0.075 / (np.log10(Re) - 2)**2
+        self.Re = self.calculate_Re()
+        self.aircraft_data.data[self.mission_type.name.lower()]['Re'] = self.Re
+        Cd = 0.075 / (np.log10(self.Re) - 2)**2
         return Cd
+    
+    def calculate_hull_surface(self):
+        return 2*abs(np.arccos(1-2*self.depth))*self.r_float*self.L
     
     def take_off_requirement(self):
         CL_takeoff = self.CLmax_takeoff/1.21
         Cd = self.calculate_Cd()
-        D = 0.5 * self.rho_water * (self.V_lof)**2 * Cd * self.hull_surface
-        if self.aircraft_type == AircraftType.JET:
-            print(f"Thrust shall be at least {D:=,.0f} N.")
-        if self.aircraft_type == AircraftType.PROP or self.aircraft_type == AircraftType.MIXED:
-            print(f"Power shall be at least {D*self.V_lof:=,.0f} W.")
+        self.hull_surface = self.calculate_hull_surface()
+        if self.design_number == 3:
+            self.hull_surface *= 2
+        self.aircraft_data.data[self.mission_type.name.lower()]['Cd'] = Cd
+        self.aircraft_data.data[self.mission_type.name.lower()]['hull_surface'] = self.hull_surface
+        D = 0.5 * self.rho_water * (self.V_lof)**2 * Cd * self.hull_surface * self.n_fuselages
 
+        if self.aircraft_type == AircraftType.JET:
+            self.aircraft_data.data[self.mission_type.name.lower()]['take_off_thrust'] = D
+            self.aircraft_data.data[self.mission_type.name.lower()]['take_off_power'] = None
+        elif self.aircraft_type == AircraftType.PROP or self.aircraft_type == AircraftType.MIXED:
+            self.aircraft_data.data[self.mission_type.name.lower()]['take_off_power'] = D * self.V_lof / self.prop_efficiency
+            self.aircraft_data.data[self.mission_type.name.lower()]['take_off_thrust'] = None
+        elif self.aircraft_type == AircraftType.MIXED:
+            self.aircraft_data.data[self.mission_type.name.lower()]['take_off_thrust'] = D
+            self.aircraft_data.data[self.mission_type.name.lower()]['take_off_power'] = D * self.V_lof / self.prop_efficiency
+        
         x = [CL*0.5*self.isa_cruise.rho * self.V_lof**2 for CL in CL_takeoff]
         return x
 
@@ -164,7 +177,7 @@ class WingLoading:
         climb_gradient_req = self.climb_gradient_requirement()
         climb_gradient_req_OEI = self.climb_gradient_requirement_OEI()
 
-        if self.aircraft_type == AircraftType.JET or self.aircraft_type == AircraftType.PROP:
+        if self.aircraft_type == AircraftType.PROP:
             all_vertical_lines = [take_off_req, landing_req, stall_req, stall_req_high]
             self.max_WS = float('inf')
             for values in all_vertical_lines:
@@ -183,21 +196,20 @@ class WingLoading:
 
             if self.aircraft_type == AircraftType.JET:
                 self.TW = max(intersections)
-                print(f"T/W shall be at least {self.TW}")
             elif self.aircraft_type == AircraftType.PROP:
                 self.WP = min(intersections)
-                print(f"W/P shall be at least {self.WP}")
 
-        elif self.aircraft_type == AircraftType.MIXED:
+        else:
             all_vertical_lines = [take_off_req, landing_req, stall_req, stall_req_high]
             self.max_WS = float('inf')
+            
             for values in all_vertical_lines:
                 maxx = np.min(values)
                 if maxx < self.max_WS:
                     self.max_WS = maxx
 
             all_curves_prop = [cruise_req]
-            all_curves_jet = [cruise_high_req, climb_rate_req, climb_gradient_req, climb_gradient_req_OEI]
+            all_curves_jet = [cruise_high_req, climb_rate_req]
             intersections_prop = []
             intersections_jet = []
 
@@ -210,83 +222,32 @@ class WingLoading:
                     y_at_leftmost = np.interp(self.max_WS, self.WS, curve)
                     intersections_jet.append(y_at_leftmost)
 
-            intersections_jet.append(min(climb_gradient_req))
+            intersections_jet.append(max([max(climb_gradient_req),max(climb_gradient_req_OEI)]))
             self.TW = max(intersections_jet)
             self.WP = max(intersections_prop)
-            print(f"T/W shall be at least {max(intersections_jet)}")
-            print(f"W/P shall be at least {min(intersections_prop)}")
+
+            self.aircraft_data.save_design(self.design_file)
                 
 
         return stall_req, stall_req_high, take_off_req, landing_req, cruise_req, cruise_high_req, climb_rate_req, climb_gradient_req, climb_gradient_req_OEI
 
-def main(plot_type, CLmax_clean, CLmax_takeoff, CLmax_landing, aspect_ratios, Cd0, e, k, n_engines, stall_speed_clean, stall_speed_takeoff, stall_speed_landing, cruise_altitude, high_altitude, cruise_speed, prop_efficiency, hull_surface, L, rho_water, kinematic_viscosity, PLOT_OUTPUT: bool=False):
+def main(aircraft_data: Data, 
+         mission_type: MissionType,
+         PLOT_OUTPUT: bool=False):
+    plot_type = AircraftType[aircraft_data.data['aircraft_type']]
     prop = WingLoading(
-        aircraft_type=AircraftType.PROP,
-        CLmax_clean=CLmax_clean,
-        CLmax_takeoff=CLmax_takeoff,
-        CLmax_landing=CLmax_landing,
-        aspect_ratios=aspect_ratios,
-        Cd0=Cd0,
-        e=e,
-        k=k,
-        n_engines=n_engines,
-        stall_speed_clean=stall_speed_clean,
-        stall_speed_takeoff=stall_speed_takeoff,
-        stall_speed_landing=stall_speed_landing,
-        cruise_altitude=cruise_altitude,
-        high_altitude=high_altitude,
-        cruise_speed=cruise_speed,
-        prop_efficiency=prop_efficiency,
-        hull_surface=hull_surface,
-        L=L,
-        rho_water=rho_water,
-        kinematic_viscosity=kinematic_viscosity
+        aircraft_data=aircraft_data,
+        mission_type=mission_type,
     )
 
     jet = WingLoading(
-        aircraft_type=AircraftType.JET,
-        CLmax_clean=CLmax_clean,
-        CLmax_takeoff=CLmax_takeoff,
-        CLmax_landing=CLmax_landing,
-        aspect_ratios=aspect_ratios,
-        Cd0=Cd0,
-        e=e,
-        k=k,
-        n_engines=n_engines,
-        stall_speed_clean=stall_speed_clean,
-        stall_speed_takeoff=stall_speed_takeoff,
-        stall_speed_landing=stall_speed_landing,
-        cruise_altitude=cruise_altitude,
-        high_altitude=high_altitude,
-        cruise_speed=cruise_speed,
-        prop_efficiency=prop_efficiency,
-        hull_surface=hull_surface,
-        L=L,
-        rho_water=rho_water,
-        kinematic_viscosity=kinematic_viscosity
+        aircraft_data=aircraft_data,
+        mission_type=mission_type,
     )
 
     mixed = WingLoading(
-        aircraft_type=AircraftType.MIXED,
-        CLmax_clean=CLmax_clean,
-        CLmax_takeoff=CLmax_takeoff,
-        CLmax_landing=CLmax_landing,
-        aspect_ratios=aspect_ratios,
-        Cd0=Cd0,
-        e=e,
-        k=k,
-        n_engines=n_engines,
-        stall_speed_clean=stall_speed_clean,
-        stall_speed_takeoff=stall_speed_takeoff,
-        stall_speed_landing=stall_speed_landing,
-        cruise_altitude=cruise_altitude,
-        high_altitude=high_altitude,
-        cruise_speed=cruise_speed,
-        prop_efficiency=prop_efficiency,
-        hull_surface=hull_surface,
-        L=L,
-        rho_water=rho_water,
-        kinematic_viscosity=kinematic_viscosity
+        aircraft_data=aircraft_data,
+        mission_type=mission_type,
     )
 
 
@@ -306,6 +267,8 @@ def main(plot_type, CLmax_clean, CLmax_takeoff, CLmax_landing, aspect_ratios, Cd
         if PLOT_OUTPUT:
             __plot_mixed(prop, jet, True)
         mixed.main()
+
+
         return 0.98*mixed.WP, 1.02*mixed.TW, 0.98*mixed.max_WS
 
     
@@ -363,11 +326,11 @@ def __plot_jet(WL, PLOT_OUTPUT: bool=False):
     for i, climb_gradient in enumerate(jet_climb_gradient):
         A_idx = i % len(WL.aspect_ratios)
         n_idx = i // len(WL.aspect_ratios)
-        ax.plot(WL.WS, climb_gradient, label=f"Climb gradient: Aspect ratio={WL.aspect_ratios[A_idx]}\nEngine={WL.n_engines[n_idx]}", linestyle=linestyles[i], color='tab:green')
+        ax.axhline(y=climb_gradient, label=f"Climb gradient: Aspect ratio={WL.aspect_ratios[A_idx]}\nEngine={WL.n_engines[n_idx]}", linestyle=linestyles[i], color='tab:green')
     for i, climb_gradient in enumerate(jet_climb_gradient_OEI):
         A_idx = i % len(WL.aspect_ratios)
         n_idx = i // len(WL.aspect_ratios)
-        ax.plot(WL.WS, climb_gradient, label=f"Climb gradient OEI: Aspect ratio={WL.aspect_ratios[A_idx]}\nEngine={WL.n_engines[n_idx]}", linestyle=linestyles[i], color='tab:olive')
+        ax.axhline(y=climb_gradient, label=f"Climb gradient OEI: Aspect ratio={WL.aspect_ratios[A_idx]}\nEngine={WL.n_engines[n_idx]}", linestyle=linestyles[i], color='tab:olive')
     for i, cruise in enumerate(jet_cruise):
         ax.plot(WL.WS, cruise, label=f"Cruise: Aspect ratio={WL.aspect_ratios[i]}", linestyle=linestyles[i], color='tab:red')
     for i, cruise in enumerate(jet_cruise_high):
@@ -389,11 +352,12 @@ def __plot_jet(WL, PLOT_OUTPUT: bool=False):
 
 
 def __plot_mixed(WL_prop, WL_jet, PLOT_OUTPUT: bool=False):
-    prop_stall, prop_stall_high, prop_take_off, prop_landing, prop_cruise, prop_cruise_high, prop_climb_rate, prop_climb_gradient = WL_prop.main()
+    prop_stall, prop_stall_high, prop_take_off, prop_landing, prop_cruise, prop_cruise_high, prop_climb_rate, prop_climb_gradient, prop_climb_gradient_OEI = WL_prop.main()
     jet_stall, jet_stall_high, jet_take_off, jet_landing, jet_cruise, jet_cruise_high, jet_climb_rate, jet_climb_gradient, jet_climb_gradient_OEI = WL_jet.main()
     fig, ax = plt.subplots(2, 1, figsize=(10, 12))
 
     linestyles = ['-', '--', '-.', ':', (0, (1, 1)), (0, (3, 5, 1, 5, 1, 5))]
+
 
     for i, take_off in enumerate(prop_take_off):
         ax[0].axvline(x=take_off, label=f"Takeoff: CL={WL_prop.CLmax_takeoff[i]}", linestyle=linestyles[i], color='tab:blue')
@@ -420,11 +384,11 @@ def __plot_mixed(WL_prop, WL_jet, PLOT_OUTPUT: bool=False):
     for i, climb_gradient in enumerate(jet_climb_gradient):
         A_idx = i % len(WL_jet.aspect_ratios)
         n_idx = i // len(WL_jet.aspect_ratios)
-        ax.plot(WL_jet.WS, climb_gradient, label=f"Climb gradient: Aspect ratio={WL_jet.aspect_ratios[A_idx]}\nEngine={WL_jet.n_engines[n_idx]}", linestyle=linestyles[i], color='tab:green')
+        ax[1].axhline(y=climb_gradient, label=f"Climb gradient: Aspect ratio={WL_jet.aspect_ratios[A_idx]}\nEngine={WL_jet.n_engines[n_idx]}", linestyle=linestyles[i], color='tab:green')
     for i, climb_gradient in enumerate(jet_climb_gradient_OEI):
         A_idx = i % len(WL_jet.aspect_ratios)
         n_idx = i // len(WL_jet.aspect_ratios)
-        ax.plot(WL_jet.WS, climb_gradient, label=f"Climb gradient OEI: Aspect ratio={WL_jet.aspect_ratios[A_idx]}\nEngine={WL_jet.n_engines[n_idx]}", linestyle=linestyles[i], color='tab:olive')
+        ax[1].axhline(y=climb_gradient, label=f"Climb gradient OEI: Aspect ratio={WL_jet.aspect_ratios[A_idx]}\nEngine={WL_jet.n_engines[n_idx]}", linestyle=linestyles[i], color='tab:olive')
     # for i, cruise in enumerate(jet_cruise):
     #     ax[1].plot(WL_jet.WS, cruise, label=f"Cruise: Aspect ratio={WL_jet.aspect_ratios[i]}", linestyle=linestyles[i], color='tab:red')
     for i, cruise in enumerate(jet_cruise_high):
@@ -452,55 +416,10 @@ def __plot_mixed(WL_prop, WL_jet, PLOT_OUTPUT: bool=False):
     
 
 if __name__ == "__main__":
-    aircraft_type = AircraftType.PROP
-    mission_type = MissionType.DESIGN
-    cruise_speed = 180*0.51444
-    jet_consumption = 19e-6
-    prop_consumption = 90e-9
-    prop_efficiency = 0.82
-    Cd0 = 0.02
-    e = 0.85
-    A = 10
-    tfo = 0.001
-    reserve_fuel = 0
-    k = 1.42
-
-    CLmax_clean=[1.5]
-    CLmax_takeoff=[1.6]
-    CLmax_landing=[1.6]
-    n_engines = [4,6,8]
-    aspect_ratios=[A]
-    stall_speed_clean=100*0.5144
-    stall_speed_takeoff=110*0.5144
-    stall_speed_landing=120*0.5144
-    cruise_altitude=100*0*0.3048
-    high_altitude=10000*0.3048
-    hull_surface=400
-    L=30
-    rho_water=1000.0
-    kinematic_viscosity=1.002e-6
-
+    aircraft_data = Data("design1.json")
     WP, TW, WS = main(
-        plot_type=aircraft_type,
-        CLmax_clean=CLmax_clean,
-        CLmax_takeoff=CLmax_takeoff,
-        CLmax_landing=CLmax_landing,
-        aspect_ratios=aspect_ratios,
-        Cd0=Cd0,
-        e=e,
-        k=k,
-        n_engines=n_engines,
-        stall_speed_clean=stall_speed_clean,
-        stall_speed_takeoff=stall_speed_takeoff,
-        stall_speed_landing=stall_speed_landing,
-        cruise_altitude=cruise_altitude,
-        high_altitude=high_altitude,
-        cruise_speed=cruise_speed,
-        prop_efficiency=prop_efficiency,
-        hull_surface=hull_surface,
-        L=L,
-        rho_water=rho_water,
-        kinematic_viscosity=kinematic_viscosity,
+        aircraft_data=aircraft_data,
+        mission_type=MissionType.DESIGN,
         PLOT_OUTPUT=True
     )
 
