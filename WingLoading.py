@@ -15,35 +15,35 @@ class WingLoading:
         self.design_file = f'design{self.design_number}.json'
         self.aircraft_data = aircraft_data
         self.mission_type = mission_type
-        self.aircraft_type = AircraftType[self.aircraft_data.data['aircraft_type']]
-        self.CLmax_clean = np.array([self.aircraft_data.data['CLmax_clean']])
-        self.CLmax_takeoff = np.array([self.aircraft_data.data['CLmax_takeoff']])
-        self.CLmax_landing = np.array([self.aircraft_data.data['CLmax_landing']])
-        self.aspect_ratios = np.array([self.aircraft_data.data['aspect_ratio']])
-        self.Cd0 = self.aircraft_data.data['Cd0']
-        self.e = self.aircraft_data.data['oswald_factor']
-        self.k = self.aircraft_data.data['k']
-        self.n_engines = np.array([self.aircraft_data.data['n_engines']])
-        self.n_fuselages = self.aircraft_data.data['n_fuselages']
-        self.stall_speed_clean = self.aircraft_data.data['stall_speed_clean']
-        self.stall_speed_takeoff = self.aircraft_data.data['stall_speed_takeoff']
-        self.stall_speed_landing = self.aircraft_data.data['stall_speed_landing']
+        self.aircraft_type = AircraftType[self.aircraft_data.data['inputs']['aircraft_type']]
+        self.CLmax_clean = np.array([self.aircraft_data.data['inputs']['CLmax_clean']])
+        self.CLmax_takeoff = np.array([self.aircraft_data.data['inputs']['CLmax_takeoff']])
+        self.CLmax_landing = np.array([self.aircraft_data.data['inputs']['CLmax_landing']])
+        self.aspect_ratios = np.array([self.aircraft_data.data['inputs']['aspect_ratio']])
+        self.Cd0 = self.aircraft_data.data['inputs']['Cd0']
+        self.e = self.aircraft_data.data['inputs']['oswald_factor']
+        self.k = self.aircraft_data.data['inputs']['k']
+        self.n_engines = np.array([self.aircraft_data.data['inputs']['n_engines']])
+        self.n_fuselages = self.aircraft_data.data['inputs']['n_fuselages']
+        self.stall_speed_clean = self.aircraft_data.data['requirements']['stall_speed_clean']
+        self.stall_speed_takeoff = self.aircraft_data.data['requirements']['stall_speed_takeoff']
+        self.stall_speed_landing = self.aircraft_data.data['requirements']['stall_speed_landing']
         self.V_lof = 1.05*self.stall_speed_takeoff
-        self.cruise_altitude = self.aircraft_data.data['cruise_altitude']
-        self.high_altitude = self.aircraft_data.data['high_altitude']
-        self.cruise_speed = self.aircraft_data.data['cruise_speed']
+        self.cruise_altitude = self.aircraft_data.data['inputs']['cruise_altitude']
+        self.high_altitude = self.aircraft_data.data['requirements']['high_altitude']
+        self.cruise_speed = self.aircraft_data.data['requirements']['cruise_speed']
         self.isa_cruise = ISA(self.cruise_altitude)
         self.isa_high = ISA(self.high_altitude)
-        self.prop_efficiency = self.aircraft_data.data['prop_efficiency']
+        self.prop_efficiency = self.aircraft_data.data['inputs']['prop_efficiency']
         self.rho_water = self.aircraft_data.data['rho_water']
-        self.r_fuselage = self.aircraft_data.data['r_fuselage'] 
-        self.r_float = self.aircraft_data.data['r_float'] 
-        self.L = self.aircraft_data.data['L']
-        self.depth = self.aircraft_data.data['depth']
+        self.r_fuselage = self.aircraft_data.data['inputs']['r_fuselage'] 
+        self.r_float = self.aircraft_data.data['inputs']['r_float'] 
+        self.L = self.aircraft_data.data['inputs']['L']
+        self.depth = self.aircraft_data.data['inputs']['depth']
         self.kinematic_viscosity = self.aircraft_data.data['kinematic_viscosity']
 
 
-        self.aircraft_data.data[self.mission_type.name.lower()]['stall_speed_clean'] = self.stall_speed_clean
+        self.aircraft_data.data['requirements']['stall_speed_clean'] = self.stall_speed_clean
 
         self.WS = np.arange(1, 10000, 1)
         self.TW = None
@@ -234,7 +234,7 @@ class WingLoading:
 def main(aircraft_data: Data, 
          mission_type: MissionType,
          PLOT_OUTPUT: bool=False):
-    plot_type = AircraftType[aircraft_data.data['aircraft_type']]
+    plot_type = AircraftType[aircraft_data.data['inputs']['aircraft_type']]
     prop = WingLoading(
         aircraft_data=aircraft_data,
         mission_type=mission_type,

@@ -2,6 +2,7 @@ import json
 import os
 from enum import Enum, auto
 from typing import Any
+import pandas as pd
 
 class AircraftType(Enum):
     JET = auto()
@@ -47,6 +48,35 @@ class Data:
                 json.dump(self.data, file, cls=EnumEncoder, indent=4)
         except IOError as e:
             print(f"Error: Failed to write to {file_path}. {e}")
+
+
+def generate_df():
+    all_rows = []
+    for i in range(1, 5):
+        file_path = os.path.join(os.path.dirname(__file__), "Data", f"design{i}.json")
+        if not os.path.exists(file_path):
+            print(f"File {file_path} does not exist. Skipping.")
+            continue
+
+        aircraft_data = Data(file_path)
+        base_data = aircraft_data.data.copy()
+
+        mission_keys = {"design", "ferry", "altitude"}
+        static_data = {k: v for k, v in base_data.items() if k not in mission_keys and not isinstance(v, dict)}
+
+        for mission in MissionType:
+            mission_name = mission.name.lower()
+            if mission_name not in base_data:
+                continue
+
+            mission_data = base_data[mission_name]
+            row = {**static_data, **mission_data}
+            row["mission_type"] = mission_name
+            row["design_id"] = base_data.get("design_id", i)
+            all_rows.append(row)
+
+    df = pd.DataFrame(all_rows)
+    return df
 
 
 # Example usage

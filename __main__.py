@@ -1,9 +1,10 @@
 import os
-from utils import Data
+from utils import Data, generate_df
 from Iteration import AircraftIteration
 from ClassIWeightEstimation import MissionType
-from bar_graph import generate_df, plot_bar_graph
+from bar_graph import plot_bar_graph
 from Json_to_excel import design_json_to_excel
+from Fuselage import Fuselage
 
 
 def main(create_excel: bool = False) -> None:
@@ -14,7 +15,10 @@ def main(create_excel: bool = False) -> None:
         if create_excel:
             design_json_to_excel(file_path, f"Concept_Data.xlsx")
         aircraft_data = Data(file_path)
-        aircraft_data.load_design(file_path)
+        
+        fuselage = Fuselage(aircraft_data=aircraft_data)
+        fuselage.CalcFuseLen()
+
         for mission in MissionType:
             print(f"Running iteration for mission type {mission.name}...")
             iteration = AircraftIteration(
