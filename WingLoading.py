@@ -22,7 +22,7 @@ class WingLoading:
         self.aspect_ratios = np.array([self.aircraft_data.data['inputs']['aspect_ratio']])
         self.Cd0 = self.aircraft_data.data['inputs']['Cd0']
         self.e = self.aircraft_data.data['inputs']['oswald_factor']
-        self.k = self.aircraft_data.data['inputs']['k']
+        self.k = self.aircraft_data.data['outputs'][self.mission_type.name.lower()]['k']
         self.n_engines = np.array([self.aircraft_data.data['inputs']['n_engines']])
         self.n_fuselages = self.aircraft_data.data['inputs']['n_fuselages']
         self.cruise_speed = self.aircraft_data.data['requirements']['cruise_speed']

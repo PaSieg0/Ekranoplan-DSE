@@ -49,7 +49,7 @@ class ClassI:
         self.A = self.aircraft_data.data['inputs']['aspect_ratio']
         self.tfo = self.aircraft_data.data['inputs']['tfo']
         self.reserve_fuel = self.aircraft_data.data['inputs']['reserve_fuel']
-        self.k = self.aircraft_data.data['inputs']['k']
+        self.k = self.aircraft_data.data['outputs'][self.mission_type.name.lower()]['k']
 
         self.reference_aircraft_path = reference_aircraft_path
         self.reference_aircraft = self.load_reference_aircraft()
@@ -74,7 +74,7 @@ class ClassI:
         else:
             raise ValueError(f"Unsupported aircraft type: {self.aircraft_type}")
         self.aircraft_data.data['outputs']['general']['LD_g'] = LD
-        self.aircraft_data.data['outputs']['general']['LD'] = LD*self.k
+        self.aircraft_data.data['outputs'][self.mission_type.name.lower()]['LD'] = LD*self.k
         return LD
 
     def update_fuel_fractions_jet(self) -> None:
