@@ -238,7 +238,7 @@ A_list = []
 rggm_list = []
 n_participants = 3  # Number of participants
 for i in range(1, n_participants+1):
-    arr = extract_weights_csv(f'ahp{i}.xlsx'.format(i+1))
+    arr = extract_weights_csv(f'AHP/ahp{i}.xlsx'.format(i+1))
     A, p, cr, rggm = AHP_1_Participant(arr)
     A_list.append(A)
     rggm_list.append(rggm)
