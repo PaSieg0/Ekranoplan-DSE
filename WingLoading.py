@@ -25,27 +25,23 @@ class WingLoading:
         self.k = self.aircraft_data.data['inputs']['k']
         self.n_engines = np.array([self.aircraft_data.data['inputs']['n_engines']])
         self.n_fuselages = self.aircraft_data.data['inputs']['n_fuselages']
+        self.cruise_speed = self.aircraft_data.data['requirements']['cruise_speed']
         self.stall_speed_clean = self.aircraft_data.data['requirements']['stall_speed_clean']
         self.stall_speed_takeoff = self.aircraft_data.data['requirements']['stall_speed_takeoff']
         self.stall_speed_landing = self.aircraft_data.data['requirements']['stall_speed_landing']
+        self.stall_speed_high = self.aircraft_data.data['requirements']['stall_speed_high']
         self.V_lof = 1.05*self.stall_speed_takeoff
+        self.L = self.aircraft_data.data['outputs']['general']['l_fuselage']
+        self.r_float = self.aircraft_data.data['inputs']['r_float']
         self.cruise_altitude = self.aircraft_data.data['inputs']['cruise_altitude']
         self.high_altitude = self.aircraft_data.data['requirements']['high_altitude']
-        self.cruise_speed = self.aircraft_data.data['requirements']['cruise_speed']
         self.isa_cruise = ISA(self.cruise_altitude)
         self.isa_high = ISA(self.high_altitude)
-        self.prop_efficiency = self.aircraft_data.data['inputs']['prop_efficiency']
-        self.rho_water = self.aircraft_data.data['rho_water']
-        self.r_fuselage = self.aircraft_data.data['inputs']['r_fuselage'] 
-        self.r_float = self.aircraft_data.data['inputs']['r_float'] 
-        self.L = self.aircraft_data.data['inputs']['L']
-        self.depth = self.aircraft_data.data['inputs']['depth']
-        self.kinematic_viscosity = self.aircraft_data.data['kinematic_viscosity']
-
-
-        self.aircraft_data.data['requirements']['stall_speed_clean'] = self.stall_speed_clean
-
         self.WS = np.arange(1, 10000, 1)
+        self.kinematic_viscosity = self.aircraft_data.data['kinematic_viscosity']
+        self.rho_water = self.aircraft_data.data['rho_water']
+        self.depth = self.aircraft_data.data['inputs']['depth']
+        self.prop_efficiency = self.aircraft_data.data['inputs']['prop_efficiency']
         self.TW = None
         self.WP = None
         self.max_WS = None
@@ -53,9 +49,8 @@ class WingLoading:
     def stall_requirement(self):
         x = 0.5*self.isa_cruise.rho * self.stall_speed_clean**2 * self.CLmax_clean
         return x
-    
     def stall_requirement_high(self):
-        x = 0.5*self.isa_high.rho * self.stall_speed_high**2 * self.CLmax_clean
+        x = 0.5*self.isa_cruise.rho * self.stall_speed_high**2 * self.CLmax_clean
         return x
 
     def calculate_Re(self):
@@ -63,7 +58,7 @@ class WingLoading:
          
     def calculate_Cd(self):
         self.Re = self.calculate_Re()
-        self.aircraft_data.data[self.mission_type.name.lower()]['Re'] = self.Re
+        self.aircraft_data.data['outputs']['general']['Re'] = self.Re
         Cd = 0.075 / (np.log10(self.Re) - 2)**2
         return Cd
     
@@ -76,19 +71,19 @@ class WingLoading:
         self.hull_surface = self.calculate_hull_surface()
         if self.design_number == 3:
             self.hull_surface *= 2
-        self.aircraft_data.data[self.mission_type.name.lower()]['Cd'] = Cd
-        self.aircraft_data.data[self.mission_type.name.lower()]['hull_surface'] = self.hull_surface
+        self.aircraft_data.data['outputs']['general']['Cd'] = Cd
+        self.aircraft_data.data['outputs']['general']['hull_surface'] = self.hull_surface
         D = 0.5 * self.rho_water * (self.V_lof)**2 * Cd * self.hull_surface * self.n_fuselages
 
         if self.aircraft_type == AircraftType.JET:
-            self.aircraft_data.data[self.mission_type.name.lower()]['take_off_thrust'] = D
-            self.aircraft_data.data[self.mission_type.name.lower()]['take_off_power'] = None
+            self.aircraft_data.data['outputs'][self.mission_type.name.lower()]['take_off_thrust'] = D
+            self.aircraft_data.data['outputs'][self.mission_type.name.lower()]['take_off_power'] = None
         elif self.aircraft_type == AircraftType.PROP or self.aircraft_type == AircraftType.MIXED:
-            self.aircraft_data.data[self.mission_type.name.lower()]['take_off_power'] = D * self.V_lof / self.prop_efficiency
-            self.aircraft_data.data[self.mission_type.name.lower()]['take_off_thrust'] = None
+            self.aircraft_data.data['outputs'][self.mission_type.name.lower()]['take_off_power'] = D * self.V_lof / self.prop_efficiency
+            self.aircraft_data.data['outputs'][self.mission_type.name.lower()]['take_off_thrust'] = None
         elif self.aircraft_type == AircraftType.MIXED:
-            self.aircraft_data.data[self.mission_type.name.lower()]['take_off_thrust'] = D
-            self.aircraft_data.data[self.mission_type.name.lower()]['take_off_power'] = D * self.V_lof / self.prop_efficiency
+            self.aircraft_data.data['outputs'][self.mission_type.name.lower()]['take_off_thrust'] = D
+            self.aircraft_data.data['outputs'][self.mission_type.name.lower()]['take_off_power'] = D * self.V_lof / self.prop_efficiency
         
         x = [CL*0.5*self.isa_cruise.rho * self.V_lof**2 for CL in CL_takeoff]
         return x

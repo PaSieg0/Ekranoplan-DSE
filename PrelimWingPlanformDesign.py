@@ -15,9 +15,9 @@ class WingPlanform:
         self.aircraft_data = aircraft_data
         self.design_number = aircraft_data.data['design_id']
         self.design_file = f"design{self.design_number}.json"
-        self.wing_type = WingType[aircraft_data.data['wing_type']]
-        self.wing_area = aircraft_data.data['max']['S']
-        self.aspect_ratio = aircraft_data.data['aspect_ratio']
+        self.wing_type = WingType[aircraft_data.data['inputs']['wing_type']]
+        self.S = aircraft_data.data['outputs']['max']['S']
+        self.aspect_ratio = aircraft_data.data['inputs']['aspect_ratio']
 
         self.fuselage_length = 52.6411 # meters
         self.x_c = 0 #Where along the wing we want to look, so in this case 0 is the leading edge of the wing
@@ -30,7 +30,7 @@ class WingPlanform:
 
 
     def calculate(self):
-        self.mach = ISA(self.aircraft_data.data['cruise_altitude']).Mach(self.aircraft_data.data['cruise_speed'])
+        self.mach = ISA(self.aircraft_data.data['inputs']['cruise_altitude']).Mach(self.aircraft_data.data['requirements']['cruise_speed'])
         if self.mach <= 0.7:
             self.sweep_c_4 = 0  # degrees
         else: 
@@ -47,22 +47,22 @@ class WingPlanform:
         
         self.sweep_c_4
         
-        b = self.aircraft_data.data['max']['b']
+        self.b = self.aircraft_data.data['outputs']['max']['b']
         self.sweep_x_c = np.rad2deg(np.arctan(
             np.tan(np.deg2rad(self.sweep_c_4)) -
             ((4 / self.aspect_ratio) * (self.x_c - 0.25) *
              ((1 - self.taper_ratio) / (1 + self.taper_ratio)))
         ))
 
-        self.chord_root = 2 * self.wing_area / (b * (1 + self.taper_ratio))
+        self.chord_root = 2 * self.S / (self.b * (1 + self.taper_ratio))
         self.chord_tip = self.taper_ratio * self.chord_root
 
         # Correct MAC formula
-        MAC = (2 / 3) * self.chord_root * ((1 + self.taper_ratio + self.taper_ratio**2) / (1 + self.taper_ratio))
-        self.y_MAC = (b / 6) * (1 + 2 * self.taper_ratio) / (1 + self.taper_ratio)
+        self.MAC = (2 / 3) * self.chord_root * ((1 + self.taper_ratio + self.taper_ratio**2) / (1 + self.taper_ratio))
+        self.y_MAC = (self.b / 6) * (1 + 2 * self.taper_ratio) / (1 + self.taper_ratio)
 
         self.X_LEMAC = (self.fuse_x_cg * self.fuselage_length) + \
-                  MAC * ((self.x_c_wing_cg * self.mass_fraction_wing / self.mass_fraction_fuse) -
+                  self.MAC * ((self.x_c_wing_cg * self.mass_fraction_wing / self.mass_fraction_fuse) -
                          self.x_c_OEW_cg * (1 + self.mass_fraction_wing / self.mass_fraction_fuse))
 
         self.X_LE = self.X_LEMAC - self.y_MAC * np.tan(np.deg2rad(self.sweep_x_c))
@@ -71,15 +71,19 @@ class WingPlanform:
 
 
     def update_design_data(self):
-        self.aircraft_data.data['wing_design']['taper_ratio'] = self.taper_ratio
-        self.aircraft_data.data['wing_design']['sweep_c_4'] = self.sweep_c_4
-        self.aircraft_data.data['wing_design']['dihedral'] = self.dihedral
-        self.aircraft_data.data['wing_design']['sweep_x_c'] = self.sweep_x_c
-        self.aircraft_data.data['wing_design']['chord_root'] = self.chord_root
-        self.aircraft_data.data['wing_design']['chord_tip'] = self.chord_tip
-        self.aircraft_data.data['wing_design']['y_MAC'] = self.y_MAC
-        self.aircraft_data.data['wing_design']['X_LEMAC'] = self.X_LEMAC
-        self.aircraft_data.data['wing_design']['X_LE'] = self.X_LE
+        self.aircraft_data.data['outputs']['wing_design']['taper_ratio'] = self.taper_ratio
+        self.aircraft_data.data['outputs']['wing_design']['sweep_c_4'] = self.sweep_c_4
+        self.aircraft_data.data['outputs']['wing_design']['dihedral'] = self.dihedral
+        self.aircraft_data.data['outputs']['wing_design']['sweep_x_c'] = self.sweep_x_c
+        self.aircraft_data.data['outputs']['wing_design']['chord_root'] = self.chord_root
+        self.aircraft_data.data['outputs']['wing_design']['chord_tip'] = self.chord_tip
+        self.aircraft_data.data['outputs']['wing_design']['y_MAC'] = self.y_MAC
+        self.aircraft_data.data['outputs']['wing_design']['X_LEMAC'] = self.X_LEMAC
+        self.aircraft_data.data['outputs']['wing_design']['X_LE'] = self.X_LE
+        self.aircraft_data.data['outputs']['wing_design']['MAC'] = self.MAC
+        self.aircraft_data.data['outputs']['wing_design']['S'] = self.S
+        self.aircraft_data.data['outputs']['wing_design']['b'] = self.b
+        self.aircraft_data.data['outputs']['wing_design']['aspect_ratio'] = self.aspect_ratio
         
 
 

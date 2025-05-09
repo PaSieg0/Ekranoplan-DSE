@@ -29,13 +29,13 @@ class ClassI:
         self.aircraft_type = AircraftType[self.aircraft_data.data['inputs']['aircraft_type']]
         self.mission_type = mission_type
 
-        self.design_range = self.aircraft_data.data['requirements']['design_range']
+        self.design_range = self.aircraft_data.data['requirements']['design_range'] + self.aircraft_data.data['requirements']['reserve_range']/2
         self.design_payload = self.aircraft_data.data['requirements']['design_payload']
         self.design_crew = self.aircraft_data.data['requirements']['design_crew']
-        self.ferry_range = self.aircraft_data.data['requirements']['ferry_range']
+        self.ferry_range = self.aircraft_data.data['requirements']['ferry_range'] + self.aircraft_data.data['requirements']['reserve_range']
         self.ferry_payload = self.aircraft_data.data['requirements']['ferry_payload']
         self.ferry_crew = self.aircraft_data.data['requirements']['ferry_crew']
-        self.altitude_range_WIG = self.aircraft_data.data['requirements']['altitude_range_WIG']
+        self.altitude_range_WIG = self.aircraft_data.data['requirements']['altitude_range_WIG'] + self.aircraft_data.data['requirements']['reserve_range']
         self.altitude_range_WOG = self.aircraft_data.data['requirements']['altitude_range_WOG']
         self.altitude_payload = self.aircraft_data.data['requirements']['altitude_payload']
         self.altitude_crew = self.aircraft_data.data['requirements']['altitude_crew']
@@ -55,10 +55,13 @@ class ClassI:
         self.reference_aircraft = self.load_reference_aircraft()
         self.slope, self.intersection = self.linear_relation()
         self.fuel_fractions = {
-            1: 0.97,
-            2: 0.985,
-            3: 0.995
-        } # Raymer fuel fractions
+            1: 0.992,
+            2: 0.990,
+            3: 0.996,
+            4: 0.985,
+            6: 0.990,
+            7: 0.990
+        }
 
 
     def calculate_LD(self) -> float:
@@ -70,7 +73,7 @@ class ClassI:
             LD = (3/4*np.sqrt(np.pi*self.A*self.e/(3*self.Cd0)) + np.sqrt(np.pi*self.A*self.e/(4*self.Cd0))) / 2
         else:
             raise ValueError(f"Unsupported aircraft type: {self.aircraft_type}")
-        self.aircraft_data.data[self.mission_type.name.lower()]['LD'] = LD
+        self.aircraft_data.data['outputs']['general']['LD'] = LD
         return LD
 
     def update_fuel_fractions_jet(self) -> None:
@@ -170,9 +173,20 @@ class ClassI:
             self.EW = self.OEW - self.altitude_crew
             self.ZFW = self.MTOW - self.fuel
             self.MTOM = self.MTOW/9.81
-
-
+            
+        self.update_attributes()
         self.aircraft_data.save_design(self.design_file)
+
+    def update_attributes(self):
+        self.aircraft_data.data['outputs'][self.mission_type.name.lower()]['MTOW'] = self.MTOW
+        self.aircraft_data.data['outputs'][self.mission_type.name.lower()]['fuel_used'] = self.fuel_used
+        self.aircraft_data.data['outputs'][self.mission_type.name.lower()]['fuel_res'] = self.fuel_res
+        self.aircraft_data.data['outputs'][self.mission_type.name.lower()]['fuel'] = self.fuel
+        self.aircraft_data.data['outputs'][self.mission_type.name.lower()]['OEW'] = self.OEW
+        self.aircraft_data.data['outputs'][self.mission_type.name.lower()]['EW'] = self.EW
+        self.aircraft_data.data['outputs'][self.mission_type.name.lower()]['ZFW'] = self.ZFW
+
+
 
 if __name__=="__main__":
     data = Data("design1.json")

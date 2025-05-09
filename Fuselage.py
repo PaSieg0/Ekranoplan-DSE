@@ -35,22 +35,28 @@ class Fuselage:
 
     def CalcFuseDia(self):
         Dmin = self.get_minimum_diameter()
-        d = (self.l+Dmin/np.tan(self.deg2rad(self.upsweep)))/(self.lfd-self.ltcd-self.lnd+1/np.tan(self.deg2rad(self.upsweep)))
+        d = (self.tot_cargo_length+Dmin/np.tan(self.deg2rad(self.upsweep)))/(self.lfd-self.ltcd-self.lnd+1/np.tan(self.deg2rad(self.upsweep)))
         if d >= Dmin:
             return d
         else:
             return Dmin #minimum needed to satisfy the rEqUirEmeNt of cargo hold area
 
+    def calculate_y_in_tail(self):
+        y_in_tail = (self.d-self.cargo_height)/np.tan(self.deg2rad(self.upsweep))
+        cargo_straight = self.tot_cargo_length - y_in_tail
+        return cargo_straight
+
     def CalcFuseLen(self):   #length of cargo bay in "straight body region", upsweep of tail, lf/d, ltc/d, ln/d
-        self.l = self.get_tot_fus_length()
-        print(self.l)
+        self.tot_cargo_length = self.get_tot_fus_length()
         self.d = self.CalcFuseDia()
         self.lf = self.lfd*self.d
         self.ltc = self.ltcd*self.d
         self.ln = self.lnd*self.d
-
+        self.cargo_straight = self.calculate_y_in_tail()
+        print(f"Cargo straight: {self.cargo_straight} m")
         self.update_attributes()
         self.aircraft_data.save_design(self.design_file)
+
 
     def update_attributes(self):
         self.aircraft_data.data['outputs']['general']['d_fuselage'] = self.d
@@ -58,6 +64,7 @@ class Fuselage:
         self.aircraft_data.data['outputs']['general']['l_fuselage'] = self.lf
         self.aircraft_data.data['outputs']['general']['l_tailcone'] = self.ltc
         self.aircraft_data.data['outputs']['general']['l_nose'] = self.ln
+        self.aircraft_data.data['outputs']['general']['l_cargo_straight'] = self.cargo_straight
 
 
 if __name__ == "__main__":
@@ -68,4 +75,4 @@ if __name__ == "__main__":
     print(f"l_fus {fuselage.lf}")
     print(f"l_tailcone {fuselage.ltc}")
     print(f"l_nose {fuselage.ln}")
-    print(f"Fuselage Length: {fuselage.total_length} m")
+
