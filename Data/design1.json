@@ -9,7 +9,7 @@
         "depth": 0.05,
         "jet_consumption": 2.7e-05,
         "prop_consumption": 2.1e-08,
-        "prop_efficiency": 0.82,
+        "prop_efficiency": 0.85,
         "Cd0": 0.02434723936958912,
         "oswald_factor": 0.85,
         "aspect_ratio": 10,
