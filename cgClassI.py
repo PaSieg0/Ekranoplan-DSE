@@ -33,6 +33,7 @@ if __name__ == "__main__":
         x_cg_components, 
         mass_components
     )
+    print(f"X_cg_OEW: {x_cg_OEW}, \n X_cg_OEWpayload: {x_cg_OEWpayload}, \n X_cg_OEWfuel('Most aft'): {x_cg_OEWfuel}, \n X_cg_total: {x_cg_total}")
     
     x_cgs = [x_cg_OEW, x_cg_OEWpayload, x_cg_OEWfuel, x_cg_total]
     weights = [mass_OEW, mass_OEWpayload, mass_OEWfuel, mass_total]
@@ -48,7 +49,7 @@ if __name__ == "__main__":
     plt.plot(x_cgs[0:3:2], [weights[i]/1000 for i in [0, 2]], linestyle='-', color='black', alpha=0.7)  # Connect 0 to 2
     plt.plot(x_cgs[2:4], [weights[i]/1000 for i in range(2, 4)], linestyle='-', color='black', alpha=0.7)  # Connect 2 to 3
 
-    plt.xlabel("x/cg Position")
+    plt.xlabel("x/MAC CG Position")
     plt.ylabel("Weight (tonnes)")
     plt.title("Center of Gravity Positions vs Weight for Different Configurations")
     plt.legend(loc='upper left')  # Move legend to the upper left
