@@ -55,7 +55,7 @@ class WingLoading:
         return x
     
     def stall_requirement_high(self):
-        x = 0.5*self.isa_high.rho * self.stall_speed_clean**2 * self.CLmax_clean
+        x = 0.5*self.isa_high.rho * self.stall_speed_high**2 * self.CLmax_clean
         return x
 
     def calculate_Re(self):
