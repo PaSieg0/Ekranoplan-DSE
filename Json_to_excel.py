@@ -1,20 +1,32 @@
 from utils import Data
 import openpyxl
+from openpyxl.styles import Font
+from openpyxl.utils import get_column_letter
 
-def format_value(value):
+def apply_number_format(cell, value):
     if isinstance(value, (int, float)):
-        return f"{value:.3f}" if abs(value) >= 0.001 else f"{value:.3e}"
-    return value
+        if abs(value) >= 0.001:
+            cell.number_format = '#,##0.000'  # Locale-dependent: assumes Excel settings use comma for decimals
+        else:
+            cell.number_format = '0,000E+00'
+        cell.value = value
+    else:
+        cell.value = value
+
+def auto_adjust_column_widths(sheet):
+    for col in sheet.columns:
+        max_length = 0
+        col_letter = get_column_letter(col[0].column)
+        for cell in col:
+            try:
+                value = str(cell.value)
+                if value:
+                    max_length = max(max_length, len(value))
+            except:
+                pass
+        sheet.column_dimensions[col_letter].width = max_length + 2
 
 def design_json_to_excel(json_file: str, excel_file: str) -> None:
-    """
-    Convert a JSON file containing design parameters to an Excel file. If the Excel file already exists, add a new sheet to it.
-    
-    Args:
-        json_file (str): Path to the input JSON file.
-        excel_file (str): Path to the output Excel file.
-    """
-    # Load the JSON data
     data = Data(json_file).data
 
     variable_units = {
@@ -54,82 +66,51 @@ def design_json_to_excel(json_file: str, excel_file: str) -> None:
         sheet = excelsheet.active
         sheet.title = f"Design {data['design_id']} Data"
 
-    # Requirements
-    sheet.cell(row=1, column=1, value=f"Design {data['design_id']}")
-    sheet.cell(row=1, column=2, value="Requirements")
-    row = 2
-    for key, value in requirements.items():
-        label = f"{key} {variable_units[key]}" if key in variable_units else key
-        sheet.cell(row=row, column=1, value=label)
-        sheet.cell(row=row, column=2, value=format_value(value) if isinstance(value, (int, float)) else value)
-        row += 1
+    bold_font = Font(bold=True)
 
-    # General States
-    sheet.cell(row=row+1, column=1, value=f"General States")
-    row += 2
-    for key, value in data.items():
-        label = f"{key} {variable_units[key]}" if key in variable_units else key
-        sheet.cell(row=row, column=1, value=label)
-        sheet.cell(row=row, column=2, value=format_value(value) if isinstance(value, (int, float)) else value)
-        row += 1
+    def write_block(start_row, col1, col2, title, block_data):
+        sheet.cell(row=start_row, column=col1, value=f"Design {data['design_id']}").font = bold_font
+        sheet.cell(row=start_row, column=col2, value=title).font = bold_font
+        row = start_row + 1
+        for key, value in block_data.items():
+            label = f"{key} {variable_units[key]}" if key in variable_units else key
+            sheet.cell(row=row, column=col1, value=label)
+            apply_number_format(sheet.cell(row=row, column=col2), value)
+            row += 1
+        return row
 
-    # Inputs
-    sheet.cell(row=1, column=4, value=f"Design {data['design_id']}")
-    sheet.cell(row=1, column=5, value="Inputs")
-    row_inputs = 2
-    for key, value in inputs.items():
-        label = f"{key} {variable_units[key]}" if key in variable_units else key
-        sheet.cell(row=row_inputs, column=4, value=label)
-        sheet.cell(row=row_inputs, column=5, value=format_value(value) if isinstance(value, (int, float)) else value)
-        row_inputs += 1
+    row_req_end = write_block(1, 1, 2, "Requirements", requirements)
+    row_gen_states_end = write_block(row_req_end + 1, 1, 2, "General States", data)
+    row_inputs_end = write_block(1, 4, 5, "Inputs", inputs)
+    row_general_out_end = write_block(1, 7, 8, "General Outputs", general_outputs)
 
-    # General Outputs
-    sheet.cell(row=1, column=7, value=f"Design {data['design_id']}")
-    sheet.cell(row=1, column=8, value="General Outputs")
-    row_gen_out = 2
-    for key, value in general_outputs.items():
-        label = f"{key} {variable_units[key]}" if key in variable_units else key
-        sheet.cell(row=row_gen_out, column=7, value=label)
-        sheet.cell(row=row_gen_out, column=8, value=format_value(value) if isinstance(value, (int, float)) else value)
-        row_gen_out += 1
+    sheet.cell(row=1, column=10, value=f"Design {data['design_id']}").font = bold_font
+    sheet.cell(row=1, column=11, value="Design Mission").font = bold_font
 
-    # Design Mission & Max Outputs
-    sheet.cell(row=1, column=10, value=f"Design {data['design_id']}")
-    sheet.cell(row=1, column=11, value="Design Mission")
-
-    row_design = 2
     excluded_keys = {"S", "b", "MAC", "MTOM", "fuel_economy"}
+    row = 2
     for key, value in design_outputs.items():
         if key in excluded_keys:
             continue
         label = f"{key} {variable_units[key]}" if key in variable_units else key
-        sheet.cell(row=row_design, column=10, value=label)
-        sheet.cell(row=row_design, column=11, value=f"{value:.7f}" if isinstance(value, (int, float)) else value)
-        row_design += 1
+        sheet.cell(row=row, column=10, value=label)
+        apply_number_format(sheet.cell(row=row, column=11), value)
+        row += 1
 
     for key, value in max_outputs.items():
         label = f"{key} {variable_units[key]}" if key in variable_units else key
-        sheet.cell(row=row_design, column=10, value=label)
-        sheet.cell(row=row_design, column=11, value=f"{value:.7f}" if isinstance(value, (int, float)) else value)
-        row_design += 1
+        sheet.cell(row=row, column=10, value=label)
+        apply_number_format(sheet.cell(row=row, column=11), value)
+        row += 1
 
-    # Wing Design
-    sheet.cell(row=row_inputs + 1, column=4, value=f"Design {data['design_id']}")
-    sheet.cell(row=row_inputs + 1, column=5, value="Wing Design")
-    row_wing = row_inputs + 2
-    for key, value in wing_design.items():
-        label = f"{key} {variable_units[key]}" if key in variable_units else key
-        sheet.cell(row=row_wing, column=4, value=label)
-        sheet.cell(row=row_wing, column=5, value=format_value(value) if isinstance(value, (int, float)) else value)
-        row_wing += 1
+    write_block(row_inputs_end + 1, 4, 5, "Wing Design", wing_design)
 
-    # Save
+    auto_adjust_column_widths(sheet)
+
     excelsheet.save(excel_file)
 
-
-    
-
+# Example call
 if __name__ == "__main__":
-    json_file = "design1.json"  # Replace with your JSON file path
-    excel_file = "Concept Data.xlsx"   # Replace with your desired Excel file path
+    json_file = "design1.json"
+    excel_file = "Concept Data.xlsx"
     design_json_to_excel(json_file, excel_file)
