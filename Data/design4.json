@@ -33,6 +33,7 @@
     "stall_speed_clean": 77.16,
     "stall_speed_takeoff": 61.728,
     "stall_speed_landing": 51.44,
+    "stall_speed_high": 82.3,
     "high_altitude": 3048.0,
     "L": 74.9,
     "r_fuselage": 4.4,

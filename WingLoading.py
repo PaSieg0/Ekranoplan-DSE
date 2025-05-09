@@ -28,6 +28,7 @@ class WingLoading:
         self.stall_speed_clean = self.aircraft_data.data['stall_speed_clean']
         self.stall_speed_takeoff = self.aircraft_data.data['stall_speed_takeoff']
         self.stall_speed_landing = self.aircraft_data.data['stall_speed_landing']
+        self.stall_speed_high = self.aircraft_data.data['stall_speed_high']
         self.V_lof = 1.05*self.stall_speed_takeoff
         self.cruise_altitude = self.aircraft_data.data['cruise_altitude']
         self.high_altitude = self.aircraft_data.data['high_altitude']
@@ -55,7 +56,7 @@ class WingLoading:
         return x
     
     def stall_requirement_high(self):
-        x = 0.5*self.isa_high.rho * self.stall_speed_clean**2 * self.CLmax_clean
+        x = 0.5*self.isa_high.rho * self.stall_speed_high**2 * self.CLmax_clean
         return x
 
     def calculate_Re(self):
