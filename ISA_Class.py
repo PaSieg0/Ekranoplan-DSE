@@ -134,3 +134,11 @@ class ISA:
             float: Equivalent airspeed in m/s.
         """
         return TAS * np.sqrt(self.rho / self.rho0)
+
+
+if __name__ == "__main__":
+    isa = ISA(altitude=10048)
+    print(f"Pressure: {isa.pressure} Pa")
+    print(f"Temperature: {isa.temperature} K")
+    print(f"Density: {isa.rho} kg/m^3")
+    print(f"Speed of Sound: {isa.speed_of_sound} m/s")
