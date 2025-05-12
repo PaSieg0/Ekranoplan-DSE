@@ -232,6 +232,9 @@ def extract_weights_csv(excel_path):
             if pd.notna(value):
                 arr1.append(value)
 
+    # Remove items at indices 1, 4, 7, and 8 (0-based indexing)
+    indices_to_remove = {1, 4, 7, 8}
+    arr1 = [value for idx, value in enumerate(arr1) if idx not in indices_to_remove]
     return np.array(arr1)
 
 
@@ -239,7 +242,7 @@ A_list = []
 rggm_list = []
 # Get all .xlsx files in the AHP folder
 ahp_folder = 'AHP'
-criteria = ['Cost', 'Sustainability', 'Time to Destination', 'Rough Sea Tolerance', 'Design Complexity']
+criteria = ['Cost', 'Sustainability', 'Rough Sea Tolerance', 'Design Complexity']
 xlsx_files = [f for f in os.listdir(ahp_folder) if f.endswith('.xlsx')]
 
 for i, file in enumerate(xlsx_files, start=1):
