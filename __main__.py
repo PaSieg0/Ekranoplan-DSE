@@ -6,6 +6,7 @@ from bar_graph import plot_bar_graph
 from Json_to_excel import design_json_to_excel
 from Fuselage import Fuselage
 from PrelimWingPlanformDesign import WingPlanform
+from Cd0Estimation import Cd0Estimation
 
 
 def main(create_excel: bool = False) -> None:
@@ -23,6 +24,11 @@ def main(create_excel: bool = False) -> None:
                 aircraft_data=aircraft_data,
                 mission_type=mission)
             iteration.run_iteration()
+            cd0_est = Cd0Estimation(
+                aircraft_data=aircraft_data,
+                mission_type=MissionType.DESIGN
+            )
+            cd0_est.mainloop()
             aircraft_data.save_design(file_path)
             if create_excel:
                 design_json_to_excel(file_path, f"Concept_Data.xlsx")

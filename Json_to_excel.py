@@ -40,11 +40,11 @@ def design_json_to_excel(json_file: str, excel_file: str) -> None:
         "fuel_used": "[N]", "fuel_reserve": "[N]", "S": "[m²]", "b": "[m]", "MAC": "[m]", "WP": "[N/W]",
         "WS": "[N/m²]", "fuel_economy": "[L/ton/km]", "P": "[W]", "T": "[N]", "stall_speed_clean": "[m/s]",
         "stall_speed_takeoff": "[m/s]", "stall_speed_landing": "[m/s]", "high_altitude": "[m]", "L": "[m]", "r": "[m]",
-        "hull_surface": "[m²]", "gravitational_acceleration": "[m/s²]", "kinematic_viscosity": "[m²/s]", "rho_water": "[kg/m³]", 
+        "hull_surface": "[m²]", "gravitational_acceleration": "[m/s²]", "kinematic_viscosity": "[m²/s]", "viscosity_air": "[m²/s]", "rho_water": "[kg/m³]", 
         "l_fuselage": "[m]", "l_cargo_straight": "[m]", "r_fuselage": "[m]", "d_fuselage": "[m]", "l_tailcone": "[m]", "l_nose": "[m]",
         "V_lof": "[m/s]", "cargo_width": "[m]", "cargo_height": "[m]", "cargo_length": "[m]", "cargo_density": "[kg/m³]",
         "sweep_c_4": "[deg]", "dihedral": "[deg]", "sweep_x_c": "[deg]", "sweep_TE": "[deg]", "chord_root": "[m]", "chord_tip": "[m]",
-        "y_MAC": "[m]", "X_LEMAC": "[m]", "X_LE": "[m]", "total_fuel": "[N]", "fuel_mission": "[N]"
+        "y_MAC": "[m]", "X_LEMAC": "[m]", "X_LE": "[m]", "total_fuel": "[N]", "fuel_mission": "[N]", "rho_air": "[kg/m³]"
     }
 
     requirements = data.get('requirements', {})

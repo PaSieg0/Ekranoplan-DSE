@@ -7,7 +7,6 @@ import matplotlib.pyplot as plt
 from ISA_Class import ISA
 from utils import Data
 
-
 def solve_hb(target_A_A):
     h_b = np.arange(0, 1, 0.00001)
     y = 1 - np.exp(-4.74*h_b**0.814) - h_b**2*np.exp(-3.88*h_b**0.758)
