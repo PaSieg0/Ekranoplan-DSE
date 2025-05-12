@@ -3,6 +3,7 @@ import numpy as np
 from utils import Data
 import matplotlib.pyplot as plt
 from ClassIWeightEstimation import ClassI, MissionType
+from Iteration import Ainf_Ah
 
 def range_equation(type, W4_W5, eta_p, L_D, cp, cj, V, g):
     """
@@ -27,7 +28,9 @@ if __name__ == "__main__":
     data = Data("design1.json")
     g = 9.81
     eta_p = data.data['prop_efficiency']
-    L_D = 36.144597464183306 #TODO: Will be added to the json file for each design later
+    L_D = np.sqrt(np.pi*data.data['aspect_ratio']*data.data['oswald_factor']/(4*data.data['Cd0'])) # Only for propeller
+    L_D *= data.data['k']
+    print(f"L/D: {L_D}")
     cp = data.data['prop_consumption']
     cj = data.data['jet_consumption']
     V = data.data['cruise_speed']
