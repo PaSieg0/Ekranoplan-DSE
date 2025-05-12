@@ -22,7 +22,7 @@ class WingLoading:
         self.aspect_ratios = np.array([self.aircraft_data.data['inputs']['aspect_ratio']])
         self.Cd0 = self.aircraft_data.data['inputs']['Cd0']
         self.e = self.aircraft_data.data['inputs']['oswald_factor']
-        self.k = self.aircraft_data.data['inputs']['k']
+        self.k = self.aircraft_data.data['outputs'][self.mission_type.name.lower()]['k']
         self.n_engines = np.array([self.aircraft_data.data['inputs']['n_engines']])
         self.n_fuselages = self.aircraft_data.data['inputs']['n_fuselages']
         self.cruise_speed = self.aircraft_data.data['requirements']['cruise_speed']
@@ -76,14 +76,14 @@ class WingLoading:
         D = 0.5 * self.rho_water * (self.V_lof)**2 * Cd * self.hull_surface * self.n_fuselages
 
         if self.aircraft_type == AircraftType.JET:
-            self.aircraft_data.data['outputs'][self.mission_type.name.lower()]['take_off_thrust'] = D
-            self.aircraft_data.data['outputs'][self.mission_type.name.lower()]['take_off_power'] = None
+            self.aircraft_data.data['outputs']['general']['take_off_thrust'] = D
+            self.aircraft_data.data['outputs']['general']['take_off_power'] = None
         elif self.aircraft_type == AircraftType.PROP or self.aircraft_type == AircraftType.MIXED:
-            self.aircraft_data.data['outputs'][self.mission_type.name.lower()]['take_off_power'] = D * self.V_lof / self.prop_efficiency
-            self.aircraft_data.data['outputs'][self.mission_type.name.lower()]['take_off_thrust'] = None
+            self.aircraft_data.data['outputs']['general']['take_off_power'] = D * self.V_lof / self.prop_efficiency
+            self.aircraft_data.data['outputs']['general']['take_off_thrust'] = None
         elif self.aircraft_type == AircraftType.MIXED:
-            self.aircraft_data.data['outputs'][self.mission_type.name.lower()]['take_off_thrust'] = D
-            self.aircraft_data.data['outputs'][self.mission_type.name.lower()]['take_off_power'] = D * self.V_lof / self.prop_efficiency
+            self.aircraft_data.data['outputs']['general']['take_off_thrust'] = D
+            self.aircraft_data.data['outputs']['general']['take_off_power'] = D * self.V_lof / self.prop_efficiency
         
         x = [CL*0.5*self.isa_cruise.rho * self.V_lof**2 for CL in CL_takeoff]
         return x

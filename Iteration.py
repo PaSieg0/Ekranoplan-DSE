@@ -94,9 +94,10 @@ class AircraftIteration:
         self.aircraft_data.data['outputs'][mission_type]['OEW'] = self.class_i.OEW
         self.aircraft_data.data['outputs'][mission_type]['ZFW'] = self.class_i.ZFW
         self.aircraft_data.data['outputs'][mission_type]['EW'] = self.class_i.EW
-        self.aircraft_data.data['outputs'][mission_type]['Fuel'] = self.class_i.fuel
-        self.aircraft_data.data['outputs'][mission_type]['Fuel_used'] = self.class_i.fuel_used
-        self.aircraft_data.data['outputs'][mission_type]['Fuel_reserve'] = self.class_i.fuel_res
+
+        self.aircraft_data.data['outputs'][mission_type]['total_fuel'] = self.class_i.total_fuel
+        self.aircraft_data.data['outputs'][mission_type]['fuel_mission'] = self.class_i.fuel_mission
+        self.aircraft_data.data['outputs'][mission_type]['fuel_reserve'] = self.class_i.fuel_res
         self.aircraft_data.data['outputs'][mission_type]['S'] = self.S
         self.aircraft_data.data['outputs'][mission_type]['b'] = self.b
         self.aircraft_data.data['outputs'][mission_type]['MAC'] = self.S / self.b
@@ -116,9 +117,9 @@ class AircraftIteration:
             self.aircraft_data.data['outputs'][mission_type]['T'] = None
 
         if self.mission_type == MissionType.DESIGN:
-            self.aircraft_data.data['outputs'][mission_type]['fuel_economy'] = self.class_i.fuel_used / 9.81 / 0.82 / (self.aircraft_data.data['requirements']['design_payload']/1000) / (self.class_i.design_range / 1000)
+            self.aircraft_data.data['outputs'][mission_type]['fuel_economy'] = self.class_i.fuel_mission / 9.81 / 0.82 / (self.aircraft_data.data['requirements']['design_payload']/1000) / (self.class_i.design_range / 1000)
         elif self.mission_type == MissionType.ALTITUDE:
-            self.aircraft_data.data['outputs'][mission_type]['fuel_economy'] = self.class_i.fuel_used / 9.81 / 0.82 / (self.aircraft_data.data['requirements']['altitude_payload']/1000) / ((self.class_i.altitude_range_WIG+self.class_i.altitude_range_WOG) / 1000)
+            self.aircraft_data.data['outputs'][mission_type]['fuel_economy'] = self.class_i.fuel_mission / 9.81 / 0.82 / (self.aircraft_data.data['requirements']['altitude_payload']/1000) / ((self.class_i.altitude_range_WIG+self.class_i.altitude_range_WOG) / 1000)
         
 
         self.aircraft_data.data['outputs']['max']['MTOM'] = max(self.aircraft_data.data['outputs']['design']['MTOM'], self.aircraft_data.data['outputs']['ferry']['MTOM'], self.aircraft_data.data['outputs']['altitude']['MTOM'])

@@ -112,6 +112,7 @@ class Cd0Estimation:
             stop_condition = abs((self.curr_Cd0 - self.prev_Cd0) / self.prev_Cd0) < self.tolerance or self.iteration.iteration >= self.max_iterations
             if stop_condition:
                 self.update_attributes()
+                self.aircraft_data.save_design(self.design_file)
                 break
 
             self.prev_Cd0 = self.curr_Cd0
