@@ -188,6 +188,10 @@
             "X_LEMAC": 21.056440000000002,
             "X_LE": 20.403151448414437,
             "aspect_ratio": 10
+        },
+        "empennage_design": {
+            "S_h": 254.24929313603937,
+            "S_v": 189.7660012763938
         }
     },
     "gravitational_acceleration": 9.81,

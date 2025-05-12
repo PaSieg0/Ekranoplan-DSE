@@ -3,35 +3,25 @@ import pandas as pd
 import numpy as np
 from utils import Data
 
-def hor_tail_area(Xcg_aft):
-    """
-    Calculate the horizontal tail area based on the aircraft data.
-    
-    Returns:
-        float: The horizontal tail area.
-    """
-    S_h = data.data['inputs']['V_h'] * data.data['outputs']['max']['S'] * data.data['outputs']['max']['MAC'] / (data.data['outputs']['general']['l_fuselage'] - (data.data['outputs']['wing_design']['X_LEMAC'] + Xcg_aft*data.data['outputs']['max']['MAC']))
+class Empennage:
+    def __init__(self, aircraft_data: Data):
+        self.design_number = aircraft_data.data['design_id']
+        self.design_file = f"design{self.design_number}.json"
+        self.aircraft_data = aircraft_data
 
-    return S_h
+    def calculate_tail_areas(self, Xcg_aft):
+        self.S_h = self.aircraft_data.data['inputs']['V_h'] * self.aircraft_data.data['outputs']['max']['S'] * self.aircraft_data.data['outputs']['max']['MAC'] / (self.aircraft_data.data['outputs']['general']['l_fuselage'] - (self.aircraft_data.data['outputs']['wing_design']['X_LEMAC'] + Xcg_aft*self.aircraft_data.data['outputs']['max']['MAC']))
+        self.S_v = self.aircraft_data.data['inputs']['V_v'] * self.aircraft_data.data['outputs']['max']['S'] * self.aircraft_data.data['outputs']['max']['b'] / (self.aircraft_data.data['outputs']['general']['l_fuselage'] - (self.aircraft_data.data['outputs']['wing_design']['X_LEMAC'] + Xcg_aft*self.aircraft_data.data['outputs']['max']['MAC']))
 
-def ver_tail_area(Xcg_aft):
-    """
-    Calculate the vertical tail area based on the aircraft data.
-    
-    Returns:
-        float: The vertical tail area.
-    """
-    S_v = data.data['inputs']['V_v'] * data.data['outputs']['max']['S'] * data.data['outputs']['max']['b'] / (data.data['outputs']['general']['l_fuselage'] - (data.data['outputs']['wing_design']['X_LEMAC'] + Xcg_aft*data.data['outputs']['max']['MAC']))
+        self.update_attributes()
+        self.aircraft_data.save_design(self.design_file)
 
-    return S_v
+    def update_attributes(self):
+        self.aircraft_data.data['outputs']['empennage_design']['S_h'] = self.S_h
+        self.aircraft_data.data['outputs']['empennage_design']['S_v'] = self.S_v
 
 if __name__ == "__main__":
-    data = Data("design1.json")
-
-    Xcg_aft = 0.30440835377790804 # From CG calculation
-
-    S_h = hor_tail_area( Xcg_aft)
-    S_v = ver_tail_area( Xcg_aft)
-
-    print(f"Horizontal Tail Area: {S_h} m^2")
-    print(f"Vertical Tail Area: {S_v} m^2")
+    data = Data("design4.json")
+    emp = Empennage(data)
+    Xcg_aft = 0.30440835377790804
+    emp.calculate_tail_areas(Xcg_aft=Xcg_aft)
