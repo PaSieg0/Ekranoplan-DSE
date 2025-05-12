@@ -126,6 +126,8 @@ class AircraftIteration:
         self.aircraft_data.data['outputs']['max']['b'] = max(self.aircraft_data.data['outputs']['design']['b'], self.aircraft_data.data['outputs']['ferry']['b'], self.aircraft_data.data['outputs']['altitude']['b'])
         self.aircraft_data.data['outputs']['max']['MAC'] = max(self.aircraft_data.data['outputs']['design']['MAC'], self.aircraft_data.data['outputs']['ferry']['MAC'], self.aircraft_data.data['outputs']['altitude']['MAC'])
         self.aircraft_data.data['outputs']['max']['fuel_economy'] = min(self.aircraft_data.data['outputs']['design']['fuel_economy'], self.aircraft_data.data['outputs']['altitude']['fuel_economy'])
+        self.aircraft_data.data['outputs']['max']['OEW'] = min(self.aircraft_data.data['outputs']['design']['OEW'], self.aircraft_data.data['outputs']['ferry']['OEW'], self.aircraft_data.data['outputs']['altitude']['OEW'])
+        self.aircraft_data.data['outputs']['max']['total_fuel'] = min(self.aircraft_data.data['outputs']['design']['Fuel_used'], self.aircraft_data.data['outputs']['ferry']['Fuel_used'], self.aircraft_data.data['outputs']['altitude']['Fuel_used'])
 
 if __name__=='__main__':
     iteration = AircraftIteration(
