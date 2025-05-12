@@ -29,13 +29,13 @@ class ClassI:
         self.aircraft_type = AircraftType[self.aircraft_data.data['inputs']['aircraft_type']]
         self.mission_type = mission_type
 
-        self.design_range = self.aircraft_data.data['requirements']['design_range']
+        self.design_range = self.aircraft_data.data['requirements']['design_range'] + self.aircraft_data.data['requirements']['reserve_range']/2
         self.design_payload = self.aircraft_data.data['requirements']['design_payload']
         self.design_crew = self.aircraft_data.data['requirements']['design_crew']
-        self.ferry_range = self.aircraft_data.data['requirements']['ferry_range']
+        self.ferry_range = self.aircraft_data.data['requirements']['ferry_range'] + self.aircraft_data.data['requirements']['reserve_range']
         self.ferry_payload = self.aircraft_data.data['requirements']['ferry_payload']
         self.ferry_crew = self.aircraft_data.data['requirements']['ferry_crew']
-        self.altitude_range_WIG = self.aircraft_data.data['requirements']['altitude_range_WIG']
+        self.altitude_range_WIG = self.aircraft_data.data['requirements']['altitude_range_WIG'] + self.aircraft_data.data['requirements']['reserve_range']/2
         self.altitude_range_WOG = self.aircraft_data.data['requirements']['altitude_range_WOG']
         self.altitude_payload = self.aircraft_data.data['requirements']['altitude_payload']
         self.altitude_crew = self.aircraft_data.data['requirements']['altitude_crew']
@@ -143,12 +143,12 @@ class ClassI:
     
     def calculate_fuel_mission(self) -> float:
         if self.mission_type == MissionType.DESIGN:
-            mission_range = self.aircraft_data.data['requirements']['design_range'] + self.aircraft_data.data['requirements']['reserve_range']/2
+            mission_range = self.aircraft_data.data['requirements']['design_range'] - self.aircraft_data.data['requirements']['reserve_range']/2
         if self.mission_type == MissionType.FERRY:
-            mission_range = self.aircraft_data.data['requirements']['ferry_range'] + self.aircraft_data.data['requirements']['reserve_range']
+            mission_range = self.aircraft_data.data['requirements']['ferry_range'] - self.aircraft_data.data['requirements']['reserve_range']
         if self.mission_type == MissionType.ALTITUDE:
             mission_range_WOG = self.aircraft_data.data['requirements']['altitude_range_WOG']
-            mission_range_WIG = self.aircraft_data.data['requirements']['altitude_range_WIG'] + self.aircraft_data.data['requirements']['reserve_range']/2
+            mission_range_WIG = self.aircraft_data.data['requirements']['altitude_range_WIG'] - self.aircraft_data.data['requirements']['reserve_range']/2
 
         self.LD = self.calculate_LD()
         if self.aircraft_type == AircraftType.JET:
@@ -182,8 +182,13 @@ class ClassI:
         for fraction in [0.97, 0.985, 0.995]:
             range_fraction *= fraction
 
+        print(range_fraction)
+        print(self.Mff)
+
         if self.mission_type == MissionType.DESIGN or self.mission_type == MissionType.ALTITUDE:
             range_fraction **= 2
+
+        self.range_fraction = range_fraction
         
         fuel_mission = (1-range_fraction) * self.MTOW
         return fuel_mission
@@ -193,35 +198,35 @@ class ClassI:
     def main(self):
         self.calculate_Mff()
         if self.mission_type == MissionType.DESIGN:
-            self.MTOW = (self.design_payload*9.81 + self.design_crew*9.81 + self.intersection) / (1 - self.slope - (1-self.Mff) - (1-self.Mff)*self.reserve_fuel - self.tfo)
+            self.MTOW = (self.design_payload*9.81 + self.design_crew*9.81 + self.intersection) / (1 - self.slope - (1-self.Mff) - self.tfo)
             self.total_fuel = self.MTOW * (1-self.Mff)
-            self.fuel_mission = self.calculate_fuel_mission()
-            self.fuel_res = self.total_fuel - self.fuel_mission
+            self.mission_fuel = self.calculate_fuel_mission()
+            self.reserve_fuel = self.total_fuel - self.mission_fuel
             self.OEW = self.slope * self.MTOW + self.intersection
             self.EW = self.OEW - self.design_crew
             self.ZFW = self.MTOW - self.total_fuel
             self.MTOM = self.MTOW/9.81
-            self.fuel_max = 1.1 * self.fuel
+            self.fuel_max = 1.1 * self.total_fuel
         elif self.mission_type == MissionType.FERRY:
-            self.MTOW = (self.ferry_payload*9.81 + self.design_crew*9.81 + self.intersection) / (1 - self.slope - (1-self.Mff) - (1-self.Mff)*self.reserve_fuel - self.tfo)
+            self.MTOW = (self.ferry_payload*9.81 + self.design_crew*9.81 + self.intersection) / (1 - self.slope - (1-self.Mff) - self.tfo)
             self.total_fuel = self.MTOW * (1-self.Mff)
-            self.fuel_mission = self.calculate_fuel_mission()
-            self.fuel_res = self.total_fuel - self.fuel_mission
+            self.mission_fuel = self.calculate_fuel_mission()
+            self.reserve_fuel = self.total_fuel - self.mission_fuel
             self.OEW = self.slope * self.MTOW + self.intersection
             self.EW = self.OEW - self.ferry_crew
             self.ZFW = self.MTOW - self.total_fuel
             self.MTOM = self.MTOW/9.81
-            self.fuel_max = 1.1 * self.fuel
+            self.fuel_max = 1.1 * self.total_fuel
         elif self.mission_type == MissionType.ALTITUDE:
-            self.MTOW = (self.altitude_payload*9.81 + self.design_crew*9.81 + self.intersection) / (1 - self.slope - (1-self.Mff) - (1-self.Mff)*self.reserve_fuel - self.tfo)
+            self.MTOW = (self.altitude_payload*9.81 + self.design_crew*9.81 + self.intersection) / (1 - self.slope - (1-self.Mff) - self.tfo)
             self.total_fuel = self.MTOW * (1-self.Mff)
-            self.fuel_mission = self.calculate_fuel_mission()
-            self.fuel_res = self.total_fuel - self.fuel_mission
+            self.mission_fuel = self.calculate_fuel_mission()
+            self.reserve_fuel = self.total_fuel - self.mission_fuel
             self.OEW = self.slope * self.MTOW + self.intersection
             self.EW = self.OEW - self.altitude_crew
             self.ZFW = self.MTOW - self.total_fuel
             self.MTOM = self.MTOW/9.81
-            self.fuel_max = 1.1 * self.fuel
+            self.fuel_max = 1.1 * self.total_fuel
 
 
             
@@ -231,12 +236,13 @@ class ClassI:
     def update_attributes(self):
         self.aircraft_data.data['outputs'][self.mission_type.name.lower()]['MTOW'] = self.MTOW
         self.aircraft_data.data['outputs'][self.mission_type.name.lower()]['total_fuel'] = self.total_fuel
-        self.aircraft_data.data['outputs'][self.mission_type.name.lower()]['fuel_mission'] = self.fuel_mission
-        self.aircraft_data.data['outputs'][self.mission_type.name.lower()]['fuel_reserve'] = self.fuel_res
+        self.aircraft_data.data['outputs'][self.mission_type.name.lower()]['mission_fuel'] = self.mission_fuel
+        self.aircraft_data.data['outputs'][self.mission_type.name.lower()]['reserve_fuel'] = self.reserve_fuel
         self.aircraft_data.data['outputs'][self.mission_type.name.lower()]['OEW'] = self.OEW
         self.aircraft_data.data['outputs'][self.mission_type.name.lower()]['EW'] = self.EW
         self.aircraft_data.data['outputs'][self.mission_type.name.lower()]['ZFW'] = self.ZFW
         self.aircraft_data.data['outputs'][self.mission_type.name.lower()]['MTOM'] = self.MTOM
+        self.aircraft_data.data['outputs'][self.mission_type.name.lower()]['max_fuel'] = self.fuel_max
 
 
 
@@ -248,4 +254,10 @@ if __name__=="__main__":
         mission_type=MissionType.DESIGN
     )
     classI.main()
+    print(classI.total_fuel)
+    print(classI.mission_fuel)
+    print(classI.reserve_fuel)
+
     print(classI.MTOM)
+
+
