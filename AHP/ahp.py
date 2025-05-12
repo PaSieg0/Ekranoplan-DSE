@@ -2,6 +2,7 @@ import pandas as pd
 import seaborn as sns
 from scipy.spatial.distance import squareform
 import numpy as np
+import os
 import matplotlib.pyplot as plt
 
 def make_matrix(arr):
@@ -110,7 +111,7 @@ def AHP_1_Participant(arr):
     # plt.show()
     p = pd.DataFrame(p, columns = ['Weights'])
     p.index = p.index + 1
-    p.index = 'Crit-' + p.index.astype(str)
+    p.index = [criteria[i-1] for i in p.index]
     p['Weights'] = p['Weights'].astype(float).map("{:.2%}".format)
     p['Weights +/-'] = std
     p['Weights +/-'] = p['Weights +/-'].astype(float).map("{:.2%}".format)
@@ -118,8 +119,8 @@ def AHP_1_Participant(arr):
     p['RGMM'] = p['RGMM'].astype(float).map("{:.2%}".format)
     p['+/-'] = plus_minus
     p['+/-'] = p['+/-'].astype(float).map("{:.2%}".format)
-    # print(p)
-    # print(' ')
+    print(p)
+    print(' ')
     print('Consistency Ratio: {:.2%} & Consistency Ratio of Weighted: {:.2%}'.format(cr0, cr))
     return A, p, cr, rggm
 
@@ -192,7 +193,7 @@ def AHP_Consolidated(A, rggm, w = 1):
     g.set_yticklabels(x_ticks)
     # plt.show()
     p.index = p.index + 1
-    p.index = 'Crit-' + p.index.astype(str)
+    p.index = [criteria[i-1] for i in p.index]
     p['Cons Weights'] = p['Cons Weights'].astype(float).map("{:.2%}".format)
     p['Weights +/-'] = std
     p['Weights +/-'] = p['Weights +/-'].astype(float).map("{:.2%}".format)
@@ -236,10 +237,14 @@ def extract_weights_csv(excel_path):
 
 A_list = []
 rggm_list = []
-n_participants = 10  # Number of participants
-for i in range(1, n_participants+1):
-    arr = extract_weights_csv(f'AHP/ahp{i}.xlsx'.format(i+1))
-    print(f"Participant {i}:")
+# Get all .xlsx files in the AHP folder
+ahp_folder = 'AHP'
+criteria = ['Cost', 'Sustainability', 'Time to Destination', 'Rough Sea Tolerance', 'Design Complexity']
+xlsx_files = [f for f in os.listdir(ahp_folder) if f.endswith('.xlsx')]
+
+for i, file in enumerate(xlsx_files, start=1):
+    arr = extract_weights_csv(os.path.join(ahp_folder, file))
+    print(f"Participant {i} ({file}):")
     A, p, cr, rggm = AHP_1_Participant(arr)
     A_list.append(A)
     rggm_list.append(rggm)
