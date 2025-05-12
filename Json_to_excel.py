@@ -7,6 +7,8 @@ def apply_number_format(cell, value):
     if isinstance(value, (int, float)):
         if abs(value) >= 0.001:
             cell.number_format = '#,##0.000'  # Locale-dependent: assumes Excel settings use comma for decimals
+        elif value == 0:
+            cell.number_format = '0'
         else:
             cell.number_format = '0.000E+00'
         cell.value = value
@@ -33,7 +35,7 @@ def design_json_to_excel(json_file: str, excel_file: str) -> None:
         "design_range": "[m]", "design_payload": "[kg]", "ferry_range": "[m]", "reserve_range": "[m]",
         "ferry_payload": "[kg]", "altitude_range_WIG": "[m]", "altitude_range_WOG": "[m]", "altitude_payload": "[kg]",
         "cruise_speed": "[m/s]", "jet_consumption": "[kg/(N·s)]", "prop_consumption": "[kg/J]",
-        "reserve_fuel": "[N]", "take_off_power": "[W]", "take_off_thrust": "[N]", "cruise_altitude": "[km]",
+        "reserve_fuel": "[N]", "take_off_power": "[W]", "take_off_thrust": "[N]", "cruise_altitude": "[m]",
         "MTOM": "[kg]", "MTOW": "[N]", "OEW": "[N]", "ZFW": "[N]", "EW": "[N]", "fuel": "[N]",
         "fuel_used": "[N]", "fuel_reserve": "[N]", "S": "[m²]", "b": "[m]", "MAC": "[m]", "WP": "[N/W]",
         "WS": "[N/m²]", "fuel_economy": "[L/ton/km]", "P": "[W]", "T": "[N]", "stall_speed_clean": "[m/s]",
@@ -51,6 +53,7 @@ def design_json_to_excel(json_file: str, excel_file: str) -> None:
     design_outputs = data.get('outputs', {}).get('design', {})
     max_outputs = data.get('outputs', {}).get('max', {})
     wing_design = data.get('outputs', {}).get('wing_design', {})
+    empennage_design = data.get('outputs', {}).get('empenage_design', {})
 
     del data['outputs']
     del data['requirements']
@@ -104,6 +107,7 @@ def design_json_to_excel(json_file: str, excel_file: str) -> None:
         row += 1
 
     write_block(row_inputs_end + 1, 4, 5, "Wing Design", wing_design)
+    write_block(row_general_out_end + 1, 7, 8, "Empennage Design", empennage_design)
 
     auto_adjust_column_widths(sheet)
 
