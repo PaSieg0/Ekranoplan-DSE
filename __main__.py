@@ -7,6 +7,8 @@ from Json_to_excel import design_json_to_excel
 from Fuselage import Fuselage
 from PrelimWingPlanformDesign import WingPlanform
 from Cd0Estimation import Cd0Estimation
+from cgRange import CGRange
+from empennage import Empennage
 
 
 def main(create_excel: bool = False) -> None:
@@ -35,6 +37,12 @@ def main(create_excel: bool = False) -> None:
 
         wing_planform = WingPlanform(aircraft_data=aircraft_data)
         wing_planform.calculate()
+
+        cg_range = CGRange(aircraft_data=aircraft_data)
+        cg_range.calculate_cg_range()
+
+        emp = Empennage(aircraft_data=aircraft_data)
+        emp.calculate_tail_areas()
 
 if __name__ == "__main__":
     main(create_excel=True)
