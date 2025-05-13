@@ -45,6 +45,7 @@ class WingLoading:
         self.prop_efficiency = self.aircraft_data.data['inputs']['prop_efficiency']
         self.CL_hydro = self.aircraft_data.data['inputs']['CL_hydro']
         self.upsweep = self.aircraft_data.data['inputs']['upsweep']
+        self.d_fuselage = self.aircraft_data.data['outputs']['general']['d_fuselage']
         self.hull_surface = self.calculate_hull_surface()
         self.TW = None
         self.WP = None
@@ -68,16 +69,17 @@ class WingLoading:
         return Cd
 
     def calculate_hull_surface(self):
-        length_in_water = self.depth/np.sin(self.upsweep*np.pi/180) + (self.L-self.tail_length)
-        return 2*abs(np.arccos(1-2*self.depth))*self.r_float*length_in_water
+        tail_part_in_water = self.depth*self.d_fuselage/np.sin(self.upsweep*np.pi/180)
+        length_in_water = tail_part_in_water + (self.L-self.tail_length)
+        return 2*abs(np.arccos(1-2*self.depth))*self.r_float*length_in_water*self.n_fuselages
     
     def take_off_requirement(self):
         CL_takeoff = self.CLmax_takeoff/1.21
         Cd = self.calculate_Cd()
         self.hull_surface = self.calculate_hull_surface()
-        self.aircraft_data.data['outputs']['general']['Cd'] = Cd
+        self.aircraft_data.data['outputs']['general']['Cd_water'] = Cd
         self.aircraft_data.data['outputs']['general']['hull_surface'] = self.hull_surface
-        D = 0.5 * self.rho_water * (self.V_lof)**2 * Cd * self.hull_surface * self.n_fuselages
+        D = 0.5 * self.rho_water * (self.V_lof)**2 * Cd * self.hull_surface
 
         if self.aircraft_type == AircraftType.JET:
             self.aircraft_data.data['outputs']['general']['take_off_thrust'] = D

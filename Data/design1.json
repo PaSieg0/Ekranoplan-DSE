@@ -6,7 +6,7 @@
         "wing_type": "LOW",
         "n_wings": 1,
         "n_fuselages": 1,
-        "depth": 0.05,
+        "depth": 0.1,
         "jet_consumption": 2.7e-05,
         "prop_consumption": 2.1e-08,
         "prop_efficiency": 0.85,
@@ -20,7 +20,7 @@
         "CLmax_takeoff": 1.7,
         "CLmax_landing": 1.7,
         "CL_hydro": 0.5,
-        "r_float": 4.4,
+        "r_float": 3,
         "upsweep": 11,
         "xcg_OEW": 0.4,
         "xcg_payload": 0.55,
@@ -61,9 +61,9 @@
             "l_cargo_straight": 15.316351424067726,
             "LD_g": 16.704888919806766,
             "Re": 4850602117.146465,
-            "Cd": 0.0012696487711144299,
-            "hull_surface": 141.26968279200256,
-            "take_off_power": 28968332.023050427,
+            "Cd_water": 0.0012696487711144299,
+            "hull_surface": 154.28581474848784,
+            "take_off_power": 31637380.503370564,
             "take_off_thrust": null,
             "V_lof": 64.995
         },
@@ -89,9 +89,7 @@
             "mission_fuel": 375422.8595370818,
             "reserve_fuel": 6584.411928269255,
             "Mff": 0.8486761027469408,
-            "fuel_economy": 0.06829210589132233,
-            "fuel_mission": 375422.85956324317,
-            "fuel_reserve": 6584.411929335445
+            "fuel_economy": 0.06829210589132233
         },
         "ferry": {
             "MTOW": 750110.774401961,
@@ -161,25 +159,27 @@
             "sweep_c_4": 0,
             "dihedral": 5,
             "sweep_x_c": 2.454031674527076,
-            "chord_root": 12.027833996293483,
-            "chord_tip": 4.811133598517394,
-            "y_MAC": 18.04175099444022,
+            "chord_root": 12.02783399629348,
+            "chord_tip": 4.811133598517393,
+            "y_MAC": 18.041750994440218,
             "X_LEMAC": 21.056440000000002,
             "X_LE": 20.283222100238277,
-            "MAC": 8.934962397246588,
-            "S": 708.8770741477267,
-            "b": 84.19483797405437,
+            "MAC": 8.934962397246585,
+            "S": 708.8770741477266,
+            "b": 84.19483797405435,
             "aspect_ratio": 10
         },
         "cg_range": {
-            "most_aft_cg": 34.78531120867328,
+            "most_aft_cg": 34.785311208673285,
             "most_aft_mission": "ALTITUDE_OEW_PAYLOAD",
-            "most_forward_cg": 28.83444971329708,
+            "most_forward_cg": 28.834449713297087,
             "most_forward_mission": "DESIGN_OEW_FUEL"
         },
         "empennage_design": {
-            "S_h": 133.31248147298373,
-            "S_v": 124.12873274928927
+            "S_h": 163.84121179151012,
+            "S_v": 152.5543727569838,
+            "l_h": 32.785042770316004,
+            "l_v": 32.785042770316004
         }
     },
     "kinematic_viscosity": 1.006e-06,
