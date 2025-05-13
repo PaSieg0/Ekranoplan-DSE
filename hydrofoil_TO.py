@@ -35,7 +35,7 @@ C_L_f = 1.0  # Lift coefficient for hydrofoil
 C_L = 2  # Lift coefficient for airfoil
 LD = 15  # Lift-to-drag ratio for airfoil
 
-S = 900  # m^2 (Main wing area)
+S = 600  # m^2 (Main wing area)
 S_fus = N_fus*d*(l_fus-l_tail) # m^2 (Fuselage area)
 
 print(f"S_fus: {S_fus:.2f} m^2")
@@ -70,7 +70,7 @@ for tau in tau_list:
 
         P_hull, P_hydrofoil = calculate_P(V)
 
-        #print(f"V: {V:.2f} m/s, P_hull: {P_hull:.2f} W, P_hydrofoil: {P_hydrofoil:.2f} W")
+        print(f"V: {V:.2f} m/s, P_hull: {P_hull:.2f} W, P_hydrofoil: {P_hydrofoil:.2f} W")
 
         if V < V_LO:
             #print(f'water take-off velocity: {V:.2f} m/s {V_LO:.2f} m/s')

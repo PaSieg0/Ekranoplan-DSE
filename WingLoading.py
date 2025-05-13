@@ -32,6 +32,7 @@ class WingLoading:
         self.stall_speed_high = self.aircraft_data.data['requirements']['stall_speed_high']
         self.V_lof = 1.05*self.stall_speed_takeoff
         self.L = self.aircraft_data.data['outputs']['general']['l_fuselage']
+        self.tail_length = self.aircraft_data.data['outputs']['general']['l_tailcone']
         self.r_float = self.aircraft_data.data['inputs']['r_float']
         self.cruise_altitude = self.aircraft_data.data['inputs']['cruise_altitude']
         self.high_altitude = self.aircraft_data.data['requirements']['high_altitude']
@@ -42,6 +43,9 @@ class WingLoading:
         self.rho_water = self.aircraft_data.data['rho_water']
         self.depth = self.aircraft_data.data['inputs']['depth']
         self.prop_efficiency = self.aircraft_data.data['inputs']['prop_efficiency']
+        self.CL_hydro = self.aircraft_data.data['inputs']['CL_hydro']
+        self.upsweep = self.aircraft_data.data['inputs']['upsweep']
+        self.hull_surface = self.calculate_hull_surface()
         self.TW = None
         self.WP = None
         self.max_WS = None
@@ -49,6 +53,7 @@ class WingLoading:
     def stall_requirement(self):
         x = 0.5*self.isa_cruise.rho * self.stall_speed_clean**2 * self.CLmax_clean
         return x
+    
     def stall_requirement_high(self):
         x = 0.5*self.isa_cruise.rho * self.stall_speed_high**2 * self.CLmax_clean
         return x
@@ -61,16 +66,15 @@ class WingLoading:
         self.aircraft_data.data['outputs']['general']['Re'] = self.Re
         Cd = 0.075 / (np.log10(self.Re) - 2)**2
         return Cd
-    
+
     def calculate_hull_surface(self):
-        return 2*abs(np.arccos(1-2*self.depth))*self.r_float*self.L
+        length_in_water = self.depth/np.sin(self.upsweep*np.pi/180) + (self.L-self.tail_length)
+        return 2*abs(np.arccos(1-2*self.depth))*self.r_float*length_in_water
     
     def take_off_requirement(self):
         CL_takeoff = self.CLmax_takeoff/1.21
         Cd = self.calculate_Cd()
         self.hull_surface = self.calculate_hull_surface()
-        if self.design_number == 3:
-            self.hull_surface *= 2
         self.aircraft_data.data['outputs']['general']['Cd'] = Cd
         self.aircraft_data.data['outputs']['general']['hull_surface'] = self.hull_surface
         D = 0.5 * self.rho_water * (self.V_lof)**2 * Cd * self.hull_surface * self.n_fuselages
