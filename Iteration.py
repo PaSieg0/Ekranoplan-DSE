@@ -7,7 +7,6 @@ import matplotlib.pyplot as plt
 from ISA_Class import ISA
 from utils import Data
 
-
 def solve_hb(target_A_A):
     h_b = np.arange(0, 1, 0.00001)
     y = 1 - np.exp(-4.74*h_b**0.814) - h_b**2*np.exp(-3.88*h_b**0.758)
@@ -55,15 +54,15 @@ class AircraftIteration:
         self.h_b = self.aircraft_data.data['inputs']['cruise_altitude'] / self.b
         self.A_ratio = Ainf_Ah(self.h_b)
         self.new_k = np.sqrt(1 / self.A_ratio)
+        self.new_Cd0 = self.aircraft_data.data['inputs']['Cd0']
 
-
-        
     def run_iteration(self) -> list[float]:
         self.get_initial_conditions()
 
         while True:
             self.iteration += 1
             self.class_i.k = self.new_k
+            self.class_i.Cd0 = self.new_Cd0
 
             self.class_i.main()
             self.curr_MTOM = self.class_i.MTOM
@@ -84,9 +83,8 @@ class AircraftIteration:
             self.A_ratio = Ainf_Ah(self.h_b)
             self.new_k = np.sqrt(1 / self.A_ratio)
             self.aircraft_data.data['inputs']['k'] = self.new_k
+            self.new_Cd0 = self.aircraft_data.data['inputs']['Cd0']
             
-
-      
     def update_attributes(self):
         mission_type = self.mission_type.name.lower()
         self.aircraft_data.data['outputs'][mission_type]['MTOM'] = self.class_i.MTOM
