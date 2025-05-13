@@ -48,7 +48,6 @@ class ClassI:
         self.e = self.aircraft_data.data['inputs']['oswald_factor']
         self.A = self.aircraft_data.data['inputs']['aspect_ratio']
         self.tfo = self.aircraft_data.data['inputs']['tfo']
-        self.reserve_fuel = self.aircraft_data.data['inputs']['reserve_fuel']
         self.k = self.aircraft_data.data['outputs'][self.mission_type.name.lower()]['k']
 
         self.reference_aircraft_path = reference_aircraft_path

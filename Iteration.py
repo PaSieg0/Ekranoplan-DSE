@@ -89,7 +89,7 @@ class AircraftIteration:
             self.h_b = self.aircraft_data.data['inputs']['cruise_altitude'] / self.b
             self.A_ratio = Ainf_Ah(self.h_b)
             self.new_k = np.sqrt(1 / self.A_ratio)
-            self.aircraft_data.data['inputs']['k'] = self.new_k
+            self.aircraft_data.data['outputs'][self.mission_type]['k'] = self.new_k
             self.new_Cd0 = self.aircraft_data.data['inputs']['Cd0']
             
     def update_attributes(self):

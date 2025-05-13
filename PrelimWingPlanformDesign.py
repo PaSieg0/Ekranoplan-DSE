@@ -19,14 +19,13 @@ class WingPlanform:
         self.S = aircraft_data.data['outputs']['max']['S']
         self.aspect_ratio = aircraft_data.data['inputs']['aspect_ratio']
 
-        self.fuselage_length = 52.6411 # meters
+        self.fuselage_length = self.aircraft_data.data['outputs']['general']['l_fuselage']
         self.x_c = 0 #Where along the wing we want to look, so in this case 0 is the leading edge of the wing
-        self.taper_ratio = 0.4
-        self.x_c_OEW_cg = 0.2 # x/c OEW CG position
-        self.x_c_wing_cg = 0.4 # x/c wing CG position
-        self.fuse_x_cg = 0.4  # normalized CG position
-        self.mass_fraction_wing = 0.08 # mass fraction of the wing
-        self.mass_fraction_fuse = 0.08 # mass fraction of the fuselage
+        self.x_c_OEW_cg = self.aircraft_data.data['inputs']['xc_OEW'] # x/c OEW CG position
+        self.x_c_wing_cg = self.aircraft_data.data['inputs']['xc_wing'] # x/c wing CG position
+        self.fuse_x_cg = self.aircraft_data.data['inputs']['xc_fuselage']  # normalized CG position
+        self.mass_fraction_wing = self.aircraft_data.data['inputs']['mf_wing'] # mass fraction of the wing
+        self.mass_fraction_fuse = self.aircraft_data.data['inputs']['mf_fuselage'] # mass fraction of the fuselage
 
 
     def calculate(self):
@@ -36,7 +35,7 @@ class WingPlanform:
         else: 
             self.sweep_c_4 = 0.75 * 0.935/(self.mach+0.03)
 
-        self.taper = 0.2*(2-self.sweep_c_4*np.pi/180)
+        self.taper_ratio = 0.2*(2-self.sweep_c_4*np.pi/180)
 
         if self.wing_type == WingType.HIGH:
             self.dihedral = 1  # degrees
@@ -44,8 +43,6 @@ class WingPlanform:
             self.dihedral = 5  # degrees
         else:
             raise ValueError("Invalid wing type")
-        
-        self.sweep_c_4
         
         self.b = self.aircraft_data.data['outputs']['max']['b']
         self.sweep_x_c = np.rad2deg(np.arctan(
