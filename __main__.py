@@ -6,6 +6,7 @@ from bar_graph import plot_bar_graph
 from Json_to_excel import design_json_to_excel
 from Fuselage import Fuselage
 from PrelimWingPlanformDesign import WingPlanform
+from cgRange import CGRange
 
 
 def main(create_excel: bool = False) -> None:
@@ -29,6 +30,9 @@ def main(create_excel: bool = False) -> None:
 
         wing_planform = WingPlanform(aircraft_data=aircraft_data)
         wing_planform.calculate()
+
+        cg_range = CGRange(aircraft_data=aircraft_data)
+        cg_range.calculate_cg_range()
 
 if __name__ == "__main__":
     main(create_excel=True)

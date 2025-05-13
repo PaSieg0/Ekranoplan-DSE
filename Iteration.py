@@ -48,8 +48,6 @@ class AircraftIteration:
                                          mission_type=self.mission_type,
                                          PLOT_OUTPUT=False)
         self.S = self.class_i.MTOW / self.WS
-        print(f"S: {self.S}")
-        print(f"MTOM: {self.class_i.MTOM}")
         
         if self.design_number == 4:
             self.b = np.sqrt(self.S/2 * self.class_i.A)
@@ -63,7 +61,6 @@ class AircraftIteration:
         
     def run_iteration(self) -> list[float]:
         self.get_initial_conditions()
-        print(f"k: {self.new_k}")
 
         while True:
             self.iteration += 1
@@ -89,10 +86,6 @@ class AircraftIteration:
             self.prev_MTOM = self.curr_MTOM
             self.MTOM_history.append(self.curr_MTOM)
             self.S = self.class_i.MTOW / self.WS
-            print(f"MTOM: {self.prev_MTOM}")
-            print(f"Mff: {self.class_i.Mff}")
-            print(f"mission_fuel: {self.class_i.mission_fuel}")
-            print(f"reserve_fuel: {self.class_i.reserve_fuel}")
             self.b = np.sqrt(self.S/self.aircraft_data.data['inputs']['n_wings'] * self.class_i.A)
             self.h_b = self.aircraft_data.data['inputs']['cruise_altitude'] / self.b
             self.A_ratio = Ainf_Ah(self.h_b)

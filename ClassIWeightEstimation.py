@@ -182,8 +182,6 @@ class ClassI:
         for fraction in [0.97, 0.985, 0.995]:
             range_fraction *= fraction
 
-        print(range_fraction)
-        print(self.Mff)
 
         if self.mission_type == MissionType.DESIGN or self.mission_type == MissionType.ALTITUDE:
             range_fraction **= 2
