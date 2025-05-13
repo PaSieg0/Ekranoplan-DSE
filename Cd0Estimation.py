@@ -57,8 +57,8 @@ class Cd0Estimation:
             self.aircraft_data.data['outputs'][mission_type]['ZFW'] = self.iteration.aircraft_data.data['outputs'][mission_type]['ZFW']
             self.aircraft_data.data['outputs'][mission_type]['EW'] = self.iteration.aircraft_data.data['outputs'][mission_type]['EW'] 
             self.aircraft_data.data['outputs'][mission_type]['total_fuel'] = self.iteration.aircraft_data.data['outputs'][mission_type]['total_fuel']
-            self.aircraft_data.data['outputs'][mission_type]['fuel_mission'] = self.iteration.aircraft_data.data['outputs'][mission_type]['fuel_mission']
-            self.aircraft_data.data['outputs'][mission_type]['fuel_reserve'] = self.iteration.aircraft_data.data['outputs'][mission_type]['fuel_reserve'] 
+            self.aircraft_data.data['outputs'][mission_type]['mission_fuel'] = self.iteration.aircraft_data.data['outputs'][mission_type]['mission_fuel']
+            self.aircraft_data.data['outputs'][mission_type]['reserve_fuel'] = self.iteration.aircraft_data.data['outputs'][mission_type]['reserve_fuel'] 
             self.aircraft_data.data['outputs'][mission_type]['S'] = self.iteration.aircraft_data.data['outputs'][mission_type]['S']
             self.aircraft_data.data['outputs'][mission_type]['b'] = self.iteration.aircraft_data.data['outputs'][mission_type]['b']
             self.aircraft_data.data['outputs'][mission_type]['MAC'] = self.iteration.aircraft_data.data['outputs'][mission_type]['S'] / self.iteration.aircraft_data.data['outputs'][mission_type]['b']
@@ -94,9 +94,7 @@ class Cd0Estimation:
             wing_wet = self.wing_wet()
             tail_wet = self.tail_wet()
             fuselage_wet = self.fuselage_wet()
-            print(fuselage_wet)
             S_ref = self.get_S_ref()
-            print(S_ref)
             coefficient = self.get_Cfc()
 
             self.Cd0 = coefficient*(wing_wet + tail_wet + fuselage_wet)/S_ref * 1.2
