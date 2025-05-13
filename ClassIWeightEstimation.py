@@ -58,7 +58,7 @@ class ClassI:
             1: 0.970,
             2: 0.985,
             3: 0.995
-        }
+        } # Raymers
 
 
     def calculate_LD(self) -> float:

@@ -113,6 +113,8 @@ class AircraftIteration:
         self.aircraft_data.data['outputs'][mission_type]['WP'] = self.WP
         self.aircraft_data.data['outputs'][mission_type]['TW'] = self.TW
         self.aircraft_data.data['outputs'][mission_type]['WS'] = self.WS
+        self.aircraft_data.data['outputs'][mission_type]['WS'] = self.WS
+        self.aircraft_data.data['outputs'][mission_type]['Mff'] = self.class_i.Mff
         self.aircraft_data.data['outputs']['general']['V_lof'] = self.aircraft_data.data['requirements']['stall_speed_takeoff'] * 1.05
         if self.WP:
             self.aircraft_data.data['outputs'][mission_type]['P'] = self.class_i.MTOW / self.WP
@@ -124,9 +126,9 @@ class AircraftIteration:
             self.aircraft_data.data['outputs'][mission_type]['T'] = None
 
         if self.mission_type == MissionType.DESIGN:
-            self.aircraft_data.data['outputs'][mission_type]['fuel_economy'] = self.class_i.mission_fuel / 9.81 / 0.82 / (self.aircraft_data.data['requirements']['design_payload']/1000) / (self.class_i.design_range / 1000)
+            self.aircraft_data.data['outputs'][mission_type]['fuel_economy'] = self.class_i.mission_fuel / 9.81 / 0.82 / (self.aircraft_data.data['requirements']['design_payload']/1000) / (2*self.class_i.design_range / 1000)
         elif self.mission_type == MissionType.ALTITUDE:
-            self.aircraft_data.data['outputs'][mission_type]['fuel_economy'] = self.class_i.mission_fuel / 9.81 / 0.82 / (self.aircraft_data.data['requirements']['altitude_payload']/1000) / ((self.class_i.altitude_range_WIG+self.class_i.altitude_range_WOG) / 1000)
+            self.aircraft_data.data['outputs'][mission_type]['fuel_economy'] = self.class_i.mission_fuel / 9.81 / 0.82 / (self.aircraft_data.data['requirements']['altitude_payload']/1000) / (2*(self.class_i.altitude_range_WIG+self.class_i.altitude_range_WOG) / 1000)
         
 
         self.aircraft_data.data['outputs']['max']['MTOM'] = max(self.aircraft_data.data['outputs']['design']['MTOM'], self.aircraft_data.data['outputs']['ferry']['MTOM'], self.aircraft_data.data['outputs']['altitude']['MTOM'])
@@ -134,6 +136,7 @@ class AircraftIteration:
         self.aircraft_data.data['outputs']['max']['b'] = max(self.aircraft_data.data['outputs']['design']['b'], self.aircraft_data.data['outputs']['ferry']['b'], self.aircraft_data.data['outputs']['altitude']['b'])
         self.aircraft_data.data['outputs']['max']['MAC'] = max(self.aircraft_data.data['outputs']['design']['MAC'], self.aircraft_data.data['outputs']['ferry']['MAC'], self.aircraft_data.data['outputs']['altitude']['MAC'])
         self.aircraft_data.data['outputs']['max']['fuel_economy'] = min(self.aircraft_data.data['outputs']['design']['fuel_economy'], self.aircraft_data.data['outputs']['altitude']['fuel_economy'])
+        self.aircraft_data.data['outputs']['max']['Mff'] = min(self.aircraft_data.data['outputs']['design']['Mff'], self.aircraft_data.data['outputs']['ferry']['Mff'], self.aircraft_data.data['outputs']['altitude']['Mff'])
         self.aircraft_data.data['outputs']['max']['OEW'] = max(self.aircraft_data.data['outputs']['design']['OEW'], self.aircraft_data.data['outputs']['ferry']['OEW'], self.aircraft_data.data['outputs']['altitude']['OEW'])
         self.aircraft_data.data['outputs']['max']['total_fuel'] = max(self.aircraft_data.data['outputs']['design']['total_fuel'], self.aircraft_data.data['outputs']['ferry']['total_fuel'], self.aircraft_data.data['outputs']['altitude']['total_fuel'])
         self.aircraft_data.data['outputs']['max']['mission_fuel'] = max(self.aircraft_data.data['outputs']['design']['mission_fuel'], self.aircraft_data.data['outputs']['ferry']['mission_fuel'], self.aircraft_data.data['outputs']['altitude']['mission_fuel'])

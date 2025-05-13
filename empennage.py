@@ -9,9 +9,9 @@ class Empennage:
         self.design_file = f"design{self.design_number}.json"
         self.aircraft_data = aircraft_data
 
-    def calculate_tail_areas(self, Xcg_aft):
-        self.S_h = self.aircraft_data.data['inputs']['V_h'] * self.aircraft_data.data['outputs']['max']['S'] * self.aircraft_data.data['outputs']['max']['MAC'] / (self.aircraft_data.data['outputs']['general']['l_fuselage'] - (self.aircraft_data.data['outputs']['wing_design']['X_LEMAC'] + Xcg_aft*self.aircraft_data.data['outputs']['max']['MAC']))
-        self.S_v = self.aircraft_data.data['inputs']['V_v'] * self.aircraft_data.data['outputs']['max']['S'] * self.aircraft_data.data['outputs']['max']['b'] / (self.aircraft_data.data['outputs']['general']['l_fuselage'] - (self.aircraft_data.data['outputs']['wing_design']['X_LEMAC'] + Xcg_aft*self.aircraft_data.data['outputs']['max']['MAC']))
+    def calculate_tail_areas(self):
+        self.S_h = self.aircraft_data.data['inputs']['V_h'] * self.aircraft_data.data['outputs']['max']['S'] * self.aircraft_data.data['outputs']['max']['MAC'] / (self.aircraft_data.data['outputs']['general']['l_fuselage'] - self.aircraft_data.data['outputs']['cg_range']['most_aft_cg'])
+        self.S_v = self.aircraft_data.data['inputs']['V_v'] * self.aircraft_data.data['outputs']['max']['S'] * self.aircraft_data.data['outputs']['max']['b'] / (self.aircraft_data.data['outputs']['general']['l_fuselage'] - self.aircraft_data.data['outputs']['cg_range']['most_aft_cg'])
 
         self.update_attributes()
         self.aircraft_data.save_design(self.design_file)

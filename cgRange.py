@@ -34,11 +34,7 @@ class CGRange:
                     "Fuel": (self.aircraft_data.data["outputs"]["wing_design"]["X_LEMAC"] + 0.5*self.aircraft_data.data["outputs"]["max"]["MAC"]) / self.aircraft_data.data["outputs"]["general"]["l_fuselage"]
                 }
 
-                self.mass_components = {
-                    "OEW": self.aircraft_data.data["outputs"][mission_name]["OEW"]/g,
-                    "Payload": self.aircraft_data.data["requirements"][f"{mission_name}_payload"],
-                    "Fuel": self.aircraft_data.data["outputs"][mission_name]["max_fuel"]/g
-                }
+                self.mass_components = {}
                 
                 if load_case == LoadCase.OEW:
                     self.mass_components["Payload"] = 0
