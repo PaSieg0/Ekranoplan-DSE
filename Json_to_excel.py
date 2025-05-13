@@ -44,7 +44,8 @@ def design_json_to_excel(json_file: str, excel_file: str) -> None:
         "l_fuselage": "[m]", "l_cargo_straight": "[m]", "r_fuselage": "[m]", "d_fuselage": "[m]", "l_tailcone": "[m]", "l_nose": "[m]",
         "V_lof": "[m/s]", "cargo_width": "[m]", "cargo_height": "[m]", "cargo_length": "[m]", "cargo_density": "[kg/m³]",
         "sweep_c_4": "[deg]", "dihedral": "[deg]", "sweep_x_c": "[deg]", "sweep_TE": "[deg]", "chord_root": "[m]", "chord_tip": "[m]",
-        "y_MAC": "[m]", "X_LEMAC": "[m]", "X_LE": "[m]", "total_fuel": "[N]", "fuel_mission": "[N]", "rho_air": "[kg/m³]"
+        "y_MAC": "[m]", "X_LEMAC": "[m]", "X_LE": "[m]", "total_fuel": "[N]", "fuel_mission": "[N]", "rho_air": "[kg/m³]", "S_h": "[m²]", 
+        "S_v": "[m²]", "l_h": "[m]", "l_v": "[m]", "most_aft_cg": "[m]", "most_forward_cg": "[m]"
     }
 
     requirements = data.get('requirements', {})
@@ -53,7 +54,8 @@ def design_json_to_excel(json_file: str, excel_file: str) -> None:
     design_outputs = data.get('outputs', {}).get('design', {})
     max_outputs = data.get('outputs', {}).get('max', {})
     wing_design = data.get('outputs', {}).get('wing_design', {})
-    empennage_design = data.get('outputs', {}).get('empenage_design', {})
+    empennage_design = data.get('outputs', {}).get('empennage_design', {})
+    cg_range = data.get('outputs', {}).get('cg_range', {})
 
     del data['outputs']
     del data['requirements']
@@ -107,7 +109,9 @@ def design_json_to_excel(json_file: str, excel_file: str) -> None:
         row += 1
 
     write_block(row_inputs_end + 1, 4, 5, "Wing Design", wing_design)
-    write_block(row_general_out_end + 1, 7, 8, "Empennage Design", empennage_design)
+    empennage_end = write_block(row_general_out_end + 1, 7, 8, "Empennage Design", empennage_design)
+
+    write_block(empennage_end + 1, 7, 8, "CG Range", cg_range)
 
     auto_adjust_column_widths(sheet)
 

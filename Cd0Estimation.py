@@ -94,9 +94,7 @@ class Cd0Estimation:
             wing_wet = self.wing_wet()
             tail_wet = self.tail_wet()
             fuselage_wet = self.fuselage_wet()
-            print(fuselage_wet)
             S_ref = self.get_S_ref()
-            print(S_ref)
             coefficient = self.get_Cfc()
 
             self.Cd0 = coefficient*(wing_wet + tail_wet + fuselage_wet)/S_ref * 1.2
