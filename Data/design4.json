@@ -15,7 +15,6 @@
         "aspect_ratio": 6,
         "Cl_alpha": 5.0,
         "tfo": 0.001,
-        "reserve_fuel": 0,
         "n_engines": 8,
         "CLmax_clean": 1.5,
         "CLmax_takeoff": 1.7,
@@ -26,8 +25,13 @@
         "xcg_OEW": 0.45,
         "xcg_payload": 0.55,
         "V_h": 0.9,
-        "V_v": 0.0838,
-        "k": 1.4662715103188428
+        "V_v": 0.083867,
+        "k": 1.4662715103188428,
+        "xc_OEW": 0.2,
+        "xc_wing": 0.4,
+        "xc_fuselage": 0.4,
+        "mf_wing": 0.12,
+        "mf_fuselage": 0.2
     },
     "requirements": {
         "design_range": 3704000,

@@ -89,7 +89,7 @@ class AircraftIteration:
             self.h_b = self.aircraft_data.data['inputs']['cruise_altitude'] / self.b
             self.A_ratio = Ainf_Ah(self.h_b)
             self.new_k = np.sqrt(1 / self.A_ratio)
-            self.aircraft_data.data['inputs']['k'] = self.new_k
+            self.aircraft_data.data['outputs'][self.mission_type.name.lower()]['k'] = self.new_k
             self.new_Cd0 = self.aircraft_data.data['inputs']['Cd0']
             
     def update_attributes(self):
@@ -138,6 +138,7 @@ class AircraftIteration:
         self.aircraft_data.data['outputs']['max']['mission_fuel'] = max(self.aircraft_data.data['outputs']['design']['mission_fuel'], self.aircraft_data.data['outputs']['ferry']['mission_fuel'], self.aircraft_data.data['outputs']['altitude']['mission_fuel'])
         self.aircraft_data.data['outputs']['max']['reserve_fuel'] = max(self.aircraft_data.data['outputs']['design']['reserve_fuel'], self.aircraft_data.data['outputs']['ferry']['reserve_fuel'], self.aircraft_data.data['outputs']['altitude']['reserve_fuel'])
         self.aircraft_data.data['outputs']['max']['max_fuel'] = 1.1 * self.aircraft_data.data['outputs']['max']['total_fuel']
+        self.aircraft_data.data['outputs']['max']['LD'] = max(self.aircraft_data.data['outputs']['design']['LD'], self.aircraft_data.data['outputs']['ferry']['LD'], self.aircraft_data.data['outputs']['altitude']['LD'])
 
 if __name__=='__main__':
     iteration = AircraftIteration(
