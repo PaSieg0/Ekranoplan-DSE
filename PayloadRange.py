@@ -46,8 +46,9 @@ class RangeCalculator:
         self.L_D *= k_factor
         
         # Extract weight and fuel data
-        self.fuel_design = self.data.data["outputs"]['design']['total_fuel']
+        self.fuel_design = self.data.data["outputs"]['design']['mission_fuel']
         self.fuel_max = self.data.data["outputs"]['design']['max_fuel']
+        self.fuel_reserve = self.data.data["outputs"]['design']['reserve_fuel']
         self.design_payload = self.data.data["requirements"]['design_payload']
         self.max_payload = 100_000  # This could be made configurable
         self.MTOW = self.data.data["outputs"]['design']['MTOW']
