@@ -3,7 +3,7 @@ from utils import Data
 from ClassIWeightEstimation import ClassI, MissionType, AircraftType
 from Iteration import AircraftIteration
 from ISA_Class import ISA
-
+from empennage import EmpType
 
 class Cd0Estimation:
     #TODO: this is very preliminary, need to consider form factors, IFF Cfc etc. later
@@ -12,6 +12,7 @@ class Cd0Estimation:
         self.design_file = f'design{self.design_number}.json'
         self.aircraft_data = aircraft_data
         self.mission_type = mission_type
+        self.tail_type = EmpType[aircraft_data.data['inputs']['tail_type']]
 
         self.tolerance = 0.0000001
         self.max_iterations = 100
@@ -31,6 +32,8 @@ class Cd0Estimation:
         return (2*np.pi*self.aircraft_data.data['outputs']['general']['l_fuselage']*self.aircraft_data.data['outputs']['general']['r_fuselage'] + 2*np.pi*self.aircraft_data.data['outputs']['general']['r_fuselage']**2)*self.aircraft_data.data['inputs']['n_fuselages']
 
     def tail_wet(self) -> float:
+        if self.tail_type == EmpType.NONE:
+            return 0
         #very preliminary estimate, implement actual tail area's and such later, horizontal + vertical
         return 1.05*2*self.iteration.aircraft_data.data['outputs']['empennage_design']['S_h'] + 1.05*2*self.iteration.aircraft_data.data['outputs']['empennage_design']['S_v']
     

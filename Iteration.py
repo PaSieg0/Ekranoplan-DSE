@@ -6,9 +6,10 @@ from ClassIWeightEstimation import ClassI, MissionType, AircraftType
 import matplotlib.pyplot as plt
 from ISA_Class import ISA
 from utils import Data
+from PrelimWingPlanformDesign import WingType
 
 def solve_hb(target_A_A):
-    h_b = np.arange(0, 1, 0.00001)
+    h_b = np.arange(0, 2, 0.00001)
     y = 1 - np.exp(-4.74*h_b**0.814) - h_b**2*np.exp(-3.88*h_b**0.758)
 
     for i, y_val in enumerate(y):
@@ -56,6 +57,17 @@ class AircraftIteration:
         self.A_ratio = Ainf_Ah(self.h_b)
         self.new_k = np.sqrt(1 / self.A_ratio)
         self.new_Cd0 = self.aircraft_data.data['inputs']['Cd0']
+        self.d_fuselage = self.aircraft_data.data['outputs']['general']['d_fuselage']
+        self.l_fuselage = self.aircraft_data.data['outputs']['general']['l_fuselage']
+        self.wing_type = WingType[self.aircraft_data.data['inputs']['wing_type']]
+
+        if self.wing_type == WingType.HIGH:
+            self.h_D = (self.aircraft_data.data['inputs']['cruise_altitude'] - self.d_fuselage) / self.d_fuselage
+        elif self.wing_type == WingType.LOW:
+            self.h_D = (self.aircraft_data.data['inputs']['cruise_altitude']) / self.d_fuselage
+        self.A_ratio_fus = Ainf_Ah(self.h_D)
+        self.k_fus = np.sqrt(1 / self.A_ratio_fus)
+        self.new_k = self.new_k * self.k_fus
 
     def run_iteration(self) -> list[float]:
         self.get_initial_conditions()
@@ -88,10 +100,12 @@ class AircraftIteration:
             self.b = np.sqrt(self.S/self.aircraft_data.data['inputs']['n_wings'] * self.class_i.A)
             self.h_b = self.aircraft_data.data['inputs']['cruise_altitude'] / self.b
             self.A_ratio = Ainf_Ah(self.h_b)
-            self.new_k = np.sqrt(1 / self.A_ratio)
+            self.new_k = np.sqrt(1 / self.A_ratio)*self.k_fus
             self.aircraft_data.data['outputs'][self.mission_type.name.lower()]['k'] = self.new_k
             self.new_Cd0 = self.aircraft_data.data['inputs']['Cd0']
-            
+
+            self.max_power = max(self.aircraft_data.data['outputs'][self.mission_type.name.lower()]['P'], self.aircraft_data.data['outputs']['general']['take_off_power'])
+
     def update_attributes(self):
         mission_type = self.mission_type.name.lower()
         self.aircraft_data.data['outputs'][mission_type]['MTOM'] = self.class_i.MTOM
@@ -121,6 +135,9 @@ class AircraftIteration:
         else:
             self.aircraft_data.data['outputs'][mission_type]['T'] = None
 
+        n_engines_flight = np.ceil(self.aircraft_data.data['outputs'][mission_type]['P']/ self.aircraft_data.data['inputs']['engine_power']) + 1
+        n_engines_takeoff = np.ceil(self.aircraft_data.data['outputs']['general']['take_off_power']/ self.aircraft_data.data['inputs']['engine_power'])
+        self.aircraft_data.data['inputs']['n_engines'] = max(n_engines_flight, n_engines_takeoff)
         if self.mission_type == MissionType.DESIGN:
             self.aircraft_data.data['outputs'][mission_type]['fuel_economy'] = self.class_i.mission_fuel / 9.81 / 0.82 / (self.aircraft_data.data['requirements']['design_payload']/1000) / (2*self.class_i.design_range / 1000)
         elif self.mission_type == MissionType.ALTITUDE:
