@@ -32,7 +32,7 @@ class Cd0Estimation:
 
     def tail_wet(self) -> float:
         #very preliminary estimate, implement actual tail area's and such later, horizontal + vertical
-        return 3*1.05*2*0.073*self.iteration.aircraft_data.data['outputs']['max']['S']
+        return 1.05*2*self.iteration.aircraft_data.data['outputs']['empennage_design']['S_h'] + 1.05*2*self.iteration.aircraft_data.data['outputs']['empennage_design']['S_v']
     
     def get_Cfc(self) -> float:
         # Calculate the Reynolds number based on the air density, velocity, and viscosity
