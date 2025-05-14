@@ -43,7 +43,7 @@ class Empennage:
         self.aft_clearance = 0.3
 
     def fus_separation(self):
-        return max(self.b/(self.n_fuselages+1),2*self.d_fuselage)
+        return max(self.b/(self.n_fuselages+1),self.d_fuselage)
 
     def chord_h(self, y):
         # y is spanwise position from centerline (0 to b_h/2)
@@ -150,8 +150,8 @@ class Empennage:
         self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['S'] = self.S_v
         self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['l_h'] = self.l_h
         self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['l_v'] = self.l_v
-        self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['mac'] = self.mac_h
-        self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['mac'] = self.mac_v
+        self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['MAC'] = self.mac_h
+        self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['MAC'] = self.mac_v
         self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['b'] = self.b_h
         self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['b'] = self.b_v
         self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['chord_root'] = self.chord_root_h
@@ -164,7 +164,7 @@ class Empennage:
         self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['relative_pos_fus'] = self.v_position
         self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['sweep'] = self.sweep_h
         self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['sweep'] = self.sweep_v
-        self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['sweep_hc4'] = self.sweep_hc4
+        self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['sweep_c_4'] = self.sweep_hc4
         self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['taper'] = self.taper_h
         self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['taper'] = self.taper_v
 
