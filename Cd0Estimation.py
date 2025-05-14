@@ -35,7 +35,7 @@ class Cd0Estimation:
         if self.tail_type == EmpType.NONE:
             return 0
         #very preliminary estimate, implement actual tail area's and such later, horizontal + vertical
-        return 1.05*2*self.iteration.aircraft_data.data['outputs']['empennage_design']['S_h'] + 1.05*2*self.iteration.aircraft_data.data['outputs']['empennage_design']['S_v']
+        return 1.05*2*self.iteration.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['S'] + 1.05*2*self.iteration.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['S']
     
     def get_Cfc(self) -> float:
         # Calculate the Reynolds number based on the air density, velocity, and viscosity
