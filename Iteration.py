@@ -68,6 +68,7 @@ class AircraftIteration:
         self.A_ratio_fus = Ainf_Ah(self.h_D)
         self.k_fus = np.sqrt(1 / self.A_ratio_fus)
         self.new_k = self.new_k * self.k_fus
+        self.k_tail = 1
 
     def run_iteration(self) -> list[float]:
         self.get_initial_conditions()
@@ -100,9 +101,13 @@ class AircraftIteration:
             self.b = np.sqrt(self.S/self.aircraft_data.data['inputs']['n_wings'] * self.class_i.A)
             self.h_b = self.aircraft_data.data['inputs']['cruise_altitude'] / self.b
             self.A_ratio = Ainf_Ah(self.h_b)
-            self.new_k = np.sqrt(1 / self.A_ratio)*self.k_fus
+            self.h_b_tail = (self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['tail_height'] + self.aircraft_data.data['inputs']['cruise_altitude']) / self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['b']
+            self.A_ratio_tail = Ainf_Ah(self.h_b_tail)
+            self.k_tail = np.sqrt(1 / self.A_ratio_tail)
+            self.new_k = np.sqrt(1 / self.A_ratio)*self.k_fus*self.k_tail
             self.aircraft_data.data['outputs'][self.mission_type.name.lower()]['k'] = self.new_k
             self.new_Cd0 = self.aircraft_data.data['inputs']['Cd0']
+
 
             self.max_power = max(self.aircraft_data.data['outputs'][self.mission_type.name.lower()]['P'], self.aircraft_data.data['outputs']['general']['take_off_power'])
 

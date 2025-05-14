@@ -167,6 +167,9 @@ class Empennage:
         self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['sweep_c_4'] = self.sweep_hc4
         self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['taper'] = self.taper_h
         self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['taper'] = self.taper_v
+        self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['aspect_ratio'] = self.aspect_h
+        self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['aspect_ratio'] = self.aspect_v
+        self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['tail_height'] = self.h_tail_pos
 
 if __name__ == "__main__":
     data = Data("design1.json")
