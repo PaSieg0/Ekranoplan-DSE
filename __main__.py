@@ -37,7 +37,7 @@ def main(create_excel: bool = False) -> None:
         cg_range.calculate_cg_range()
 
         emp = Empennage(aircraft_data=aircraft_data)
-        emp.calculate_tail_areas()
+        emp.run_iteration()
         
         for mission in MissionType:
             cd0_est = Cd0Estimation(

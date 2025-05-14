@@ -45,7 +45,7 @@ def design_json_to_excel(json_file: str, excel_file: str) -> None:
         "V_lof": "[m/s]", "cargo_width": "[m]", "cargo_height": "[m]", "cargo_length": "[m]", "cargo_density": "[kg/m³]",
         "sweep_c_4": "[deg]", "dihedral": "[deg]", "sweep_x_c": "[deg]", "sweep_TE": "[deg]", "chord_root": "[m]", "chord_tip": "[m]",
         "y_MAC": "[m]", "X_LEMAC": "[m]", "X_LE": "[m]", "total_fuel": "[N]", "rho_air": "[kg/m³]", "S_h": "[m²]", 
-        "S_v": "[m²]", "l_h": "[m]", "l_v": "[m]", "most_aft_cg": "[m]", "most_forward_cg": "[m]", 
+        "S_v": "[m²]", "l_h": "[m]", "l_v": "[m]", "most_aft_cg": "[m]", "most_forward_cg": "[m]", "sweep": "[deg]"
     }
 
     requirements = data.get('requirements', {})
@@ -54,7 +54,8 @@ def design_json_to_excel(json_file: str, excel_file: str) -> None:
     design_outputs = data.get('outputs', {}).get('design', {})
     max_outputs = data.get('outputs', {}).get('max', {})
     wing_design = data.get('outputs', {}).get('wing_design', {})
-    empennage_design = data.get('outputs', {}).get('empennage_design', {})
+    vertical_tail = data.get('outputs', {}).get('empennage_design', {}).get('vertical_tail',{})
+    horizontal_tail = data.get('outputs', {}).get('empennage_design', {}).get('horizontal_tail', {})
     cg_range = data.get('outputs', {}).get('cg_range', {})
 
     del data['outputs']
@@ -77,7 +78,9 @@ def design_json_to_excel(json_file: str, excel_file: str) -> None:
         sheet.cell(row=start_row, column=col1, value=f"Design {data['design_id']}").font = bold_font
         sheet.cell(row=start_row, column=col2, value=title).font = bold_font
         row = start_row + 1
-        for key, value in block_data.items():
+        for key, value in block_data.items(): 
+            if title == "Inputs" and key in {"h_position", "v_position", "sweep_h", "sweep_v", "aspect_h", "aspect_v", "sweep_hc4", "taper_h", "taper_v"}:
+                continue
             label = f"{key} {variable_units[key]}" if key in variable_units else key
             sheet.cell(row=row, column=col1, value=label)
             apply_number_format(sheet.cell(row=row, column=col2), value)
@@ -109,9 +112,10 @@ def design_json_to_excel(json_file: str, excel_file: str) -> None:
         row += 1
 
     write_block(row_inputs_end + 1, 4, 5, "Wing Design", wing_design)
-    empennage_end = write_block(row_general_out_end + 1, 7, 8, "Empennage Design", empennage_design)
+    horizontal_end = write_block(row_general_out_end + 1, 7, 8, "Horizontal Tail", horizontal_tail)
+    vertical_end = write_block(horizontal_end + 1, 7, 8, "Vertical Tail", vertical_tail)
 
-    write_block(empennage_end + 1, 7, 8, "CG Range", cg_range)
+    write_block(vertical_end + 1, 7, 8, "CG Range", cg_range)
 
     auto_adjust_column_widths(sheet)
 
