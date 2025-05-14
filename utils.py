@@ -3,6 +3,7 @@ import os
 from enum import Enum, auto
 from typing import Any
 import pandas as pd
+import numpy as np
 
 class AircraftType(Enum):
     JET = auto()
@@ -77,6 +78,66 @@ def generate_df():
 
     df = pd.DataFrame(all_rows)
     return df
+
+def kg2lbs(kg):
+    """
+    Convert kg to lbs
+    """
+    return kg * 2.2046226218487757
+
+def lbs2kg(lbs):
+    """
+    Convert lbs to kg
+    """
+    return lbs / 2.2046226218487757
+
+def N2lbf(N):
+    """
+    Convert N to lbf
+    """
+    return N * 0.224809
+
+def lbf2N(lbf):
+    """
+    Convert lbf to N
+    """
+    return lbf / 0.224809
+
+def ft2m(ft):
+    """
+    Convert ft to m
+    """
+    return ft * 0.3048
+
+def m2ft(m):
+    """
+    Convert m to ft
+    """
+    return m / 0.3048
+
+def msq2ftsq(m2):
+    """
+    Convert m^2 to ft^2
+    """
+    return m2 * 10.7639
+
+def ftsq2msq(ft2):
+    """
+    Convert ft^2 to m^2
+    """
+    return ft2 / 10.7639
+
+def rad2deg(rad):
+    """
+    Convert radians to degrees
+    """
+    return rad * (180 / np.pi)
+
+def deg2rad(deg):
+    """
+    Convert degrees to radians
+    """
+    return deg * (np.pi / 180)
 
 
 # Example usage
