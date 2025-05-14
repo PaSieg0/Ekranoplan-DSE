@@ -143,12 +143,12 @@ class ClassI:
     
     def calculate_fuel_mission(self) -> float:
         if self.mission_type == MissionType.DESIGN:
-            mission_range = self.aircraft_data.data['requirements']['design_range'] - self.aircraft_data.data['requirements']['reserve_range']/2
+            mission_range = self.aircraft_data.data['requirements']['design_range']
         if self.mission_type == MissionType.FERRY:
-            mission_range = self.aircraft_data.data['requirements']['ferry_range'] - self.aircraft_data.data['requirements']['reserve_range']
+            mission_range = self.aircraft_data.data['requirements']['ferry_range']
         if self.mission_type == MissionType.ALTITUDE:
             mission_range_WOG = self.aircraft_data.data['requirements']['altitude_range_WOG']
-            mission_range_WIG = self.aircraft_data.data['requirements']['altitude_range_WIG'] - self.aircraft_data.data['requirements']['reserve_range']/2
+            mission_range_WIG = self.aircraft_data.data['requirements']['altitude_range_WIG']
 
         self.LD = self.calculate_LD()
         if self.aircraft_type == AircraftType.JET:
