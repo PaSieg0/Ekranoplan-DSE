@@ -57,6 +57,11 @@ class Empennage:
         taper = self.taper_v
         b = self.b_v
         return c_r * (1 - (1 - taper) * 2 * y / b)
+    
+    def calculate_LE_MAC(self, b, taper, sweep_LE):
+        y_MAC = 0.5 * b* (1 + 2*taper) / (3 * (1 + taper))
+        x_LE_MAC = y_MAC * np.tan(sweep_LE*np.pi/180)
+        return x_LE_MAC
 
     def calculate_tail_areas(self):
         if self.tail_type == EmpType.NONE:
@@ -81,31 +86,34 @@ class Empennage:
 
         if self.tail_type == EmpType.CRUCIFORM:
             self.h_tail_pos = self.b_v/2 + self.d_fuselage
-            self.v_position = self.l_fuselage - self.aft_clearance - 3/4*self.mac_v
-            self.h_position = (self.v_position + np.tan(self.sweep_v*np.pi/180)*self.b_v/2 + 1/4*self.chord_root_h)/self.l_fuselage
+            v_x_LEMAC = self.calculate_LE_MAC(self.b_v, self.taper_v, self.sweep_v)
+            self.v_position = self.l_fuselage - self.aft_clearance - self.chord_root_v + v_x_LEMAC + 1/4*self.mac_v
+            self.mid_chord_v = (self.chord_root_v + self.chord_tip_v) / 2
+            self.h_position = (self.v_position - v_x_LEMAC - 1/4*self.mac_v + np.tan(self.sweep_v*np.pi/180)*self.b_v/2 + 1/4*self.mid_chord_v)/self.l_fuselage
             self.v_position = self.v_position/self.l_fuselage
         
         elif self.tail_type == EmpType.T_TAIL:
             self.h_tail_pos = self.b_v + self.d_fuselage
+            v_x_LEMAC = self.calculate_LE_MAC(self.b_v, self.taper_v, self.sweep_v)
             self.taper_v = min(self.chord_root_h/self.chord_root_v, 0.7)
             self.chord_tip_v = self.taper_v * self.chord_root_v
 
-            self.v_position = self.l_fuselage - self.aft_clearance - 3/4*self.mac_v
-            self.h_position = (self.v_position + np.tan(self.sweep_v*np.pi/180)*self.b_v + 1/4*self.chord_root_h)/self.l_fuselage
+            self.v_position = self.l_fuselage - self.aft_clearance - self.chord_root_v + v_x_LEMAC + 1/4*self.mac_v
+            self.h_position = (self.v_position - v_x_LEMAC - 1/4*self.mac_v + np.tan(self.sweep_v*np.pi/180)*self.b_v + 1/4*self.chord_tip_v)/self.l_fuselage
             self.v_position = self.v_position/self.l_fuselage
-
 
         elif self.tail_type == EmpType.CONVENTIONAL:
             self.h_tail_pos = self.d_fuselage
+            v_x_LEMAC = self.calculate_LE_MAC(self.b_v, self.taper_v, self.sweep_v)
+            v_h_LEMAC = self.calculate_LE_MAC(self.b_h, self.taper_h, self.sweep_h)
 
-            self.v_position = (self.l_fuselage - self.aft_clearance - 3/4*self.mac_v)/self.l_fuselage
-            self.h_position = (self.l_fuselage - self.aft_clearance - 3/4*self.mac_h)/self.l_fuselage
+            self.v_position = (self.l_fuselage - self.aft_clearance - self.chord_root_v + v_x_LEMAC + 1/4*self.mac_v)/self.l_fuselage
+            self.h_position = (self.l_fuselage - self.aft_clearance - self.chord_root_h + v_h_LEMAC + 1/4*self.mac_h)/self.l_fuselage
 
         elif self.tail_type == EmpType.H_TAIL:
             self.n_v_tails = 2
             self.S_v = self.S_v / self.n_v_tails
             self.b_v = self.b_v / self.n_v_tails
-
             self.fus_sep = self.fus_separation()
             span_wise_v_pos = self.fus_sep / 2 + self.d_fuselage/2
 
@@ -115,10 +123,11 @@ class Empennage:
             self.mac_v = (2 / 3) * self.chord_root_v * ((1 + self.taper_v + self.taper_v**2) / (1 + self.taper_v))
             self.h_tail_pos = self.d_fuselage + self.b_v
 
-            self.v_position = self.l_fuselage - self.aft_clearance - 3/4*self.mac_v
-            self.h_position = (self.v_position + np.tan(self.sweep_v*np.pi/180)*self.b_v + 1/4*self.chord_root_h)/self.l_fuselage
-            self.v_position = self.v_position/self.l_fuselage
+            v_x_LEMAC = self.calculate_LE_MAC(self.b_v, self.taper_v, self.sweep_v)
 
+            self.v_position = self.l_fuselage - self.aft_clearance - self.chord_root_v + v_x_LEMAC + 1/4*self.mac_v
+            self.h_position = (self.v_position -v_x_LEMAC -1/4*self.mac_v + np.tan(self.sweep_v*np.pi/180)*self.b_v + 1/4*self.chord_tip_v)/self.l_fuselage
+            self.v_position = self.v_position/self.l_fuselage
 
     def run_iteration(self):
         if self.tail_type == EmpType.NONE:
@@ -170,6 +179,9 @@ class Empennage:
         self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['aspect_ratio'] = self.aspect_h
         self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['aspect_ratio'] = self.aspect_v
         self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['tail_height'] = self.h_tail_pos
+
+        self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['LE_pos'] = self.v_position*self.l_fuselage-self.calculate_LE_MAC(self.b_v, self.taper_v, self.sweep_v)-1/4*self.mac_v
+        self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['LE_pos'] = self.h_position*self.l_fuselage-self.calculate_LE_MAC(self.b_h, self.taper_h, self.sweep_h)-1/4*self.mac_h
 
 if __name__ == "__main__":
     data = Data("design1.json")
