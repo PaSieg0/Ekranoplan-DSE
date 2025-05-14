@@ -26,11 +26,6 @@ def main(create_excel: bool = False) -> None:
                 aircraft_data=aircraft_data,
                 mission_type=mission)
             iteration.run_iteration()
-            cd0_est = Cd0Estimation(
-                aircraft_data=aircraft_data,
-                mission_type=MissionType.DESIGN
-            )
-            cd0_est.mainloop()
             aircraft_data.save_design(file_path)
             if create_excel:
                 design_json_to_excel(file_path, f"Concept_Data.xlsx")
@@ -42,7 +37,14 @@ def main(create_excel: bool = False) -> None:
         cg_range.calculate_cg_range()
 
         emp = Empennage(aircraft_data=aircraft_data)
-        emp.calculate_tail_areas()
+        emp.run_iteration()
+        
+        for mission in MissionType:
+            cd0_est = Cd0Estimation(
+                aircraft_data=aircraft_data,
+                mission_type=mission
+            )
+            cd0_est.mainloop()
 
 if __name__ == "__main__":
     main(create_excel=True)

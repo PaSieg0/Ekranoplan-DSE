@@ -3,7 +3,7 @@ from utils import Data
 from ClassIWeightEstimation import ClassI, MissionType, AircraftType
 from Iteration import AircraftIteration
 from ISA_Class import ISA
-
+from empennage import EmpType
 
 class Cd0Estimation:
     #TODO: this is very preliminary, need to consider form factors, IFF Cfc etc. later
@@ -12,6 +12,7 @@ class Cd0Estimation:
         self.design_file = f'design{self.design_number}.json'
         self.aircraft_data = aircraft_data
         self.mission_type = mission_type
+        self.tail_type = EmpType[aircraft_data.data['inputs']['tail_type']]
 
         self.tolerance = 0.0000001
         self.max_iterations = 100
@@ -31,8 +32,10 @@ class Cd0Estimation:
         return (2*np.pi*self.aircraft_data.data['outputs']['general']['l_fuselage']*self.aircraft_data.data['outputs']['general']['r_fuselage'] + 2*np.pi*self.aircraft_data.data['outputs']['general']['r_fuselage']**2)*self.aircraft_data.data['inputs']['n_fuselages']
 
     def tail_wet(self) -> float:
+        if self.tail_type == EmpType.NONE:
+            return 0
         #very preliminary estimate, implement actual tail area's and such later, horizontal + vertical
-        return 3*1.05*2*0.073*self.iteration.aircraft_data.data['outputs']['max']['S']
+        return 1.05*2*self.iteration.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['S'] + 1.05*2*self.iteration.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['S']
     
     def get_Cfc(self) -> float:
         # Calculate the Reynolds number based on the air density, velocity, and viscosity
@@ -51,6 +54,7 @@ class Cd0Estimation:
     
     def update_attributes(self):
             mission_type = self.mission_type.name.lower()
+            self.aircraft_data.data['outputs']['general']['LD_g'] = self.iteration.aircraft_data.data['outputs']['general']['LD_g']
             self.aircraft_data.data['outputs'][mission_type]['MTOM'] = self.iteration.aircraft_data.data['outputs'][mission_type]['MTOM']
             self.aircraft_data.data['outputs'][mission_type]['MTOW'] = self.iteration.aircraft_data.data['outputs'][mission_type]['MTOW']
             self.aircraft_data.data['outputs'][mission_type]['OEW'] = self.iteration.aircraft_data.data['outputs'][mission_type]['OEW']
@@ -67,6 +71,8 @@ class Cd0Estimation:
             self.aircraft_data.data['outputs'][mission_type]['WP'] = self.iteration.aircraft_data.data['outputs'][mission_type]['WP']
             self.aircraft_data.data['outputs'][mission_type]['TW'] = self.iteration.aircraft_data.data['outputs'][mission_type]['TW']
             self.aircraft_data.data['outputs'][mission_type]['WS'] = self.iteration.aircraft_data.data['outputs'][mission_type]['WS']
+            self.aircraft_data.data['outputs'][mission_type]['Mff'] = self.iteration.aircraft_data.data['outputs'][mission_type]['Mff']
+            self.aircraft_data.data['outputs'][mission_type]['LD'] = self.iteration.aircraft_data.data['outputs'][mission_type]['LD']
             
             if self.iteration.aircraft_data.data['outputs'][mission_type]['WP']:
                 self.aircraft_data.data['outputs'][mission_type]['P'] = self.iteration.aircraft_data.data['outputs'][mission_type]['MTOW'] / self.iteration.aircraft_data.data['outputs'][mission_type]['WP']

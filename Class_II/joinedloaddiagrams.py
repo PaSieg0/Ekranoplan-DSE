@@ -7,31 +7,31 @@ from utils import Data
 from ISA_Class import ISA
 
 
-def plot_complete_load_diagram(aircraft_data, h):
+def plot_complete_load_diagram(aircraft_data, h, plot=False):
     # ====== Gust Load Point Calculation ======
     g = 9.80665  # m/s²
-    W_final = aircraft_data.data["design"]["MTOM"] * g
+    W_final = aircraft_data.data["outputs"]["design"]["MTOW"]
     U_ref = Calculate_U_ref(h / 0.3048)  # Altitude in ft
-    S = W_final / aircraft_data.data["design"]["WS"]
+    S = W_final / aircraft_data.data["outputs"]["design"]["WS"]
     rho = ISA(h).rho
-    CL_alpha = aircraft_data.data["Cl_alpha"]
-    w = aircraft_data.data["design"]["WS"]  # N/m^2
+    CL_alpha = 5 #            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!     HARDOCDED FOR NOW
+    w = aircraft_data.data["outputs"]["design"]["WS"]  # N/m^2
     w = w * 2.20462262 / (g * 3.2808399**2)  # lb/ft^2
-    b = np.sqrt(aircraft_data.data["design"]["aspect_ratio"] * S)
+    b = np.sqrt(aircraft_data.data["inputs"]["aspect_ratio"] * S)
     chord = S / b
     mu = Calculate_mu(w, rho * 0.0019403203319541, chord, CL_alpha, g)
     K_g = Calculate_K_g(mu)
     V_b = Calculate_V_b(
-        aircraft_data.data["stall_speed_clean"],
+        aircraft_data.data["requirements"]["stall_speed_clean"],
         K_g, U_ref,
-        aircraft_data.data["cruise_speed"],
+        aircraft_data.data["requirements"]["cruise_speed"],
         CL_alpha, w
     )
-    dive_speed = aircraft_data.data["cruise_speed"] / 0.8  # m/s, TBD
+    dive_speed = aircraft_data.data["requirements"]["cruise_speed"] / 0.8  # m/s, TBD
 
     gust_data = [
         [float(V_b), U_ref],
-        [aircraft_data.data["cruise_speed"], U_ref],
+        [aircraft_data.data["requirements"]["cruise_speed"], U_ref],
         [dive_speed, U_ref / 2]
     ]
 
@@ -40,11 +40,11 @@ def plot_complete_load_diagram(aircraft_data, h):
         gust_data[i].append(float(delta_n))
 
     # ====== Maneuver Load Calculation ======
-    CLmax_clean = aircraft_data.data["CLmax_clean"]
+    CLmax_clean = aircraft_data.data["inputs"]["CLmax_clean"]
     W = W_final
     nmax = max_n(W)
     nmin = min_n()
-    V_cruise = aircraft_data.data["cruise_speed"]
+    V_cruise = aircraft_data.data["requirements"]["cruise_speed"]
     V_dive = V_cruise / 0.8
     V_range = np.arange(0, V_dive, 0.1)
     n_positive = [calculante_n_limits(rho, CLmax_clean, W, S, V, nmax, nmin, V_cruise, V_dive) for V in V_range]
@@ -99,7 +99,7 @@ def plot_complete_load_diagram(aircraft_data, h):
     n_gust_negative_1 = np.interp(V_combined1, neg_V, neg_n)
 
     # Adjust the upper and lower bounds to respect n_positive as a hard limit
-    n_upper_1 = np.minimum(n_maneuver_positive_1, n_gust_positive_1)
+    n_upper_1 = n_maneuver_positive_1
     n_lower_1 = np.minimum(n_maneuver_negative_1, n_gust_negative_1)
 
     plt.fill_between(V_combined1, n_lower_1, n_upper_1, color="lime", alpha=0.5, label="Allowable Condition")
@@ -127,12 +127,18 @@ def plot_complete_load_diagram(aircraft_data, h):
     plt.grid(True, linestyle=":", alpha=0.7)
     plt.legend()
     plt.tight_layout()
-    plt.show()
+    if plot:
+        plt.show()
+    else:
+        plt.close()
+
+    return max_n_allowable, min_n_allowable
 
 
 if __name__ == "__main__":
     # Load the aircraft data
-    aircraft_data = Data("design1.json")
+    aircraft_data = Data("design3.json")
     
     # Plot the load diagram
-    plot_complete_load_diagram(aircraft_data, h=0)
+    n_max, n_min = plot_complete_load_diagram(aircraft_data, h=0, plot=False)
+    print(f"Max n: {n_max}, Min n: {n_min}")
