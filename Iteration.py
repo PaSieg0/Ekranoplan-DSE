@@ -59,12 +59,13 @@ class AircraftIteration:
         self.new_Cd0 = self.aircraft_data.data['inputs']['Cd0']
         self.d_fuselage = self.aircraft_data.data['outputs']['general']['d_fuselage']
         self.l_fuselage = self.aircraft_data.data['outputs']['general']['l_fuselage']
+        self.n_fuselages = self.aircraft_data.data['inputs']['n_fuselages']
         self.wing_type = WingType[self.aircraft_data.data['inputs']['wing_type']]
 
         if self.wing_type == WingType.HIGH:
-            self.h_D = (self.aircraft_data.data['inputs']['cruise_altitude'] - self.d_fuselage) / self.d_fuselage
+            self.h_D = (self.aircraft_data.data['inputs']['cruise_altitude'] - self.d_fuselage) / self.d_fuselage / self.n_fuselages
         elif self.wing_type == WingType.LOW:
-            self.h_D = (self.aircraft_data.data['inputs']['cruise_altitude']) / self.d_fuselage
+            self.h_D = (self.aircraft_data.data['inputs']['cruise_altitude']) / self.d_fuselage / self.n_fuselages
         self.A_ratio_fus = Ainf_Ah(self.h_D)
         self.k_fus = np.sqrt(1 / self.A_ratio_fus)
         self.new_k = self.new_k * self.k_fus

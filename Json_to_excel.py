@@ -96,7 +96,7 @@ def design_json_to_excel(json_file: str, excel_file: str) -> None:
     sheet.cell(row=1, column=10, value=f"Design {data['design_id']}").font = bold_font
     sheet.cell(row=1, column=11, value="Design Mission").font = bold_font
 
-    excluded_keys = {"S", "b", "MAC", "MTOM", "fuel_economy"}
+    excluded_keys = {"S", "b", "MAC", "MTOM", "fuel_economy", "LD", "Mff", "max_fuel", "total_fuel", "mission_fuel", "reserve_fuel"}
     row = 2
     for key, value in design_outputs.items():
         if key in excluded_keys:
