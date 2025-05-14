@@ -43,7 +43,7 @@ class Empennage:
         self.aft_clearance = 0.3
 
     def fus_separation(self):
-        return max(self.b/(self.n_fuselages+1),self.d_fuselage)
+        return min(self.b/(self.n_fuselages+1),2*self.d_fuselage)
 
     def chord_h(self, y):
         # y is spanwise position from centerline (0 to b_h/2)
@@ -155,6 +155,10 @@ class Empennage:
                 break
 
     def update_attributes(self):
+        if self.n_fuselages > 1:
+            self.fus_sep = self.fus_separation()
+            self.aircraft_data.data['outputs']['general']['fuselage_separation'] = self.fus_sep
+
         self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['S'] = self.S_h
         self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['S'] = self.S_v
         self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['l_h'] = self.l_h
@@ -182,6 +186,7 @@ class Empennage:
 
         self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['LE_pos'] = self.v_position*self.l_fuselage-self.calculate_LE_MAC(self.b_v, self.taper_v, self.sweep_v)-1/4*self.mac_v
         self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['LE_pos'] = self.h_position*self.l_fuselage-self.calculate_LE_MAC(self.b_h, self.taper_h, self.sweep_h)-1/4*self.mac_h
+
 
 if __name__ == "__main__":
     data = Data("design1.json")
