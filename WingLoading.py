@@ -305,6 +305,9 @@ def __plot_prop(WL, PLOT_OUTPUT: bool=False):
     for i, stall in enumerate(prop_stall_high):
         ax.axvline(x=stall, label=f"Stall high: CL={WL.CLmax_clean[i]}", linestyle=linestyles[i], color='tab:brown')
 
+    WP, TW, WS = WL.WP, WL.TW, WL.max_WS
+    ax.scatter(WS, WP, label=f"Design Point", color='red', marker='o', s = 100, zorder = 10)
+
     plt.suptitle(f"Wing Loading Requirements k={WL.k}")
     ax.set_xlim(0, 8000)
     ax.set_ylim(0, 0.6)
@@ -417,7 +420,7 @@ def __plot_mixed(WL_prop, WL_jet, PLOT_OUTPUT: bool=False):
     
 
 if __name__ == "__main__":
-    aircraft_data = Data("design1.json")
+    aircraft_data = Data("design3.json")
     WP, TW, WS = main(
         aircraft_data=aircraft_data,
         mission_type=MissionType.DESIGN,
