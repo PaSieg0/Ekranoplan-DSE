@@ -151,6 +151,7 @@ class AircraftIteration:
         
 
         self.aircraft_data.data['outputs']['max']['MTOM'] = max(self.aircraft_data.data['outputs']['design']['MTOM'], self.aircraft_data.data['outputs']['ferry']['MTOM'], self.aircraft_data.data['outputs']['altitude']['MTOM'])
+        self.aircraft_data.data['outputs']['max']['MTOW'] = self.aircraft_data.data['outputs']['max']['MTOM']*9.81
         self.aircraft_data.data['outputs']['max']['S'] = max(self.aircraft_data.data['outputs']['design']['S'], self.aircraft_data.data['outputs']['ferry']['S'], self.aircraft_data.data['outputs']['altitude']['S'])
         self.aircraft_data.data['outputs']['max']['b'] = max(self.aircraft_data.data['outputs']['design']['b'], self.aircraft_data.data['outputs']['ferry']['b'], self.aircraft_data.data['outputs']['altitude']['b'])
         self.aircraft_data.data['outputs']['max']['MAC'] = max(self.aircraft_data.data['outputs']['design']['MAC'], self.aircraft_data.data['outputs']['ferry']['MAC'], self.aircraft_data.data['outputs']['altitude']['MAC'])
