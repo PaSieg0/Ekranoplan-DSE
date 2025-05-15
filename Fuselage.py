@@ -41,6 +41,11 @@ class Fuselage:
         else:
             return Dmin #minimum needed to satisfy the rEqUirEmeNt of cargo hold area
 
+    def CalcFuseCrossSection(self):
+        Area = (self.CalcFuseDia()/2)**2*np.pi #cross sectional area of equivalent circular fuselage
+        #detailed cross section profile to be implemented here
+        return Area
+
     def calculate_y_in_tail(self):
         y_in_tail = (self.d-self.cargo_height)/np.tan(self.deg2rad(self.upsweep))
         cargo_straight = self.tot_cargo_length - y_in_tail
@@ -71,8 +76,10 @@ if __name__ == "__main__":
     aircraft_data = Data("design4.json")
     fuselage = Fuselage(aircraft_data=aircraft_data)
     fuselage.CalcFuseLen()
+    fuselage.CalcFuseCrossSection()
     print(f"Fuselage Diameter: {fuselage.d} m")
     print(f"l_fus {fuselage.lf}")
     print(f"l_tailcone {fuselage.ltc}")
     print(f"l_nose {fuselage.ln}")
+    #print(f"cross_section {fuselage.CalcFuseCrossSection()}")
 
