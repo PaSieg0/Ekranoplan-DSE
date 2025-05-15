@@ -121,7 +121,7 @@ class AltitudeVelocity:
         plt.grid()
         plt.show()
 
-    def calculate_h_max(self, height_resolution:int=10, RoC_limit:float=0) -> tuple:
+    def calculate_h_max(self, height_resolution:float=1, RoC_limit:float=0) -> tuple:
         """
         Calculate the maximum height at which the aircraft can maintain climb.
         
@@ -164,7 +164,7 @@ class AltitudeVelocity:
         
         return h_min, final_velocity
     
-    def calculate_limit_points(self, height_resolution:int=1, RoC_limit:float=0) -> tuple:
+    def calculate_limit_points(self, height_resolution:float=1, RoC_limit:float=0) -> tuple:
         """Calculate zero-RoC points and stall points for plotting the flight envelope."""
         # First determine maximum altitude to avoid unnecessary calculations
         h_max, _ = self.calculate_h_max(height_resolution=height_resolution, RoC_limit=RoC_limit)
@@ -206,20 +206,19 @@ class AltitudeVelocity:
 
         return zero_points, stall_points
     
-    def calculate_Vy(self, resolution:float=0.02, max_roc:float=10) -> list:
+    def calculate_Vy(self, h_max:float, height_resolution:float=1) -> list:
         """Calculate best climb speeds (Vy) at different altitude points."""
         # Implementing a more efficient approach
-        roc_limits = np.arange(0, max_roc, resolution)
+        h_limits = np.arange(0, h_max, height_resolution)
         max_Vy_points = []
         
-        # Use cached values when possible to speed up calculations
-        for RoC_limit in roc_limits:
-            h_max, v_opt = self.calculate_h_max(height_resolution=1, RoC_limit=RoC_limit)
-            max_Vy_points.append((RoC_limit, h_max, v_opt))
+        for h in h_limits:
+            RoC, v_opt = self.calculate_max_RoC(h)
+            max_Vy_points.append((RoC, h, v_opt))  # Append altitude, max RoC, and velocity
 
         return max_Vy_points
 
-    def plot_limit_points(self, height_resolution:int=1) -> None:
+    def plot_limit_points(self, height_resolution:float=1) -> None:
         """Plot the flight envelope with thrust limit, stall limit, and Vy curve."""
         zero_points, stall_points = self.calculate_limit_points(height_resolution=height_resolution, RoC_limit=0)
         
@@ -280,7 +279,7 @@ class AltitudeVelocity:
             )
         
         # Calculate and plot the Vy curve    
-        max_Vy_points = self.calculate_Vy()
+        max_Vy_points = self.calculate_Vy(h_max=h_max_point[1], height_resolution=height_resolution)
         if max_Vy_points:
             # Extract velocities and altitudes for plotting
             vy_velocities = [point[2] for point in max_Vy_points]
