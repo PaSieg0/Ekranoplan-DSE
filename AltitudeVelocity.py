@@ -47,7 +47,7 @@ class AltitudeVelocity:
         Calculate the power available for the aircraft at different velocities.
         Assume power available is constant for propeller engines.
         """
-        return self._engine_power * self._get_density(h) / self._sea_level_density * 4
+        return self._engine_power * (self._get_density(h) / self._sea_level_density)**0.75 * 4
 
     @lru_cache(maxsize=128)
     def calculate_stall_speed(self, h: float) -> float:
