@@ -13,7 +13,7 @@
         "prop_efficiency": 0.85,
         "Cd0": 0.025403814985002205,
         "oswald_factor": 0.85,
-        "aspect_ratio": 10,
+        "aspect_ratio": 6,
         "aspect_h": 4.5,
         "aspect_v": 1.5,
         "sweep_h": 21,
