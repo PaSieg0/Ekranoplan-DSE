@@ -120,6 +120,7 @@ class Empennage:
             self.chord_tip_v = self.chord_h(span_wise_v_pos)
             self.chord_root_v = 2 * self.S_v / (self.b_v * (1 + self.taper_v))
             self.taper_v = min(self.chord_root_h/self.chord_root_v, 0.7)
+            self.chord_tip_v = self.taper_v * self.chord_root_v
             self.mac_v = (2 / 3) * self.chord_root_v * ((1 + self.taper_v + self.taper_v**2) / (1 + self.taper_v))
             self.h_tail_pos = self.d_fuselage + self.b_v
 
@@ -173,8 +174,8 @@ class Empennage:
         self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['chord_tip'] = self.chord_tip_v
         self.aircraft_data.data['inputs']['h_position'] = self.h_position
         self.aircraft_data.data['inputs']['v_position'] = self.v_position
-        self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['relative_pos_fus'] = self.h_position
-        self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['relative_pos_fus'] = self.v_position
+        self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['relative_pos_mac/4'] = self.h_position
+        self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['relative_pos_mac/4'] = self.v_position
         self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['sweep'] = self.sweep_h
         self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['sweep'] = self.sweep_v
         self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['sweep_c_4'] = self.sweep_hc4
