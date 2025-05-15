@@ -420,7 +420,7 @@ def __plot_mixed(WL_prop, WL_jet, PLOT_OUTPUT: bool=False):
     
 
 if __name__ == "__main__":
-    aircraft_data = Data("design3.json")
+    aircraft_data = Data("design1.json")
     WP, TW, WS = main(
         aircraft_data=aircraft_data,
         mission_type=MissionType.DESIGN,
