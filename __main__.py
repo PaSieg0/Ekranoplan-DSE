@@ -22,29 +22,65 @@ def main(create_excel: bool = False) -> None:
 
         for mission in MissionType:
             print(f"Running iteration for mission type {mission.name}...")
-            iteration = AircraftIteration(
+            main_iteration(
+                iteration_number=1,
                 aircraft_data=aircraft_data,
-                mission_type=mission)
-            iteration.run_iteration()
-            aircraft_data.save_design(file_path)
-            if create_excel:
-                design_json_to_excel(file_path, f"Concept_Data.xlsx")
+                mission=mission
+                )
 
-        wing_planform = WingPlanform(aircraft_data=aircraft_data)
-        wing_planform.calculate()
 
-        cg_range = CGRange(aircraft_data=aircraft_data)
-        cg_range.calculate_cg_range()
-
-        emp = Empennage(aircraft_data=aircraft_data)
-        emp.run_iteration()
-        
-        for mission in MissionType:
-            cd0_est = Cd0Estimation(
+def main_iteration(
+        aircraft_data: Data,
+        mission: MissionType,
+        tolerance=0.01,
+        max_iterations=20,
+        prev_S=300,
+        prev_MTOM=100000,
+        prev_CD0=0.02,
+        iteration_number = 1
+    ):
+    
+    iteration = AircraftIteration(
                 aircraft_data=aircraft_data,
                 mission_type=mission
+    )
+    iteration.run_iteration()
+    wing_planform = WingPlanform(aircraft_data=aircraft_data)
+    wing_planform.calculate()
+
+    cg_range = CGRange(aircraft_data=aircraft_data)
+    cg_range.calculate_cg_range()
+
+    emp = Empennage(aircraft_data=aircraft_data)
+    emp.run_iteration()
+
+    Cd0_est = Cd0Estimation(
+        aircraft_data=aircraft_data,
+        mission_type=mission
+    )
+    Cd0_est.mainloop()
+
+    S = aircraft_data.data['outputs']['wing_design']['S']
+    MTOM = aircraft_data.data['outputs']['max']['MTOM']
+    Cd0 = aircraft_data.data['inputs']['Cd0']
+
+    stop_condition = (abs(prev_S - S)/prev_S < tolerance and abs(prev_MTOM - MTOM)/prev_MTOM < tolerance and abs(prev_CD0 - Cd0)/prev_CD0 < tolerance) or iteration_number >= max_iterations
+    iteration_number += 1
+
+    if stop_condition:
+        return
+    else:
+        return main_iteration(
+            aircraft_data=aircraft_data,
+            mission=mission,
+            prev_S=S,
+            prev_MTOM=MTOM,
+            prev_CD0=Cd0,
+            iteration_number=iteration_number
             )
-            cd0_est.mainloop()
+    
+
+
 
 if __name__ == "__main__":
     main(create_excel=True)
