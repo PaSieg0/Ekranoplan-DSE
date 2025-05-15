@@ -140,5 +140,5 @@ if __name__ == "__main__":
     aircraft_data = Data("design3.json")
     
     # Plot the load diagram
-    n_max, n_min = plot_complete_load_diagram(aircraft_data, h=0, plot=False)
+    n_max, n_min = plot_complete_load_diagram(aircraft_data, h=0, plot=True)
     print(f"Max n: {n_max}, Min n: {n_min}")
