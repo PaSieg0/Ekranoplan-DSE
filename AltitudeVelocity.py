@@ -90,7 +90,7 @@ class AltitudeVelocity:
     
     def calculate_AoC(self, V: float, h: float) -> float:
         """Calculate Angle of Climb at a given velocity and altitude."""
-        return np.arcsin(self.calculate_RoC(V, h) / V) * 180 / np.pi
+        return np.arcsin(self.calculate_RoC(V, h) / V)
     
     def calculate_RoC_vectorized(self, velocities: np.ndarray, h: float) -> np.ndarray:
         """Vectorized version of calculate_RoC for multiple velocities at once."""
@@ -101,7 +101,7 @@ class AltitudeVelocity:
     def calculate_AoC_vectorized(self, velocities: np.ndarray, h: float) -> np.ndarray:
         """Vectorized version of calculate_AoC for multiple velocities at once."""
         RoC_values = self.calculate_RoC_vectorized(velocities, h)
-        return np.arcsin(RoC_values / velocities) * 180 / np.pi
+        return np.arcsin(RoC_values / velocities)
     
     def calculate_max_RoC(self, h: float) -> tuple:
         """Find the maximum Rate of Climb and corresponding velocity at a given altitude."""
@@ -368,6 +368,22 @@ class AltitudeVelocity:
         plt.grid()
         plt.show()
 
+    def calculate_t_climb(self, h_start: float, h_end: float) -> float:
+        """
+        Calculate the time to climb to a given altitude.
+        """
+        # Euler integration using max RoC from h_start to h_end
+        dt = 1.0  # time step in seconds
+        h = h_start
+        t = 0.0
+        while h < h_end:
+            roc, _ = self.calculate_max_RoC(h)
+            if roc <= 0:
+                break  # cannot climb further
+            dh = roc * dt  # roc in m/s
+            h += dh
+            t += dt
+        return t
 
 if __name__ == "__main__":
     # Example usage
@@ -383,4 +399,9 @@ if __name__ == "__main__":
 
     print(f"Max RoC at h = 0 is {altitude_velocity.calculate_max_RoC(0)[0] * 196.85} ft/min")
     print(f"Max RoC at h = 3048 is {altitude_velocity.calculate_max_RoC(3048)[0] * 196.85} ft/min")
+
+    print(f"Max AoC at h = 0 is {altitude_velocity.calculate_max_AoC(0)[0] * 180/np.pi} deg")
+    print(f"Max AoC at h = 3048 is {altitude_velocity.calculate_max_AoC(3048)[0] * 180/np.pi} deg")
+
+    print(f"Time to climb from 0 to 3048 m: {altitude_velocity.calculate_t_climb(0, 3048)} seconds")
     # print(f"Service Ceiling: {altitude_velocity.calculate_h_max(height_resolution=1)} metres")
