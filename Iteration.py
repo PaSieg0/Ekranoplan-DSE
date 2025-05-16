@@ -102,9 +102,12 @@ class AircraftIteration:
             self.b = np.sqrt(self.S/self.aircraft_data.data['inputs']['n_wings'] * self.class_i.A)
             self.h_b = self.aircraft_data.data['inputs']['cruise_altitude'] / self.b
             self.A_ratio = Ainf_Ah(self.h_b)
-            self.h_b_tail = (self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['tail_height'] + self.aircraft_data.data['inputs']['cruise_altitude']) / self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['b']
-            self.A_ratio_tail = Ainf_Ah(self.h_b_tail)
-            self.k_tail = np.sqrt(1 / self.A_ratio_tail)
+            if self.design_number != 4:
+                self.h_b_tail = (self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['tail_height'] + self.aircraft_data.data['inputs']['cruise_altitude']) / self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['b']
+                self.A_ratio_tail = Ainf_Ah(self.h_b_tail)
+                self.k_tail = np.sqrt(1 / self.A_ratio_tail)
+            else:
+                self.k_tail = 1
             self.new_k = np.sqrt(1 / self.A_ratio)*self.k_fus*self.k_tail
             self.aircraft_data.data['outputs'][self.mission_type.name.lower()]['k'] = self.new_k
             self.new_Cd0 = self.aircraft_data.data['inputs']['Cd0']

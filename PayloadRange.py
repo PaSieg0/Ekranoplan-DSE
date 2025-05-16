@@ -50,7 +50,7 @@ class RangeCalculator:
         self.fuel_max = self.data.data["outputs"]['design']['max_fuel']
         self.fuel_reserve = self.data.data["outputs"]['design']['reserve_fuel']
         self.design_payload = self.data.data["requirements"]['design_payload']
-        self.max_payload = 100_000  # This could be made configurable
+        self.max_payload = 100 * 1_000  # kg This could be made configurable !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         self.MTOW = self.data.data["outputs"]['design']['MTOW']
         
         # Calculate fuel fractions without cruise
@@ -89,8 +89,8 @@ class RangeCalculator:
         # Calculate mass fractions
         Mff_harmonic = 1 - (self.fuel_design - (self.max_payload - self.design_payload) * self.g) / self.MTOW
         Mff_design = 1 - self.fuel_design / self.MTOW
-        Mff_maxrange = 1 - self.fuel_max / self.MTOW
-        Mff_ferry = 1 - self.fuel_max / (self.MTOW - self.design_payload * self.g)
+        Mff_maxrange = 1 - (self.fuel_max - self.fuel_reserve) / self.MTOW
+        Mff_ferry = 1 - (self.fuel_max - self.fuel_reserve) / (self.MTOW - self.design_payload * self.g)
         
         return {
             "harmonic": Mff_harmonic,
@@ -197,8 +197,7 @@ class RangeCalculator:
         
         ax.set_xlabel('Range (nautical miles)')
         ax.set_ylabel('Payload (tonnes)')
-        ax.set_title('Payload-Range Diagram')
-        ax.legend(loc='lower left')
+        ax.legend(loc='upper right')
         ax.grid(True)
         
         if save_path:
@@ -273,7 +272,7 @@ class RangeCalculator:
     
 if __name__ == "__main__":
     # Example usage
-    data_file = "design1.json"
+    data_file = "design3.json"
     range_calculator = RangeCalculator(data_file=data_file)
     
     # Perform analysis and plot

@@ -63,6 +63,7 @@ class WingPlanform:
                          self.x_c_OEW_cg * (1 + self.mass_fraction_wing / self.mass_fraction_fuse))
 
         self.X_LE = self.X_LEMAC - self.y_MAC * np.tan(np.deg2rad(self.sweep_x_c))
+        self.oswald = 4.61*(1-0.045*self.aspect_ratio**0.68)*(np.cos(np.deg2rad(self.sweep_x_c)))**0.15 -3.1
         self.update_design_data()
         self.aircraft_data.save_design(self.design_file)
 
@@ -81,6 +82,7 @@ class WingPlanform:
         self.aircraft_data.data['outputs']['wing_design']['S'] = self.S
         self.aircraft_data.data['outputs']['wing_design']['b'] = self.b
         self.aircraft_data.data['outputs']['wing_design']['aspect_ratio'] = self.aspect_ratio
+        self.aircraft_data.data['inputs']['oswald_factor'] = self.oswald
         
 
 
