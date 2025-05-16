@@ -4,6 +4,7 @@ from utils import Data
 from ClassIWeightEstimation import ClassI, MissionType
 from ISA_Class import ISA
 from functools import lru_cache
+from tqdm import tqdm
 
 class AltitudeVelocity:
     def __init__(self, aircraft_data: Data, mission_type: MissionType):
@@ -47,7 +48,7 @@ class AltitudeVelocity:
         Calculate the power available for the aircraft at different velocities.
         Assume power available is constant for propeller engines.
         """
-        return self._engine_power * (self._get_density(h) / self._sea_level_density)**0.75 * 4
+        return self._engine_power * (self._get_density(h) / self._sea_level_density)**0.70 * 4
 
     @lru_cache(maxsize=128)
     def calculate_stall_speed(self, h: float) -> float:
@@ -66,7 +67,7 @@ class AltitudeVelocity:
         
         for i, h in enumerate(h_list):
             V_stall = self.calculate_stall_speed(h)
-            velocity_range = np.linspace(V_stall, self.dive_speed, 100)
+            velocity_range = np.linspace(V_stall, self.dive_speed, 1000)
             
             # Vectorized calculations instead of list comprehensions
             power_required = np.array([self.calculate_power_required(v, h) for v in velocity_range])
@@ -95,7 +96,7 @@ class AltitudeVelocity:
     def calculate_max_RoC(self, h: float) -> tuple:
         """Find the maximum Rate of Climb and corresponding velocity at a given altitude."""
         V_stall = self.calculate_stall_speed(h)
-        velocity_range = np.linspace(V_stall, self.dive_speed, 100)
+        velocity_range = np.linspace(V_stall, self.dive_speed, 1000)
         
         RoC_values = self.calculate_RoC_vectorized(velocity_range, h)
         max_roc_idx = np.argmax(RoC_values)
@@ -107,7 +108,7 @@ class AltitudeVelocity:
 
         for h in h_list:
             V_stall = self.calculate_stall_speed(h)
-            velocity_range = np.linspace(V_stall, self.dive_speed, 100)
+            velocity_range = np.linspace(V_stall, self.dive_speed, 1000)
             
             # Vectorized calculation
             RoC = self.calculate_RoC_vectorized(velocity_range, h) * self.mps2fpm
@@ -151,7 +152,7 @@ class AltitudeVelocity:
         
         # Binary search to find the zero crossing point
         while h_max - h_min > height_resolution:
-            h_mid = (h_min + h_max) // 2
+            h_mid = (h_min + h_max) / 2
             roc_at_mid, v_at_mid = self.calculate_max_RoC(h_mid)
             
             if roc_at_mid > RoC_limit:
@@ -175,7 +176,7 @@ class AltitudeVelocity:
         
         for h in h_list:
             V_stall = self.calculate_stall_speed(h)
-            velocity_range = np.linspace(V_stall, self.dive_speed, 100)
+            velocity_range = np.linspace(V_stall, self.dive_speed, 1000)
             
             # Use vectorized calculation
             RoC = self.calculate_RoC_vectorized(velocity_range, h)
@@ -220,35 +221,70 @@ class AltitudeVelocity:
 
     def plot_limit_points(self, height_resolution:float=1) -> None:
         """Plot the flight envelope with thrust limit, stall limit, and Vy curve."""
-        zero_points, stall_points = self.calculate_limit_points(height_resolution=height_resolution, RoC_limit=0)
-        
-        plt.figure(figsize=(10, 6))
-        
-        # Convert to numpy arrays if not already
-        if isinstance(zero_points, list) and zero_points:
+
+        # Calculate limit points with progress bar
+        # Patch: tqdm only for the outer loop in calculate_limit_points
+        # We'll copy the body of calculate_limit_points here to add tqdm
+
+        # First determine maximum altitude to avoid unnecessary calculations
+        h_max, _ = self.calculate_h_max(height_resolution=height_resolution, RoC_limit=0)
+        h_list = np.arange(0, h_max + height_resolution, height_resolution)
+
+        zero_points = []
+        stall_points = []
+
+        for h in tqdm(h_list, desc="Calculating envelope"):
+            V_stall = self.calculate_stall_speed(h)
+            velocity_range = np.linspace(V_stall, self.dive_speed, 1000)
+
+            # Use vectorized calculation
+            RoC = self.calculate_RoC_vectorized(velocity_range, h)
+
+            # Find where RoC crosses RoC_limit
+            diff_sign = np.diff(np.sign(RoC - 0))
+            zero_crossings = np.where(diff_sign != 0)[0]
+
+            # Interpolate to find more accurate crossing velocities
+            for idx in zero_crossings:
+                v1, v2 = velocity_range[idx], velocity_range[idx + 1]
+                roc1, roc2 = RoC[idx], RoC[idx + 1]
+                if roc2 != roc1:
+                    v_zero = v1 + (0 - roc1) * (v2 - v1) / (roc2 - roc1)
+                else:
+                    v_zero = v1
+                zero_points.append((v_zero, h))
+
+            stall_points.append((V_stall, h))
+
+        # Convert to numpy arrays for faster processing if there are points
+        if zero_points:
             zero_points = np.array(zero_points)
-        if isinstance(stall_points, list) and stall_points:
+            min_zero_velocity = np.min(zero_points[:, 0]) if len(zero_points) > 0 else float('inf')
+            stall_points = np.array([(v, h) for v, h in stall_points if v < min_zero_velocity])
+        else:
             stall_points = np.array(stall_points)
-        
+
+        plt.figure(figsize=(10, 7))
+
         # Plot only if points exist
         if len(zero_points) > 0:
             # Sort by velocity for proper line plotting
             idx = np.argsort(zero_points[:, 0])
             zero_points = zero_points[idx]
             plt.plot(zero_points[:, 0], zero_points[:, 1], color='k', label='Thrust limit')
-            
+
             # Find max altitude point on the zero RoC curve
             max_zero_idx = np.argmax(zero_points[:, 1])
             max_zero = zero_points[max_zero_idx]
         else:
             max_zero = None
-            
+
         if len(stall_points) > 0:
             # Sort by velocity for proper line plotting
             idx = np.argsort(stall_points[:, 0])
             stall_points = stall_points[idx]
             plt.plot(stall_points[:, 0], stall_points[:, 1], color='r', label='Stall limit')
-            
+
             # Find max altitude point on the stall curve
             max_stall_idx = np.argmax(stall_points[:, 1])
             max_stall = stall_points[max_stall_idx]
@@ -277,7 +313,7 @@ class AltitudeVelocity:
                 fontsize=10,
                 arrowprops=dict(arrowstyle="->", color='b')
             )
-        
+
         # Calculate and plot the Vy curve    
         max_Vy_points = self.calculate_Vy(h_max=h_max_point[1], height_resolution=height_resolution)
         if max_Vy_points:
@@ -288,7 +324,6 @@ class AltitudeVelocity:
 
         plt.xlabel('Velocity (m/s)')
         plt.ylabel('Altitude (m)')
-        plt.title('Aircraft Flight Envelope')
         plt.legend()
         plt.grid()
         plt.show()
@@ -414,8 +449,8 @@ if __name__ == "__main__":
     h = np.array([0, 3048])  # Example altitude in meters
     # altitude_velocity.plot_power_curve(h)
     # altitude_velocity.plot_RoC_line(h)
-    altitude_velocity.plot_limit_points(height_resolution=1)
-    altitude_velocity.plot_RoC_colormap(velocity_resolution=200, height_resolution=2000)
+    altitude_velocity.plot_limit_points(height_resolution=0.5)
+    # altitude_velocity.plot_RoC_colormap(velocity_resolution=200, height_resolution=2000)
 
     print(f"Max RoC at h = 0 is {altitude_velocity.calculate_max_RoC(0)[0] * 196.85} ft/min")
     print(f"Max RoC at h = 3048 is {altitude_velocity.calculate_max_RoC(3048)[0] * 196.85} ft/min")
