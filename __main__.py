@@ -26,7 +26,8 @@ def main(create_excel: bool = False) -> None:
                 iteration_number=1,
                 aircraft_data=aircraft_data,
                 mission=mission,
-                file_path=file_path
+                file_path=file_path,
+                create_excel=create_excel,
                 )
 
 
@@ -40,6 +41,7 @@ def main_iteration(
         prev_MTOM=100000,
         prev_CD0=0.02,
         iteration_number = 1,
+        create_excel: bool = False
     ):
     
     iteration = AircraftIteration(
@@ -71,6 +73,8 @@ def main_iteration(
 
     if stop_condition:
         #aircraft_data.save_design(file_path)
+        if create_excel:
+            design_json_to_excel(file_path,'concepts.xlsx')
         return
     else:
         return main_iteration(
@@ -80,7 +84,8 @@ def main_iteration(
             prev_MTOM=MTOM,
             prev_CD0=Cd0,
             iteration_number=iteration_number,
-            file_path=file_path
+            file_path=file_path,
+            create_excel=create_excel
             )
     
 
