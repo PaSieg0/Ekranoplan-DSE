@@ -145,11 +145,10 @@ class WingLoading:
         CD = 4*self.Cd0
 
         if self.aircraft_type == AircraftType.PROP:
-            y = [(n-1)/n*self.prop_efficiency/(np.sqrt(x)*((c_V+0.003*(n-2))+CD/CL)*np.sqrt(2/(self.isa_cruise.rho*CL))) for CL in CLs for n in self.n_engines]
+            y = [self.prop_efficiency/(np.sqrt(x)*((c_V)+CD/CL)*np.sqrt(2/(self.isa_cruise.rho*CL))) for CL in CLs]
 
         elif self.aircraft_type == AircraftType.JET or self.aircraft_type == AircraftType.MIXED:
-            y = [n/(n-1)*(c_V+0.003*(n-2) + 2*np.sqrt(self.Cd0/(np.pi*A*self.e))) for A in self.k**2 * self.aspect_ratios for n in self.n_engines]
-
+            y = [(c_V + 2*np.sqrt(self.Cd0/(np.pi*A*self.e))) for A in self.k**2 * self.aspect_ratios]
         return y
     
     def climb_gradient_requirement_OEI(self):

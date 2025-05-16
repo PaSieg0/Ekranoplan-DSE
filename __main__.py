@@ -25,19 +25,21 @@ def main(create_excel: bool = False) -> None:
             main_iteration(
                 iteration_number=1,
                 aircraft_data=aircraft_data,
-                mission=mission
+                mission=mission,
+                file_path=file_path
                 )
 
 
 def main_iteration(
         aircraft_data: Data,
         mission: MissionType,
+        file_path: str,
         tolerance=0.01,
         max_iterations=20,
         prev_S=300,
         prev_MTOM=100000,
         prev_CD0=0.02,
-        iteration_number = 1
+        iteration_number = 1,
     ):
     
     iteration = AircraftIteration(
@@ -68,6 +70,7 @@ def main_iteration(
     iteration_number += 1
 
     if stop_condition:
+        #aircraft_data.save_design(file_path)
         return
     else:
         return main_iteration(
@@ -76,7 +79,8 @@ def main_iteration(
             prev_S=S,
             prev_MTOM=MTOM,
             prev_CD0=Cd0,
-            iteration_number=iteration_number
+            iteration_number=iteration_number,
+            file_path=file_path
             )
     
 
