@@ -42,7 +42,7 @@
         "engine_power": 8202000
     },
     "requirements": {
-        "design_range": 4704000,
+        "design_range": 3704000,
         "design_payload": 90000,
         "design_crew": 425,
         "ferry_range": 12038000,
