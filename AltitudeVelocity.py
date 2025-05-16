@@ -10,7 +10,7 @@ class AltitudeVelocity:
     def __init__(self, aircraft_data: Data, mission_type: MissionType):
         self.data = aircraft_data
         self.mission_type = mission_type
-        self.dive_speed = self.data.data['requirements']['cruise_speed'] / 0.8
+        self.dive_speed = self.data.data['requirements']['cruise_speed'] / 0.6
         
         # Cache frequently used values to avoid repeated lookups
         self._mtow = self.data.data['outputs']['design']['MTOW']
@@ -87,11 +87,20 @@ class AltitudeVelocity:
         """Calculate Rate of Climb at a given velocity and altitude."""
         return (self.calculate_power_availabe(h) - self.calculate_power_required(V, h)) / self._mtow
     
+    def calculate_AoC(self, V: float, h: float) -> float:
+        """Calculate Angle of Climb at a given velocity and altitude."""
+        return np.arcsin(self.calculate_RoC(V, h) / V) * 180 / np.pi
+    
     def calculate_RoC_vectorized(self, velocities: np.ndarray, h: float) -> np.ndarray:
         """Vectorized version of calculate_RoC for multiple velocities at once."""
         power_available = self.calculate_power_availabe(h)
         power_required = np.array([self.calculate_power_required(v, h) for v in velocities])
         return (power_available - power_required) / self._mtow
+    
+    def calculate_AoC_vectorized(self, velocities: np.ndarray, h: float) -> np.ndarray:
+        """Vectorized version of calculate_AoC for multiple velocities at once."""
+        RoC_values = self.calculate_RoC_vectorized(velocities, h)
+        return np.arcsin(RoC_values / velocities) * 180 / np.pi
     
     def calculate_max_RoC(self, h: float) -> tuple:
         """Find the maximum Rate of Climb and corresponding velocity at a given altitude."""
@@ -102,6 +111,16 @@ class AltitudeVelocity:
         max_roc_idx = np.argmax(RoC_values)
         
         return RoC_values[max_roc_idx], velocity_range[max_roc_idx]
+    
+    def calculate_max_AoC(self, h: float) -> tuple:
+        """Find the maximum Angle of Climb and corresponding velocity at a given altitude."""
+        V_stall = self.calculate_stall_speed(h)
+        velocity_range = np.linspace(V_stall, self.dive_speed, 1000)
+        
+        AoC_values = self.calculate_AoC_vectorized(velocity_range, h)
+        max_aoc_idx = np.argmax(AoC_values)
+        
+        return AoC_values[max_aoc_idx], velocity_range[max_aoc_idx]
     
     def plot_RoC_line(self, h_list: np.array) -> None:
         plt.figure(figsize=(10, 6))
@@ -218,6 +237,18 @@ class AltitudeVelocity:
             max_Vy_points.append((RoC, h, v_opt))  # Append altitude, max RoC, and velocity
 
         return max_Vy_points
+    
+    def calculate_Vx(self, h_max:float, height_resolution:float=1) -> list:
+        """Calculate best cruise speeds (Vx) at different altitude points."""
+        # Implementing a more efficient approach
+        h_limits = np.arange(0, h_max, height_resolution)
+        max_Vx_points = []
+        
+        for h in h_limits:
+            AoC, v_opt = self.calculate_max_AoC(h)
+            max_Vx_points.append((AoC, h, v_opt))
+
+        return max_Vx_points
 
     def plot_limit_points(self, height_resolution:float=1) -> None:
         """Plot the flight envelope with thrust limit, stall limit, and Vy curve."""
@@ -322,120 +353,18 @@ class AltitudeVelocity:
             vy_altitudes = [point[1] for point in max_Vy_points]
             plt.plot(vy_velocities, vy_altitudes, color='g', linestyle='--', label='Vy curve')
 
+        # Calculate and plot the Vx curve    
+        max_Vx_points = self.calculate_Vx(h_max=h_max_point[1], height_resolution=height_resolution)
+        if max_Vx_points:
+            # Extract velocities and altitudes for plotting
+            vy_velocities = [point[2] for point in max_Vx_points]
+            vy_altitudes = [point[1] for point in max_Vx_points]
+            plt.plot(vy_velocities, vy_altitudes, color='b', linestyle='--', label='Vx curve')
+
         plt.xlabel('Velocity (m/s)')
         plt.ylabel('Altitude (m)')
         plt.legend()
         plt.grid()
-        plt.show()
-
-        
-    def plot_RoC_colormap(self, velocity_resolution:int=50, height_resolution:int=50, max_height:float=None) -> None:
-        """
-        Create a 2D colormap of Rate of Climb with velocity and altitude as axes.
-        
-        Args:
-            velocity_resolution: Number of velocity points to calculate
-            height_resolution: Number of height points to calculate
-            max_height: Maximum height to plot (in meters), if None will use h_max
-        
-        Returns:
-            None - displays the plot
-        """
-        # Determine maximum height if not specified
-        if max_height is None:
-            h_max, _ = self.calculate_h_max(height_resolution=10)
-            max_height = h_max * 1.1  # Add 10% margin
-            
-        # Create mesh grid for velocity and height
-        min_speed = self.calculate_stall_speed(0)  # Stall speed at sea level
-        max_speed = self.dive_speed
-        
-        # Create velocity and height arrays
-        velocities = np.linspace(min_speed, max_speed, velocity_resolution)
-        heights = np.linspace(0, max_height, height_resolution)
-        
-        # Create meshgrid for plotting
-        V, H = np.meshgrid(velocities, heights)
-        
-        # Initialize Rate of Climb array
-        RoC = np.zeros_like(V)
-        
-        # Calculate RoC for each point in the grid
-        for i, h in enumerate(heights):
-            # Calculate stall speed at this altitude
-            V_stall = self.calculate_stall_speed(h)
-            
-            # For each velocity at this altitude
-            for j, v in enumerate(velocities):
-                # Skip calculations for speeds below stall at this altitude
-                if v < V_stall:
-                    RoC[i, j] = np.nan  # Mark as invalid point
-                else:
-                    RoC[i, j] = self.calculate_RoC(v, h) * self.mps2fpm  # Convert to ft/min
-        
-        # Create the figure
-        fig = plt.figure(figsize=(12, 8))
-        
-        # Create the main plot with pcolormesh
-        cmap = plt.cm.viridis
-        cmap.set_under('white')  # Set color for values below vmin
-        
-        # Set color limits - cap the negative values for better visualization
-        vmin = 0  # Show only positive RoC
-        vmax = np.nanmax(RoC)
-        
-        # Plot RoC as color
-        c = plt.pcolormesh(V, H, RoC, cmap=cmap, vmin=vmin, vmax=vmax, shading='auto')
-        
-        # Create a colorbar with label
-        cbar = plt.colorbar(c)
-        cbar.set_label('Rate of Climb (ft/min)', rotation=270, labelpad=20)
-        
-        # Plot contour lines for RoC
-        contour_levels = np.linspace(0, vmax, 10)
-        contour = plt.contour(V, H, RoC, levels=contour_levels, colors='k', alpha=0.3)
-        plt.clabel(contour, inline=True, fontsize=8, fmt='%.0f')
-        
-        # Add labels and title
-        plt.xlabel('Airspeed (m/s)')
-        plt.ylabel('Altitude (m)')
-        plt.title('Aircraft Performance Map - Rate of Climb')
-        
-        # Calculate and overlay the envelope limits
-        zero_points, stall_points = self.calculate_limit_points(height_resolution=10)
-        
-        # Convert to numpy arrays if needed and plot if points exist
-        if len(zero_points) > 0:
-            if isinstance(zero_points, list):
-                zero_points = np.array(zero_points)
-            # Sort by velocity for proper line plotting
-            idx = np.argsort(zero_points[:, 0])
-            zero_points = zero_points[idx]
-            plt.plot(zero_points[:, 0], zero_points[:, 1], 'r-', linewidth=2, label='Zero RoC Limit')
-        
-        if len(stall_points) > 0:
-            if isinstance(stall_points, list):
-                stall_points = np.array(stall_points)
-            # Sort by altitude for proper line plotting
-            idx = np.argsort(stall_points[:, 1])
-            stall_points = stall_points[idx]
-            plt.plot(stall_points[:, 0], stall_points[:, 1], 'b-', linewidth=2, label='Stall Limit')
-        
-        # Calculate Vy (best rate of climb speed) at different altitudes
-        if len(zero_points) > 0:
-            max_zero_idx = np.argmax(zero_points[:, 1])
-            max_zero = zero_points[max_zero_idx]
-            vy_points = self.calculate_Vy(h_max=max_zero[1], height_resolution=10)
-            
-            if vy_points:
-                # Extract velocities and altitudes for plotting
-                vy_velocities = [point[2] for point in vy_points]
-                vy_altitudes = [point[1] for point in vy_points]
-                plt.plot(vy_velocities, vy_altitudes, 'g--', linewidth=2, label='Best Climb Speed (Vy)')
-        
-        plt.grid(True)
-        plt.legend(loc='best')
-        plt.tight_layout()
         plt.show()
 
 
@@ -449,7 +378,7 @@ if __name__ == "__main__":
     h = np.array([0, 3048])  # Example altitude in meters
     # altitude_velocity.plot_power_curve(h)
     # altitude_velocity.plot_RoC_line(h)
-    altitude_velocity.plot_limit_points(height_resolution=0.5)
+    altitude_velocity.plot_limit_points(height_resolution=1)
     # altitude_velocity.plot_RoC_colormap(velocity_resolution=200, height_resolution=2000)
 
     print(f"Max RoC at h = 0 is {altitude_velocity.calculate_max_RoC(0)[0] * 196.85} ft/min")
