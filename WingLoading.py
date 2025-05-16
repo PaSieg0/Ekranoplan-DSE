@@ -306,9 +306,12 @@ def __plot_prop(WL, PLOT_OUTPUT: bool=False):
         ax.axvline(x=stall, label=f"Stall high: CL={WL.CLmax_clean[i]}", linestyle=linestyles[i], color='tab:brown')
 
     WP, TW, WS = WL.WP, WL.TW, WL.max_WS
+    print(WP, WS)
     ax.scatter(WS, WP, label=f"Design Point", color='red', marker='o', s = 100, zorder = 10)
 
-    plt.suptitle(f"Wing Loading Requirements k={WL.k}")
+    #plt.suptitle(f"Wing Loading Requirements")
+    plt.ylabel('W/P [N/W]')
+    plt.xlabel('W/S [N/m^2]')
     ax.set_xlim(0, 8000)
     ax.set_ylim(0, 0.6)
     ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
