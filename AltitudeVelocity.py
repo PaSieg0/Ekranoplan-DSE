@@ -22,6 +22,7 @@ class AltitudeVelocity:
         self._engine_power = self.data.data['inputs']['engine_power']
         self._sea_level_density = ISA(0).rho
         self._k = 1 / (np.pi * self._AR * self._e)  # Induced drag factor
+        self.velocity_steps = 1000  # Number of velocity steps for calculations
         
         # Pre-calculate the mps to fpm conversion factor
         self.mps2fpm = 196.85  # metres per second to feet per minute
@@ -67,7 +68,7 @@ class AltitudeVelocity:
         
         for i, h in enumerate(h_list):
             V_stall = self.calculate_stall_speed(h)
-            velocity_range = np.linspace(V_stall, self.dive_speed, 1000)
+            velocity_range = np.linspace(V_stall, self.dive_speed, self.velocity_steps)
             
             # Vectorized calculations instead of list comprehensions
             power_required = np.array([self.calculate_power_required(v, h) for v in velocity_range])
@@ -105,7 +106,7 @@ class AltitudeVelocity:
     def calculate_max_RoC(self, h: float) -> tuple:
         """Find the maximum Rate of Climb and corresponding velocity at a given altitude."""
         V_stall = self.calculate_stall_speed(h)
-        velocity_range = np.linspace(V_stall, self.dive_speed, 1000)
+        velocity_range = np.linspace(V_stall, self.dive_speed, self.velocity_steps)
         
         RoC_values = self.calculate_RoC_vectorized(velocity_range, h)
         max_roc_idx = np.argmax(RoC_values)
@@ -115,7 +116,7 @@ class AltitudeVelocity:
     def calculate_max_AoC(self, h: float) -> tuple:
         """Find the maximum Angle of Climb and corresponding velocity at a given altitude."""
         V_stall = self.calculate_stall_speed(h)
-        velocity_range = np.linspace(V_stall, self.dive_speed, 1000)
+        velocity_range = np.linspace(V_stall, self.dive_speed, self.velocity_steps)
         
         AoC_values = self.calculate_AoC_vectorized(velocity_range, h)
         max_aoc_idx = np.argmax(AoC_values)
@@ -127,7 +128,7 @@ class AltitudeVelocity:
 
         for h in h_list:
             V_stall = self.calculate_stall_speed(h)
-            velocity_range = np.linspace(V_stall, self.dive_speed, 1000)
+            velocity_range = np.linspace(V_stall, self.dive_speed, self.velocity_steps)
             
             # Vectorized calculation
             RoC = self.calculate_RoC_vectorized(velocity_range, h) * self.mps2fpm
@@ -195,7 +196,7 @@ class AltitudeVelocity:
         
         for h in h_list:
             V_stall = self.calculate_stall_speed(h)
-            velocity_range = np.linspace(V_stall, self.dive_speed, 1000)
+            velocity_range = np.linspace(V_stall, self.dive_speed, self.velocity_steps)
             
             # Use vectorized calculation
             RoC = self.calculate_RoC_vectorized(velocity_range, h)
@@ -266,7 +267,7 @@ class AltitudeVelocity:
 
         for h in tqdm(h_list, desc="Calculating envelope"):
             V_stall = self.calculate_stall_speed(h)
-            velocity_range = np.linspace(V_stall, self.dive_speed, 1000)
+            velocity_range = np.linspace(V_stall, self.dive_speed, self.velocity_steps)
 
             # Use vectorized calculation
             RoC = self.calculate_RoC_vectorized(velocity_range, h)
@@ -378,8 +379,7 @@ if __name__ == "__main__":
     h = np.array([0, 3048])  # Example altitude in meters
     # altitude_velocity.plot_power_curve(h)
     # altitude_velocity.plot_RoC_line(h)
-    altitude_velocity.plot_limit_points(height_resolution=1)
-    # altitude_velocity.plot_RoC_colormap(velocity_resolution=200, height_resolution=2000)
+    altitude_velocity.plot_limit_points(height_resolution=0.5)
 
     print(f"Max RoC at h = 0 is {altitude_velocity.calculate_max_RoC(0)[0] * 196.85} ft/min")
     print(f"Max RoC at h = 3048 is {altitude_velocity.calculate_max_RoC(3048)[0] * 196.85} ft/min")
