@@ -289,11 +289,11 @@ def __plot_prop(WL, PLOT_OUTPUT: bool=False):
     for i, climb_gradient in enumerate(prop_climb_gradient):
         A_idx = i % len(WL.aspect_ratios)
         n_idx = i // len(WL.aspect_ratios)
-        ax.plot(WL.WS, climb_gradient, label=f"Climb gradient: Aspect ratio={WL.aspect_ratios[A_idx]}\nEngine={WL.n_engines[n_idx]}", linestyle=linestyles[i], color='tab:green')
+        ax.plot(WL.WS, climb_gradient, label=f"Climb gradient: Aspect ratio={WL.aspect_ratios[A_idx]}\nEngine={WL.n_engines[n_idx]:.0f}", linestyle=linestyles[i], color='tab:green')
     for i, climb_gradient in enumerate(prop_climb_gradient_OEI):
         A_idx = i % len(WL.aspect_ratios)
         n_idx = i // len(WL.aspect_ratios)
-        ax.plot(WL.WS, climb_gradient, label=f"Climb gradient OEI: Aspect ratio={WL.aspect_ratios[A_idx]}\nEngine={WL.n_engines[n_idx]}", linestyle=linestyles[i], color='tab:olive')
+        ax.plot(WL.WS, climb_gradient, label=f"Climb gradient OEI: Aspect ratio={WL.aspect_ratios[A_idx]}\nEngine={WL.n_engines[n_idx]:.0f}", linestyle=linestyles[i], color='tab:olive')
     for i, cruise in enumerate(prop_cruise):
         ax.plot(WL.WS, cruise, label=f"Cruise: Aspect ratio={WL.aspect_ratios[i]}", linestyle=linestyles[i], color='tab:red')
     for i, cruise in enumerate(prop_cruise_high):
@@ -305,16 +305,21 @@ def __plot_prop(WL, PLOT_OUTPUT: bool=False):
     for i, stall in enumerate(prop_stall_high):
         ax.axvline(x=stall, label=f"Stall high: CL={WL.CLmax_clean[i]}", linestyle=linestyles[i], color='tab:brown')
 
-    WP, TW, WS = WL.WP, WL.TW, WL.max_WS
+    WP, WS = 0.95*WL.WP, 0.98*WL.max_WS
     print(WP, WS)
-    ax.scatter(WS, WP, label=f"Design Point", color='red', marker='o', s = 100, zorder = 10)
+    ax.scatter(WS, WP, label=f"Design Point", color='red', marker='o', s = 20, zorder = 10)
 
+    # Find the index in WL.WS where WS is reached or just below
+    idx = np.searchsorted(WL.WS, WL.max_WS, side='right')
+    plt.fill_between(WL.WS[:idx], 0, prop_cruise_high[0][:idx], color='green', alpha=0.1)
     #plt.suptitle(f"Wing Loading Requirements")
-    plt.ylabel('W/P [N/W]')
-    plt.xlabel('W/S [N/m^2]')
+    plt.ylabel('W/P [N/W]', fontsize=14)
+    plt.xlabel('W/S [N/m^2]', fontsize=14)
+    plt.yticks(fontsize=12)
+    plt.xticks(fontsize=12)
     ax.set_xlim(0, 8000)
-    ax.set_ylim(0, 0.6)
-    ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+    ax.set_ylim(0, 0.3)
+    ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=12)
     plt.tight_layout()
     if PLOT_OUTPUT:
         plt.show()
