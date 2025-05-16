@@ -107,9 +107,9 @@ class WingLoading:
         x = self.WS.copy()
         
         if self.aircraft_type == AircraftType.PROP or self.aircraft_type == AircraftType.MIXED:
-            y = [0.9/0.8 * self.prop_efficiency * (self.isa_cruise.rho / self.isa_cruise.rho0)**0.75 * ((self.Cd0*0.5*self.isa_cruise.rho*self.cruise_speed**3)/(0.8*x) + 0.8*x/(np.pi*A*self.e*0.5*self.isa_cruise.rho*self.cruise_speed))**-1 for A in self.k**2*self.aspect_ratios]
+            y = [0.9/0.8 * self.prop_efficiency * (self.isa_cruise.rho / self.isa_cruise.rho0)**0.7 * ((self.Cd0*0.5*self.isa_cruise.rho*self.cruise_speed**3)/(0.8*x) + 0.8*x/(np.pi*A*self.e*0.5*self.isa_cruise.rho*self.cruise_speed))**-1 for A in self.k**2*self.aspect_ratios]
         elif self.aircraft_type == AircraftType.JET:
-            y = [0.8/0.9 * (self.isa_cruise.rho0 / self.isa_cruise.rho)**0.75 * ((self.Cd0*0.5*self.isa_cruise.rho*self.cruise_speed**2)/(0.8*x) + 0.8*x/(np.pi*A*self.e*0.5*self.isa_cruise.rho*self.cruise_speed**2)) for A in self.k**2*self.aspect_ratios]
+            y = [0.8/0.9 * (self.isa_cruise.rho0 / self.isa_cruise.rho)**0.7 * ((self.Cd0*0.5*self.isa_cruise.rho*self.cruise_speed**2)/(0.8*x) + 0.8*x/(np.pi*A*self.e*0.5*self.isa_cruise.rho*self.cruise_speed**2)) for A in self.k**2*self.aspect_ratios]
 
         return y
     
@@ -117,9 +117,9 @@ class WingLoading:
         x = self.WS.copy()
         
         if self.aircraft_type == AircraftType.PROP:
-            y = [0.9/0.8 * self.prop_efficiency * (self.isa_high.rho / self.isa_high.rho0)**0.75 * ((self.Cd0*0.5*self.isa_high.rho*self.cruise_speed**3)/(0.8*x) + 0.8*x/(np.pi*A*self.e*0.5*self.isa_high.rho*self.cruise_speed))**-1 for A in self.aspect_ratios]
+            y = [0.9/0.8 * self.prop_efficiency * (self.isa_high.rho / self.isa_high.rho0)**0.7 * ((self.Cd0*0.5*self.isa_high.rho*self.cruise_speed**3)/(0.8*x) + 0.8*x/(np.pi*A*self.e*0.5*self.isa_high.rho*self.cruise_speed))**-1 for A in self.aspect_ratios]
         elif self.aircraft_type == AircraftType.JET or self.aircraft_type == AircraftType.MIXED:
-            y = [0.8/0.9 * (self.isa_high.rho0 / self.isa_high.rho)**0.75 * ((self.Cd0*0.5*self.isa_high.rho*self.cruise_speed**2)/(0.8*x) + 0.8*x/(np.pi*A*self.e*0.5*self.isa_high.rho*self.cruise_speed**2)) for A in self.aspect_ratios]
+            y = [0.8/0.9 * (self.isa_high.rho0 / self.isa_high.rho)**0.7 * ((self.Cd0*0.5*self.isa_high.rho*self.cruise_speed**2)/(0.8*x) + 0.8*x/(np.pi*A*self.e*0.5*self.isa_high.rho*self.cruise_speed**2)) for A in self.aspect_ratios]
 
         return y
 

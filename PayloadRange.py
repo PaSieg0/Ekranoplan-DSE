@@ -40,10 +40,7 @@ class RangeCalculator:
         aspect_ratio = self.data.data["inputs"]['aspect_ratio']
         oswald_factor = self.data.data["inputs"]['oswald_factor']
         Cd0 = self.data.data["inputs"]['Cd0']
-        k_factor = self.data.data["outputs"]['design']['k']
-        
-        self.L_D = np.sqrt(np.pi * aspect_ratio * oswald_factor / (4 * Cd0))
-        self.L_D *= k_factor
+        self.L_D = self.data.data["outputs"]['design']['LD']
         
         # Extract weight and fuel data
         self.fuel_design = self.data.data["outputs"]['design']['mission_fuel']
