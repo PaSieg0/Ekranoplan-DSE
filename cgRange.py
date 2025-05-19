@@ -31,7 +31,7 @@ class CGRange:
                 self.xcg_components = {
                     "OEW": self.aircraft_data.data["inputs"]["xcg_OEW"],
                     "Payload": self.aircraft_data.data['outputs']['general']["xcg_payload"],
-                    "Fuel": (self.aircraft_data.data["outputs"]["wing_design"]["X_LEMAC"] + 0.5*self.aircraft_data.data["outputs"]["max"]["MAC"]) / self.aircraft_data.data["outputs"]["general"]["l_fuselage"]
+                    "Fuel": (self.aircraft_data.data["outputs"]["wing_design"]["X_LEMAC"] + 0.5*self.aircraft_data.data["outputs"]["wing_design"]["MAC"]) / self.aircraft_data.data["outputs"]["general"]["l_fuselage"]
                 }
 
                 self.mass_components = {}
