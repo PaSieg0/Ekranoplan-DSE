@@ -5,6 +5,7 @@
         "aircraft_type": "PROP",
         "wing_type": "LOW",
         "tail_type": "NONE",
+        "flap_type": "SLOT",
         "n_wings": 2,
         "n_fuselages": 1,
         "depth": 0.05,
@@ -43,7 +44,11 @@
         "ltcd": 4.5,
         "lnd": 1.5,
         "lfd": 8.5,
-        "engine_power": 8202000
+        "engine_power": 8202000,
+        "object_distance": 4450,
+        "aileron_deflection": 25,
+        "aileron_chord": 0.25,
+        "flap_chord": 0.35
     },
     "requirements": {
         "design_range": 3704000,

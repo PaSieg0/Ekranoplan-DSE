@@ -5,8 +5,7 @@ import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from utils import Data
-from ISA_Class import ISA
+from utils import Data, ISA
 
 def calculate_n(rho, CL, W, S, V):
     L = CL*1/2*rho*V**2*S

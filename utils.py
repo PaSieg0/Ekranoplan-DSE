@@ -13,6 +13,12 @@ class AircraftType(Enum):
     PROP = auto()
     MIXED = auto()
 
+class FlapType(Enum):
+    PLAIN_SPLIT = auto()
+    SLOT = auto()
+    FOWLER = auto()
+    DOUBLE_SLOT = auto()
+    TRIPLE_SLOT = auto()
 class WingType(Enum):
     HIGH = auto()
     LOW = auto()
