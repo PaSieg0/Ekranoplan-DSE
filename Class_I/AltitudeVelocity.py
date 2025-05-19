@@ -47,7 +47,7 @@ class AltitudeVelocity:
         
         return Cd * qS * V + self._mtow * RoC
 
-    def calculate_power_availabe(self, h: float) -> float:
+    def calculate_power_available(self, h: float) -> float:
         """
         Calculate the power available for the aircraft at different velocities.
         Assume power available is constant for propeller engines.
@@ -75,7 +75,7 @@ class AltitudeVelocity:
             
             # Vectorized calculations instead of list comprehensions
             power_required = np.array([self.calculate_power_required(v, h) for v in velocity_range])
-            power_available = np.full_like(velocity_range, self.calculate_power_availabe(h))
+            power_available = np.full_like(velocity_range, self.calculate_power_available(h))
             
             plt.plot(velocity_range, power_required, label=f'Power Required at {h} m', color=color_list[i % len(color_list)])
             plt.plot(velocity_range, power_available, label=f'Power Available at {h} m', color=color_list[i % len(color_list)])
@@ -89,7 +89,7 @@ class AltitudeVelocity:
 
     def calculate_RoC(self, V: float, h: float) -> float:
         """Calculate Rate of Climb at a given velocity and altitude."""
-        return (self.calculate_power_availabe(h) - self.calculate_power_required(V, h)) / self._mtow
+        return (self.calculate_power_available(h) - self.calculate_power_required(V, h)) / self._mtow
     
     def calculate_AoC(self, V: float, h: float) -> float:
         """Calculate Angle of Climb at a given velocity and altitude."""
@@ -97,14 +97,15 @@ class AltitudeVelocity:
     
     def calculate_RoC_vectorized(self, velocities: np.ndarray, h: float) -> np.ndarray:
         """Vectorized version of calculate_RoC for multiple velocities at once."""
-        power_available = self.calculate_power_availabe(h)
+        power_available = self.calculate_power_available(h)
         power_required = np.array([self.calculate_power_required(v, h) for v in velocities])
         return (power_available - power_required) / self._mtow
     
     def calculate_AoC_vectorized(self, velocities: np.ndarray, h: float) -> np.ndarray:
         """Vectorized version of calculate_AoC for multiple velocities at once."""
-        RoC_values = self.calculate_RoC_vectorized(velocities, h)
-        return np.arcsin(RoC_values / velocities)
+        thrust_available = np.array([self.calculate_power_available(h)/v for v in velocities])
+        thrust_required = np.array([self.calculate_power_required(v, h)/v for v in velocities])
+        return np.arcsin((thrust_available - thrust_required) / self._mtow)
     
     def calculate_max_RoC(self, h: float) -> tuple:
         """Find the maximum Rate of Climb and corresponding velocity at a given altitude."""
