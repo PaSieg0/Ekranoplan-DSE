@@ -48,7 +48,9 @@ class MobileSurfaceDesign:
         self.airfoil_Cd0 = 0.015 #TODO link to airfoil data
         self.airfoil_Cl_alpha = 0.11 #TODO link to airfoil data
 
-        self.required_CLmax_increase = self.aircraft_data.data['inputs']['CLmax_landing'] - self.aircraft_data.data['inputs']['CLmax_clean']
+        self.CLMax_landing = self.aircraft_data.data['inputs']['CLmax_landing']
+        self.CLMax_clean = self.aircraft_data.data['inputs']['CLmax_clean']
+        self.required_CLmax_increase = self.CLMax_landing - self.CLMax_clean
 
         self.LE_flap = False
         self.tau = self.aileron_effectiveness()
@@ -93,6 +95,7 @@ class MobileSurfaceDesign:
 
         self.bank_angle = np.arcsin((0.75+self.cruise_altitude + self.d_fuselage)/self.b*2)
         self.turn_radius = self.V**2/(9.81*np.tan(self.bank_angle))
+        print(self.turn_radius)
         if (self.object_distance)/self.turn_radius < 1.03:
             raise ValueError("This is NOT doable")
         
@@ -183,46 +186,65 @@ class MobileSurfaceDesign:
             raise ValueError("No real solution for b2.")
 
         b2 = (-a + np.sqrt(discriminant)) / m
+
         return b2
     
     def calculate_flapped_by_span(self):
         m = (self.tip_chord - self.root_chord) / (self.b / 2)
         return self.root_chord * (self.flap_end-self.flap_start) + 0.5 * m * (self.flap_end**2 - self.flap_start**2)
     
-    def calculate_CLmax_increase(self,area):
-        return 0.9*self.clmax_increase*area/self.S
+    def calculate_CLmax_increase(self,area,clmax_increase):
+        return 0.9*clmax_increase*area/self.S
     
     def add_LE_flap(self):
         self.flap_end = self.aileron_start - 1
 
-        self.TE_flap_area = self.calculate_flapped_by_span()
-        self.CL_increase = self.calculate_CLmax_increase(self.TE_flap_area)
+        self.tot_TE_flap_area = self.calculate_flapped_by_span()*2
+        self.CL_increase = self.calculate_CLmax_increase(self.tot_TE_flap_area,self.clmax_increase)
+        self.CL_increase_TO_TE = self.calculate_CLmax_increase(self.tot_TE_flap_area,self.clmax_increase*0.6)
         self.get_clmax_increase(LE=True)
         self.required_CLmax_increase_LE = self.required_CLmax_increase - self.CL_increase
+        print(self.CL_increase)
+        print(self.required_CLmax_increase_LE)
         self.LE_flap_area = self.calculate_flapped_area(LE=True)/2
+        self.tot_LE_flap_area = self.LE_flap_area*2
+        print(self.LE_flap_area)
 
         self.LE_flap_end = self.calculate_flap_endpoint(LE=True)
+        print(self.LE_flap_end)
+
+        self.CL_increase_TO = self.calculate_CLmax_increase(self.tot_LE_flap_area,self.clmax_increase*0.6)
+        self.CL_max_TO = self.CLMax_clean + self.CL_increase_TO + self.CL_increase_TO_TE
 
         print(f"LE flap area: {self.LE_flap_area}")
         print(f"LE flap chord: {self.flap_LE_chord}")
         print(f"LE flap end: {self.LE_flap_end}")
-        print(f"TE flap area: {self.TE_flap_area}")
+        print(f"TE flap area: {self.tot_TE_flap_area}")
         print(f"TE flap chord: {self.flap_chord}")
         print(f"TE flap end: {self.flap_end}")
+        print(f"TO CLmax: {self.CL_max_TO}")
     
     def calculate_flap_size(self):
         self.get_clmax_increase()
+        self.TO_clmax_increase = self.clmax_increase*0.6
         self.flap_area = self.calculate_flapped_area()/2
+        self.tot_flap_area = self.flap_area*2
         self.flap_end = self.calculate_flap_endpoint()
-
-        if self.flap_end - 1 > self.aileron_start:
+        print(self.flap_end, self.aileron_start-1)
+        if self.flap_end > self.aileron_start-1:
             self.add_LE_flap()
             self.LE_flap = True
             return
 
+        self.CL_increase_TO = self.calculate_CLmax_increase(self.tot_flap_area,self.clmax_increase*0.6)
+        self.CL_max_TO = self.CLMax_clean + self.CL_increase_TO
+
+        self.CL_increase = self.calculate_CLmax_increase(self.tot_flap_area,self.clmax_increase)
+        print(f"TO CLmax: {self.CL_max_TO}")
         print(f"Flap area: {self.flap_area}")
         print(f"Flap chord: {self.flap_chord}")
         print(f"Flap end: {self.flap_end}")
+        print(f"CL increase: {self.CL_increase}")
 
     def plot_wing(self):
 
