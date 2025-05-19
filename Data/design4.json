@@ -40,6 +40,9 @@
         "xc_fuselage": 0.4,
         "mf_wing": 0.12,
         "mf_fuselage": 0.2,
+        "ltcd": 4.5,
+        "lnd": 1.5,
+        "lfd": 8.5,
         "engine_power": 8202000
     },
     "requirements": {

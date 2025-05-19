@@ -11,9 +11,9 @@ class Fuselage:
         self.design_file = f"design{self.design_number}.json"
 
         # from Raymer's book
-        self.ltcd = 4.5 
-        self.lfd = 8.5 
-        self.lnd = 1.5 
+        self.ltcd = self.aircraft_data.data['inputs']['ltcd']  # tailcone length to diameter ratio
+        self.lfd = self.aircraft_data.data['inputs']['lfd']  # fuselage length to diameter ratio
+        self.lnd = self.aircraft_data.data['inputs']['lnd']  # nose length to diameter ratio
 
         self.cargo_width = self.aircraft_data.data['requirements']['cargo_width']
         self.cargo_height = self.aircraft_data.data['requirements']['cargo_height']
