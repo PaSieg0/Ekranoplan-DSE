@@ -116,10 +116,16 @@ class RangeCalculator:
         Returns:
             dict: Dictionary containing weight ratios
         """
-        W4_W5_harmonic = np.sqrt(1 / mass_fractions["harmonic"] * self.Mff_nocruise**2)
-        W4_W5_design = np.sqrt(1 / mass_fractions["design"] * self.Mff_nocruise**2)
-        W4_W5_maxrange = np.sqrt(1 / mass_fractions["maxrange"] * self.Mff_nocruise**2)
-        W4_W5_ferry = np.sqrt(1 / mass_fractions["ferry"] * self.Mff_nocruise**2)
+        if self.mission_type == MissionType.DESIGN or self.mission_type == MissionType.ALTITUDE:
+            W4_W5_harmonic = np.sqrt(1 / mass_fractions["harmonic"] * self.Mff_nocruise**2)
+            W4_W5_design = np.sqrt(1 / mass_fractions["design"] * self.Mff_nocruise**2)
+            W4_W5_maxrange = np.sqrt(1 / mass_fractions["maxrange"] * self.Mff_nocruise**2)
+            W4_W5_ferry = np.sqrt(1 / mass_fractions["ferry"] * self.Mff_nocruise**2)
+        elif self.mission_type == MissionType.FERRY:
+            W4_W5_harmonic = 1 / mass_fractions["harmonic"] * self.Mff_nocruise
+            W4_W5_design = 1 / mass_fractions["design"] * self.Mff_nocruise
+            W4_W5_maxrange = 1 / mass_fractions["maxrange"] * self.Mff_nocruise
+            W4_W5_ferry = 1 / mass_fractions["ferry"] * self.Mff_nocruise
         
         return {
             "harmonic": W4_W5_harmonic,
