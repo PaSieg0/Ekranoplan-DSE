@@ -7,6 +7,7 @@ from utils import Data, ISA
 from ClassIWeightEstimation import ClassI, MissionType
 from functools import lru_cache
 from tqdm import tqdm
+from scipy.interpolate import interp1d
 
 class AltitudeVelocity:
     def __init__(self, aircraft_data: Data, mission_type: MissionType):
@@ -34,7 +35,7 @@ class AltitudeVelocity:
         """Cached method to get air density at a given altitude."""
         return ISA(h).rho
 
-    def calculate_power_required(self, V: float, h: float) -> float:
+    def calculate_power_required(self, V: float, h: float, RoC: float=0) -> float:
         """
         Calculate the power required for the aircraft at different velocities.
         """
@@ -44,7 +45,7 @@ class AltitudeVelocity:
         Cl = self._mtow / qS
         Cd = self._Cd0 + Cl**2 * self._k
         
-        return Cd * qS * V
+        return Cd * qS * V + self._mtow * RoC
 
     def calculate_power_availabe(self, h: float) -> float:
         """
@@ -325,6 +326,31 @@ class AltitudeVelocity:
         else:
             max_stall = None
 
+        # Fill between zero points (thrust limit) and the x-axis (velocity axis)
+        if len(zero_points) > 0:
+            # Sort by velocity for proper fill
+            idx = np.argsort(zero_points[:, 0])
+            zero_points_sorted = zero_points[idx]
+            plt.fill_between(
+                zero_points_sorted[:, 0],
+                0,
+                zero_points_sorted[:, 1],
+                color='lightgreen',
+                alpha=0.3,
+            )
+        # Fill between stall points (stall limit) and the x-axis (velocity axis)
+        if len(stall_points) > 0:
+            # Sort by velocity for proper fill
+            idx = np.argsort(stall_points[:, 0])
+            stall_points_sorted = stall_points[idx]
+            plt.fill_between(
+            stall_points_sorted[:, 0],
+            0,
+            stall_points_sorted[:, 1],
+            color='lightgreen',
+            alpha=0.3,
+            )
+
         # Determine which point has the highest altitude
         if max_zero is not None and (max_stall is None or max_zero[1] >= max_stall[1]):
             h_max_point = max_zero
@@ -398,6 +424,10 @@ if __name__ == "__main__":
     # altitude_velocity.plot_power_curve(h)
     # altitude_velocity.plot_RoC_line(h)
     altitude_velocity.plot_limit_points(height_resolution=0.5)
+    
+    cruise_speed = aircraft_data.data['requirements']['cruise_speed']
+    power_required_cruise = altitude_velocity.calculate_power_required(cruise_speed, 0)
+    print(f"Power required to cruise at h=0 and V={cruise_speed} m/s: {power_required_cruise:.2f} W")
 
     print(f"Max RoC at h = 0 is {altitude_velocity.calculate_max_RoC(0)[0] * 196.85} ft/min")
     print(f"Max RoC at h = 3048 is {altitude_velocity.calculate_max_RoC(3048)[0] * 196.85} ft/min")

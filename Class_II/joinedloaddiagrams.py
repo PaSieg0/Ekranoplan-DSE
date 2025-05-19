@@ -3,8 +3,7 @@ from gustloads import Calculate_K_g, Calculate_mu, Calculate_V_b, Calculate_U_re
 
 import numpy as np
 import matplotlib.pyplot as plt
-from utils import Data
-from ISA_Class import ISA
+from utils import Data, ISA
 
 
 def plot_complete_load_diagram(aircraft_data, h, plot=False):
@@ -15,7 +14,7 @@ def plot_complete_load_diagram(aircraft_data, h, plot=False):
     S = W_final / aircraft_data.data["outputs"]["design"]["WS"]
     rho = ISA(h).rho
     CL_alpha = 5 #            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!     HARDOCDED FOR NOW
-    w = aircraft_data.data["outputs"]["design"]["WS"]  # N/m^2
+    w = W_final/S  # N/m^2
     w = w * 2.20462262 / (g * 3.2808399**2)  # lb/ft^2
     b = np.sqrt(aircraft_data.data["inputs"]["aspect_ratio"] * S)
     chord = S / b
@@ -102,7 +101,7 @@ def plot_complete_load_diagram(aircraft_data, h, plot=False):
     n_upper_1 = n_maneuver_positive_1
     n_lower_1 = np.minimum(n_maneuver_negative_1, n_gust_negative_1)
 
-    plt.fill_between(V_combined1, n_lower_1, n_upper_1, color="lime", alpha=0.5, label="Allowable Condition")
+    plt.fill_between(V_combined1, n_lower_1, n_upper_1, color="lightgreen", alpha=0.3, label="Allowable Condition")
 
     n_maneuver_positive_2 = np.interp(V_combined2, V_range, n_positive)
     n_maneuver_negative_2 = np.interp(V_combined2, V_range, n_negative)
@@ -113,7 +112,7 @@ def plot_complete_load_diagram(aircraft_data, h, plot=False):
     n_upper_2 = np.maximum(n_maneuver_positive_2, n_gust_positive_2)
     n_lower_2 = np.minimum(n_maneuver_negative_2, n_gust_negative_2)
 
-    plt.fill_between(V_combined2, n_lower_2, n_upper_2, color="lime", alpha=0.5)
+    plt.fill_between(V_combined2, n_lower_2, n_upper_2, color="lightgreen", alpha=0.3)
 
     # Annotate vertical limits for the green region
     max_n_allowable = np.max([*n_upper_1, *n_upper_2])
