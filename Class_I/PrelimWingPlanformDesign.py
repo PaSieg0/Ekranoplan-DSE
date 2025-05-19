@@ -1,11 +1,8 @@
 import numpy as np
-from enum import Enum, auto
-from utils import Data
-from ISA_Class import ISA
-
-class WingType(Enum):
-    HIGH = auto()
-    LOW = auto()
+import os
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from utils import Data, WingType, ISA
 
 class WingPlanform:
     def __init__(self, 

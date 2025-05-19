@@ -188,7 +188,7 @@
             "aspect_ratio": 6
         },
         "cg_range": {
-            "most_aft_cg": 32.14959439464186,
+            "most_aft_cg": 32.223661669804585,
             "most_aft_mission": "DESIGN_OEW_PAYLOAD_FUEL",
             "most_forward_cg": 30.031268435106355,
             "most_forward_mission": "DESIGN_OEW"

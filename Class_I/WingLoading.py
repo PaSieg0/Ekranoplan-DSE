@@ -1,10 +1,9 @@
 import os
-from enum import Enum, auto
-from ISA_Class import ISA
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import numpy as np
 import matplotlib.pyplot as plt
-from ClassIWeightEstimation import AircraftType, MissionType
-from utils import Data
+from utils import Data, MissionType, ISA, AircraftType
 
 class WingLoading:
     def __init__(self,

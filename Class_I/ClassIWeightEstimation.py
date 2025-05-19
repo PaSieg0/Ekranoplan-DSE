@@ -1,26 +1,17 @@
+import sys
 import os
-from enum import Enum, auto
 import pandas as pd
 import numpy as np
-from utils import Data
 
-class AircraftType(Enum):
-    JET = auto()
-    PROP = auto()
-    MIXED = auto()
-
-
-class MissionType(Enum):
-    DESIGN = auto()
-    FERRY = auto()
-    ALTITUDE = auto()
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from utils import Data, AircraftType, MissionType
 
 
 class ClassI:
     def __init__(self,
                  aircraft_data: Data,
                  mission_type: MissionType,
-                 reference_aircraft_path: str='ReferenceAircraft.xlsx'
+                 reference_aircraft_path: str='Class_I/ReferenceAircraft.xlsx'
                  ) -> None:
         self.design_file = f'design{aircraft_data.data["design_id"]}.json'
         self.aircraft_data = aircraft_data

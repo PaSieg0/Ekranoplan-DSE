@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from utils import Data
-from ClassIWeightEstimation import ClassI, MissionType
+from Class_I.ClassIWeightEstimation import ClassI, MissionType
 
 
 class RangeCalculator:

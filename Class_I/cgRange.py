@@ -1,14 +1,8 @@
-from utils import Data
+import os
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from utils import Data, MissionType, LoadCase
 import numpy as np
-from ClassIWeightEstimation import MissionType
-from enum import Enum, auto
-
-class LoadCase(Enum):
-    OEW = auto()
-    OEW_PAYLOAD = auto()
-    OEW_PAYLOAD_FUEL = auto()
-    OEW_FUEL = auto()
-
 
 class CGRange:
     def __init__(self, aircraft_data: Data):

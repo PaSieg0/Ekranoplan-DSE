@@ -1,12 +1,12 @@
 import os
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import numpy as np
 from scipy.optimize import fsolve
 from WingLoading import main, WingLoading
-from ClassIWeightEstimation import ClassI, MissionType, AircraftType
+from ClassIWeightEstimation import ClassI
 import matplotlib.pyplot as plt
-from ISA_Class import ISA
-from utils import Data
-from PrelimWingPlanformDesign import WingType
+from utils import Data, ISA, MissionType, AircraftType, WingType
 
 def solve_hb(target_A_A):
     h_b = np.arange(0, 2, 0.00001)

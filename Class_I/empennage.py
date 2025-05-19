@@ -1,15 +1,10 @@
 import os
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import pandas as pd
 import numpy as np
-from utils import Data
-from enum import Enum, auto
+from utils import Data, EmpType
 
-class EmpType(Enum):
-    CRUCIFORM = auto()
-    T_TAIL = auto()
-    CONVENTIONAL = auto()
-    H_TAIL = auto()
-    NONE = auto()
 class Empennage:
     def __init__(self, aircraft_data: Data):
         self.design_number = aircraft_data.data['design_id']

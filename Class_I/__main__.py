@@ -1,9 +1,11 @@
 import os
-from utils import Data, generate_df
 from Iteration import AircraftIteration
 from ClassIWeightEstimation import MissionType
 from bar_graph import plot_bar_graph
-from Json_to_excel import design_json_to_excel
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+from utils import design_json_to_excel,Data, generate_df
 from Fuselage import Fuselage
 from PrelimWingPlanformDesign import WingPlanform
 from Cd0Estimation import Cd0Estimation
