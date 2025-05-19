@@ -188,10 +188,14 @@ class RangeCalculator:
         # Create plot
         fig, ax = plt.subplots(figsize=(10, 6))
         ax.plot(x_coords, y_coords, marker='o', linestyle='-', color='b', label='Payload-Range Curve')
+        # Fill the area under the curve with light green
+        ax.fill_between(x_coords, y_coords, color='lightgreen', alpha=0.3)
         
         # Highlight the design point (index 2)
         ax.plot(*points[2], color='lime', label='Design Point', marker='o', markersize=8)
         
+        ax.set_xlim(left=0)
+        ax.set_ylim(bottom=0)
         ax.set_xlabel('Range (nautical miles)')
         ax.set_ylabel('Payload (tonnes)')
         ax.legend(loc='upper right')
