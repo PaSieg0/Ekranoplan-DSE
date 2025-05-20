@@ -1,4 +1,4 @@
-from maneuverloads import calculante_n_limits, max_n, min_n
+from maneuverloads import calculate_n_limits, max_n, min_n, calculate_n
 from gustloads import Calculate_K_g, Calculate_mu, Calculate_V_b, Calculate_U_ref
 
 import numpy as np
@@ -9,9 +9,9 @@ from utils import Data, ISA
 def plot_complete_load_diagram(aircraft_data, h, plot=False):
     # ====== Gust Load Point Calculation ======
     g = 9.80665  # m/s²
-    W_final = aircraft_data.data["outputs"]["design"]["MTOW"]
+    W_final = aircraft_data.data["outputs"]["design"]["OEW"]
     U_ref = Calculate_U_ref(h / 0.3048)  # Altitude in ft
-    S = W_final / aircraft_data.data["outputs"]["design"]["WS"]
+    S = aircraft_data.data["outputs"]["design"]["S"]
     rho = ISA(h).rho
     CL_alpha = 5 #            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!     HARDOCDED FOR NOW
     w = W_final/S  # N/m^2
@@ -46,8 +46,11 @@ def plot_complete_load_diagram(aircraft_data, h, plot=False):
     V_cruise = aircraft_data.data["requirements"]["cruise_speed"]
     V_dive = V_cruise / 0.8
     V_range = np.arange(0, V_dive, 0.1)
-    n_positive = [calculante_n_limits(rho, CLmax_clean, W, S, V, nmax, nmin, V_cruise, V_dive) for V in V_range]
-    n_negative = [calculante_n_limits(rho, -CLmax_clean, W, S, V, nmax, nmin, V_cruise, V_dive) for V in V_range]
+    n_positive = [calculate_n_limits(rho, CLmax_clean, W, S, V, nmax, nmin, V_cruise, V_dive) for V in V_range]
+    n_stall_positive = [calculate_n(rho, CLmax_clean, W, S, V) for V in V_range]
+
+    n_negative = [calculate_n_limits(rho, -CLmax_clean, W, S, V, nmax, nmin, V_cruise, V_dive) for V in V_range]
+    n_stall_negative = [calculate_n(rho, -CLmax_clean, W, S, V) for V in V_range]
 
     # ====== Plotting ======
     plt.figure(figsize=(10, 6))
@@ -57,7 +60,10 @@ def plot_complete_load_diagram(aircraft_data, h, plot=False):
 
     # Maneuver envelope
     plt.plot(V_range, n_positive, label="Maneuver Envelope", color="blue")
+    plt.plot(V_range, n_stall_positive, color="blue", linestyle=":")
     plt.plot(V_range, n_negative, color="blue")
+    plt.plot(V_range, n_stall_negative, color="blue", linestyle=":")
+
     plt.plot([V_dive, V_dive], [0, nmax], color='blue', linestyle='-', linewidth=1.5)
 
     # ====== Gust Envelope ======
@@ -94,23 +100,27 @@ def plot_complete_load_diagram(aircraft_data, h, plot=False):
 
     n_maneuver_positive_1 = np.interp(V_combined1, V_range, n_positive)
     n_maneuver_negative_1 = np.interp(V_combined1, V_range, n_negative)
+    n_stall_positive_1 = np.interp(V_combined1, V_range, n_stall_positive)
+    n_stall_negative_1 = np.interp(V_combined1, V_range, n_stall_negative)
     n_gust_positive_1 = np.interp(V_combined1, pos_V, pos_n)
     n_gust_negative_1 = np.interp(V_combined1, neg_V, neg_n)
 
     # Adjust the upper and lower bounds to respect n_positive as a hard limit
-    n_upper_1 = n_maneuver_positive_1
-    n_lower_1 = np.minimum(n_maneuver_negative_1, n_gust_negative_1)
+    n_upper_1 = np.minimum(n_maneuver_positive_1, n_stall_positive_1)
+    n_lower_1 = np.maximum(n_maneuver_negative_1, n_stall_negative_1)
 
     plt.fill_between(V_combined1, n_lower_1, n_upper_1, color="lightgreen", alpha=0.3, label="Allowable Condition")
 
     n_maneuver_positive_2 = np.interp(V_combined2, V_range, n_positive)
     n_maneuver_negative_2 = np.interp(V_combined2, V_range, n_negative)
+    n_stall_positive_2 = np.interp(V_combined2, V_range, n_stall_positive)
+    n_stall_negative_2 = np.interp(V_combined2, V_range, n_stall_negative)
     n_gust_positive_2 = np.interp(V_combined2, pos_V, pos_n)
     n_gust_negative_2 = np.interp(V_combined2, neg_V, neg_n)
 
     # Adjust the upper and lower bounds to respect n_positive as a hard limit
-    n_upper_2 = np.maximum(n_maneuver_positive_2, n_gust_positive_2)
-    n_lower_2 = np.minimum(n_maneuver_negative_2, n_gust_negative_2)
+    n_upper_2 = np.minimum(np.maximum(n_maneuver_positive_2, n_gust_positive_2), n_stall_positive_2)
+    n_lower_2 = np.maximum(np.minimum(n_maneuver_negative_2, n_gust_negative_2), n_stall_negative_2)
 
     plt.fill_between(V_combined2, n_lower_2, n_upper_2, color="lightgreen", alpha=0.3)
 
@@ -123,6 +133,7 @@ def plot_complete_load_diagram(aircraft_data, h, plot=False):
     # Find the velocity where n_positive is equal to 1
     plt.plot([V_at_n1, V_at_n1], [-1, 1], color='magenta', linestyle='--', label='Stall Speed', linewidth=1.5)
 
+    plt.ylim(min_n_allowable - 0.2, max_n_allowable + 0.2)
     plt.grid(True, linestyle=":", alpha=0.7)
     plt.legend()
     plt.tight_layout()
