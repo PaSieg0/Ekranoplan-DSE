@@ -80,7 +80,32 @@ class AltitudeVelocity:
             plt.plot(velocity_range, power_required, label=f'Power Required at {h} m', color=color_list[i % len(color_list)])
             plt.plot(velocity_range, power_available, label=f'Power Available at {h} m', color=color_list[i % len(color_list)])
 
-        plt.title(f'Power Required vs Power Available')
+        plt.title(f'Power Required and Power Available vs Velocity')
+        plt.xlabel('Velocity (m/s)')
+        plt.ylabel('Power (W)')
+        plt.legend()
+        plt.grid()
+        plt.show()
+
+    def plot_force_curve(self, h_list: np.array) -> None:
+        """
+        Plot the power required and available curves.
+        """
+        plt.figure(figsize=(10, 6))
+        color_list = ['b', 'g', 'r', 'c', 'm', 'y', 'k']
+        
+        for i, h in enumerate(h_list):
+            V_stall = self.calculate_stall_speed(h)
+            velocity_range = np.linspace(V_stall, self.dive_speed, self.velocity_steps)
+            
+            # Vectorized calculations instead of list comprehensions
+            power_required = np.array([self.calculate_power_required(v, h)/v for v in velocity_range])
+            power_available = np.array([self.calculate_power_available(h)/v for v in velocity_range])
+            
+            plt.plot(velocity_range, power_required, label=f'Drag at {h} m', color=color_list[i % len(color_list)])
+            plt.plot(velocity_range, power_available, label=f'Thrust Available at {h} m', color=color_list[i % len(color_list)])
+
+        plt.title(f'Thrust and Drag vs Velocity')
         plt.xlabel('Velocity (m/s)')
         plt.ylabel('Power (W)')
         plt.legend()
@@ -126,6 +151,28 @@ class AltitudeVelocity:
         max_aoc_idx = np.argmax(AoC_values)
         
         return AoC_values[max_aoc_idx], velocity_range[max_aoc_idx]
+    
+    def calculate_min_RoD(self, h: float) -> tuple:
+        """Find the maximum Rate of Climb and corresponding velocity at a given altitude."""
+        V_stall = self.calculate_stall_speed(h)
+        velocity_range = np.linspace(V_stall, self.dive_speed, self.velocity_steps)
+        
+        RoC_values = self.calculate_RoC_vectorized(velocity_range, h)
+        max_roc_idx = np.argmax(RoC_values)
+        
+        RoD = -self.calculate_power_required(velocity_range[max_roc_idx], h, 0)/self._mtow
+        
+        return RoD, velocity_range[max_roc_idx]
+    
+    def calculate_min_AoD(self, h: float) -> tuple:
+        """Find the maximum Angle of Climb and corresponding velocity at a given altitude."""
+        V_stall = self.calculate_stall_speed(h)
+        velocity_range = np.linspace(V_stall, self.dive_speed, self.velocity_steps)
+        
+        AoD_values = [np.arcsin(-self.calculate_power_required(V, h, 0)/V/self._mtow) for V in velocity_range]
+        max_aoc_idx = np.argmax(AoD_values)
+        
+        return AoD_values[max_aoc_idx], velocity_range[max_aoc_idx]
     
     def plot_RoC_line(self, h_list: np.array) -> None:
         plt.figure(figsize=(10, 6))

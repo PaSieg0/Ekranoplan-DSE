@@ -16,10 +16,11 @@ if __name__ == "__main__":
     h_WIG = 5
     h_WOG = 3048
     RoC_req = 1000/196.85
-    _, V_max_roc_alt = altitude_velocity.calculate_max_RoC(h_WOG)
-    _, V_max_aoc_alt = altitude_velocity.calculate_max_AoC(h_WOG)
-    RoD = -altitude_velocity.calculate_power_required(V_max_roc_alt, h_WOG, 0)/altitude_velocity._mtow * 196.85
-    AoD = np.arcsin(-altitude_velocity.calculate_power_required(V_max_aoc_alt, h_WOG, 0)/V_max_aoc_alt/altitude_velocity._mtow) * 180/np.pi
-    print(f'Min RoD for Pr=0W at h=3048m: {RoD} ft/min at V = {V_max_roc_alt} m/s')
-    print(f'Min AoD for Pr=0W at h=3048m: {AoD} deg at V = {V_max_aoc_alt} m/s')
+    RoD, V_min_rod_alt = altitude_velocity.calculate_min_RoD(h_WOG)
+    AoD, V_min_aod_alt = altitude_velocity.calculate_min_AoD(h_WOG)
+
+    altitude_velocity.plot_force_curve([h_WIG, h_WOG])
+
+    print(f'Min RoD for Pr=0W at h=3048m: {RoD*196.85} ft/min at V = {V_min_rod_alt} m/s')
+    print(f'Min AoD for Pr=0W at h=3048m: {AoD*180/np.pi} deg at V = {V_min_aod_alt} m/s')
 
