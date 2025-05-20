@@ -115,7 +115,14 @@ class Empennage:
             self.chord_tip_v = self.chord_h(span_wise_v_pos)
             self.chord_root_v = 2 * self.S_v / (self.b_v * (1 + self.taper_v))
             self.taper_v = min(self.chord_root_h/self.chord_root_v, 0.7)
+            self.chord_root_v = 2 * self.S_v / (self.b_v * (1 + self.taper_v))
             self.chord_tip_v = self.taper_v * self.chord_root_v
+
+            self.chord_tip_h = self.chord_root_h - (self.b_h - self.fus_sep)/2 * np.tan(np.deg2rad(self.sweep_h))
+            self.taper_h = self.chord_tip_h / self.chord_root_h
+
+            self.mac_h = (2 / 3) * self.chord_root_h * ((1 + self.taper_h + self.taper_h**2) / (1 + self.taper_h))
+
             self.mac_v = (2 / 3) * self.chord_root_v * ((1 + self.taper_v + self.taper_v**2) / (1 + self.taper_v))
             self.h_tail_pos = self.d_fuselage + self.b_v
 
