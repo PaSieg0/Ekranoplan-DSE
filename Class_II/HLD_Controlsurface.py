@@ -67,29 +67,9 @@ class MobileSurfaceDesign:
     def c_Clp(self, y):
         return self.chord_span_function(y)*y**2
 
-    def aileron_effectiveness(self, plot = False):
-        # Approximate data from the graph
-        x = np.array([0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7])
-        y = np.array([0.1, 0.25, 0.4, 0.5, 0.6, 0.68, 0.738, 0.8])
-
-        # Example: Evaluate function
-        cs = CubicSpline(x, y, bc_type='natural')  # natural = zero 2nd derivative at endpoints
-
-        # Evaluate spline
-        x_vals = np.linspace(0.05, 0.7, 100)
-        y_vals = cs(x_vals)
-        # Plotting
-        if plot:
-            plt.plot(x, y, 'o', label='Data Points')
-            plt.plot(x_vals, y_vals, '-', label='Interpolated Curve')
-            plt.xlabel('Control-surface-to-lifting-surface-chord ratio')
-            plt.ylabel('τ (Aileron Effectiveness)')
-            plt.title('Interpolated Aileron Effectiveness Curve')
-            plt.legend()
-            plt.grid(True)
-            plt.show()
-
-        return cs(self.aileron_chord_ratio)
+    def aileron_effectiveness(self):
+        r = self.aileron_chord_ratio
+        return -6.624*r**4 + 12.07*r**3 - 8.292*r**2 + 3.295*r + 0.004942
 
     def calculate_yaw_rate(self):
 
@@ -204,15 +184,10 @@ class MobileSurfaceDesign:
         self.CL_increase_TO_TE = self.calculate_CLmax_increase(self.tot_TE_flap_area,self.clmax_increase*0.6)
         self.get_clmax_increase(LE=True)
         self.required_CLmax_increase_LE = self.required_CLmax_increase - self.CL_increase
-        print(self.CL_increase)
-        print(self.required_CLmax_increase_LE)
         self.LE_flap_area = self.calculate_flapped_area(LE=True)/2
         self.tot_LE_flap_area = self.LE_flap_area*2
-        print(self.LE_flap_area)
 
         self.LE_flap_end = self.calculate_flap_endpoint(LE=True)
-        print(self.LE_flap_end)
-
         self.CL_increase_TO = self.calculate_CLmax_increase(self.tot_LE_flap_area,self.clmax_increase*0.6)
         self.CL_max_TO = self.CLMax_clean + self.CL_increase_TO + self.CL_increase_TO_TE
 
@@ -269,22 +244,40 @@ class MobileSurfaceDesign:
         y_tip_TE_flap = y_tip_LE_flap - self.chord_span_function(self.flap_end)*self.rel_flap_chord
 
         fig, ax = plt.subplots()
-
+        # Fuselage centerline
+        ax.plot([self.d_fuselage/2, self.d_fuselage/2], [-10, 10], color='green', linestyle='--')
+        ax.plot([-self.d_fuselage/2, -self.d_fuselage/2], [-10, 10], color='green', linestyle='--')
         ax.plot(self.b_array, leading_edge, color='blue')
-        ax.plot([0,0],[y_root_LE, y_root_TE], color='blue')
+        ax.plot(-self.b_array, leading_edge, color='blue')  # Mirror
+
+        ax.plot([0,0],[y_root_LE, y_root_TE], color='blue')  # Centerline, no mirror needed
+
         ax.plot([self.b/2, self.b/2], [y_tip_LE,y_tip_TE], color='blue')
+        ax.plot([-self.b/2, -self.b/2], [y_tip_LE,y_tip_TE], color='blue')  # Mirror
+
         ax.plot([0, self.b/2], [y_root_TE, y_tip_TE], color='blue')
+        ax.plot([0, -self.b/2], [y_root_TE, y_tip_TE], color='blue')  # Mirror
 
+        # Ailerons
         ax.plot([self.aileron_start, self.aileron_start], [y_root_LE_aileron, y_root_TE_aileron], color='red')
+        ax.plot([-self.aileron_start, -self.aileron_start], [y_root_LE_aileron, y_root_TE_aileron], color='red')  # Mirror
+
         ax.plot([self.aileron_end, self.aileron_end], [y_tip_LE_aileron, y_tip_TE_aileron], color='red')
+        ax.plot([-self.aileron_end, -self.aileron_end], [y_tip_LE_aileron, y_tip_TE_aileron], color='red')  # Mirror
+
         ax.plot([self.aileron_start, self.aileron_end], [y_root_LE_aileron, y_tip_LE_aileron], color='red')
+        ax.plot([-self.aileron_start, -self.aileron_end], [y_root_LE_aileron, y_tip_LE_aileron], color='red')  # Mirror
 
-        ax.plot([self.d_fuselage/2, self.d_fuselage/2], [y_root_LE, y_root_TE], color='green', linestyle='--')
-
+        # Flaps
         ax.plot([self.flap_start, self.flap_start], [y_root_LE_flap, y_root_TE_flap], color='orange')
+        ax.plot([-self.flap_start, -self.flap_start], [y_root_LE_flap, y_root_TE_flap], color='orange')
+
         ax.plot([self.flap_end, self.flap_end], [y_tip_LE_flap, y_tip_TE_flap], color='orange')
+        ax.plot([-self.flap_end, -self.flap_end], [y_tip_LE_flap, y_tip_TE_flap], color='orange')
 
         ax.plot([self.flap_start, self.flap_end], [y_root_LE_flap, y_tip_LE_flap], color='orange')
+        ax.plot([-self.flap_start, -self.flap_end], [y_root_LE_flap, y_tip_LE_flap], color='orange')
+
 
         if self.LE_flap:
             y_root_LE_LE_flap = self.leading_edge(self.flap_start)
@@ -293,8 +286,13 @@ class MobileSurfaceDesign:
             y_tip_LE_LE_flap = self.leading_edge(self.LE_flap_end)
             y_tip_TE_LE_flap = y_tip_LE_LE_flap - self.chord_span_function(self.LE_flap_end)*self.rel_LE_flap_chord
             ax.plot([self.flap_start, self.LE_flap_end], [y_root_TE_LE_flap, y_tip_TE_LE_flap], color='purple')
+            ax.plot([-self.flap_start, -self.LE_flap_end], [y_root_TE_LE_flap, y_tip_TE_LE_flap], color='purple')
+
             ax.plot([self.flap_start, self.flap_start], [y_root_LE_LE_flap, y_root_TE_LE_flap], color='purple')
+            ax.plot([-self.flap_start, -self.flap_start], [y_root_LE_LE_flap, y_root_TE_LE_flap], color='purple')
+
             ax.plot([self.LE_flap_end, self.LE_flap_end], [y_tip_LE_LE_flap, y_tip_TE_LE_flap], color='purple')
+            ax.plot([-self.LE_flap_end, -self.LE_flap_end], [y_tip_LE_LE_flap, y_tip_TE_LE_flap], color='purple')
 
 
         ax.set_aspect('equal', adjustable='box')
