@@ -146,7 +146,7 @@ class Cd0Estimation:
         
 
 if __name__ == '__main__':
-    data = Data('design2.json')
+    data = Data('design3.json')
     est = Cd0Estimation(
         aircraft_data=data,
         mission_type=MissionType.DESIGN
