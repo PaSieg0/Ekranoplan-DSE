@@ -166,6 +166,10 @@ class AircraftIteration:
         self.aircraft_data.data['outputs']['max']['reserve_fuel'] = max(self.aircraft_data.data['outputs']['design']['reserve_fuel'], self.aircraft_data.data['outputs']['ferry']['reserve_fuel'], self.aircraft_data.data['outputs']['altitude']['reserve_fuel'])
         self.aircraft_data.data['outputs']['max']['max_fuel'] = 1.1 * self.aircraft_data.data['outputs']['max']['total_fuel']
         self.aircraft_data.data['outputs']['max']['LD'] = max(self.aircraft_data.data['outputs']['design']['LD'], self.aircraft_data.data['outputs']['ferry']['LD'], self.aircraft_data.data['outputs']['altitude']['LD'])
+        self.aircraft_data.data['outputs']['max']['total_fuel_L'] = max(self.aircraft_data.data['outputs']['design']['total_fuel_L'], self.aircraft_data.data['outputs']['ferry']['total_fuel_L'], self.aircraft_data.data['outputs']['altitude']['total_fuel_L'])
+        self.aircraft_data.data['outputs']['max']['mission_fuel_L'] = max(self.aircraft_data.data['outputs']['design']['mission_fuel_L'], self.aircraft_data.data['outputs']['ferry']['mission_fuel_L'], self.aircraft_data.data['outputs']['altitude']['mission_fuel_L'])
+        self.aircraft_data.data['outputs']['max']['reserve_fuel_L'] = max(self.aircraft_data.data['outputs']['design']['reserve_fuel_L'], self.aircraft_data.data['outputs']['ferry']['reserve_fuel_L'], self.aircraft_data.data['outputs']['altitude']['reserve_fuel_L'])
+        self.aircraft_data.data['outputs']['max']['max_fuel_L'] = 1.1 * self.aircraft_data.data['outputs']['max']['total_fuel_L']
 
 if __name__=='__main__':
     iteration = AircraftIteration(
