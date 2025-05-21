@@ -109,7 +109,7 @@ def plot_complete_load_diagram(aircraft_data, h, plot=False):
     n_upper_1 = np.minimum(n_maneuver_positive_1, n_stall_positive_1)
     n_lower_1 = np.maximum(n_maneuver_negative_1, n_stall_negative_1)
 
-    plt.fill_between(V_combined1, n_lower_1, n_upper_1, color="lightgreen", alpha=0.3, label="Allowable Condition")
+    plt.fill_between(V_combined1, n_lower_1, n_upper_1, color="lightgreen", alpha=0.3, label="Allowable Condition", edgecolor='none')
 
     n_maneuver_positive_2 = np.interp(V_combined2, V_range, n_positive)
     n_maneuver_negative_2 = np.interp(V_combined2, V_range, n_negative)
@@ -122,7 +122,7 @@ def plot_complete_load_diagram(aircraft_data, h, plot=False):
     n_upper_2 = np.minimum(np.maximum(n_maneuver_positive_2, n_gust_positive_2), n_stall_positive_2)
     n_lower_2 = np.maximum(np.minimum(n_maneuver_negative_2, n_gust_negative_2), n_stall_negative_2)
 
-    plt.fill_between(V_combined2, n_lower_2, n_upper_2, color="lightgreen", alpha=0.3)
+    plt.fill_between(V_combined2, n_lower_2, n_upper_2, color="lightgreen", alpha=0.3, edgecolor='none')
 
     # Annotate vertical limits for the green region
     max_n_allowable = np.max([*n_upper_1, *n_upper_2])

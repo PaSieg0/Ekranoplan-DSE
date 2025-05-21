@@ -385,6 +385,7 @@ class AltitudeVelocity:
                 zero_points_sorted[:, 1],
                 color='lightgreen',
                 alpha=0.3,
+                edgecolor='none'
             )
         # Fill between stall points (stall limit) and the x-axis (velocity axis)
         if len(stall_points) > 0:
@@ -397,6 +398,7 @@ class AltitudeVelocity:
             stall_points_sorted[:, 1],
             color='lightgreen',
             alpha=0.3,
+            edgecolor='none'
             )
 
         # Determine which point has the highest altitude
