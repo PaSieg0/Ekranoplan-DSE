@@ -6,7 +6,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 class CGRange:
-    def __init__(self, aircraft_data: Data):
+    def __init__(self, aircraft_data: Data, plot=False):
         self.design_number = aircraft_data.data['design_id']
         self.design_file = f"design{self.design_number}.json"
         self.aircraft_data = aircraft_data
@@ -16,6 +16,8 @@ class CGRange:
 
         self.most_forward_cg = float('inf')
         self.most_forward_mission = None
+
+        self.plot = plot
 
     def calculate_cg_range(self):
         g = 9.81
@@ -73,27 +75,28 @@ class CGRange:
         masses_kg = [w / g for w in weights_newton]
         masses_tonnes = np.array(masses_kg) / 1000  # Convert once
 
-        fig, ax = plt.subplots()
-        ax.scatter(cgs, masses_tonnes, label="CG vs Mass", color='blue', marker='o')
+        if self.plot:
+            fig, ax = plt.subplots()
+            ax.scatter(cgs, masses_tonnes, label="CG vs Mass", color='blue', marker='o')
 
-        aft_index = min(range(len(cgs)), key=lambda i: abs(cgs[i] - self.most_aft_cg))
-        forward_index = min(range(len(cgs)), key=lambda i: abs(cgs[i] - self.most_forward_cg))
+            aft_index = min(range(len(cgs)), key=lambda i: abs(cgs[i] - self.most_aft_cg))
+            forward_index = min(range(len(cgs)), key=lambda i: abs(cgs[i] - self.most_forward_cg))
 
-        ax.axvline(self.most_aft_cg, color='r', linestyle='--', label="Most Aft CG")
-        ax.axvline(self.most_forward_cg, color='g', linestyle='--', label="Most Forward CG")
+            ax.axvline(self.most_aft_cg, color='r', linestyle='--', label="Most Aft CG")
+            ax.axvline(self.most_forward_cg, color='g', linestyle='--', label="Most Forward CG")
 
-        ax.annotate(labels[aft_index], (cgs[aft_index], masses_tonnes[aft_index]),
-                    textcoords="offset points", xytext=(0, 0), ha='center', fontsize=8, rotation=-20)
+            ax.annotate(labels[aft_index], (cgs[aft_index], masses_tonnes[aft_index]),
+                        textcoords="offset points", xytext=(0, 0), ha='center', fontsize=8, rotation=-20)
 
-        ax.annotate(labels[forward_index], (cgs[forward_index], masses_tonnes[forward_index]),
-                    textcoords="offset points", xytext=(10, 0), ha='center', fontsize=8, rotation=-20)
+            ax.annotate(labels[forward_index], (cgs[forward_index], masses_tonnes[forward_index]),
+                        textcoords="offset points", xytext=(10, 0), ha='center', fontsize=8, rotation=-20)
 
-        ax.set_title(f"Total Mass vs CG Position design {self.design_number}")
-        ax.set_xlabel("x_cg [m]")
-        ax.set_ylabel("Total Mass [tonnes]")
-        ax.grid(True)
-        plt.tight_layout()
-        plt.show()
+            ax.set_title(f"Total Mass vs CG Position design {self.design_number}")
+            ax.set_xlabel("x_cg [m]")
+            ax.set_ylabel("Total Mass [tonnes]")
+            ax.grid(True)
+            plt.tight_layout()
+            plt.show()
 
 
 

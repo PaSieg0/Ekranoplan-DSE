@@ -11,17 +11,18 @@ class Empennage:
         self.design_file = f"design{self.design_number}.json"
         self.aircraft_data = aircraft_data
         self.tail_type = EmpType[aircraft_data.data['inputs']['tail_type']]
+        if self.tail_type == EmpType.NONE:
+            return
 
         self.d_fuselage = self.aircraft_data.data['outputs']['general']['d_fuselage']
-        self.sweep_h = self.aircraft_data.data['inputs']['sweep_h']
-        self.sweep_v = self.aircraft_data.data['inputs']['sweep_v']
         self.aspect_h = self.aircraft_data.data['inputs']['aspect_h']
         self.aspect_v = self.aircraft_data.data['inputs']['aspect_v']
         self.sweep_hc4 = self.aircraft_data.data['inputs']['sweep_hc4']
-        self.taper_h = self.aircraft_data.data['inputs']['taper_h']
-        self.taper_v = self.aircraft_data.data['inputs']['taper_v']
+        self.sweep_vc4 = self.aircraft_data.data['inputs']['sweep_vc4']
         self.b = self.aircraft_data.data['outputs']['max']['b']
         self.n_fuselages = self.aircraft_data.data['inputs']['n_fuselages']
+
+        self.x_c = 0
 
         self.v_position = self.aircraft_data.data['inputs']['v_position']
         self.h_position = self.aircraft_data.data['inputs']['h_position']
@@ -67,6 +68,9 @@ class Empennage:
         self.S_h = self.V_h * self.S * self.MAC / self.l_h
         self.S_v = self.V_v * self.S * self.b / self.l_v
 
+        self.taper_h = 0.2*(2-self.sweep_hc4*np.pi/180)
+        self.taper_v = 0.2*(2-self.sweep_vc4*np.pi/180)
+
         self.b_h = np.sqrt(self.S_h * self.aspect_h)
         self.b_v = np.sqrt(self.S_v * self.aspect_v)
 
@@ -75,6 +79,18 @@ class Empennage:
 
         self.chord_root_v = 2 * self.S_v / (self.b_v * (1 + self.taper_v))
         self.chord_tip_v = self.taper_v * self.chord_root_v
+
+        self.sweep_h = np.rad2deg(np.arctan(
+            np.tan(np.deg2rad(self.sweep_hc4)) -
+            ((4 / self.aspect_h) * (self.x_c - 0.25) *
+             ((1 - self.taper_h) / (1 + self.taper_h)))
+        ))
+
+        self.sweep_v = np.rad2deg(np.arctan(
+            np.tan(np.deg2rad(self.sweep_vc4)) -
+            ((4 / self.aspect_v) * (self.x_c - 0.25) *
+             ((1 - self.taper_v) / (1 + self.taper_v)))
+        ))
 
         self.mac_h = (2 / 3) * self.chord_root_h * ((1 + self.taper_h + self.taper_h**2) / (1 + self.taper_h))
         self.mac_v = (2 / 3) * self.chord_root_v * ((1 + self.taper_v + self.taper_v**2) / (1 + self.taper_v))
@@ -90,8 +106,6 @@ class Empennage:
         elif self.tail_type == EmpType.T_TAIL:
             self.h_tail_pos = self.b_v + self.d_fuselage
             v_x_LEMAC = self.calculate_LE_MAC(self.b_v, self.taper_v, self.sweep_v)
-            self.taper_v = min(self.chord_root_h/self.chord_root_v, 0.7)
-            self.chord_tip_v = self.taper_v * self.chord_root_v
 
             self.v_position = self.l_fuselage - self.aft_clearance - self.chord_root_v + v_x_LEMAC + 1/4*self.mac_v
             self.h_position = (self.v_position - v_x_LEMAC - 1/4*self.mac_v + np.tan(self.sweep_v*np.pi/180)*self.b_v + 1/4*self.chord_tip_v)/self.l_fuselage
@@ -108,13 +122,12 @@ class Empennage:
         elif self.tail_type == EmpType.H_TAIL:
             self.n_v_tails = 2
             self.S_v = self.S_v / self.n_v_tails
-            self.b_v = self.b_v / self.n_v_tails
+            self.b_v = np.sqrt(self.S_v * self.aspect_v)
             self.fus_sep = self.fus_separation()
             span_wise_v_pos = self.fus_sep / 2 + self.d_fuselage/2
 
             self.chord_tip_v = self.chord_h(span_wise_v_pos)
             self.chord_root_v = 2 * self.S_v / (self.b_v * (1 + self.taper_v))
-            self.taper_v = min(self.chord_root_h/self.chord_root_v, 0.7)
             self.chord_root_v = 2 * self.S_v / (self.b_v * (1 + self.taper_v))
             self.chord_tip_v = self.taper_v * self.chord_root_v
 
@@ -181,6 +194,7 @@ class Empennage:
         self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['sweep'] = self.sweep_h
         self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['sweep'] = self.sweep_v
         self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['sweep_c_4'] = self.sweep_hc4
+        self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['sweep_c_4'] = self.sweep_vc4
         self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['taper'] = self.taper_h
         self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['taper'] = self.taper_v
         self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['aspect_ratio'] = self.aspect_h
