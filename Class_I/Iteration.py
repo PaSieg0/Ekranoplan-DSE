@@ -20,6 +20,15 @@ def solve_hb(target_A_A):
     raise ValueError
 
 def Ainf_Ah(h_b):
+    # HB = np.arange(0,1.5,0.001)
+    # A_A = 1 - np.exp(-4.74*HB**0.814) - HB**2*np.exp(-3.88*HB**0.758)
+    # plt.plot(HB, A_A)
+    # plt.xlabel('h_b')
+    # plt.ylabel('Aeinf_Aeh')
+    # plt.xlim(-0.0001,1)
+    # plt.title('Aeinf_Aeh vs h_b')
+    # plt.grid()
+    # plt.show()
     return 1 - np.exp(-4.74*h_b**0.814) - h_b**2*np.exp(-3.88*h_b**0.758)
 
 class AircraftIteration:

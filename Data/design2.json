@@ -203,7 +203,7 @@
         "cg_range": {
             "most_aft_cg": 21.745765232653838,
             "most_aft_mission": "DESIGN_OEW_FUEL",
-            "most_forward_cg": 20.358577559881873,
+            "most_forward_cg": 20.35857755988161,
             "most_forward_mission": "ALTITUDE_OEW_PAYLOAD"
         },
         "empennage_design": {
