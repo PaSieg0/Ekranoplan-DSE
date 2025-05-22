@@ -1,7 +1,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import os
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from utils import Data
-from ClassIWeightEstimation import ClassI, MissionType
+from Class_I.ClassIWeightEstimation import ClassI, MissionType
 
 
 class RangeCalculator:
@@ -12,7 +15,7 @@ class RangeCalculator:
     generation for different aircraft types.
     """
     
-    def __init__(self, data_file=None, data_object=None):
+    def __init__(self, data_file=None, data_object=None, mission_type=MissionType.DESIGN):
         """
         Initialize the RangeCalculator with either a data file or a Data object.
         
@@ -28,28 +31,27 @@ class RangeCalculator:
             self.data = Data(data_file)
         else:
             raise ValueError("Either data_file or data_object must be provided")
+        
+        self.mission_type = mission_type
             
         # Extract common parameters from data
         self.aircraft_type = self.data.data["inputs"]['aircraft_type']
         self.eta_p = self.data.data["inputs"]['prop_efficiency']
         self.cp = self.data.data["inputs"]['prop_consumption']
         self.cj = self.data.data["inputs"]['jet_consumption']
-        self.V = self.data.data["requirements"]['cruise_speed']
+        self.V_cruise = self.data.data["requirements"]['cruise_speed']
+        self.V_cruise_high = self.data.data["requirements"]['cruise_speed']
         
         # Calculate L/D ratio
-        aspect_ratio = self.data.data["inputs"]['aspect_ratio']
-        oswald_factor = self.data.data["inputs"]['oswald_factor']
-        Cd0 = self.data.data["inputs"]['Cd0']
-        k_factor = self.data.data["outputs"]['design']['k']
-        
-        self.L_D = np.sqrt(np.pi * aspect_ratio * oswald_factor / (4 * Cd0))
-        self.L_D *= k_factor
+        self.L_D = self.data.data["outputs"]['design']['LD']
+        self.L_D_geometric = self.data.data["outputs"]['general']['LD_g']
         
         # Extract weight and fuel data
-        self.fuel_design = self.data.data["outputs"]['design']['total_fuel']
+        self.fuel_design = self.data.data["outputs"]['design']['mission_fuel']
         self.fuel_max = self.data.data["outputs"]['design']['max_fuel']
+        self.fuel_reserve = self.data.data["outputs"]['design']['reserve_fuel']
         self.design_payload = self.data.data["requirements"]['design_payload']
-        self.max_payload = 100_000  # This could be made configurable
+        self.max_payload = 100 * 1_000  # kg This could be made configurable !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         self.MTOW = self.data.data["outputs"]['design']['MTOW']
         
         # Calculate fuel fractions without cruise
@@ -58,7 +60,12 @@ class RangeCalculator:
         self.Mff_nocruise = 1
         for fraction in self.fuel_fracs_no_cruise.values():
             self.Mff_nocruise *= fraction
-    
+        if mission_type == MissionType.ALTITUDE:
+            self.class_i.LD = self.class_i.calculate_LD()
+            range_fraction_altitude = np.exp(-self.class_i.altitude_range_WOG*self.class_i.prop_consumption*9.81/self.class_i.prop_efficiency * (self.class_i.LD)**-1)
+            self.Mff_nocruise *= range_fraction_altitude
+
+        
     def calculate_range(self, W4_W5):
         """
         Calculate the range using the Breguet range equation.
@@ -69,10 +76,11 @@ class RangeCalculator:
         Returns:
             float: Range in meters
         """
+
         if self.aircraft_type == "PROP":
             R = (self.eta_p * self.L_D * np.log(W4_W5)) / (self.g * self.cp)
         elif self.aircraft_type == "JET":
-            R = (self.V * self.L_D * np.log(W4_W5)) / (self.g * self.cj)
+            R = (self.V_cruise * self.L_D * np.log(W4_W5)) / (self.g * self.cj)
         else:
             raise ValueError(f"Unknown aircraft type: {self.aircraft_type}")
         
@@ -88,8 +96,8 @@ class RangeCalculator:
         # Calculate mass fractions
         Mff_harmonic = 1 - (self.fuel_design - (self.max_payload - self.design_payload) * self.g) / self.MTOW
         Mff_design = 1 - self.fuel_design / self.MTOW
-        Mff_maxrange = 1 - self.fuel_max / self.MTOW
-        Mff_ferry = 1 - self.fuel_max / (self.MTOW - self.design_payload * self.g)
+        Mff_maxrange = 1 - (self.fuel_max - self.fuel_reserve) / self.MTOW
+        Mff_ferry = 1 - (self.fuel_max - self.fuel_reserve) / (self.MTOW - self.design_payload * self.g)
         
         return {
             "harmonic": Mff_harmonic,
@@ -108,10 +116,16 @@ class RangeCalculator:
         Returns:
             dict: Dictionary containing weight ratios
         """
-        W4_W5_harmonic = np.sqrt(1 / mass_fractions["harmonic"] * self.Mff_nocruise**2)
-        W4_W5_design = np.sqrt(1 / mass_fractions["design"] * self.Mff_nocruise**2)
-        W4_W5_maxrange = np.sqrt(1 / mass_fractions["maxrange"] * self.Mff_nocruise**2)
-        W4_W5_ferry = np.sqrt(1 / mass_fractions["ferry"] * self.Mff_nocruise**2)
+        if self.mission_type == MissionType.DESIGN or self.mission_type == MissionType.ALTITUDE:
+            W4_W5_harmonic = np.sqrt(1 / mass_fractions["harmonic"] * self.Mff_nocruise**2)
+            W4_W5_design = np.sqrt(1 / mass_fractions["design"] * self.Mff_nocruise**2)
+            W4_W5_maxrange = np.sqrt(1 / mass_fractions["maxrange"] * self.Mff_nocruise**2)
+            W4_W5_ferry = np.sqrt(1 / mass_fractions["ferry"] * self.Mff_nocruise**2)
+        elif self.mission_type == MissionType.FERRY:
+            W4_W5_harmonic = 1 / mass_fractions["harmonic"] * self.Mff_nocruise
+            W4_W5_design = 1 / mass_fractions["design"] * self.Mff_nocruise
+            W4_W5_maxrange = 1 / mass_fractions["maxrange"] * self.Mff_nocruise
+            W4_W5_ferry = 1 / mass_fractions["ferry"] * self.Mff_nocruise
         
         return {
             "harmonic": W4_W5_harmonic,
@@ -134,6 +148,13 @@ class RangeCalculator:
         range_design = self.calculate_range(weight_ratios["design"])
         range_max = self.calculate_range(weight_ratios["maxrange"])
         range_ferry = self.calculate_range(weight_ratios["ferry"])
+
+        if self.mission_type == MissionType.ALTITUDE:
+            range_harmonic += self.data.data['requirements']['altitude_range_WOG']
+            range_design += self.data.data['requirements']['altitude_range_WOG']
+            range_max += self.data.data['requirements']['altitude_range_WOG']
+            range_ferry += self.data.data['requirements']['altitude_range_WOG']
+
         
         return {
             "harmonic": range_harmonic,
@@ -190,14 +211,33 @@ class RangeCalculator:
         # Create plot
         fig, ax = plt.subplots(figsize=(10, 6))
         ax.plot(x_coords, y_coords, marker='o', linestyle='-', color='b', label='Payload-Range Curve')
+        # Fill the area under the curve with light green
+        ax.fill_between(x_coords, y_coords, color='lightgreen', alpha=0.3)
         
         # Highlight the design point (index 2)
         ax.plot(*points[2], color='lime', label='Design Point', marker='o', markersize=8)
+
+        # Annotate all points
+        labels = ['0 nm', 'Harmonic', 'Design', 'Max', 'Ferry']
+        xylabel = [(30, 5),(70, -6),(55, 10),(75, -10),(0, 50)]
+        for i, (x, y) in enumerate(points):
+            if i == 0:
+                continue
+            x_format = int(float('%.3g' % x))
+            y_format = float('%.3g' % y)
+            ax.annotate(f"{labels[i]}: {x_format} nm\n at {y_format} tonnes", 
+                        (x, y), 
+                        textcoords="offset points", 
+                        xytext=xylabel[i], 
+                        ha='center', 
+                        fontsize=11,
+                        arrowprops=dict(arrowstyle="->", color='black', lw=1))
         
+        ax.set_xlim(left=0)
+        ax.set_ylim(bottom=0)
         ax.set_xlabel('Range (nautical miles)')
         ax.set_ylabel('Payload (tonnes)')
-        ax.set_title('Payload-Range Diagram')
-        ax.legend(loc='lower left')
+        ax.legend(loc='upper right')
         ax.grid(True)
         
         if save_path:
@@ -272,8 +312,8 @@ class RangeCalculator:
     
 if __name__ == "__main__":
     # Example usage
-    data_file = "design1.json"
-    range_calculator = RangeCalculator(data_file=data_file)
+    data_file = "design3.json"
+    range_calculator = RangeCalculator(data_file=data_file, mission_type=MissionType.DESIGN)
     
     # Perform analysis and plot
     ranges_nm, points = range_calculator.analyze_and_plot(show=True)

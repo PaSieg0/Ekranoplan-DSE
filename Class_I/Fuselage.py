@@ -1,4 +1,7 @@
 import numpy as np
+import os
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from utils import Data
 
 class Fuselage:
@@ -11,9 +14,9 @@ class Fuselage:
         self.design_file = f"design{self.design_number}.json"
 
         # from Raymer's book
-        self.ltcd = 4.5 
-        self.lfd = 8.5 
-        self.lnd = 1.5 
+        self.ltcd = self.aircraft_data.data['inputs']['ltcd']  # tailcone length to diameter ratio
+        self.lfd = self.aircraft_data.data['inputs']['lfd']  # fuselage length to diameter ratio
+        self.lnd = self.aircraft_data.data['inputs']['lnd']  # nose length to diameter ratio
 
         self.cargo_width = self.aircraft_data.data['requirements']['cargo_width']
         self.cargo_height = self.aircraft_data.data['requirements']['cargo_height']
@@ -64,7 +67,7 @@ class Fuselage:
         self.aircraft_data.data['outputs']['general']['l_tailcone'] = self.ltc
         self.aircraft_data.data['outputs']['general']['l_nose'] = self.ln
         self.aircraft_data.data['outputs']['general']['l_cargo_straight'] = self.cargo_straight
-
+        self.aircraft_data.data['outputs']['general']['xcg_payload'] = (self.ln + self.tot_cargo_length/2)/self.lf
 
 if __name__ == "__main__":
     aircraft_data = Data("design4.json")

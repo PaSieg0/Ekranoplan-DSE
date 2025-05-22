@@ -1,26 +1,17 @@
+import sys
 import os
-from enum import Enum, auto
 import pandas as pd
 import numpy as np
-from utils import Data
 
-class AircraftType(Enum):
-    JET = auto()
-    PROP = auto()
-    MIXED = auto()
-
-
-class MissionType(Enum):
-    DESIGN = auto()
-    FERRY = auto()
-    ALTITUDE = auto()
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from utils import Data, AircraftType, MissionType
 
 
 class ClassI:
     def __init__(self,
                  aircraft_data: Data,
                  mission_type: MissionType,
-                 reference_aircraft_path: str='ReferenceAircraft.xlsx'
+                 reference_aircraft_path: str='Class_I/ReferenceAircraft.xlsx'
                  ) -> None:
         self.design_file = f'design{aircraft_data.data["design_id"]}.json'
         self.aircraft_data = aircraft_data
@@ -142,12 +133,12 @@ class ClassI:
     
     def calculate_fuel_mission(self) -> float:
         if self.mission_type == MissionType.DESIGN:
-            mission_range = self.aircraft_data.data['requirements']['design_range'] - self.aircraft_data.data['requirements']['reserve_range']/2
+            mission_range = self.aircraft_data.data['requirements']['design_range']
         if self.mission_type == MissionType.FERRY:
-            mission_range = self.aircraft_data.data['requirements']['ferry_range'] - self.aircraft_data.data['requirements']['reserve_range']
+            mission_range = self.aircraft_data.data['requirements']['ferry_range']
         if self.mission_type == MissionType.ALTITUDE:
             mission_range_WOG = self.aircraft_data.data['requirements']['altitude_range_WOG']
-            mission_range_WIG = self.aircraft_data.data['requirements']['altitude_range_WIG'] - self.aircraft_data.data['requirements']['reserve_range']/2
+            mission_range_WIG = self.aircraft_data.data['requirements']['altitude_range_WIG']
 
         self.LD = self.calculate_LD()
         if self.aircraft_type == AircraftType.JET:
@@ -240,6 +231,10 @@ class ClassI:
         self.aircraft_data.data['outputs'][self.mission_type.name.lower()]['ZFW'] = self.ZFW
         self.aircraft_data.data['outputs'][self.mission_type.name.lower()]['MTOM'] = self.MTOM
         self.aircraft_data.data['outputs'][self.mission_type.name.lower()]['max_fuel'] = self.fuel_max
+        self.aircraft_data.data['outputs'][self.mission_type.name.lower()]['max_fuel_L'] = self.fuel_max/9.81/0.82
+        self.aircraft_data.data['outputs'][self.mission_type.name.lower()]['total_fuel_L'] = self.total_fuel/9.81/0.82
+        self.aircraft_data.data['outputs'][self.mission_type.name.lower()]['mission_fuel_L'] = self.mission_fuel/9.81/0.82
+        self.aircraft_data.data['outputs'][self.mission_type.name.lower()]['reserve_fuel_L'] = self.reserve_fuel/9.81/0.82
 
 
 

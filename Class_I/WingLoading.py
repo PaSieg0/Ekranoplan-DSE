@@ -1,10 +1,9 @@
 import os
-from enum import Enum, auto
-from ISA_Class import ISA
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import numpy as np
 import matplotlib.pyplot as plt
-from ClassIWeightEstimation import AircraftType, MissionType
-from utils import Data
+from utils import Data, MissionType, ISA, AircraftType
 
 class WingLoading:
     def __init__(self,
@@ -107,9 +106,9 @@ class WingLoading:
         x = self.WS.copy()
         
         if self.aircraft_type == AircraftType.PROP or self.aircraft_type == AircraftType.MIXED:
-            y = [0.9/0.8 * self.prop_efficiency * (self.isa_cruise.rho / self.isa_cruise.rho0)**0.75 * ((self.Cd0*0.5*self.isa_cruise.rho*self.cruise_speed**3)/(0.8*x) + 0.8*x/(np.pi*A*self.e*0.5*self.isa_cruise.rho*self.cruise_speed))**-1 for A in self.k**2*self.aspect_ratios]
+            y = [0.9/0.8 * self.prop_efficiency * (self.isa_cruise.rho / self.isa_cruise.rho0)**0.7 * ((self.Cd0*0.5*self.isa_cruise.rho*self.cruise_speed**3)/(0.8*x) + 0.8*x/(np.pi*A*self.e*0.5*self.isa_cruise.rho*self.cruise_speed))**-1 for A in self.k**2*self.aspect_ratios]
         elif self.aircraft_type == AircraftType.JET:
-            y = [0.8/0.9 * (self.isa_cruise.rho0 / self.isa_cruise.rho)**0.75 * ((self.Cd0*0.5*self.isa_cruise.rho*self.cruise_speed**2)/(0.8*x) + 0.8*x/(np.pi*A*self.e*0.5*self.isa_cruise.rho*self.cruise_speed**2)) for A in self.k**2*self.aspect_ratios]
+            y = [0.8/0.9 * (self.isa_cruise.rho0 / self.isa_cruise.rho)**0.7 * ((self.Cd0*0.5*self.isa_cruise.rho*self.cruise_speed**2)/(0.8*x) + 0.8*x/(np.pi*A*self.e*0.5*self.isa_cruise.rho*self.cruise_speed**2)) for A in self.k**2*self.aspect_ratios]
 
         return y
     
@@ -117,9 +116,9 @@ class WingLoading:
         x = self.WS.copy()
         
         if self.aircraft_type == AircraftType.PROP:
-            y = [0.9/0.8 * self.prop_efficiency * (self.isa_high.rho / self.isa_high.rho0)**0.75 * ((self.Cd0*0.5*self.isa_high.rho*self.cruise_speed**3)/(0.8*x) + 0.8*x/(np.pi*A*self.e*0.5*self.isa_high.rho*self.cruise_speed))**-1 for A in self.aspect_ratios]
+            y = [0.9/0.8 * self.prop_efficiency * (self.isa_high.rho / self.isa_high.rho0)**0.7 * ((self.Cd0*0.5*self.isa_high.rho*self.cruise_speed**3)/(0.8*x) + 0.8*x/(np.pi*A*self.e*0.5*self.isa_high.rho*self.cruise_speed))**-1 for A in self.aspect_ratios]
         elif self.aircraft_type == AircraftType.JET or self.aircraft_type == AircraftType.MIXED:
-            y = [0.8/0.9 * (self.isa_high.rho0 / self.isa_high.rho)**0.75 * ((self.Cd0*0.5*self.isa_high.rho*self.cruise_speed**2)/(0.8*x) + 0.8*x/(np.pi*A*self.e*0.5*self.isa_high.rho*self.cruise_speed**2)) for A in self.aspect_ratios]
+            y = [0.8/0.9 * (self.isa_high.rho0 / self.isa_high.rho)**0.7 * ((self.Cd0*0.5*self.isa_high.rho*self.cruise_speed**2)/(0.8*x) + 0.8*x/(np.pi*A*self.e*0.5*self.isa_high.rho*self.cruise_speed**2)) for A in self.aspect_ratios]
 
         return y
 
@@ -145,11 +144,10 @@ class WingLoading:
         CD = 4*self.Cd0
 
         if self.aircraft_type == AircraftType.PROP:
-            y = [(n-1)/n*self.prop_efficiency/(np.sqrt(x)*((c_V+0.003*(n-2))+CD/CL)*np.sqrt(2/(self.isa_cruise.rho*CL))) for CL in CLs for n in self.n_engines]
+            y = [self.prop_efficiency/(np.sqrt(x)*((c_V)+CD/CL)*np.sqrt(2/(self.isa_cruise.rho*CL))) for CL in CLs]
 
         elif self.aircraft_type == AircraftType.JET or self.aircraft_type == AircraftType.MIXED:
-            y = [n/(n-1)*(c_V+0.003*(n-2) + 2*np.sqrt(self.Cd0/(np.pi*A*self.e))) for A in self.k**2 * self.aspect_ratios for n in self.n_engines]
-
+            y = [(c_V + 2*np.sqrt(self.Cd0/(np.pi*A*self.e))) for A in self.k**2 * self.aspect_ratios]
         return y
     
     def climb_gradient_requirement_OEI(self):
@@ -289,11 +287,11 @@ def __plot_prop(WL, PLOT_OUTPUT: bool=False):
     for i, climb_gradient in enumerate(prop_climb_gradient):
         A_idx = i % len(WL.aspect_ratios)
         n_idx = i // len(WL.aspect_ratios)
-        ax.plot(WL.WS, climb_gradient, label=f"Climb gradient: Aspect ratio={WL.aspect_ratios[A_idx]}\nEngine={WL.n_engines[n_idx]}", linestyle=linestyles[i], color='tab:green')
+        ax.plot(WL.WS, climb_gradient, label=f"Climb gradient: Aspect ratio={WL.aspect_ratios[A_idx]}\nEngine={WL.n_engines[n_idx]:.0f}", linestyle=linestyles[i], color='tab:green')
     for i, climb_gradient in enumerate(prop_climb_gradient_OEI):
         A_idx = i % len(WL.aspect_ratios)
         n_idx = i // len(WL.aspect_ratios)
-        ax.plot(WL.WS, climb_gradient, label=f"Climb gradient OEI: Aspect ratio={WL.aspect_ratios[A_idx]}\nEngine={WL.n_engines[n_idx]}", linestyle=linestyles[i], color='tab:olive')
+        ax.plot(WL.WS, climb_gradient, label=f"Climb gradient OEI: Aspect ratio={WL.aspect_ratios[A_idx]}\nEngine={WL.n_engines[n_idx]:.0f}", linestyle=linestyles[i], color='tab:olive')
     for i, cruise in enumerate(prop_cruise):
         ax.plot(WL.WS, cruise, label=f"Cruise: Aspect ratio={WL.aspect_ratios[i]}", linestyle=linestyles[i], color='tab:red')
     for i, cruise in enumerate(prop_cruise_high):
@@ -305,10 +303,21 @@ def __plot_prop(WL, PLOT_OUTPUT: bool=False):
     for i, stall in enumerate(prop_stall_high):
         ax.axvline(x=stall, label=f"Stall high: CL={WL.CLmax_clean[i]}", linestyle=linestyles[i], color='tab:brown')
 
-    plt.suptitle(f"Wing Loading Requirements k={WL.k}")
+    WP, WS = 0.95*WL.WP, 0.98*WL.max_WS
+    print(WP, WS)
+    ax.scatter(WS, WP, label=f"Design Point", color='red', marker='o', s = 20, zorder = 10)
+
+    # Find the index in WL.WS where WS is reached or just below
+    idx = np.searchsorted(WL.WS, WL.max_WS, side='right')
+    plt.fill_between(WL.WS[:idx], 0, prop_cruise_high[0][:idx], color='lightgreen', alpha=0.3)
+    #plt.suptitle(f"Wing Loading Requirements")
+    plt.ylabel('W/P [N/W]', fontsize=14)
+    plt.xlabel('W/S [N/m^2]', fontsize=14)
+    plt.yticks(fontsize=12)
+    plt.xticks(fontsize=12)
     ax.set_xlim(0, 8000)
-    ax.set_ylim(0, 0.6)
-    ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+    ax.set_ylim(0, 0.3)
+    ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=12)
     plt.tight_layout()
     if PLOT_OUTPUT:
         plt.show()
@@ -417,7 +426,7 @@ def __plot_mixed(WL_prop, WL_jet, PLOT_OUTPUT: bool=False):
     
 
 if __name__ == "__main__":
-    aircraft_data = Data("design1.json")
+    aircraft_data = Data("design3.json")
     WP, TW, WS = main(
         aircraft_data=aircraft_data,
         mission_type=MissionType.DESIGN,
