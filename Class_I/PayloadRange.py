@@ -216,6 +216,22 @@ class RangeCalculator:
         
         # Highlight the design point (index 2)
         ax.plot(*points[2], color='lime', label='Design Point', marker='o', markersize=8)
+
+        # Annotate all points
+        labels = ['0 nm', 'Harmonic', 'Design', 'Max', 'Ferry']
+        xylabel = [(30, 5),(70, -6),(55, 10),(75, -10),(0, 50)]
+        for i, (x, y) in enumerate(points):
+            if i == 0:
+                continue
+            x_format = int(float('%.3g' % x))
+            y_format = float('%.3g' % y)
+            ax.annotate(f"{labels[i]}: {x_format} nm\n at {y_format} tonnes", 
+                        (x, y), 
+                        textcoords="offset points", 
+                        xytext=xylabel[i], 
+                        ha='center', 
+                        fontsize=11,
+                        arrowprops=dict(arrowstyle="->", color='black', lw=1))
         
         ax.set_xlim(left=0)
         ax.set_ylim(bottom=0)

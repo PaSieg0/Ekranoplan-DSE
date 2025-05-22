@@ -25,7 +25,8 @@ class AltitudeVelocity:
         self._engine_power = self.data.data['inputs']['engine_power']
         self._sea_level_density = ISA(0).rho
         self._k = 1 / (np.pi * self._AR * self._e)  # Induced drag factor
-        self.velocity_steps = 1000  # Number of velocity steps for calculations
+        self.velocity_steps = 5000  # Number of velocity steps for calculations
+        self.height_steps = 5000  # Number of height steps for calculations
         
         # Pre-calculate the mps to fpm conversion factor
         self.mps2fpm = 196.85  # metres per second to feet per minute
@@ -193,12 +194,11 @@ class AltitudeVelocity:
         plt.grid()
         plt.show()
 
-    def calculate_h_max(self, height_resolution:float=1, RoC_limit:float=0) -> tuple:
+    def calculate_h_max(self, RoC_limit:float=0) -> tuple:
         """
         Calculate the maximum height at which the aircraft can maintain climb.
         
         Args:
-            height_resolution: Step size in feet for altitude calculations
             RoC_limit: The minimum rate of climb threshold in ft/min
             
         Returns:
@@ -222,7 +222,7 @@ class AltitudeVelocity:
             return h_max, v_max  # Could raise a warning here
         
         # Binary search to find the zero crossing point
-        while h_max - h_min > height_resolution:
+        while h_max - h_min > 1/self.height_steps:
             h_mid = (h_min + h_max) / 2
             roc_at_mid, v_at_mid = self.calculate_max_RoC(h_mid)
             
@@ -236,11 +236,11 @@ class AltitudeVelocity:
         
         return h_min, final_velocity
     
-    def calculate_limit_points(self, height_resolution:float=1, RoC_limit:float=0) -> tuple:
+    def calculate_limit_points(self, RoC_limit:float=0) -> tuple:
         """Calculate zero-RoC points and stall points for plotting the flight envelope."""
         # First determine maximum altitude to avoid unnecessary calculations
-        h_max, _ = self.calculate_h_max(height_resolution=height_resolution, RoC_limit=RoC_limit)
-        h_list = np.arange(0, h_max + height_resolution, height_resolution)
+        h_max, _ = self.calculate_h_max(RoC_limit=RoC_limit)
+        h_list = np.linspace(0, h_max, self.height_steps)
 
         zero_points = []
         stall_points = []
@@ -278,10 +278,10 @@ class AltitudeVelocity:
 
         return zero_points, stall_points
     
-    def calculate_Vy(self, h_max:float, height_resolution:float=1) -> list:
+    def calculate_Vy(self, h_max:float) -> list:
         """Calculate best climb speeds (Vy) at different altitude points."""
         # Implementing a more efficient approach
-        h_limits = np.arange(0, h_max, height_resolution)
+        h_limits = np.linspace(0, h_max, self.height_steps)
         max_Vy_points = []
         
         for h in h_limits:
@@ -290,10 +290,10 @@ class AltitudeVelocity:
 
         return max_Vy_points
     
-    def calculate_Vx(self, h_max:float, height_resolution:float=1) -> list:
+    def calculate_Vx(self, h_max:float) -> list:
         """Calculate best cruise speeds (Vx) at different altitude points."""
         # Implementing a more efficient approach
-        h_limits = np.arange(0, h_max, height_resolution)
+        h_limits = np.linspace(0, h_max, self.height_steps)
         max_Vx_points = []
         
         for h in h_limits:
@@ -302,7 +302,7 @@ class AltitudeVelocity:
 
         return max_Vx_points
 
-    def plot_limit_points(self, height_resolution:float=1) -> None:
+    def plot_limit_points(self) -> None:
         """Plot the flight envelope with thrust limit, stall limit, and Vy curve."""
 
         # Calculate limit points with progress bar
@@ -310,8 +310,8 @@ class AltitudeVelocity:
         # We'll copy the body of calculate_limit_points here to add tqdm
 
         # First determine maximum altitude to avoid unnecessary calculations
-        h_max, _ = self.calculate_h_max(height_resolution=height_resolution, RoC_limit=0)
-        h_list = np.arange(0, h_max + height_resolution, height_resolution)
+        h_max, _ = self.calculate_h_max(RoC_limit=0)
+        h_list = np.linspace(0, h_max, self.height_steps)
 
         zero_points = []
         stall_points = []
@@ -424,22 +424,29 @@ class AltitudeVelocity:
                 arrowprops=dict(arrowstyle="->", color='b')
             )
 
+        print(f"Calculating Vy...")
         # Calculate and plot the Vy curve    
-        max_Vy_points = self.calculate_Vy(h_max=h_max_point[1], height_resolution=height_resolution)
+        max_Vy_points = self.calculate_Vy(h_max=h_max_point[1])
         if max_Vy_points:
             # Extract velocities and altitudes for plotting
             vy_velocities = [point[2] for point in max_Vy_points]
             vy_altitudes = [point[1] for point in max_Vy_points]
             plt.plot(vy_velocities, vy_altitudes, color='g', linestyle='--', label='Vy curve')
 
+        print(f"Calculating Vx...")
         # Calculate and plot the Vx curve    
-        max_Vx_points = self.calculate_Vx(h_max=h_max_point[1], height_resolution=height_resolution)
+        max_Vx_points = self.calculate_Vx(h_max=h_max_point[1])
         if max_Vx_points:
             # Extract velocities and altitudes for plotting
             vy_velocities = [point[2] for point in max_Vx_points]
             vy_altitudes = [point[1] for point in max_Vx_points]
             plt.plot(vy_velocities, vy_altitudes, color='b', linestyle='--', label='Vx curve')
 
+        # Plot a horizontal line at h = 3048 m
+        # Use the maximum altitude for the horizontal line
+        # Find stall and zero points at h = 3048 m
+
+        plt.hlines(y=3048, xmin=83.1, xmax=161.85, color='purple', linestyle=':', linewidth=2, label='h = 3048 m')
         plt.xlabel('Velocity (m/s)')
         plt.ylabel('Altitude (m)')
         plt.legend()
@@ -473,7 +480,7 @@ if __name__ == "__main__":
     h = np.array([0, 3048])  # Example altitude in meters
     # altitude_velocity.plot_power_curve(h)
     # altitude_velocity.plot_RoC_line(h)
-    altitude_velocity.plot_limit_points(height_resolution=0.5)
+    altitude_velocity.plot_limit_points()
     
     cruise_speed = aircraft_data.data['requirements']['cruise_speed']
     power_required_cruise = altitude_velocity.calculate_power_required(cruise_speed, 0)
@@ -486,4 +493,4 @@ if __name__ == "__main__":
     print(f"Max AoC at h = 3048 is {altitude_velocity.calculate_max_AoC(3048)[0] * 180/np.pi} deg")
 
     print(f"Time to climb from 0 to 3048 m: {altitude_velocity.calculate_t_climb(0, 3048)} seconds")
-    # print(f"Service Ceiling: {altitude_velocity.calculate_h_max(height_resolution=1)} metres")
+    # print(f"Service Ceiling: {altitude_velocity.calculate_h_max()} metres")
