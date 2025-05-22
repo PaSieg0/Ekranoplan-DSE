@@ -3,6 +3,7 @@ import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from utils import Data, MissionType, LoadCase
 import numpy as np
+from matplotlib import pyplot as plt
 
 class CGRange:
     def __init__(self, aircraft_data: Data):
@@ -17,8 +18,9 @@ class CGRange:
         self.most_forward_mission = None
 
     def calculate_cg_range(self):
-        # Get the data from the aircraft_data object
         g = 9.81
+        cg_points = []  # Store (label, x_cg) tuples
+
         for load_case in LoadCase:
             for mission in MissionType:
                 mission_name = mission.name.lower()
@@ -29,7 +31,7 @@ class CGRange:
                 }
 
                 self.mass_components = {}
-                
+
                 if load_case == LoadCase.OEW:
                     self.mass_components["Payload"] = 0
                     self.mass_components["Fuel"] = 0
@@ -46,18 +48,53 @@ class CGRange:
                     self.mass_components["Payload"] = 0
                     self.mass_components["Fuel"] = self.aircraft_data.data["outputs"][mission_name]["max_fuel"] / g
                     self.mass_components["OEW"] = self.aircraft_data.data["outputs"][mission_name]["OEW"] / g
-                
+
                 total_weight = sum(self.mass_components.values())
-                self.x_cg = sum(self.xcg_components[comp] * self.mass_components[comp] / total_weight for comp in self.xcg_components) * self.aircraft_data.data["outputs"]["general"]["l_fuselage"]
+                self.x_cg = sum(
+                    self.xcg_components[comp] * self.mass_components[comp] / total_weight
+                    for comp in self.xcg_components
+                ) * self.aircraft_data.data["outputs"]["general"]["l_fuselage"]
+
+                label = f"{mission.name}_{load_case.name}"
+                cg_points.append((label, self.x_cg, total_weight * g)) 
+
                 if self.x_cg > self.most_aft_cg:
                     self.most_aft_cg = self.x_cg
-                    self.most_aft_mission = f"{mission_name.upper()}_{load_case.name.upper()}"
+                    self.most_aft_mission = label
                 if self.x_cg < self.most_forward_cg:
                     self.most_forward_cg = self.x_cg
-                    self.most_forward_mission = f"{mission_name.upper()}_{load_case.name.upper()}"
+                    self.most_forward_mission = label
 
         self.update_attributes()
         self.aircraft_data.save_design(self.design_file)
+
+   
+        labels, cgs, weights_newton = zip(*cg_points)
+        masses_kg = [w / g for w in weights_newton]
+        masses_tonnes = np.array(masses_kg) / 1000  # Convert once
+
+        fig, ax = plt.subplots()
+        ax.scatter(cgs, masses_tonnes, label="CG vs Mass", color='blue', marker='o')
+
+        aft_index = min(range(len(cgs)), key=lambda i: abs(cgs[i] - self.most_aft_cg))
+        forward_index = min(range(len(cgs)), key=lambda i: abs(cgs[i] - self.most_forward_cg))
+
+        ax.axvline(self.most_aft_cg, color='r', linestyle='--', label="Most Aft CG")
+        ax.axvline(self.most_forward_cg, color='g', linestyle='--', label="Most Forward CG")
+
+        ax.annotate(labels[aft_index], (cgs[aft_index], masses_tonnes[aft_index]),
+                    textcoords="offset points", xytext=(0, 0), ha='center', fontsize=8, rotation=-20)
+
+        ax.annotate(labels[forward_index], (cgs[forward_index], masses_tonnes[forward_index]),
+                    textcoords="offset points", xytext=(10, 0), ha='center', fontsize=8, rotation=-20)
+
+        ax.set_title(f"Total Mass vs CG Position design {self.design_number}")
+        ax.set_xlabel("x_cg [m]")
+        ax.set_ylabel("Total Mass [tonnes]")
+        ax.grid(True)
+        plt.tight_layout()
+        plt.show()
+
 
 
     def update_attributes(self):
@@ -67,6 +104,6 @@ class CGRange:
         self.aircraft_data.data["outputs"]["cg_range"]["most_forward_mission"] = self.most_forward_mission
 
 if __name__ == "__main__":
-    data = Data("design1.json")
+    data = Data("design3.json")
     cg_range = CGRange(data)
     cg_range.calculate_cg_range()
