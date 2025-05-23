@@ -11,6 +11,9 @@ from Class_I.PrelimWingPlanformDesign import WingPlanform
 
 def calculate_elliptical_chord(y, b, S):
     """Calculate elliptical chord distribution using the formula C(y) = (4S/πb)√(1-(2y/b)²)"""
+    # Ensure y doesn't exceed b/2 (add small tolerance to avoid numerical issues)
+    eps = 1e-10
+    y = np.minimum(abs(y), b/2 - eps)
     return (4*S/(np.pi*b)) * np.sqrt(1 - (2*y/b)**2)
 
 def plot_wing_planform():
@@ -27,8 +30,13 @@ def plot_wing_planform():
     b = wing.b  # wingspan
     S = wing.S  # wing area
     cr = wing.chord_root  # root chord
-    X_LE = wing.X_LE  # leading edge position    # Calculate and plot elliptical chord distribution with same resolution as wing planform (0.1m spacing)
+    X_LE = wing.X_LE  # leading edge position    
+    
+    # Calculate and plot elliptical chord distribution with same resolution as wing planform (0.1m spacing)
     x_points = np.arange(-b/2, b/2 + 0.1, 0.1)  # +0.1 to include the endpoint
+    print(f"Length of elliptical chord array: {len(x_points)} points")
+
+    
     c_elliptical = calculate_elliptical_chord(abs(x_points), b, S)
     
     # Plot elliptical distribution

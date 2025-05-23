@@ -86,6 +86,10 @@ class WingPlanform:
 
     def plot_wing(self, ax):
         b_array = np.arange(0, self.b/2, 0.1)
+        # Calculate actual number of points (2 * half-span points - 1 to avoid double counting center)
+        total_points = len(b_array) * 2 - 1  # Subtract 1 because x=0 point appears in both arrays
+        print(f"\nWing planform array length (full span): {total_points} points")
+        print(f"First x-coordinate: {b_array[0]} m")
         leading_edge = self.chord_root/2 - np.tan(np.deg2rad(self.sweep_x_c)) * b_array
         y_tip_LE = leading_edge[-1]
         y_tip_TE = y_tip_LE - self.chord_tip
