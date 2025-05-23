@@ -7,56 +7,50 @@ import numpy as np
 import matplotlib.pyplot as plt
 from math import radians, tan, degrees
 from utils import Data
+from Class_I.PrelimWingPlanformDesign import WingPlanform
 
-def load_wing_parameters():
-    data = Data("design3.json")
-    return data.data
+def calculate_elliptical_chord(y, b, S):
+    """Calculate elliptical chord distribution using the formula C(y) = (4S/πb)√(1-(2y/b)²)"""
+    return (4*S/(np.pi*b)) * np.sqrt(1 - (2*y/b)**2)
 
 def plot_wing_planform():
-    # Load data from JSON
-    data = load_wing_parameters()
+    # Load data and create wing planform object
+    data = Data("design3.json")
+    wing = WingPlanform(data)
+    wing.calculate()
     
-    # Extract relevant parameters from wing_design
-    wing_design = data['outputs']['wing_design']
-    S = wing_design['S']  # wing area
-    b = wing_design['b']  # wingspan
-    MAC = wing_design['MAC']  # mean aerodynamic chord
-    sweep_c4 = radians(wing_design['sweep_c_4'])  # quarter chord sweep angle
-    sweep_xc = radians(wing_design['sweep_x_c'])  # sweep at x/c
-    cr = wing_design['chord_root']  # root chord
-    ct = wing_design['chord_tip']  # tip chord
-    taper_ratio = wing_design['taper_ratio']  # taper ratio
-    X_LE = wing_design['X_LE']  # leading edge position
+    # Create figure and plot
+    fig, ax = plt.subplots(figsize=(12, 8))
+    wing.plot_wing(ax=ax)
     
-    # Create wing planform coordinates
-    y = np.array([0, b/2, b/2, 0, 0])
-    x_le = np.array([X_LE, X_LE + tan(sweep_xc) * (b/2), X_LE + tan(sweep_xc) * (b/2), X_LE, X_LE])
-    x_te = x_le + np.array([cr, ct, ct, cr, cr])
+    # Get wing parameters
+    b = wing.b  # wingspan
+    S = wing.S  # wing area
+    cr = wing.chord_root  # root chord
+    X_LE = wing.X_LE  # leading edge position    # Calculate and plot elliptical chord distribution with same resolution as wing planform (0.1m spacing)
+    x_points = np.arange(-b/2, b/2 + 0.1, 0.1)  # +0.1 to include the endpoint
+    c_elliptical = calculate_elliptical_chord(abs(x_points), b, S)
     
-    # Plot the wing
-    plt.figure(figsize=(10, 8))
-    plt.plot(x_le, y, 'b-', linewidth=2, label='Leading edge')
-    plt.plot(x_te, y, 'b-', linewidth=2, label='Trailing edge')
-    plt.plot(-x_le + 2*X_LE, y, 'b-', linewidth=2)  # Mirror for other half
-    plt.plot(-x_te + 2*X_LE, y, 'b-', linewidth=2)  # Mirror for other half
+    # Plot elliptical distribution
+    y_le = np.full_like(x_points, 0)  # Leading edge at y=0
+    y_te = c_elliptical  # Trailing edge follows elliptical distribution
+    ax.plot(x_points, y_le, 'r--', linewidth=2, label='Elliptical LE')
+    ax.plot(x_points, y_te, 'r--', linewidth=2, label='Elliptical TE')
+      # Add annotation for elliptical chord
+    x_mid = b/4
+    c_mid = calculate_elliptical_chord(x_mid, b, S)
+    ax.annotate(f'Elliptical chord at x={x_mid:.1f}m: {c_mid:.2f}m', 
+                xy=(x_mid, c_mid/2),
+                xytext=(x_mid + 2, c_mid/2 + 2),
+                arrowprops=dict(facecolor='red', shrink=0.05))
     
-    # Add annotations
-    plt.annotate(f'Wingspan (b) = {b:.2f} m', xy=(X_LE, b/2), xytext=(X_LE + cr, b/2),
-                arrowprops=dict(facecolor='black', shrink=0.05))
-    plt.annotate(f'Root chord = {cr:.2f} m', xy=(X_LE, 0), xytext=(X_LE, -b/8),
-                arrowprops=dict(facecolor='black', shrink=0.05))
-    plt.annotate(f'Tip chord = {ct:.2f} m', xy=(X_LE + tan(sweep_xc) * (b/2), b/2),
-                xytext=(X_LE + tan(sweep_xc) * (b/2) - cr/2, b/2 + b/8),
-                arrowprops=dict(facecolor='black', shrink=0.05))
-    plt.annotate(f'Sweep = {degrees(sweep_xc):.1f}°', xy=(X_LE + cr/2, b/4),
-                xytext=(X_LE + cr/2, b/3))
-    
-    plt.title('Wing Planform')
-    plt.xlabel('X coordinate [m]')
-    plt.ylabel('Y coordinate [m]')
-    plt.axis('equal')
-    plt.grid(True)
-    plt.legend()
+    # Customize plot
+    ax.set_aspect('equal', adjustable='box')
+    ax.set_title("Wing Planform with Elliptical Chord Distribution - Design 3")
+    ax.set_xlabel("Spanwise Direction (m)")
+    ax.set_ylabel("Chordwise Direction (m)")
+    ax.grid(True)
+    ax.legend()
     plt.show()
 
 if __name__ == "__main__":
