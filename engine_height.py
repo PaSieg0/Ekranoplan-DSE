@@ -51,13 +51,17 @@ class EngineHeight:
         return y_engines, z_engines, wing_tip_clearance
 
 def main():
-    for i in range(1, 5):
-        json_file = f"design{i}.json"
-        aircraft_data = Data(json_file)
-        engine_height = EngineHeight(aircraft_data)
-        y_engines, _, wing_tip_clearance = engine_height.calculate_engine_positions()
-        
-        print(f"Engine clearance distance for design {i} is {wing_tip_clearance} m")
+
+    json_file = f"design3.json"
+    aircraft_data = Data(json_file)
+    engine_height = EngineHeight(aircraft_data)
+    y_engines, z_engines, wing_tip_clearance = engine_height.calculate_engine_positions()
+    
+    print(f"\nEngine y-coordinates (spanwise position) for design 3:")
+    print(f"Left side engines: {-y_engines[::-1]} m")
+    print(f"Right side engines: {y_engines} m\n")
+    print(f"Engine clearance distance for design 3 is {wing_tip_clearance} m")
+
 
 if __name__ == "__main__":
     main()
