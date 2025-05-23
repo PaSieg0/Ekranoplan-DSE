@@ -7,11 +7,15 @@ import openpyxl
 from openpyxl.styles import Font
 from openpyxl.utils import get_column_letter
 import numpy as np
+from typing import Any
 
 class AircraftType(Enum):
     JET = auto()
     PROP = auto()
     MIXED = auto()
+
+class StringerType(Enum):
+    FUCKOFF = auto()
 
 class WingType(Enum):
     HIGH = auto()
@@ -58,7 +62,10 @@ class EnumEncoder(json.JSONEncoder):
 
 class Data:
     def __init__(self, design_file):
-        self.data = self.load_design(design_file)
+        if 'dat' in design_file:
+            self.data = self.load_dat_file(design_file)
+        else:
+            self.data = self.load_design(design_file)
 
     def load_design(self, design_file) -> dict[str, Any]:
         file_path = os.path.join("Data", design_file)
@@ -78,6 +85,36 @@ class Data:
                 json.dump(self.data, file, cls=EnumEncoder, indent=4)
         except IOError as e:
             print(f"Error: Failed to write to {file_path}. {e}")
+
+    def load_dat_file(self, dat_file) -> dict[str, list[float]]:
+        """
+        Load a .dat file as a dictionary with 'x' and 'y' keys.
+        Assumes each line contains two numeric values separated by space or comma.
+        """
+        file_path = os.path.join("Data", dat_file)
+        x_vals, y_vals = [], []
+        try:
+            with open(file_path, 'r') as file:
+                for line in file:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    parts = line.replace(',', ' ').split()
+                    if len(parts) != 2:
+                        print(f"Warning: Skipping malformed line: {line}")
+                        continue
+                    try:
+                        x, y = float(parts[0]), float(parts[1])
+                        x_vals.append(x)
+                        y_vals.append(y)
+                    except ValueError:
+                        print(f"Warning: Non-numeric data encountered in line: {line}")
+            return {"x": x_vals, "y": y_vals}
+        except FileNotFoundError:
+            print(f"Error: {file_path} not found.")
+        except IOError as e:
+            print(f"Error: Failed to read from {file_path}. {e}")
+        return {}
 
 
 def generate_df():
