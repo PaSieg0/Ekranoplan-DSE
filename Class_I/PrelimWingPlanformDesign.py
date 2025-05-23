@@ -84,12 +84,17 @@ class WingPlanform:
         self.aircraft_data.data['outputs']['wing_design']['aspect_ratio'] = self.aspect_ratio
         #self.aircraft_data.data['inputs']['oswald_factor'] = self.oswald
 
+    def get_half_span_points(self):
+        """Return array of points for half span (positive side only)"""
+        return np.arange(0, self.b/2 + 0.05, 0.05)  # include endpoint
+
     def plot_wing(self, ax):
-        b_array = np.arange(0, self.b/2, 0.1)
+        b_array = self.get_half_span_points()
         # Calculate actual number of points (2 * half-span points - 1 to avoid double counting center)
-        total_points = len(b_array) * 2 - 1  # Subtract 1 because x=0 point appears in both arrays
+        total_points = len(b_array) 
         print(f"\nWing planform array length (full span): {total_points} points")
         print(f"First x-coordinate: {b_array[0]} m")
+        print(f"Last x-coordinate: {b_array[-1]} m")
         leading_edge = self.chord_root/2 - np.tan(np.deg2rad(self.sweep_x_c)) * b_array
         y_tip_LE = leading_edge[-1]
         y_tip_TE = y_tip_LE - self.chord_tip
@@ -97,19 +102,27 @@ class WingPlanform:
         y_root_LE = self.chord_root/2 
         y_root_TE = y_root_LE - self.chord_root
 
+        # Calculate chord at each spanwise position
+        chord_distribution = np.zeros_like(b_array)
+        for i, x in enumerate(b_array):
+            # Linear interpolation between root and tip chord
+            chord_distribution[i] = self.chord_root + (self.chord_tip - self.chord_root) * (x / (self.b/2))
+
         colors = ['blue', 'orange', 'green']
         designs = ['2', '7', '10']
 
         # Main planform
         ax.plot(b_array, leading_edge, label=f'Design {designs[self.count-1]}', color = colors[self.count-1])
-        ax.plot(-b_array, leading_edge, color = colors[self.count-1])  # Mirror
+        # ax.plot(-b_array, leading_edge, color = colors[self.count-1])  # Mirror
 
         ax.plot([0, 0], [y_root_LE, y_root_TE], color = colors[self.count-1])
         ax.plot([self.b/2, self.b/2], [y_tip_LE, y_tip_TE], color = colors[self.count-1])
-        ax.plot([-self.b/2, -self.b/2], [y_tip_LE, y_tip_TE], color = colors[self.count-1])
+        # ax.plot([-self.b/2, -self.b/2], [y_tip_LE, y_tip_TE], color = colors[self.count-1])
 
         ax.plot([0, self.b/2], [y_root_TE, y_tip_TE], color = colors[self.count-1])
-        ax.plot([0, -self.b/2], [y_root_TE, y_tip_TE], color = colors[self.count-1])
+        # ax.plot([0, -self.b/2], [y_root_TE, y_tip_TE], color = colors[self.count-1])
+
+        return b_array, chord_distribution
 
 
 if __name__ == "__main__":
