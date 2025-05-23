@@ -153,9 +153,9 @@ class AircraftIteration:
         else:
             self.aircraft_data.data['outputs'][mission_type]['T'] = None
 
-        n_engines_flight = np.ceil(self.aircraft_data.data['outputs'][mission_type]['P']/ self.aircraft_data.data['inputs']['engine_power']) + 1
-        n_engines_takeoff = np.ceil(self.aircraft_data.data['outputs']['general']['take_off_power']/ self.aircraft_data.data['inputs']['engine_power'])
-        self.aircraft_data.data['inputs']['n_engines'] = max(n_engines_flight, n_engines_takeoff)
+        n_engines_flight = np.ceil(self.aircraft_data.data['outputs'][mission_type]['P']/ self.aircraft_data.data['inputs']['engine']['engine_power']) + 1
+        n_engines_takeoff = np.ceil(self.aircraft_data.data['outputs']['general']['take_off_power']/ self.aircraft_data.data['inputs']['engine']['engine_power'])
+        self.aircraft_data.data['inputs']['engine']['n_engines'] = max(n_engines_flight, n_engines_takeoff)
         if self.mission_type == MissionType.DESIGN:
             self.aircraft_data.data['outputs'][mission_type]['fuel_economy'] = self.class_i.mission_fuel / 9.81 / 0.82 / (self.aircraft_data.data['requirements']['design_payload']/1000) / (2*self.class_i.design_range / 1000)
         elif self.mission_type == MissionType.ALTITUDE:

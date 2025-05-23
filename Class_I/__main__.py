@@ -11,10 +11,11 @@ from PrelimWingPlanformDesign import WingPlanform
 from Cd0Estimation import Cd0Estimation
 from cgRange import CGRange
 from empennage import Empennage
+from engine_height import EngineHeight
 
 
 def main(create_excel: bool = False) -> None:
-    for i in range(1, 5):
+    for i in range(3, 4):
         print(f"Running iteration for design {i}...")
         file_path = f"design{i}.json"
         aircraft_data = Data(file_path)
@@ -66,6 +67,9 @@ def main_iteration(
     )
     Cd0_est.mainloop()
 
+    engine_height = EngineHeight(data=aircraft_data)
+    engine_height.calculate_engine_positions()
+
     S = aircraft_data.data['outputs']['wing_design']['S']
     MTOM = aircraft_data.data['outputs']['max']['MTOM']
     Cd0 = aircraft_data.data['inputs']['Cd0']
@@ -76,8 +80,8 @@ def main_iteration(
     if stop_condition:
         #aircraft_data.save_design(file_path)
         if create_excel:
-            design_json_to_excel(file_path,'concepts.xlsx')
-        return
+            #design_json_to_excel(file_path,'concepts.xlsx')
+            return
     else:
         return main_iteration(
             aircraft_data=aircraft_data,
