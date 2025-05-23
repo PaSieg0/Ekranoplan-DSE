@@ -211,6 +211,18 @@ def rad2deg(rad):
     """
     return rad * (180 / np.pi)
 
+def L2gal(L):
+    """
+    Convert Liters to gallons
+    """
+    return L * 0.264172
+
+def gal2L(gal):
+    """
+    Convert gallons to Liters
+    """
+    return gal / 0.264172
+
 def apply_number_format(cell, value):
     if isinstance(value, (int, float)):
         if abs(value) >= 0.001:

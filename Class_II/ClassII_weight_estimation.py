@@ -14,8 +14,10 @@ class ClassII:
         self.fudge_factor = 1.25 # fudge factor for weight estimation for flying boat
 
 
-        # TODO: CHECK ALL UNITS
+        # TODO: CHECK ALL UNITS AND VALUES
         self.A = self.aircraft_data.data['outputs']['wing_design']['aspect_ratio'] # wing aspect ratio
+        self.A_h = self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['aspect_ratio'] # horizontal tail aspect ratio
+        self.A_v = self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['aspect_ratio'] # vertical tail aspect ratio
         self.B_h = m2ft(aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['b']) # horizontal tail span
         self.B_w = m2ft(aircraft_data.data['outputs']['wing_design']['b']) # wing span
         self.D = self.aircraft_data.data['outputs']['general']['d_fuselage'] # fuselage structural depth
@@ -40,16 +42,18 @@ class ClassII:
         self.K_tp = 0.793 # For turboprop
         self.K_tpg = 1 # landing gear constant from Raymer maybe 0???
         self.K_tr = 1 # For jet with thrust reverser
-        self.K_uht = 1 # For all moving horizontal tail                         # Check this
+        self.K_uht = 1.143 # For all moving horizontal tail                         # Check this
         self.K_vg = 1 # For variable geometry
         self.K_vs = 1 # Variable sweep
         self.K_vsh = 1 # Variable sweep
         self.taper_ratio = self.aircraft_data.data['outputs']['wing_design']['taper_ratio'] # wing taper ratio
         self.L_f = self.aircraft_data.data['outputs']['general']['l_fuselage'] # total fuselage length
         self.sweep_c_4 = self.aircraft_data.data['outputs']['wing_design']['sweep_c_4'] # wing sweep at 25% MAC
+        self.sweep_c_4_ht = self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['sweep_c_4'] # horizontal tail sweep at 25% MAC
+        self.sweep_c_4_vt = self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['sweep_c_4'] # vertical tail sweep at 25% MAC
         self.K_ws = 0.75*((1 + 2 * self.taper_ratio) / (1 + self.taper_ratio)) * self.B_w * np.tan(deg2rad(self.sweep_c_4)) / self.L_f # fuselage constant
         self.L = aircraft_data.data['outputs']['general']['l_fuselage'] # structural length
-        # self.L_a = # electrical routing distance, generators to avionics to cockpit
+        self.L_a = m2ft(2*self.aircraft_data.data['outputs']['wing_design']['b'] + self.aircraft_data.data['outputs']['wing_design']['X_LE'] + 2*self.aircraft_data.data['outputs']['general']['l_fuselage']) # electrical routing distance, generators to avionics to cockpit
         # self.L_d = # duct length
         self.L_ec = self.aircraft_data.data['outputs']['wing_design']['X_LE']*0.9 # length from engine front to cockpit, total if multiengine
         self.L_m = 0 # landing gear
@@ -65,7 +69,7 @@ class ClassII:
         self.N_ci = 2 # number of pilots
         self.N_en = self.aircraft_data.data['inputs']['n_engines'] # number of engines
         self.N_f = 3 # number of actions performed by control
-        # self.N_gen = # number of generators
+        self.N_gen = 2 # number of generators
         # self.N_l = # ultimate landing load factor
         self.N_Lt = m2ft(4.2) # Nacelle length
         self.N_m = 2 # number of mechanical functions
@@ -74,7 +78,7 @@ class ClassII:
         self.N_nw = 0 # number of nose wheels
         self.N_p = 5 # number of people
         self.N_s = 3 # number of flight control systems
-        # self.N_t = # number of fuel tanks
+        self.N_t = 1 # number of fuel tanks
         self.N_u = 8 # Number of hydraulic utility functions
         self.N_w = m2ft(1.3) # nacelle width
         self.N_z = 1.5*self.aircraft_data.data['outputs']['general']['nmax'] # ultimate load factor
@@ -82,7 +86,8 @@ class ClassII:
         self.R_kva = 50 # system electrical rating based on typical values Raymer
         self.S_c = self.aircraft_data.data['requirements']['cargo_width'] * self.aircraft_data.data['outputs']['general']['cargo_length'] # cargo floor surface area
         # self.S_cs = # total control surface area
-        # self.S_e = # elevator area
+        self.S_csw = 2*msq2ftsq(20) # control surface area wing mounted 
+        self.S_e = 2*msq2ftsq(20) # elevator area
         self.S_f = 2*np.pi*self.aircraft_data.data['outputs']['general']['r_fuselage']*self.aircraft_data.data['outputs']['general']['l_fuselage'] + 2*np.pi*self.aircraft_data.data['outputs']['general']['r_fuselage']**2 # fuselage wetted area
         # self.S_fw = # firewall surface area
         self.S_ht = self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['S'] # horizontal tail surface area
@@ -93,10 +98,11 @@ class ClassII:
         self.SFC = kgpJ2lbsphrphp(self.aircraft_data.data['inputs']['prop_consumption']) # specific fuel consumption
         # self.T = # total engine thrust
         # self.T_e = # engine thrust
-        # self.V_i = # integral tanks volume
-        # self.V_p = # self-sealing tanks volume
+        self.t_c_root = 0.12 # root chord thickness
+        self.V_p = 0 # self-sealing tanks volume
         self.V_pr = 0 # volume of pressurized section
-        self.V_t = self.aircraft_data.data['outputs']['max']['total_fuel']/0.82 # total fuel volume
+        self.V_t = L2gal(self.aircraft_data.data['outputs']['max']['total_fuel']/0.82) # total fuel volume
+        self.V_i = self.V_t # integral tanks volume
         # self.W = # # fuselage structural width
         self.W_c = kg2lbs(100000) # maximum weight of cargo
         self.W_dg = kg2lbs(self.aircraft_data.data['outputs']['max']['MTOM']) # design gross weight
@@ -105,21 +111,21 @@ class ClassII:
         # self.W_fw = # weight of fuel in wing
         # self.W_l = # landing gross weight
         self.W_press = 11.9 # weight penalty due to pressurization
-        # self.W_uav = # uninstalled avionics weight
+        self.W_uav = 20 # uninstalled avionics weight
         self.W_APU_uninstalled = kg2lbs(130) # APU weight uninstalled
 
 
 
-    # def wing_weight(self) -> float:
-    #     W_wing_lbs = 0.0051 * (self.W_dg*self.N_z)**0.557 * self.S_w**0.649 * self.A**0.5 * self.t_c_root**-0.4 * (1+self.taper_ratio)**0.1
-    #     return lbs2kg(W_wing_lbs)
+    def wing_weight(self) -> float:
+        W_wing_lbs = 0.0051 * (self.W_dg*self.N_z)**0.557 * self.S_w**0.649 * self.A**0.5 * self.t_c_root**-0.4 * (1+self.taper_ratio)**0.1 * np.cos(deg2rad(self.sweep_c_4))**-1.0 * self.S_csw**0.1
+        return lbs2kg(W_wing_lbs)
 
     def horizontal_tail(self) -> float:
-        W_horizontal_tail_lbs = 0.0379 * self.K_uht * (1 + self.F_w/self.B_h)**-0.25 * self.W_dg**0.639 * self.N_z**0.10 * self.S_ht**0.75 * self.L_t**-1.0
+        W_horizontal_tail_lbs = 0.0379 * self.K_uht * (1 + self.F_w/self.B_h)**-0.25 * self.W_dg**0.639 * self.N_z**0.10 * self.S_ht**0.75 * self.L_t**-1.0 * self.K_y**0.704 * np.cos(deg2rad(self.sweep_c_4_ht))**-1.0 * self.A_h**0.166 * (1 + self.S_e/self.S_ht)**0.1
         return lbs2kg(W_horizontal_tail_lbs)
 
     def vertical_tail(self) -> float:
-        W_vertical_tail_lbs = 0.0026 * (1 + self.H_t_H_v)**0.225 * self.W_dg**0.556 * self.N_z**0.536 * self.L_t**-0.5 * self.S_vt**0.5 * self.K_z**0.875
+        W_vertical_tail_lbs = 0.0026 * (1 + self.H_t_H_v)**0.225 * self.W_dg**0.556 * self.N_z**0.536 * self.L_t**-0.5 * self.S_vt**0.5 * self.K_z**0.875 * np.cos(deg2rad(self.sweep_c_4_vt))**-1.0 * self.A_v**0.35 * self.t_c_root**-0.5
         return lbs2kg(W_vertical_tail_lbs)
 
     def fuselage(self) -> float:
@@ -147,9 +153,9 @@ class ClassII:
         W_starter_pneumatic_lbs = 49.19*(self.N_en*self.W_en/1000)**0.541
         return lbs2kg(W_starter_pneumatic_lbs)
     
-    # def fuel_system(self):
-    #     W_fuel_system_lbs = 2.405*self.V_t**0.606*(1 + self.V_i/self.V_t)**-1.0 * (1 + self.V_p*self.V_t) * self.N_t**0.5
-    #     return lbs2kg(W_fuel_system_lbs)
+    def fuel_system(self):
+        W_fuel_system_lbs = 2.405*self.V_t**0.606*(1 + self.V_i/self.V_t)**-1.0 * (1 + self.V_p*self.V_t) * self.N_t**0.5
+        return lbs2kg(W_fuel_system_lbs)
     
     # def flight_control(self):
     #     W_flight_control_system_lbs = 145.9 * self.N_f**0.554 * (1 + self.N_m/self.N_f)**-1.0 * self.S_cs**0.20 * (self.I_y*1e-6)**0.07
@@ -167,21 +173,21 @@ class ClassII:
         W_hydraulic_system_lbs = 0.2673 * self.N_f * (self.L_f + self.B_w)**0.937
         return lbs2kg(W_hydraulic_system_lbs)
     
-    # def electrical(self):
-    #     W_electrical_system_lbs = 7.291 * self.R_kva**0.782 * self.L_a**0.346 * self.N_gen**0.10
-    #     return lbs2kg(W_electrical_system_lbs)
+    def electrical(self):
+        W_electrical_system_lbs = 7.291 * self.R_kva**0.782 * self.L_a**0.346 * self.N_gen**0.10
+        return lbs2kg(W_electrical_system_lbs)
     
-    # def avionics(self):
-    #     W_avionics_lbs = 1.73 * self.W_uav**0.983
-    #     return lbs2kg(W_avionics_lbs)
+    def avionics(self):
+        W_avionics_lbs = 1.73 * self.W_uav**0.983
+        return lbs2kg(W_avionics_lbs)
     
     def furnishings(self):
         W_furnishings_lbs = 0.0577 * self.N_c**0.1 * self.W_c ** 0.393 * self.S_f ** 0.75
         return lbs2kg(W_furnishings_lbs)
     
-    # def air_conditioning(self):
-    #     W_air_conditioning_lbs = 62.36 * self.N_p**0.25 * (self.V_pr/1000)**0.604 * self.W_uav**0.10
-    #     return lbs2kg(W_air_conditioning_lbs)
+    def air_conditioning(self):
+        W_air_conditioning_lbs = 62.36 * self.N_p**0.25 * (self.V_pr/1000)**0.604 * self.W_uav**0.10
+        return lbs2kg(W_air_conditioning_lbs)
     
     def anti_ice(self):
         W_anti_ice_lbs = 0.002 * self.W_dg
@@ -197,42 +203,42 @@ class ClassII:
     
 
     def main(self):
-        # self.W_wing = self.wing_weight()
+        self.W_wing = self.wing_weight()
         self.W_horizontal_tail = self.horizontal_tail()
         self.W_vertical_tail = self.vertical_tail()
         self.W_fuselage = self.fuselage()
         self.W_nacelle_group = self.nacelle_group()
         self.W_engine_controls = self.engine_controls()
         self.W_starter_pneumatic = self.starter_pneumatic()
-        # self.W_fuel_system = self.fuel_system()
+        self.W_fuel_system = self.fuel_system()
         # self.W_flight_control = self.flight_control()
         self.W_APU_installed = self.APU_installed()
         self.W_instruments = self.instruments()
         self.W_hydraulics = self.hydraulics()
-        # self.W_electrical = self.electrical()
-        # self.W_avionics = self.avionics()
+        self.W_electrical = self.electrical()
+        self.W_avionics = self.avionics()
         self.W_furnishings = self.furnishings()
-        # self.W_air_conditioning = self.air_conditioning()
+        self.W_air_conditioning = self.air_conditioning()
         self.W_anti_ice = self.anti_ice()
         self.W_handling_gear = self.handling_gear()
         self.W_military_cargo_handling_system = self.military_cargo_handling_system()
         self.OEW = (
-            # self.W_wing + 
+            self.W_wing + 
             self.W_horizontal_tail + 
             self.W_vertical_tail + 
             self.W_fuselage +
             self.W_nacelle_group + 
             self.W_engine_controls + 
             self.W_starter_pneumatic +
-            # self.W_fuel_system + 
+            self.W_fuel_system + 
             # self.W_flight_control + 
             self.W_APU_installed +
             self.W_instruments + 
             self.W_hydraulics + 
-            # self.W_electrical + 
-            # self.W_avionics +
+            self.W_electrical + 
+            self.W_avionics +
             self.W_furnishings + 
-            # self.W_air_conditioning + 
+            self.W_air_conditioning + 
             self.W_anti_ice +
             self.W_handling_gear + 
             self.W_military_cargo_handling_system
@@ -244,26 +250,32 @@ if __name__ == "__main__":
     class_ii = ClassII(aircraft_data)
 
     class_ii.main()
-    print(f"Design number: {class_ii.design_number}")
-    print(f"Design file: {class_ii.design_file}")
-    print(f"Design gross weight: {class_ii.W_dg:,.2f} lb")
-    print(f"Design gross weight: {lbs2kg(class_ii.W_dg):,.2f} kg")
+    # print(f"Design number: {class_ii.design_number}")
+    # print(f"Design file: {class_ii.design_file}")
+    # print(f"Design gross weight: {class_ii.W_dg:,.2f} lb")
+    # print(f"Design gross weight: {lbs2kg(class_ii.W_dg):,.2f} kg")
 
-    # print(f"Wing weight: {class_ii.wing_weight():,.2f} kg")
+
+    print(f"Wing percentage: {class_ii.W_wing/(class_ii.aircraft_data.data['outputs']['max']['OEW']/9.81)*100:.2f} %")
+
+    print(f"Wing weight: {class_ii.wing_weight():,.2f} kg")
     print(f"Horizontal tail weight: {class_ii.horizontal_tail():,.2f} kg")
     print(f"Vertical tail weight: {class_ii.vertical_tail():,.2f} kg")
     print(f"Fuselage weight: {class_ii.fuselage():,.2f} kg")
     print(f"Nacelle group weight: {class_ii.nacelle_group():,.2f} kg")
     print(f"Engine controls weight: {class_ii.engine_controls():,.2f} kg")
     print(f"Starter pneumatic weight: {class_ii.starter_pneumatic():,.2f} kg")
-    # print(f"Fuel system weight: {class_ii.fuel_system():,.2f} kg")
+    print(f"Fuel system weight: {class_ii.fuel_system():,.2f} kg")
     # print(f"Flight control weight: {class_ii.flight_control():,.2f} kg")
     print(f"APU installed weight: {class_ii.APU_installed():,.2f} kg")
     print(f"Instruments weight: {class_ii.instruments():,.2f} kg")
     print(f"Hydraulics weight: {class_ii.hydraulics():,.2f} kg")
-    # print(f"Electrical weight: {class_ii.electrical():,.2f} kg")
-    # print(f"Avionics weight: {class_ii.avionics():,.2f} kg")
+    print(f"Electrical weight: {class_ii.electrical():,.2f} kg")
+    print(f"Avionics weight: {class_ii.avionics():,.2f} kg")
+    print(f"Air conditioning weight: {class_ii.air_conditioning():,.2f} kg")
 
 
     print(f"Operating empty weight: {class_ii.OEW:,.2f} kg")
     print(f"Operating empty weight: {class_ii.aircraft_data.data['outputs']['max']['OEW']/9.81:,.2f} kg")
+
+    # print(f"Percentage OEW/MTOW: {class_ii.aircraft_data.data['outputs']['max']['OEW']/class_ii.aircraft_data.data['outputs']['max']['MTOW']*100:.2f} %")
