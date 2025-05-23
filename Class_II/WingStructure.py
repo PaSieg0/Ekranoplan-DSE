@@ -28,6 +28,8 @@ class WingStructure:
 
         self.chord_length = self.chord_root
 
+        self.S = self.aircraft_data['outputs']['wing_design']['S']
+
         self.n_stringers = self.aircraft_data['inputs']['structures']['wing_box']['n_stringers']
         self.stringer_area = self.aircraft_data['inputs']['structures']['wing_box']['stringer_area']
         self.stringer_radius = np.sqrt(self.stringer_area / np.pi)
@@ -47,9 +49,14 @@ class WingStructure:
         self.bottom_spar_margin = 1.3
         self.top_spar_margin = 0.98
 
+        self.wing_mass = 10000
+
 
     def chord_span_function(self,y):
         return self.chord_root + (self.chord_tip - self.chord_root) / (self.b/2) * y
+    
+    def wing_weight_dist(self,y):
+        return -self.wing_mass/self.S*self.chord_span_function(y)*9.81
 
     def split_airfoil_surfaces(self):
         x = np.array(self.data['x']) * self.chord_length
@@ -474,6 +481,19 @@ class WingStructure:
             self.wing_structure[idx]['I_xy'] = self.I_xy
 
         self.plot_moment_of_inertia()
+        self.plot_wing_weight()
+
+    def plot_wing_weight(self):
+
+        fig, ax = plt.subplots()
+
+        ax.plot(self.b_array, self.wing_weight_dist(self.b_array), label='Weight Distribution', color='blue')
+        ax.set_xlabel('Chord Length (m)')
+        ax.set_ylabel('Weight (N)')
+        ax.set_title('Weight Distribution vs Chord Length')
+        ax.legend()
+        ax.grid()
+        plt.show()
 
     def plot_moment_of_inertia(self):
 
@@ -593,7 +613,6 @@ class WingStructure:
         plt.ylabel("y")
         plt.axis("equal")
         plt.grid(True)
-        plt.legend()
         plt.show()
 
 
