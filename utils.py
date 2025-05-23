@@ -168,6 +168,49 @@ def deg2rad(deg):
     """
     return deg * (np.pi / 180)
 
+def kgperm32lbsperft3(kgm3):
+    """
+    Convert kg/m^3 to lbs/ft^3
+    """
+    return kgm3 * 0.062428
+
+def lbsperft32kgperm3(lbsft3):
+    """
+    Convert lbs/ft^3 to kg/m^3
+    """
+    return lbsft3 / 0.062428
+
+def Pa2lbfpftsq(Pa):
+    """
+    Convert Pa to lb/ft^2
+    """
+    return Pa * 0.0208854
+
+def lbfpftsq2Pa(lbft2):
+    """
+    Convert lb/ft^2 to Pa
+    """
+    return lbft2 / 0.0208854
+
+def kgpJ2lbsphrphp(kgpJ):
+    """
+    Convert kg/(J/s) to lbs/(hp/hr)
+    """
+    # TODO: Check if this conversion is correct i dont think so - Owen
+    return kgpJ * 0.0002388458966275
+
+def deg2rad(deg):
+    """
+    Convert degrees to radians
+    """
+    return deg * (np.pi / 180)
+
+def rad2deg(rad):
+    """
+    Convert radians to degrees
+    """
+    return rad * (180 / np.pi)
+
 def apply_number_format(cell, value):
     if isinstance(value, (int, float)):
         if abs(value) >= 0.001:
