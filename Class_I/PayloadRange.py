@@ -62,9 +62,8 @@ class RangeCalculator:
             self.Mff_nocruise *= fraction
         if mission_type == MissionType.ALTITUDE:
             self.class_i.LD = self.class_i.calculate_LD()
-            self.climb_fraction = 0.985
             range_fraction_altitude = np.exp(-self.class_i.altitude_range_WOG*self.class_i.prop_consumption*9.81/self.class_i.prop_efficiency * (self.class_i.LD)**-1)
-            self.Mff_nocruise *= range_fraction_altitude*self.climb_fraction
+            self.Mff_nocruise *= range_fraction_altitude*self.class_i.climb_fraction
 
         
     def calculate_range(self, W4_W5):

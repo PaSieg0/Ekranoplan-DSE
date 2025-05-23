@@ -7,7 +7,6 @@ from utils import Data, ISA, MissionType
 from ClassIWeightEstimation import ClassI
 from functools import lru_cache
 from tqdm import tqdm
-from scipy.interpolate import interp1d
 
 class AltitudeVelocity:
     def __init__(self, aircraft_data: Data, mission_type: MissionType):
@@ -16,7 +15,12 @@ class AltitudeVelocity:
         self.dive_speed = self.data.data['requirements']['cruise_speed'] / 0.6
         
         # Cache frequently used values to avoid repeated lookups
-        self._mtow = self.data.data['outputs']['design']['MTOW']
+        if mission_type == MissionType.FERRY:
+            self._mtow = self.data.data['outputs']['design']['MTOW']-self.data.data['requirements']['design_payload']*9.81
+        else:
+            self._mtow = self.data.data['outputs']['design']['MTOW']
+        self._current_weight = self._mtow
+
         self._S = self.data.data['outputs']['design']['S']
         self._Cd0 = self.data.data['inputs']['Cd0']
         self._AR = self.data.data['inputs']['aspect_ratio']
@@ -50,17 +54,17 @@ class AltitudeVelocity:
         rho = self._get_density(h)
         q = 0.5 * rho * V**2
         qS = q * self._S
-        Cl = self._mtow / qS
+        Cl = self._current_weight / qS
         Cd = self._Cd0 + Cl**2 * self._k
         
-        return Cd * qS * V + self._mtow * RoC
+        return Cd * qS * V + self._current_weight * RoC
 
     def calculate_power_available(self, h: float) -> float:
         """
         Calculate the power available for the aircraft at different velocities.
         Assume power available is constant for propeller engines.
         """
-        return self._engine_power * (self._get_density(h) / self._sea_level_density)**0.70 * 4
+        return self._engine_power * (self._get_density(h) / self._sea_level_density)**0.70 * 6
     
     def calculate_drag(self, V: float, h: float) -> float:
         return self.calculate_power_required(V, h)/V
@@ -74,7 +78,7 @@ class AltitudeVelocity:
         Calculate stall speed depending on altitude
         """
         denom = 0.5 * self._get_density(h) * self._CLmax * self._S
-        return np.sqrt(self._mtow / denom)
+        return np.sqrt(self._current_weight / denom)
     
     def plot_power_curve(self, h_list: np.array) -> None:
         """
@@ -128,7 +132,7 @@ class AltitudeVelocity:
 
     def calculate_RoC(self, V: float, h: float) -> float:
         """Calculate Rate of Climb at a given velocity and altitude."""
-        return (self.calculate_power_available(h) - self.calculate_power_required(V, h)) / self._mtow
+        return (self.calculate_power_available(h) - self.calculate_power_required(V, h)) / self._current_weight
     
     def calculate_AoC(self, V: float, h: float) -> float:
         """Calculate Angle of Climb at a given velocity and altitude."""
@@ -138,13 +142,13 @@ class AltitudeVelocity:
         """Vectorized version of calculate_RoC for multiple velocities at once."""
         power_available = self.calculate_power_available(h)
         power_required = np.array([self.calculate_power_required(v, h) for v in velocities])
-        return (power_available - power_required) / self._mtow
+        return (power_available - power_required) / self._current_weight
     
     def calculate_AoC_vectorized(self, velocities: np.ndarray, h: float) -> np.ndarray:
         """Vectorized version of calculate_AoC for multiple velocities at once."""
         thrust_available = np.array([self.calculate_power_available(h)/v for v in velocities])
         thrust_required = np.array([self.calculate_power_required(v, h)/v for v in velocities])
-        return np.arcsin((thrust_available - thrust_required) / self._mtow)
+        return np.arcsin((thrust_available - thrust_required) / self._current_weight)
     
     def calculate_max_RoC(self, h: float) -> tuple:
         """Find the maximum Rate of Climb and corresponding velocity at a given altitude."""
@@ -174,7 +178,7 @@ class AltitudeVelocity:
         RoC_values = self.calculate_RoC_vectorized(velocity_range, h)
         max_roc_idx = np.argmax(RoC_values)
         
-        RoD = -self.calculate_power_required(velocity_range[max_roc_idx], h, 0)/self._mtow
+        RoD = -self.calculate_power_required(velocity_range[max_roc_idx], h, 0)/self._current_weight
         
         return RoD, velocity_range[max_roc_idx]
     
@@ -183,7 +187,7 @@ class AltitudeVelocity:
         V_stall = self.calculate_stall_speed(h)
         velocity_range = np.linspace(V_stall, self.dive_speed, self.velocity_steps)
         
-        AoD_values = [np.arcsin(-self.calculate_power_required(V, h, 0)/V/self._mtow) for V in velocity_range]
+        AoD_values = [np.arcsin(-self.calculate_power_required(V, h, 0)/V/self._current_weight) for V in velocity_range]
         max_aoc_idx = np.argmax(AoD_values)
         
         return AoD_values[max_aoc_idx], velocity_range[max_aoc_idx]
@@ -286,7 +290,7 @@ class AltitudeVelocity:
 
         for h in tqdm(h_list, desc="Calculating envelope"):
             V_stall = self.calculate_stall_speed(h)
-            velocity_range = np.linspace(V_stall, self.dive_speed, self.velocity_steps)
+            velocity_range = np.linspace(V_stall, self.dive_speed*2, self.velocity_steps)
 
             # Use vectorized calculation
             RoC = self.calculate_RoC_vectorized(velocity_range, h)
@@ -523,7 +527,7 @@ class AltitudeVelocity:
             h += dh
             
         return distance
-
+    
 if __name__ == "__main__":
     # Example usage
     file_path = "design3.json"
