@@ -1,0 +1,43 @@
+# A right-hand coordinate system is adopted as illustrated in Figure 2.1 below. The origin is set at the
+# centroid of the wing box at the wing root, with the y-axis along the span, the x-axis parallel to the
+# chord towards the trailing edge, and the z-axis vertically upwards
+
+
+# The lifting structure shall have a maximum tip deflection of 15 \% 
+# of the length of the lifting structure (of span) at the most critical loading condition
+#The wing tip rotation should not exceed +/- 10 deg
+
+'''
+----------------------------Initial assumptions--------------------------------------------
+
+1. The wing box is assumed to be a cantilever beam, rigidly attached at the wing
+root. This implies that the wing tip is free, and the loads at the tip are zero.
+
+2. It is assumed that the shear center coincides with the centroid of the wing box
+cross-section.
+
+3. The wing is unswept, as initial 0.25c sweep is 0 deg. (Not really an assumption, but a note)
+
+4. Area of one stringer assumed to be 200mm2, number of stringers is a variable and area is a constant.
+
+5. All of the torque is carried by the sheets and spars,
+and none by the stringers, meaning it is a conservative estimate of the torsional stiffness as in
+reality the torque carried by the sheets and spars is higher.
+
+6. It is assumed that the enclosed area Am can be approximated by the internal
+area of the wing box as opposed to the area enclosed by the median line. This assumption will
+result in a conservative estimate of torsional stiffness as, in reality, the enclosed area is larger. This assumption
+is however considered valid as the thickness of the sheets and spars is small compared to the
+internal dimensions, and therefore the enclosed area should not change much.
+---------------------------------------------------------------------------------------------------------
+'''
+
+'''
+---------------------Simplications-------------------------------------------------
+
+1. Stringers modeled as point areas, evenly spaced.
+
+'''
+
+
+
