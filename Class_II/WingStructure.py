@@ -2,6 +2,7 @@ import os
 import sys
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.integrate import quad
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from utils import Data
@@ -51,12 +52,22 @@ class WingStructure:
 
         self.wing_mass = 10000
 
+        self.engine_positions = self.aircraft_data['outputs']['engine_positions']['y_engines']
+        self.engine_weight = self.aircraft_data['inputs']['engine']['engine_weight']
+
 
     def chord_span_function(self,y):
         return self.chord_root + (self.chord_tip - self.chord_root) / (self.b/2) * y
     
     def wing_weight_dist(self,y):
-        return -self.wing_mass/self.S*self.chord_span_function(y)*9.81
+        b_array = y.copy()
+        weight_dist = -self.wing_mass/self.S*self.chord_span_function(y)*9.81
+
+        for engine_y in self.engine_positions:
+            idx = np.argmin(np.abs(y - engine_y))
+            weight_dist[idx] -= self.engine_weight * 9.81
+
+        return weight_dist
 
     def split_airfoil_surfaces(self):
         x = np.array(self.data['x']) * self.chord_length
@@ -193,28 +204,30 @@ class WingStructure:
             }
 
 
-    def compute_centroid(self):
+    def compute_centroid_and_inertia(self):
         """
-        Compute the geometric centroid (x̄, ȳ) of the airfoil cross-section.
-        Assumes airfoil is a closed shape formed by upper then lower surface.
+        Compute the geometric centroid (x̄, ȳ) and area moments of inertia (Ixx, Iyy, Ixy)
+        of the airfoil cross-section. Assumes the airfoil is a closed polygon.
         """
-        # Create closed polygon by concatenating upper and lower surfaces
+
+        # Create closed polygon
         x_coords = np.concatenate([self.x_array, self.x_array[::-1]])
         y_coords = np.concatenate([self.y_upper, self.y_lower[::-1]])
 
-        # Shoelace formula components
-        A = 0  # Signed area
-        Cx = 0
-        Cy = 0
         n = len(x_coords)
 
+        A = 0
+        Cx = 0
+        Cy = 0
         for i in range(n):
             x0, y0 = x_coords[i], y_coords[i]
             x1, y1 = x_coords[(i + 1) % n], y_coords[(i + 1) % n]
+
             cross = x0 * y1 - x1 * y0
             A += cross
             Cx += (x0 + x1) * cross
             Cy += (y0 + y1) * cross
+
 
         A *= 0.5
         if A == 0:
@@ -224,7 +237,21 @@ class WingStructure:
         Cy /= (6 * A)
 
         self.centroid = (Cx, Cy)
+        self.area = abs(A)
+
         #print(f"Airfoil Centroid: x̄ = {Cx:.4f}, ȳ = {Cy:.4f}")
+
+
+    def wing_box_integral(self, x1, x2, intersect, slope):
+        """
+        Calculate the integral of the wing box cross-section area between two x-coordinates.
+        """
+        def integrand(x):
+            return slope * x + intersect
+
+        area, error = quad(integrand, x1, x2)
+        return area
+
 
     def get_wingbox_panels(self):
         front_x = self.front_spar * self.chord_length
@@ -238,12 +265,18 @@ class WingStructure:
 
             top_panel_angle = np.arctan2(spar_info['front_spar_top'] - spar_info['rear_spar_top'], front_x - rear_x)
             bottom_panel_angle = np.arctan2(spar_info['front_spar_bottom'] - spar_info['rear_spar_bottom'], front_x - rear_x)
+
+            cell_area_top = self.wing_box_integral(front_x, rear_x, spar_info['front_spar_top'], np.tan(top_panel_angle))
+            cell_area_bottom = self.wing_box_integral(front_x, rear_x, spar_info['front_spar_bottom'], np.tan(bottom_panel_angle))
+
+            cell_area = cell_area_top - cell_area_bottom
             
             self.panel_info = {
                 'top_panel_length': top_panel_length,
                 'bottom_panel_length': bottom_panel_length,
                 'top_panel_angle': top_panel_angle,
                 'bottom_panel_angle': bottom_panel_angle,
+                'cell_area_1': cell_area,
             }
         
         elif self.n_cells == 2:
@@ -327,7 +360,13 @@ class WingStructure:
         return I_xx
     
     def get_moment_of_inertia(self):
+        I_xx_mid_spars = 0
+        I_yy_mid_spars = 0
+        I_xy_mid_spars = 0
 
+        I_xx_panels = 0
+        I_yy_panels = 0
+        I_xy_panels = 0
 
         front_spar_x = self.spar_info['front_spar_x']
         rear_spar_x = self.spar_info['rear_spar_x']
@@ -366,14 +405,6 @@ class WingStructure:
 
 
         elif self.n_cells > 1:
-            
-            I_xx_mid_spars = 0
-            I_yy_mid_spars = 0
-            I_xy_mid_spars = 0
-
-            I_xx_panels = 0
-            I_yy_panels = 0
-            I_xy_panels = 0
 
             for i in range(1, self.n_cells):
                 front_spar_x = self.spar_info[f'front_spar_x']
@@ -449,9 +480,15 @@ class WingStructure:
             I_yy_wing_bottom += self.beam_standard_Iyy(length, self.t_skin, abs(distance_yy), np.arctan(slope))
             I_xy_wing_bottom += self.beam_standard_Ixy(length, self.t_skin, xy, np.arctan(slope))
             
-        self.I_xx = I_xx_front_spar + I_xx_rear_spar + I_xx_panels + I_xx_wing_top + I_xx_wing_bottom
-        self.I_yy = I_yy_front_spar + I_yy_rear_spar + I_yy_panels + I_yy_wing_top + I_yy_wing_bottom
-        self.I_xy = I_xy_front_spar + I_xy_rear_spar + I_xy_panels + I_xy_wing_top + I_xy_wing_bottom
+        self.I_xx = I_xx_front_spar + I_xx_rear_spar + I_xx_panels + I_xx_wing_top + I_xx_wing_bottom + I_xx_mid_spars
+        self.I_yy = I_yy_front_spar + I_yy_rear_spar + I_yy_panels + I_yy_wing_top + I_yy_wing_bottom + I_yy_mid_spars
+        self.I_xy = I_xy_front_spar + I_xy_rear_spar + I_xy_panels + I_xy_wing_top + I_xy_wing_bottom + I_xy_mid_spars
+
+    def get_polar_moment(self):
+
+        # wing_box polar moment of inertia
+
+        pass
 
     def get_wing_structure(self):
         self.wing_structure = {}
@@ -463,12 +500,13 @@ class WingStructure:
 
             self.split_airfoil_surfaces()
             self.get_element_functions()  
-            self.compute_centroid()
+            self.compute_centroid_and_inertia()
             self.get_spar_heights()
             self.get_wingbox_panels()
             self.get_moment_of_inertia()
 
             self.wing_structure[idx]['elements'] = self.element_functions
+            self.wing_structure[idx]['area'] = self.area
             self.wing_structure[idx]['spar_info'] = self.spar_info
             self.wing_structure[idx]['centroid'] = self.centroid
             self.wing_structure[idx]['panel_info'] = self.panel_info
@@ -517,7 +555,10 @@ class WingStructure:
             front_spar_bottom = self.wing_structure[chord_idx]['spar_info']['front_spar_bottom']
             rear_spar_top = self.wing_structure[chord_idx]['spar_info']['rear_spar_top']
             rear_spar_bottom = self.wing_structure[chord_idx]['spar_info']['rear_spar_bottom']
-            
+
+            cell_area = self.wing_structure[chord_idx]['panel_info']['cell_area_1']
+            airfoil_area = self.wing_structure[chord_idx]['area']
+            print(cell_area, airfoil_area)
 
             x_array = self.wing_structure[chord_idx]['x_coords']
             y_upper = self.wing_structure[chord_idx]['y_upper']
@@ -543,8 +584,8 @@ class WingStructure:
             front_spar_bottom = self.wing_structure[chord_idx]['spar_info']['front_spar_bottom']
             rear_spar_top = self.wing_structure[chord_idx]['spar_info']['rear_spar_top']
             rear_spar_bottom = self.wing_structure[chord_idx]['spar_info']['rear_spar_bottom']
-            mid_spar_top = self.wing_structure[chord_idx]['spar_info']['mid_spar_top']
-            mid_spar_bottom = self.wing_structure[chord_idx]['spar_info']['mid_spar_bottom']
+            mid_spar_top = self.wing_structure[chord_idx]['spar_info']['mid_spar_top_1']
+            mid_spar_bottom = self.wing_structure[chord_idx]['spar_info']['mid_spar_bottom_1']
 
             x_array = self.wing_structure[chord_idx]['x_coords']
             y_upper = self.wing_structure[chord_idx]['y_upper']

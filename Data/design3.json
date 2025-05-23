@@ -39,9 +39,8 @@
         "ltcd": 4.5,
         "lnd": 1.5,
         "lfd": 8.5,
-        "engine_power": 8202000,
         "structures": {
-            "wing_box": {               
+            "wing_box": {
                 "front_spar": 0.15,
                 "rear_spar": 0.65,
                 "t_skin": 1,
@@ -54,8 +53,16 @@
                 "t_wing": 1,
                 "stringer_area": 200,
                 "n_stringers": 10,
-                "n_cells": 3
+                "n_cells": 1
             }
+        },
+        "engine": {
+            "prop_diameter": 5.2,
+            "engine_length": 4.2,
+            "engine_weight": 1900,
+            "engine_power": 8202000,
+            "engine_efficiency": 0.85,
+            "n_engines": 6.0
         }
     },
     "requirements": {
@@ -253,6 +260,23 @@
                 "LE_pos": 67.8572829660974,
                 "relative_pos_mac/4": 0.9374134265694098
             }
+        },
+        "engine_positions": {
+            "y_engines": [
+                7.016363005162699,
+                12.3163630051627,
+                17.6163630051627
+            ],
+            "z_engines": [
+                8.955197082140456,
+                9.047708926260011,
+                9.140220770379564
+            ],
+            "wing_tip_clearance": [
+                8.564963882660816,
+                8.65747572678037,
+                8.749987570899924
+            ]
         }
     },
     "kinematic_viscosity": 1.006e-06,
