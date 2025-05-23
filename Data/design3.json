@@ -39,7 +39,24 @@
         "ltcd": 4.5,
         "lnd": 1.5,
         "lfd": 8.5,
-        "engine_power": 8202000
+        "engine_power": 8202000,
+        "structures": {
+            "wing_box": {               
+                "front_spar": 0.15,
+                "rear_spar": 0.65,
+                "t_skin": 1,
+                "t_front_spar": 1,
+                "t_rear_spar": 1,
+                "t_mid_spar_1": 1,
+                "mid_spar_1": 0.3,
+                "t_mid_spar_2": 1,
+                "mid_spar_2": 0.45,
+                "t_wing": 1,
+                "stringer_area": 200,
+                "n_stringers": 10,
+                "n_cells": 3
+            }
+        }
     },
     "requirements": {
         "design_range": 3704000,
