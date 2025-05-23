@@ -4,10 +4,10 @@ from utils import Data
 class EngineHeight:
     def __init__(self, data: Data):
         self.data = data
-        self.diameter_engine = 5.5  # m
+        self.diameter_engine = self.data.data['inputs']['engine']['diameter']  # m
         self.clearance_engine_fuselage = 2  # m
         self.clearance_enginetips = 0.1  # m
-        self.sea_water_density = 1020  # kg/m^3
+        self.sea_water_density = self.data.data['rho_density']  # kg/m^3
         
         # Extract required data from input
         self.wing_type = self.data.data['inputs']['wing_type']
@@ -28,39 +28,38 @@ class EngineHeight:
         if self.n_fuselage == 1:
             floating_depth = self.calculate_floating_depth()
             # Calculate y positions
-            y_engines = np.zeros(int(self.n_engines/2))
+            self.y_engines = np.zeros(int(self.n_engines/2))
             for j in range(int(self.n_engines/2)):
                 if j == 0:
-                    y_engines[j] = self.d_fuselage/2 + (self.diameter_engine/2)
+                    self.y_engines[j] = self.d_fuselage/2 + (self.diameter_engine/2)
                 else:
-                    y_engines[j] = y_engines[j-1] + (self.diameter_engine + self.clearance_enginetips)
+                    self.y_engines[j] = self.y_engines[j-1] + (self.diameter_engine + self.clearance_enginetips)
         else:
             floating_depth = self.calculate_floating_depth()
             if self.fuselage_separation > self.diameter_engine*2+self.clearance_engine_fuselage*2 + self.clearance_enginetips:
-                y_engines = np.zeros(int(self.n_engines/2))
+                self.y_engines = np.zeros(int(self.n_engines/2))
                 
         # Calculate z positions and clearances
-        z_engines = np.zeros_like(y_engines)
+        self.z_engines = np.zeros_like(self.y_engines)
         if self.wing_type == "HIGH":
-            z_engines = self.d_fuselage + np.tan(np.deg2rad(self.dihedral))*y_engines
+            self.z_engines = self.d_fuselage + np.tan(np.deg2rad(self.dihedral))*self.y_engines
         elif self.wing_type == "LOW":
-            z_engines = np.tan(np.deg2rad(self.dihedral))*y_engines
+            self.z_engines = np.tan(np.deg2rad(self.dihedral))*self.y_engines
         
-        wing_tip_clearance = z_engines - floating_depth
-        
-        return y_engines, z_engines, wing_tip_clearance
+        self.wing_tip_clearance = self.z_engines - floating_depth
+
 
 def main():
 
-    json_file = f"design3.json"
+    json_file = "design3.json"
     aircraft_data = Data(json_file)
     engine_height = EngineHeight(aircraft_data)
     y_engines, z_engines, wing_tip_clearance = engine_height.calculate_engine_positions()
     
-    print(f"\nEngine y-coordinates (spanwise position) for design 3:")
-    print(f"Left side engines: {-y_engines[::-1]} m")
-    print(f"Right side engines: {y_engines} m\n")
-    print(f"Engine clearance distance for design 3 is {wing_tip_clearance} m")
+    # print(f"\nEngine y-coordinates (spanwise position) for design 3:")
+    # print(f"Left side engines: {-y_engines[::-1]} m")
+    # print(f"Right side engines: {y_engines} m\n")
+    # print(f"Engine clearance distance for design 3 is {wing_tip_clearance} m")
 
 
 if __name__ == "__main__":
