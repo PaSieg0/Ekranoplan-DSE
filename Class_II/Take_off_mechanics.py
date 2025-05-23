@@ -44,3 +44,4 @@ class Take_off_mechanics:
         self.Cd_water = self.aircraft_data.data['outputs']['wing_design']['Cd_water']
 
     def Take_off(self):
+        rho_water = 1025 #kg/m^3
