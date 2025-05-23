@@ -5,8 +5,7 @@ import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from ISA_Class import ISA
-from utils import Data
+from utils import Data, ISA
 
 def Calculate_U_ref(altitude):
     U_ref = 17.07-((17.07-13.41)/15000)*altitude # m/s

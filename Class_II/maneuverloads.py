@@ -5,14 +5,13 @@ import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from utils import Data
-from ISA_Class import ISA
+from utils import Data, ISA
 
 def calculate_n(rho, CL, W, S, V):
     L = CL*1/2*rho*V**2*S
     return L/W
 
-def calculante_n_limits(rho, CLmax, W, S, V, nmax, nmin, V_cruise, V_dive):
+def calculate_n_limits(rho, CLmax, W, S, V, nmax, nmin, V_cruise, V_dive):
     if V < V_cruise or CLmax > 0:
         n=calculate_n(rho, CLmax, W, S, V)
         if n > nmax:
@@ -52,8 +51,8 @@ def plot_load_diagram(aircraft_data):
 
     rho, CLmax_clean, CLmax_flapped, W, S, nmax, nmin, V_cruise, V_dive, V_flapped
     V_range = np.arange(0, V_dive, 0.1)  # Define a range of velocities
-    n_positive = [calculante_n_limits(rho, CLmax_clean, W, S, V, nmax, nmin, V_cruise, V_dive) for V in V_range]  # Calculate positive load factor for each velocity
-    n_negative = [calculante_n_limits(rho, -CLmax_clean, W, S, V, nmax, nmin, V_cruise, V_dive) for V in V_range]  # Calculate negative load factor for each velocity
+    n_positive = [calculate_n_limits(rho, CLmax_clean, W, S, V, nmax, nmin, V_cruise, V_dive) for V in V_range]  # Calculate positive load factor for each velocity
+    n_negative = [calculate_n_limits(rho, -CLmax_clean, W, S, V, nmax, nmin, V_cruise, V_dive) for V in V_range]  # Calculate negative load factor for each velocity
 
     # V_range_flapped = np.arange(0, V_flapped, 0.1)  # Define a range of velocities
     # n_positive_flapped = [calculante_n_limits(rho, CLmax_flapped, W, S, V, nmax, nmin, V_cruise, V_flapped) for V in V_range_flapped]  # Calculate positive load factor for each velocity
