@@ -68,5 +68,6 @@ glenn_points = airfoil_points = [
     (1.0000, 0.0082)
 ]
 
-
-print(interpolate_airfoil(glenn_points, num_interp=200, plot=True))
+for i in range(len(interpolate_airfoil(glenn_points, num_interp=200, plot=False))):
+    print(*interpolate_airfoil(glenn_points, num_interp=200, plot=False)[i])
+# print(*interpolate_airfoil(glenn_points, num_interp=200, plot=True))
