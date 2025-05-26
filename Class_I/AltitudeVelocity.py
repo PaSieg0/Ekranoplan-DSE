@@ -153,12 +153,21 @@ class AltitudeVelocity:
     def calculate_max_RoC(self, h: float) -> tuple:
         """Find the maximum Rate of Climb and corresponding velocity at a given altitude."""
         V_stall = self.calculate_stall_speed(h)
-        velocity_range = np.linspace(V_stall, self.dive_speed, self.velocity_steps)
+
+        k1 = 0
+        k2 = self._k
         
-        RoC_values = self.calculate_RoC_vectorized(velocity_range, h)
-        max_roc_idx = np.argmax(RoC_values)
+        Cl_opt = (k1 + np.sqrt(k1**2+12*k2*self._Cd0))/(2*k2) # Optimal lift coefficient
+        V_opt = np.sqrt(2 * self._current_weight / (self._get_density(h) * self._S * Cl_opt))  # Optimal velocity
+
+        if V_opt < V_stall:
+            V_opt = V_stall
+        elif V_opt > self.dive_speed:
+            V_opt = self.dive_speed
         
-        return RoC_values[max_roc_idx], velocity_range[max_roc_idx]
+        RoC = self.calculate_RoC(V_opt, h)
+        
+        return RoC, V_opt
     
     def calculate_max_AoC(self, h: float) -> tuple:
         """Find the maximum Angle of Climb and corresponding velocity at a given altitude."""
@@ -171,16 +180,23 @@ class AltitudeVelocity:
         return AoC_values[max_aoc_idx], velocity_range[max_aoc_idx]
     
     def calculate_min_RoD(self, h: float) -> tuple:
-        """Find the maximum Rate of Climb and corresponding velocity at a given altitude."""
+        """Find the min Rate of Descent and corresponding velocity at a given altitude."""
         V_stall = self.calculate_stall_speed(h)
-        velocity_range = np.linspace(V_stall, self.dive_speed, self.velocity_steps)
+
+        k1 = 0
+        k2 = self._k
         
-        RoC_values = self.calculate_RoC_vectorized(velocity_range, h)
-        max_roc_idx = np.argmax(RoC_values)
+        Cl_opt = (k1 + np.sqrt(k1**2+12*k2*self._Cd0))/(2*k2) # Optimal lift coefficient
+        V_opt = np.sqrt(2 * self._current_weight / (self._get_density(h) * self._S * Cl_opt))  # Optimal velocity
+
+        if V_opt < V_stall:
+            V_opt = V_stall
+        elif V_opt > self.dive_speed:
+            V_opt = self.dive_speed
+           
+        RoD = -self.calculate_power_required(V_opt, h, 0)/self._current_weight
         
-        RoD = -self.calculate_power_required(velocity_range[max_roc_idx], h, 0)/self._current_weight
-        
-        return RoD, velocity_range[max_roc_idx]
+        return RoD, V_opt
     
     def calculate_min_AoD(self, h: float) -> tuple:
         """Find the maximum Angle of Climb and corresponding velocity at a given altitude."""

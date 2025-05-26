@@ -84,10 +84,23 @@ if __name__ == "__main__":
     aircraft_data = Data("design3.json")
     mission_type = MissionType.DESIGN  # or any other mission type
     optimum_speeds = OptimumSpeeds(aircraft_data, mission_type)
-    
-    for i in np.arange(0, 3704000, optimum_speeds.ddist):
-        v_range = optimum_speeds.v_range(0)  # Example altitude
-        # Call methods as needed
-        print(optimum_speeds.L_over_D(0, v_range), optimum_speeds.calculate_drag(v_range, 0))  # Example altitude and velocity
 
-        optimum_speeds.step_weight()
+    v_range = optimum_speeds.v_range(0)
+    v_endurance = optimum_speeds.v_endurance(0)
+    _, v_max_roc = optimum_speeds.calculate_max_RoC(0)
+    _, v_max_aod = optimum_speeds.calculate_max_AoC(0)
+    _, v_min_rod = optimum_speeds.calculate_min_RoD(0)
+    _, v_min_aod = optimum_speeds.calculate_min_AoD(0)
+
+    print(f"Optimum range speed at h=0: {v_range:.2f} m/s")
+    print(f"Optimum endurance speed at h=0: {v_endurance:.2f} m/s")
+    print(f"Maximum rate of climb speed at h=0: {v_max_roc:.2f} m/s")
+    print(f"Maximum angle of climb speed at h=0: {v_max_aod:.2f} m/s")
+    print(f"Minimum rate of descent speed at h=0: {v_min_rod:.2f} m/s")
+    print(f"Minimum angle of descent speed at h=0: {v_min_aod:.2f} m/s")
+    
+    # for i in np.arange(0, 3704000, optimum_speeds.ddist):
+    #     v_range = optimum_speeds.v_range(0)  # Example altitude
+    #     # Call methods as needed
+    #     print(optimum_speeds.L_over_D(0, v_range), optimum_speeds.calculate_drag(v_range, 0))  # Example altitude and velocity
+    #     optimum_speeds.step_weight()
