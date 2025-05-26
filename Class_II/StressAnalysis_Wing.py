@@ -23,14 +23,23 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
         self.engine_thrust = self.engine_power / self.V
         self.dy = np.gradient(self.b_array)
         self.E = 70e9
-        self.load_factor = 3.5
+        self.max_load_factor = self.aircraft_data.data['outputs']['general']['nmax']
+        self.min_load_factor = self.aircraft_data.data['outputs']['general']['nmin']
+        self.evaluate_case = 'max'
         self.drag_array = -self.drag_function(self.b_array)
-        self.vertical_distribution = self.load_factor*self.lift_function(self.b_array) - self.wing_weight_dist()
 
+    def resultant_vertical_distribution(self):
+        if self.evaluate_case == 'max':
+            return self.max_load_factor*self.lift_function(self.b_array) - self.wing_weight_dist()
+        elif self.evaluate_case == 'min':
+            return self.min_load_factor*self.lift_function(self.b_array) + self.wing_weight_dist()
     
     def resultant_torque_distribution(self):
         quarter_chord_dist = [self.wing_structure[i]['quarter_chord_dist'] for i in range(len(self.wing_structure))]
-        return self.load_factor*self.lift_function(self.b_array) * quarter_chord_dist + self.moment_function(self.b_array)
+        if self.evaluate_case == 'max':
+            return self.max_load_factor*self.lift_function(self.b_array) * quarter_chord_dist + self.moment_function(self.b_array)
+        elif self.evaluate_case == 'min':
+            return self.min_load_factor*self.lift_function(self.b_array) * quarter_chord_dist + self.moment_function(self.b_array)
     
     def resultant_horizontal_distribution(self):
         self.horizontal_distribution = self.drag_array.copy()
@@ -40,7 +49,7 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
 
     def internal_vertical_shear_force(self):
 
-        load = self.vertical_distribution
+        load = self.resultant_vertical_distribution()
 
         Vy_flipped = np.cumsum(load[::-1] * self.dy[::-1])
         self.Vy_internal = -Vy_flipped[::-1]
@@ -178,7 +187,7 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
     def plot_vertical_distribution(self):
         
         plt.figure(figsize=(10, 6))
-        plt.plot(self.b_array, self.vertical_distribution, label='Vertical Distribution', color='blue')
+        plt.plot(self.b_array, self.resultant_vertical_distribution(), label='Vertical Distribution', color='blue')
 
         plt.xlabel('Spanwise Position (y) [m]')
         plt.ylabel('Force [N]')
