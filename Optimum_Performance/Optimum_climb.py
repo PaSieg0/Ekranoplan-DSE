@@ -4,7 +4,7 @@ import os
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from utils import Data, ISA, MissionType
-from AltitudeVelocity import AltitudeVelocity
+from Class_I.AltitudeVelocity import AltitudeVelocity
 from tqdm import tqdm
 
 class OptimumClimb(AltitudeVelocity):
