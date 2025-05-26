@@ -61,11 +61,13 @@ class EnumEncoder(json.JSONEncoder):
 
 
 class Data:
-    def __init__(self, design_file):
-        if 'dat' in design_file:
-            self.data = self.load_dat_file(design_file)
-        else:
+    def __init__(self, design_file, file_type='design'):
+        if file_type == 'design':
             self.data = self.load_design(design_file)
+        elif file_type == 'airfoil_geometry':
+            self.data = self.load_dat_file(design_file)
+        elif file_type == 'aerodynamics':
+            self.data = self.load_aerodynamic_distribution(design_file)
 
     def load_design(self, design_file) -> dict[str, Any]:
         file_path = os.path.join("Data", design_file)
@@ -115,6 +117,58 @@ class Data:
         except IOError as e:
             print(f"Error: Failed to read from {file_path}. {e}")
         return {}
+
+    def load_aerodynamic_distribution(self, filename: str):
+        
+        folder_path = os.path.join(os.path.dirname(__file__), "Data")
+        file_path = os.path.join(folder_path, filename)
+
+        yspan_values = []
+        cl_values = []
+        chord_values = []
+        induced_cd_values = []
+        Cm_values = []
+        header_found = False
+
+        with open(file_path, 'r') as f:
+            for line in f:
+                stripped = line.strip()
+                # Look for table header by checking for both 'y-span' and 'Cl'
+                if not header_found and "y-span" in stripped and "Cl" in stripped and "Chord" in stripped:
+                    header_found = True
+                    continue  # skip the header line
+                if header_found:
+                    # Stop reading if we hit an empty line
+                    if not stripped:
+                        break
+                    # Split by whitespace. This assumes the columns are space-separated.
+                    parts = stripped.split()
+                    if len(parts) < 4:
+                        continue
+                    try:
+                        y_span = float(parts[0])
+                        cl = float(parts[3])
+                        chord = float(parts[1])
+                        Icd =float(parts[5])
+                        Cm = float(parts[7])
+                        yspan_values.append(y_span)
+                        cl_values.append(cl)
+                        chord_values.append(chord)
+                        induced_cd_values.append(Icd)
+                        Cm_values.append(Cm)
+                    except ValueError:
+                        # In case conversion fails, skip the row
+                        continue
+            
+            forces_dict = {
+                "yspan": yspan_values,
+                "cl": cl_values,
+                "chord": chord_values,
+                "induced_cd": induced_cd_values,
+                "cm": Cm_values
+            }
+
+            return forces_dict
 
 
 def generate_df():
