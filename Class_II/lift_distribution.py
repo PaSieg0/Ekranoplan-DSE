@@ -17,7 +17,7 @@ def calculate_elliptical_chord(y, b, S):
     y = np.minimum(abs(y), b/2 - eps)
     return (4*S/(np.pi*b)) * np.sqrt(1 - (2*y/b)**2)
 
-def plot_wing_planform():
+def plot_wing_planform(correction=True):
     # Load data and create wing planform object
     data = Data("design3.json")
     wing = WingPlanform(data)
@@ -60,8 +60,10 @@ def plot_wing_planform():
     n_max, n_min = plot_complete_load_diagram(data, h=0, plot=False)  # Get load factors without plotting
     print(f"\nLoad factors: n_max = {n_max:.2f}, n_min = {n_min:.2f}")
       # Calculate lift distributions
+    if correction:
+        Factor *= n_max
     lift_per_unit_span = chord_distribution * Factor  # N/m
-    lift_per_unit_span_elliptical = c_elliptical * Factor  # N/m
+    lift_per_unit_span_elliptical = c_elliptical * Factor # N/m
     lift_per_unit_span_average = average_chord * Factor  # N/m
 
     # Plot lift distributions
