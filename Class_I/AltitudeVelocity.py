@@ -30,7 +30,7 @@ class AltitudeVelocity:
         self._sea_level_density = ISA(0).rho
         self._k = 1 / (np.pi * self._AR * self._e)  # Induced drag factor
         self.velocity_steps = 2000  # Number of velocity steps for calculations
-        self.height_steps = 2000  # Number of height steps for calculations
+        self.height_steps = 7000  # Number of height steps for calculations
         
         # Pre-calculate the mps to fpm conversion factor
         self.mps2fpm = 196.85  # metres per second to feet per minute
@@ -64,7 +64,7 @@ class AltitudeVelocity:
         Calculate the power available for the aircraft at different velocities.
         Assume power available is constant for propeller engines.
         """
-        return self._engine_power * (self._get_density(h) / self._sea_level_density)**0.70 * 6
+        return self._engine_power * (self._get_density(h) / self._sea_level_density)**0.70 * 4
     
     def calculate_drag(self, V: float, h: float) -> float:
         return self.calculate_power_required(V, h)/V
@@ -466,6 +466,36 @@ class AltitudeVelocity:
         plt.hlines(y=reference_altitude_display, xmin=v_min, xmax=v_max, color='purple', 
                 linestyle=':', linewidth=2, label=altitude_label)
         
+
+        # Annotate key points, max RoC at h = 0 and max AoC at h = 0
+        max_roc, v_max_roc = self.calculate_max_RoC(0)
+        max_aoc, v_max_aoc = self.calculate_max_AoC(0)
+
+        # Use consistent annotation formatting as in the guide
+        ax = plt.gca()
+        # Max RoC at h=0
+        ax.scatter(v_max_roc, 0, color='orange', s=10, marker='o')
+        ax.annotate(
+            f"Max RoC:\n {max_roc * self.mps2fpm:.0f} ft/min",
+            (v_max_roc, 0),
+            textcoords="offset points",
+            xytext=(60, 10),
+            ha='center',
+            fontsize=11,
+            arrowprops=dict(arrowstyle="->", color='orange', lw=1)
+        )
+        # Max AoC at h=0
+        ax.scatter(v_max_aoc, 0, color='purple', s=10, marker='o')
+        ax.annotate(
+            f"Max AoC:\n {max_aoc * 180/np.pi:.1f} degrees",
+            (v_max_aoc, 0),
+            textcoords="offset points",
+            xytext=(50, 30),
+            ha='center',
+            fontsize=11,
+            arrowprops=dict(arrowstyle="->", color='purple', lw=1)
+        )
+
         # Set appropriate axis labels based on airspeed type and altitude units
         if airspeed_type == 'equivalent':
             plt.xlabel('Equivalent Airspeed (m/s)')
