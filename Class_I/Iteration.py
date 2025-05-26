@@ -3,8 +3,8 @@ import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import numpy as np
 from scipy.optimize import fsolve
-from WingLoading import main, WingLoading
-from ClassIWeightEstimation import ClassI
+from Class_I.WingLoading import main, WingLoading
+from Class_I.ClassIWeightEstimation import ClassI
 import matplotlib.pyplot as plt
 from utils import Data, ISA, MissionType, AircraftType, WingType
 
@@ -179,6 +179,7 @@ class AircraftIteration:
         self.aircraft_data.data['outputs']['max']['mission_fuel_L'] = max(self.aircraft_data.data['outputs']['design']['mission_fuel_L'], self.aircraft_data.data['outputs']['ferry']['mission_fuel_L'], self.aircraft_data.data['outputs']['altitude']['mission_fuel_L'])
         self.aircraft_data.data['outputs']['max']['reserve_fuel_L'] = max(self.aircraft_data.data['outputs']['design']['reserve_fuel_L'], self.aircraft_data.data['outputs']['ferry']['reserve_fuel_L'], self.aircraft_data.data['outputs']['altitude']['reserve_fuel_L'])
         self.aircraft_data.data['outputs']['max']['max_fuel_L'] = 1.1 * self.aircraft_data.data['outputs']['max']['total_fuel_L']
+        self.aircraft_data.data['outputs']['max']['WS'] = min(self.aircraft_data.data['outputs']['design']['WS'], self.aircraft_data.data['outputs']['ferry']['WS'], self.aircraft_data.data['outputs']['altitude']['WS'])
 
 if __name__=='__main__':
     iteration = AircraftIteration(

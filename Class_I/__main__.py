@@ -1,16 +1,16 @@
 import os
-from Iteration import AircraftIteration
-from ClassIWeightEstimation import MissionType
-from bar_graph import plot_bar_graph
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
+from Class_I.Iteration import AircraftIteration
+from Class_I.ClassIWeightEstimation import MissionType
+from Class_I.bar_graph import plot_bar_graph
 from utils import design_json_to_excel,Data, generate_df
-from Fuselage import Fuselage
-from PrelimWingPlanformDesign import WingPlanform
-from Cd0Estimation import Cd0Estimation
-from cgRange import CGRange
-from empennage import Empennage
+from Class_I.Fuselage import Fuselage
+from Class_I.PrelimWingPlanformDesign import WingPlanform
+from Class_I.Cd0Estimation import Cd0Estimation
+from Class_I.cgRange import CGRange
+from Class_I.empennage import Empennage
 
 
 def main(create_excel: bool = False) -> None:

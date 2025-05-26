@@ -3,8 +3,8 @@ import os
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from utils import Data, ISA, EmpType, AircraftType, MissionType
-from ClassIWeightEstimation import ClassI, MissionType, AircraftType
-from Iteration import AircraftIteration
+from Class_I.ClassIWeightEstimation import ClassI, MissionType, AircraftType
+from Class_I.Iteration import AircraftIteration
 
 class Cd0Estimation:
     #TODO: this is very preliminary, need to consider form factors, IFF Cfc etc. later
