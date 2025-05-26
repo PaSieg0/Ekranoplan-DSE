@@ -25,7 +25,7 @@ class ClassII:
         self.F_w = m2ft(aircraft_data.data['outputs']['general']['d_fuselage']) # fuselage width at horizontal tail
         self.H_t = m2ft(self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['tail_height']) - m2ft(self.aircraft_data.data['outputs']['general']['d_fuselage']) # horizontal tail height
         self.H_t_H_v = 1
-        self.I_y = kgmsq2lbsftsq(250) # Yawing moment of interia
+        self.I_y = kgmsq2lbsftsq(10000) # Yawing moment of interia
         self.K_cb = 1 # landging gear so 0???
         # self.K_d = # Duct constant from figure
         self.K_door = 1.12 # door constant from Raymer
@@ -37,8 +37,8 @@ class ClassII:
         self.K_ng = 1.017 # Pylon mounted nacelle
         self.K_np = 1 # landing gear constant from Raymer maybe 0???
         self.K_p = 1.4 # For propeller
-        self.K_r = 1 # For reciprocating engine
-        self.K_rht = 1 # For rolling tail                                       # Check this
+        self.K_r = 1.133 # For reciprocating engine
+        self.K_rht = 1.047 # For rolling tail                                       # Check this
         self.K_tp = 0.793 # For turboprop
         self.K_tpg = 1 # landing gear constant from Raymer maybe 0???
         self.K_tr = 1 # For jet with thrust reverser
@@ -55,7 +55,6 @@ class ClassII:
         self.L = m2ft(aircraft_data.data['outputs']['general']['l_fuselage']) # structural length
         self.L_a = m2ft(2*self.aircraft_data.data['outputs']['wing_design']['b'] + self.aircraft_data.data['outputs']['wing_design']['X_LE'] + 2*self.aircraft_data.data['outputs']['general']['l_fuselage']) # electrical routing distance, generators to avionics to cockpit
         # self.L_d = # duct length
-        self.L_ec = m2ft(self.aircraft_data.data['outputs']['wing_design']['X_LE']*0.9) # length from engine front to cockpit, total if multiengine
         self.L_m = 0 # landing gear
         self.L_n = 0 # # landing gear
         # self.L_s = # single duct length from figure
@@ -68,6 +67,7 @@ class ClassII:
         self.N_c = 5 # number of crew
         self.N_ci = 2 # number of pilots
         self.N_en = self.aircraft_data.data['inputs']['n_engines'] # number of engines
+        self.L_ec = self.N_en*m2ft(self.aircraft_data.data['outputs']['wing_design']['X_LE']*0.9) # length from engine front to cockpit, total if multiengine
         self.N_f = 3 # number of actions performed by control
         self.N_gen = 2 # number of generators
         # self.N_l = # ultimate landing load factor
@@ -103,16 +103,16 @@ class ClassII:
         self.V_pr = 0 # volume of pressurized section
         self.V_t = L2gal(self.aircraft_data.data['outputs']['max']['max_fuel_L']) # total fuel volume
         self.V_i = self.V_t # integral tanks volume
-        # self.W = # # fuselage structural width
+        # self.W = # fuselage structural width
         self.W_c = kg2lbs(100000) # maximum weight of cargo
         self.W_dg = kg2lbs(self.aircraft_data.data['outputs']['max']['MTOM']) # design gross weight
-        self.W_ec = kg2lbs(2500) # weight of engine and contents
+        self.W_ec = kg2lbs(2600) # weight of engine and contents
         self.W_en = kg2lbs(2500) # weight of engine
         # self.W_fw = # weight of fuel in wing
         # self.W_l = # landing gross weight
         self.W_press = 11.9 # weight penalty due to pressurization
-        self.W_uav = 1200 # uninstalled avionics weight
-        self.W_APU_uninstalled = kg2lbs(130) # APU weight uninstalled
+        self.W_uav = 1400 # uninstalled avionics weight
+        self.W_APU_uninstalled = 700 # APU weight uninstalled
 
 
 
