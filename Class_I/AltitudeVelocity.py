@@ -29,8 +29,8 @@ class AltitudeVelocity:
         self._engine_power = self.data.data['inputs']['engine_power']
         self._sea_level_density = ISA(0).rho
         self._k = 1 / (np.pi * self._AR * self._e)  # Induced drag factor
-        self.velocity_steps = 2000  # Number of velocity steps for calculations
-        self.height_steps = 7000  # Number of height steps for calculations
+        self.velocity_steps = 2000//4  # Number of velocity steps for calculations
+        self.height_steps = 7000//4  # Number of height steps for calculations
         
         # Pre-calculate the mps to fpm conversion factor
         self.mps2fpm = 196.85  # metres per second to feet per minute
@@ -353,68 +353,72 @@ class AltitudeVelocity:
 
         return zero_points, stall_points
 
-    def plot_limit_points(self, airspeed_type='true', altitude_units='meters') -> None:
+    def plot_limit_points(
+        self,
+        airspeed_type='true',
+        altitude_units='meters',
+        plot=('thrust_limit', 'stall_limit', 'Vz', 'Vy', 'Vx', 'max_h', 'max_RoC', 'max_AoC', 'energy_height', 'roc_contours')
+    ) -> None:
         """
-        Plot the flight envelope with thrust limit, stall limit, and Vy curve.
-        
+        Plot the flight envelope with thrust limit, stall limit, Vy/Vx/Vz curves, and RoC contours.
+
         Args:
             airspeed_type (str): Type of airspeed to plot - 'true' for true airspeed (default) 
-                                or 'equivalent' for equivalent airspeed
+                                 , 'equivalent' for equivalent airspeed
+                                 , 'energy' for energy height airspeed (x-axis = V^2/(2g))
             altitude_units (str): Units for altitude - 'meters' (default) or 'feet'
+            plot (tuple): Which lines/points to plot. Options include:
+                'thrust_limit', 'stall_limit', 'Vz', 'Vy', 'Vx', 'max_h', 'max_RoC', 'max_AoC', 'energy_height', 'roc_contours'
         """
-
-        # Calculate limit points with progress bar
-        # Patch: tqdm only for the outer loop in calculate_limit_points
-        # We'll copy the body of calculate_limit_points here to add tqdm
 
         zero_points, stall_points = self.calculate_limit_points(airspeed_type, altitude_units)
 
         plt.figure(figsize=(10, 7))
 
-        # Plot only if points exist
-        if len(zero_points) > 0:
-            plt.plot(zero_points[:, 0], zero_points[:, 1], color='k', label='Thrust limit')
+        # Helper for x-axis transform
+        def x_transform(V):
+            if airspeed_type == 'energy':
+                return np.array(V)**2 / (2 * 9.81)
+            return V
 
-            # Find max altitude point on the zero RoC curve
+        # Plot thrust limit (zero RoC curve)
+        if 'thrust_limit' in plot and len(zero_points) > 0:
+            plt.plot(x_transform(zero_points[:, 0]), zero_points[:, 1], color='k', label='Thrust limit')
             max_zero_idx = np.argmax(zero_points[:, 1])
             max_zero = zero_points[max_zero_idx]
         else:
             max_zero = None
 
-        if len(stall_points) > 0:
-            plt.plot(stall_points[:, 0], stall_points[:, 1], color='r', label='Stall limit')
-
-            # Find max altitude point on the stall curve
+        # Plot stall limit
+        if 'stall_limit' in plot and len(stall_points) > 0:
+            plt.plot(x_transform(stall_points[:, 0]), stall_points[:, 1], color='r', label='Stall limit')
             max_stall_idx = np.argmax(stall_points[:, 1])
             max_stall = stall_points[max_stall_idx]
         else:
             max_stall = None
 
-        # Fill between zero points (thrust limit) and the x-axis (velocity axis)
-        if len(zero_points) > 0:
-            # Sort by velocity for proper fill
+        # Fill between curves for envelope
+        if 'thrust_limit' in plot and len(zero_points) > 0:
             idx = np.argsort(zero_points[:, 0])
             zero_points_sorted = zero_points[idx]
             plt.fill_between(
-                zero_points_sorted[:, 0],
+                x_transform(zero_points_sorted[:, 0]),
                 0,
                 zero_points_sorted[:, 1],
                 color='lightgreen',
                 alpha=0.3,
                 edgecolor='none'
             )
-        # Fill between stall points (stall limit) and the x-axis (velocity axis)
-        if len(stall_points) > 0:
-            # Sort by velocity for proper fill
+        if 'stall_limit' in plot and len(stall_points) > 0:
             idx = np.argsort(stall_points[:, 0])
             stall_points_sorted = stall_points[idx]
             plt.fill_between(
-            stall_points_sorted[:, 0],
-            0,
-            stall_points_sorted[:, 1],
-            color='lightgreen',
-            alpha=0.3,
-            edgecolor='none'
+                x_transform(stall_points_sorted[:, 0]),
+                0,
+                stall_points_sorted[:, 1],
+                color='lightgreen',
+                alpha=0.3,
+                edgecolor='none'
             )
 
         # Determine which point has the highest altitude
@@ -426,12 +430,12 @@ class AltitudeVelocity:
             h_max_point = None
 
         # Annotate the maximum altitude point
-        if h_max_point is not None:
-            plt.scatter(h_max_point[0], h_max_point[1], color='b', s=10, marker='o')
+        if 'max_h' in plot and h_max_point is not None:
+            plt.scatter(x_transform(h_max_point[0]), h_max_point[1], color='b', s=10, marker='o')
             altitude_label = f"h_max = {h_max_point[1]:.0f} {'ft' if altitude_units == 'feet' else 'm'}"
             plt.annotate(
                 altitude_label,
-                (h_max_point[0], h_max_point[1]),
+                (x_transform(h_max_point[0]), h_max_point[1]),
                 textcoords="offset points",
                 xytext=(30, -30),
                 ha='left',
@@ -441,83 +445,113 @@ class AltitudeVelocity:
                 arrowprops=dict(arrowstyle="->", color='b')
             )
 
-        print(f"Calculating Vy...")
-        # Calculate and plot the Vy curve    
-        max_Vy_points = self.calculate_Vy(h_max=h_max_point[1] / self.m_to_ft)  # Convert back to meters for calculation
-        if max_Vy_points:
-            # Extract velocities and altitudes for plotting
-            vy_velocities = [point[2] for point in max_Vy_points]
-            vy_altitudes = [point[1] * self.m_to_ft for point in max_Vy_points]  # Convert altitudes
-            
-            # Convert velocities to equivalent airspeed if requested
-            if airspeed_type == 'equivalent':
-                vy_velocities = [self.equivalent_air_speed(v, h/self.m_to_ft) for v, h in zip(vy_velocities, vy_altitudes)]
-                
-            plt.plot(vy_velocities, vy_altitudes, color='g', linestyle='--', label='Vy curve')
-
-        print(f"Calculating Vx...")
         # Calculate and plot the Vx curve    
-        max_Vx_points = self.calculate_Vx(h_max=h_max_point[1] / self.m_to_ft)  # Convert back to meters for calculation
-        if max_Vx_points:
-            # Extract velocities and altitudes for plotting
-            vx_velocities = [point[2] for point in max_Vx_points]
-            vx_altitudes = [point[1] * self.m_to_ft for point in max_Vx_points]  # Convert altitudes
-            
-            # Convert velocities to equivalent airspeed if requested
-            if airspeed_type == 'equivalent':
-                vx_velocities = [self.equivalent_air_speed(v, h/self.m_to_ft) for v, h in zip(vx_velocities, vx_altitudes)]
-                
-            plt.plot(vx_velocities, vx_altitudes, color='b', linestyle='--', label='Vx curve')
+        if 'Vx' in plot and h_max_point is not None:
+            print(f"Calculating Vx...")
+            max_Vx_points = self.calculate_Vx(h_max=h_max_point[1] / self.m_to_ft)
+            if max_Vx_points:
+                vx_velocities = [point[2] for point in max_Vx_points]
+                vx_altitudes = [point[1] * self.m_to_ft for point in max_Vx_points]
+                if airspeed_type == 'equivalent':
+                    vx_velocities = [self.equivalent_air_speed(v, h/self.m_to_ft) for v, h in zip(vx_velocities, vx_altitudes)]
+                plt.plot(x_transform(vx_velocities), vx_altitudes, color='b', linestyle='--', label='Vx curve')
 
-        # Plot a horizontal line at h = 3048 m (10,000 ft)
-        # Convert the velocities for the horizontal line if needed
-        reference_altitude_m = 3048
-        reference_altitude_display = reference_altitude_m * self.m_to_ft
-        v_min, v_max = 83.1, 161.85
-        if airspeed_type == 'equivalent':
-            v_min = self.equivalent_air_speed(v_min, reference_altitude_m)
-            v_max = self.equivalent_air_speed(v_max, reference_altitude_m)
-            
-        altitude_label = f"h = {reference_altitude_display:.0f} {'ft' if altitude_units == 'feet' else 'm'}"
-        plt.hlines(y=reference_altitude_display, xmin=v_min, xmax=v_max, color='purple', 
-                linestyle=':', linewidth=2, label=altitude_label)
-        
+        # Calculate and plot the Vy curve    
+        if 'Vy' in plot and h_max_point is not None:
+            print(f"Calculating Vy...")
+            max_Vy_points = self.calculate_Vy(h_max=h_max_point[1] / self.m_to_ft)
+            if max_Vy_points:
+                vy_velocities = [point[2] for point in max_Vy_points]
+                vy_altitudes = [point[1] * self.m_to_ft for point in max_Vy_points]
+                if airspeed_type == 'equivalent':
+                    vy_velocities = [self.equivalent_air_speed(v, h/self.m_to_ft) for v, h in zip(vy_velocities, vy_altitudes)]
+                plt.plot(x_transform(vy_velocities), vy_altitudes, color='g', linestyle='--', label='Vy curve')
+
+        # Calculate and plot the Vz curve    
+        if 'Vz' in plot and h_max_point is not None:
+            print(f"Calculating Vz...")
+            max_Vz_points = self.calculate_Vz(h_max=h_max_point[1] / self.m_to_ft)
+            if max_Vz_points:
+                vz_velocities = [point[2] for point in max_Vz_points]
+                vz_altitudes = [point[1] * self.m_to_ft for point in max_Vz_points]
+                if airspeed_type == 'equivalent':
+                    vz_velocities = [self.equivalent_air_speed(v, h/self.m_to_ft) for v, h in zip(vz_velocities, vz_altitudes)]
+                plt.plot(x_transform(vz_velocities), vz_altitudes, color='orange', linestyle='--', label='Vz curve')
+
+        # Plot contours of energy height
+        if len(zero_points) > 0 and ('thrust_limit' in plot or 'stall_limit' in plot) and 'energy_height' in plot:
+            v_min = min(np.min(zero_points[:, 0]), np.min(stall_points[:, 0]))
+            v_max = max(np.max(zero_points[:, 0]), np.max(stall_points[:, 0]))
+            h_min = 0
+            h_max_plot = max(np.max(zero_points[:, 1]), np.max(stall_points[:, 1]))
+            v_grid = np.linspace(v_min, v_max, 100)
+            h_grid = np.linspace(h_min, h_max_plot, 100)
+            V, H = np.meshgrid(v_grid, h_grid)
+            H_m = H / self.m_to_ft if altitude_units == 'feet' else H
+            E = self.energy_height(V, H_m)
+            if airspeed_type == 'energy':
+                X = V**2 / (2 * 9.81)
+                cs = plt.contour(X, H, E, levels=10, colors='gray', linestyles='dotted', linewidths=1)
+            else:
+                cs = plt.contour(x_transform(V), H, E, levels=10, colors='gray', linestyles='dotted', linewidths=1)
+            plt.clabel(cs, inline=True, fontsize=8, fmt="%.0f")
+
+        # Plot contours of RoC (only for RoC > 0)
+        if len(zero_points) > 0 and ('roc_contours' in plot):
+            v_min = min(np.min(zero_points[:, 0]), np.min(stall_points[:, 0]))
+            v_max = max(np.max(zero_points[:, 0]), np.max(stall_points[:, 0]))
+            h_min = 0
+            h_max_plot = max(np.max(zero_points[:, 1]), np.max(stall_points[:, 1]))
+            v_grid = np.linspace(v_min, v_max, self.velocity_steps)
+            h_grid = np.linspace(h_min, h_max_plot, self.height_steps)
+            V, H = np.meshgrid(v_grid, h_grid)
+            H_m = H / self.m_to_ft if altitude_units == 'feet' else H
+            # Compute RoC at each grid point
+            RoC = np.zeros_like(V)
+            for i in tqdm(range(H.shape[0]), desc="Calculating RoC contours"):
+                for j in range(H.shape[1]):
+                    RoC[i, j] = self.calculate_RoC(V[i, j], H_m[i, j]) * self.mps2fpm  # ft/min
+            if airspeed_type == 'energy':
+                X = V**2 / (2 * 9.81)
+                cs_roc = plt.contour(X, H, RoC, levels=10, colors='blue', linestyles='solid', linewidths=1)
+            else:
+                cs_roc = plt.contour(x_transform(V), H, RoC, levels=10, colors='blue', linestyles='solid', linewidths=1)
+            plt.clabel(cs_roc, inline=True, fontsize=8, fmt="%.0f ft/min")
 
         # Annotate key points, max RoC at h = 0 and max AoC at h = 0
         max_roc, v_max_roc = self.calculate_max_RoC(0)
         max_aoc, v_max_aoc = self.calculate_max_AoC(0)
-
-        # Use consistent annotation formatting as in the guide
         ax = plt.gca()
-        # Max RoC at h=0
-        ax.scatter(v_max_roc, 0, color='orange', s=10, marker='o')
-        ax.annotate(
-            f"Max RoC:\n {max_roc * self.mps2fpm:.0f} ft/min",
-            (v_max_roc, 0),
-            textcoords="offset points",
-            xytext=(60, 10),
-            ha='center',
-            fontsize=11,
-            arrowprops=dict(arrowstyle="->", color='orange', lw=1)
-        )
-        # Max AoC at h=0
-        ax.scatter(v_max_aoc, 0, color='purple', s=10, marker='o')
-        ax.annotate(
-            f"Max AoC:\n {max_aoc * 180/np.pi:.1f} degrees",
-            (v_max_aoc, 0),
-            textcoords="offset points",
-            xytext=(50, 30),
-            ha='center',
-            fontsize=11,
-            arrowprops=dict(arrowstyle="->", color='purple', lw=1)
-        )
+        if 'max_RoC' in plot:
+            ax.scatter(x_transform(v_max_roc), 0, color='orange', s=10, marker='o')
+            ax.annotate(
+                f"Max RoC:\n {max_roc * self.mps2fpm:.0f} ft/min",
+                (x_transform(v_max_roc), 0),
+                textcoords="offset points",
+                xytext=(60, 10),
+                ha='center',
+                fontsize=11,
+                arrowprops=dict(arrowstyle="->", color='orange', lw=1)
+            )
+        if 'max_AoC' in plot:
+            ax.scatter(x_transform(v_max_aoc), 0, color='purple', s=10, marker='o')
+            ax.annotate(
+                f"Max AoC:\n {max_aoc * 180/np.pi:.1f} degrees",
+                (x_transform(v_max_aoc), 0),
+                textcoords="offset points",
+                xytext=(50, 30),
+                ha='center',
+                fontsize=11,
+                arrowprops=dict(arrowstyle="->", color='purple', lw=1)
+            )
 
         # Set appropriate axis labels based on airspeed type and altitude units
         if airspeed_type == 'equivalent':
             plt.xlabel('Equivalent Airspeed (m/s)')
+        elif airspeed_type == 'energy':
+            plt.xlabel('Energy Height Airspeed $V^2/(2g)$ (m)')
         else:
             plt.xlabel('True Airspeed (m/s)')
-            
         if altitude_units == 'feet':
             plt.ylabel('Altitude (ft)')
         else:
@@ -573,7 +607,49 @@ class AltitudeVelocity:
             h += dh
             
         return distance
+
+    def calculate_true_RoC(self, V: float, h: float) -> float:
+        """
+        Calculate the true Rate of Climb at a given altitude.
+        """
+        RoCs = self.calculate_RoC(V, h)
+        V_ias = self.equivalent_air_speed(V, h)
+        dH = 0.1
+        dV_dH = V_ias * np.sqrt(self._get_density(0)) * (np.sqrt(1/self._get_density(h + dH)) - np.sqrt(1/self._get_density(h)))/ dH
+        RoC = RoCs / (1 + V/9.81 * dV_dH)
+        return RoC
     
+    def calculate_max_true_RoC(self, h: float) -> tuple:
+        """
+        Find the maximum true Rate of Climb and corresponding velocity at a given altitude.
+        """
+        V_stall = self.calculate_stall_speed(h)
+        velocity_range = np.linspace(V_stall, self.dive_speed, self.velocity_steps)
+        
+        # Vectorized calculation
+        RoC_values = self.calculate_true_RoC(velocity_range, h)
+        max_roc_idx = np.argmax(RoC_values)
+        
+        return RoC_values[max_roc_idx], velocity_range[max_roc_idx]
+
+    def calculate_Vz(self, h_max:float) -> list:
+        """Calculate best climb speeds (Vy) at different altitude points."""
+        # Implementing a more efficient approach
+        h_limits = np.linspace(0, h_max, self.height_steps)
+        max_Vz_points = []
+        
+        for h in h_limits:
+            RoC, v_opt = self.calculate_max_true_RoC(h)
+            max_Vz_points.append((RoC, h, v_opt))  # Append altitude, max RoC, and velocity
+
+        return max_Vz_points
+    
+    def energy_height(self, V: float, h: float) -> float:
+        """
+        Calculate the energy height at a given altitude.
+        """
+        return h + V**2 / (2 * 9.81)  # h in meters, V in m/s, energy height in meters
+
 if __name__ == "__main__":
     # Example usage
     file_path = "design3.json"
@@ -591,11 +667,14 @@ if __name__ == "__main__":
 
     print(f"Max RoC at h = 0 is {altitude_velocity.calculate_max_RoC(0)[0] * 196.85} ft/min")
     print(f"Max AoC at h = 0 is {altitude_velocity.calculate_max_AoC(0)[0] * 180/np.pi} degrees")
+    print(f"Max true RoC at h = 0 is {altitude_velocity.calculate_max_true_RoC(0)[0] * 196.85} ft/min")
 
-    t_climb = altitude_velocity.calculate_t_climb(0, 3048)
-    distance_climb = altitude_velocity.calculate_distance_climb(0, 3048)
-    print(f"Time to climb: {t_climb} seconds")
-    print(f"Distance to climb: {distance_climb} metres")
-    print(f"Average climb gradient: {np.arctan(3048 / distance_climb)*180/np.pi} degrees")
+    # t_climb = altitude_velocity.calculate_t_climb(0, 3048)
+    # distance_climb = altitude_velocity.calculate_distance_climb(0, 3048)
+    # print(f"Time to climb: {t_climb} seconds")
+    # print(f"Distance to climb: {distance_climb} metres")
+    # print(f"Average climb gradient: {np.arctan(3048 / distance_climb)*180/np.pi} degrees")
 
-    altitude_velocity.plot_limit_points(airspeed_type='true', altitude_units='feet')
+    altitude_velocity.plot_limit_points(airspeed_type='energy', 
+                                        altitude_units='feet', 
+                                        plot=('thrust_limit', 'stall_limit', 'Vz', 'Vy', 'energy_height', 'roc_contours'))
