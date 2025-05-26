@@ -30,6 +30,11 @@ class AerodynamicForces:
         self.airfoil_Cd0 = 0.00734 #TODO link to json data
         self.airfoil_Cd0_GE = 0.006 #TODO link to json data
 
+        self.aspect_ratio = self.aircraft_data.data['outputs']['wing_design']['aspect_ratio']
+        self.oswald_factor = self.aircraft_data.data['inputs']['oswald_factor']
+
+        self.k = self.aircraft_data.data['outputs']['design']['k']
+
     def plot_Lift_distribution(self):
         plt.figure()
         plt.plot(self.yspan_values, self.lift_values)
@@ -78,10 +83,11 @@ class AerodynamicForces:
     def drag_distribution(self):
         self.drag_values = []
         for cdi, c in zip(self.induced_cd_values, self.chord_values):
+            idx = self.induced_cd_values.index(cdi)
             if cdi < 0 or c < 0:
                 raise ValueError("Cl values must be non-negative.")
             else:
-                cd = self.airfoil_Cd0 + cdi
+                cd = self.airfoil_Cd0 + cdi + self.cl_values[idx]**2 / (np.pi * self.k*self.aspect_ratio * self.oswald_factor)
                 d = cd * (0.5*self.rho*self.V**2*c)
                 self.drag_values.append(d)
 
