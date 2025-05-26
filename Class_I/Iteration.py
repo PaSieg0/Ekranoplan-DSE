@@ -21,7 +21,7 @@ def solve_hb(target_A_A):
 
 def Ainf_Ah(h_b):
     # HB = np.arange(0,1.5,0.001)
-    # A_A = 1 - np.exp(-4.74*HB**0.814) - HB**2*np.exp(-3.88*HB**0.758)
+    # A_A = np.sqrt(1/(1 - np.exp(-4.74*HB**0.814) - HB**2*np.exp(-3.88*HB**0.758)))
     # plt.plot(HB, A_A)
     # plt.xlabel('h_b')
     # plt.ylabel('Aeinf_Aeh')
