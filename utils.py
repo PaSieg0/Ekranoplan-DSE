@@ -197,7 +197,7 @@ def kgpJ2lbsphrphp(kgpJ):
     Convert kg/(J/s) to lbs/(hp/hr)
     """
     # TODO: Check if this conversion is correct i dont think so - Owen
-    return kgpJ * 0.0002388458966275
+    return kgpJ * 0.02388458966275
 
 def deg2rad(deg):
     """
@@ -222,6 +222,18 @@ def gal2L(gal):
     Convert gallons to Liters
     """
     return gal / 0.264172
+
+def kgmsq2lbsftsq(kgm2):
+    """
+    Convert kg/m^2 to lbs/ft^2
+    """
+    return kgm2 * 0.204816
+
+def lbsftsq2kgmsq(lbsft2):
+    """
+    Convert lbs/ft^2 to kg/m^2
+    """
+    return lbsft2 / 0.204816
 
 def apply_number_format(cell, value):
     if isinstance(value, (int, float)):
@@ -479,10 +491,12 @@ class ISA:
 
 # Example usage
 if __name__ == "__main__":
-    aircraft = Data("design1.json")
-    print(aircraft.data)
-    aircraft.data["aircraft_type"] = AircraftType.JET.name
-    aircraft.save_design("design1.json")
-    print(aircraft.data)
+    isa = ISA(altitude=ft2m(10000))
+    print("Pressure at 10,000 ft:", isa.pressure, "Pa")
+    # aircraft = Data("design1.json")
+    # print(aircraft.data)
+    # aircraft.data["aircraft_type"] = AircraftType.JET.name
+    # aircraft.save_design("design1.json")
+    # print(aircraft.data)
 
-    print("Aircraft Type:", AircraftType[aircraft.data["aircraft_type"]])
+    # print("Aircraft Type:", AircraftType[aircraft.data["aircraft_type"]])
