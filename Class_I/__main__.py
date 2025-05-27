@@ -94,7 +94,7 @@ def main_iteration(
 
 
 if __name__ == "__main__":
-    main(create_excel=True)
+    main(create_excel=False)
     ''' df = generate_df()
     plot = plot_bar_graph(df, 'take_off_power')
     # print(df.columns)
