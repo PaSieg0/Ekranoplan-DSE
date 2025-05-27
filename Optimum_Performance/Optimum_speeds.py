@@ -78,6 +78,12 @@ class OptimumSpeeds(AltitudeVelocity):
         L_over_D = lift / drag
 
         return L_over_D
+    
+    def update_cruise_speed(self, h: float) -> None:
+        """
+        Update the cruise speed based on the current altitude.
+        """
+        self.data.data['requirements']['cruise_speed'] = self.v_range(h)
 
 if __name__ == "__main__":
     # Example usage
@@ -85,19 +91,21 @@ if __name__ == "__main__":
     mission_type = MissionType.DESIGN  # or any other mission type
     optimum_speeds = OptimumSpeeds(aircraft_data, mission_type)
 
-    v_range = optimum_speeds.v_range(0)
-    v_endurance = optimum_speeds.v_endurance(0)
-    _, v_max_roc = optimum_speeds.calculate_max_RoC(0)
-    _, v_max_aod = optimum_speeds.calculate_max_AoC(0)
-    _, v_min_rod = optimum_speeds.calculate_min_RoD(0)
-    _, v_min_aod = optimum_speeds.calculate_min_AoD(0)
+    h = h_WIG = 10  # Example altitude in meters
 
-    print(f"Optimum range speed at h=0: {v_range:.2f} m/s")
-    print(f"Optimum endurance speed at h=0: {v_endurance:.2f} m/s")
-    print(f"Maximum rate of climb speed at h=0: {v_max_roc:.2f} m/s")
-    print(f"Maximum angle of climb speed at h=0: {v_max_aod:.2f} m/s")
-    print(f"Minimum rate of descent speed at h=0: {v_min_rod:.2f} m/s")
-    print(f"Minimum angle of descent speed at h=0: {v_min_aod:.2f} m/s")
+    v_range = optimum_speeds.v_range(h)
+    v_endurance = optimum_speeds.v_endurance(h)
+    _, v_max_roc = optimum_speeds.calculate_max_RoC(h)
+    _, v_max_aod = optimum_speeds.calculate_max_AoC(h)
+    _, v_min_rod = optimum_speeds.calculate_min_RoD(h)
+    _, v_min_aod = optimum_speeds.calculate_min_AoD(h)
+
+    print(f"Optimum range speed: {v_range:.2f} m/s")
+    print(f"Optimum endurance speed: {v_endurance:.2f} m/s")
+    print(f"Maximum rate of climb speed: {v_max_roc:.2f} m/s")
+    print(f"Maximum angle of climb speed: {v_max_aod:.2f} m/s")
+    print(f"Minimum rate of descent speed: {v_min_rod:.2f} m/s")
+    print(f"Minimum angle of descent speed: {v_min_aod:.2f} m/s")
     
     # for i in np.arange(0, 3704000, optimum_speeds.ddist):
     #     v_range = optimum_speeds.v_range(0)  # Example altitude

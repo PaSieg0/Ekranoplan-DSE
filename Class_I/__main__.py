@@ -11,6 +11,7 @@ from PrelimWingPlanformDesign import WingPlanform
 from Cd0Estimation import Cd0Estimation
 from cgRange import CGRange
 from empennage import Empennage
+from Optimum_Performance.Optimum_speeds import OptimumSpeeds
 
 
 def main(create_excel: bool = False) -> None:
@@ -42,6 +43,7 @@ def main_iteration(
         prev_S=300,
         prev_MTOM=100000,
         prev_CD0=0.02,
+        prev_V_cruise=115,
         iteration_number = 1,
         create_excel: bool = False
     ):
@@ -66,11 +68,22 @@ def main_iteration(
     )
     Cd0_est.mainloop()
 
+    opt = OptimumSpeeds(
+        aircraft_data=aircraft_data,
+        mission_type=mission
+    )
+    opt.update_cruise_speed(aircraft_data.data['inputs']['cruise_altitude'])
+
     S = aircraft_data.data['outputs']['wing_design']['S']
     MTOM = aircraft_data.data['outputs']['max']['MTOM']
     Cd0 = aircraft_data.data['inputs']['Cd0']
+    V_cruise = aircraft_data.data['requirements']['cruise_speed']
 
-    stop_condition = (abs(prev_S - S)/prev_S < tolerance and abs(prev_MTOM - MTOM)/prev_MTOM < tolerance and abs(prev_CD0 - Cd0)/prev_CD0 < tolerance) or iteration_number >= max_iterations
+    stop_condition = ((abs(prev_S - S)/prev_S < tolerance and
+                      abs(prev_MTOM - MTOM)/prev_MTOM < tolerance and 
+                      abs(prev_CD0 - Cd0)/prev_CD0 < tolerance and
+                      abs(prev_V_cruise - V_cruise)/prev_V_cruise < tolerance) or 
+                      iteration_number >= max_iterations)
     iteration_number += 1
 
     if stop_condition:
@@ -85,6 +98,7 @@ def main_iteration(
             prev_S=S,
             prev_MTOM=MTOM,
             prev_CD0=Cd0,
+            prev_V_cruise=V_cruise,
             iteration_number=iteration_number,
             file_path=file_path,
             create_excel=create_excel

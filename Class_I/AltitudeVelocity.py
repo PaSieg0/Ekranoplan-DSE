@@ -4,7 +4,6 @@ import os
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from utils import Data, ISA, MissionType
-from ClassIWeightEstimation import ClassI
 from functools import lru_cache
 from tqdm import tqdm
 
