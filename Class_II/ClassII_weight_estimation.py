@@ -85,9 +85,9 @@ class ClassII:
         # self.q = Pa2lbfpftsq(0.5*ISA(self.aircraft_data.data['inputs']['cruise_altitude']).rho * self.aircraft_data.data['requirements']['cruise_speed']**2) # dynamic pressure
         self.R_kva = 50 # system electrical rating based on typical values Raymer
         self.S_c = msq2ftsq(7 * self.aircraft_data.data['outputs']['general']['cargo_length']) # cargo floor surface area
-        self.S_cs = msq2ftsq(80) # total control surface area
-        self.S_csw = 2*msq2ftsq(20) # control surface area wing mounted 
-        self.S_e = 2*msq2ftsq(20) # elevator area
+        self.S_cs = msq2ftsq(100) # total control surface area
+        self.S_csw = 2*msq2ftsq(self.aircraft_data.data['outputs']['control_surfaces']['aileron']['area_single']) # control surface area wing mounted 
+        self.S_e = 2*msq2ftsq(self.aircraft_data.data['outputs']['control_surfaces']['aileron']['area_single']) # elevator area
         self.S_f = msq2ftsq(2*np.pi*self.aircraft_data.data['outputs']['general']['r_fuselage']*self.aircraft_data.data['outputs']['general']['l_fuselage'] + 2*np.pi*self.aircraft_data.data['outputs']['general']['r_fuselage']**2) # fuselage wetted area
         # self.S_fw = # firewall surface area
         self.S_ht = msq2ftsq(self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['S']) # horizontal tail surface area
@@ -207,7 +207,7 @@ class ClassII:
         return 3100     # https://aviator.aero/press/stelia-aerospace-delivers-the-first-belugaxl-cargo-door/
     
     def anchor(self):
-        return 250	
+        return 250
     
     def hull(self):
         W_hull_lbs = 0.12*self.W_dg   # https://www.icas.org/icas_archive/ICAS2012/PAPERS/198.PDF
