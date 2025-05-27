@@ -92,6 +92,7 @@ class WingLoading:
         V_disp = self.aircraft_data.data['outputs']['max']['MTOM'] / rho_water
         A_disp = V_disp / (self.aircraft_data.data['outputs']['general']['l_fuselage'] - self.aircraft_data.data['outputs']['general']['l_tailcone'])
         depth = self.solve_piecewise(A_disp)
+        self.aircraft_data.data['outputs']['general']['resting_depth'] = depth
         L = np.sqrt(1 + ((self.w_fuselage/2) / self.t_fuselage)**2)
         A_hull = 2* (self.aircraft_data.data['outputs']['general']['l_fuselage'] - self.aircraft_data.data['outputs']['general']['l_tailcone']) * depth * L
         return A_hull

@@ -88,7 +88,8 @@
             "take_off_thrust": null,
             "V_lof": 64.8165,
             "xcg_payload": 0.44404883931977346,
-            "cargo_length": 40.17857142857143
+            "cargo_length": 40.17857142857143,
+            "resting_depth": 2.1576303453718992
         },
         "design": {
             "MTOW": 2617392.4387045824,
