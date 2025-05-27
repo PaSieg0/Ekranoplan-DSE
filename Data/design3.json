@@ -43,14 +43,14 @@
             "wing_box": {
                 "front_spar": 0.15,
                 "rear_spar": 0.65,
-                "t_skin": 1,
-                "t_front_spar": 3,
-                "t_rear_spar":3,
-                "t_mid_spar": 3,
-                "t_wing": 1,
-                "stringer_area": 500,
-                "n_stringers": 50,
-                "n_cells": 1
+                "t_skin": 5,
+                "t_front_spar": 20,
+                "t_rear_spar":20,
+                "t_mid_spar": 20,
+                "t_wing": 3,
+                "stringer_area": 5000,
+                "n_stringers": 70,
+                "n_cells": 3
             }
         },
         "engine": {
@@ -101,7 +101,9 @@
             "V_lof": 64.8165,
             "LD_g": 16.794222799290566,
             "Cd_water": 0.0012700434697589557,
-            "xcg_payload": 0.44404883931977346
+            "xcg_payload": 0.44404883931977346,
+            "nmax": 3.443126045275873,
+            "nmin": -1.443126045275873
         },
         "design": {
             "MTOW": 2538643.19660158,

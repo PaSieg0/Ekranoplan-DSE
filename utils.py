@@ -20,6 +20,7 @@ class StringerType(Enum):
 class WingType(Enum):
     HIGH = auto()
     LOW = auto()
+    
 class LoadCase(Enum):
     OEW = auto()
     OEW_PAYLOAD = auto()

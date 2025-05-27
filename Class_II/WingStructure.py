@@ -11,35 +11,35 @@ from utils import Data
 class WingStructure:
     def __init__(self, aircraft_data: Data, airfoil_data: Data):
         self.data = airfoil_data.data
-        self.aircraft_data = aircraft_data.data
+        self.aircraft_data = aircraft_data
 
-        self.front_spar = self.aircraft_data['inputs']['structures']['wing_box']['front_spar']
-        self.rear_spar = self.aircraft_data['inputs']['structures']['wing_box']['rear_spar']
+        self.front_spar = self.aircraft_data.data['inputs']['structures']['wing_box']['front_spar']
+        self.rear_spar = self.aircraft_data.data['inputs']['structures']['wing_box']['rear_spar']
 
-        self.t_front_spar = self.aircraft_data['inputs']['structures']['wing_box']['t_front_spar']/1000
-        self.t_rear_spar = self.aircraft_data['inputs']['structures']['wing_box']['t_rear_spar']/1000
-        self.t_skin = self.aircraft_data['inputs']['structures']['wing_box']['t_skin']/1000
-        self.t_mid_spar = self.aircraft_data['inputs']['structures']['wing_box']['t_mid_spar']/1000
-        self.t_wing = self.aircraft_data['inputs']['structures']['wing_box']['t_wing']/1000
+        self.t_front_spar = self.aircraft_data.data['inputs']['structures']['wing_box']['t_front_spar']/1000
+        self.t_rear_spar = self.aircraft_data.data['inputs']['structures']['wing_box']['t_rear_spar']/1000
+        self.t_skin = self.aircraft_data.data['inputs']['structures']['wing_box']['t_skin']/1000
+        self.t_mid_spar = self.aircraft_data.data['inputs']['structures']['wing_box']['t_mid_spar']/1000
+        self.t_wing = self.aircraft_data.data['inputs']['structures']['wing_box']['t_wing']/1000
 
-        self.b = self.aircraft_data['outputs']['wing_design']['b']
-        self.chord_root = self.aircraft_data['outputs']['wing_design']['chord_root']
-        self.chord_tip = self.aircraft_data['outputs']['wing_design']['chord_tip']
+        self.b = self.aircraft_data.data['outputs']['wing_design']['b']
+        self.chord_root = self.aircraft_data.data['outputs']['wing_design']['chord_root']
+        self.chord_tip = self.aircraft_data.data['outputs']['wing_design']['chord_tip']
 
         self.b_array = np.arange(0, self.b/2, 0.01)
         self.chord_array = self.chord_span_function(self.b_array)
 
         self.chord_length = self.chord_root
 
-        self.S = self.aircraft_data['outputs']['wing_design']['S']
+        self.S = self.aircraft_data.data['outputs']['wing_design']['S']
 
-        self.n_stringers = self.aircraft_data['inputs']['structures']['wing_box']['n_stringers']
-        self.stringer_area = self.aircraft_data['inputs']['structures']['wing_box']['stringer_area']/1000000
+        self.n_stringers = self.aircraft_data.data['inputs']['structures']['wing_box']['n_stringers']
+        self.stringer_area = self.aircraft_data.data['inputs']['structures']['wing_box']['stringer_area']/1000000
         self.stringer_radius = np.sqrt(self.stringer_area / np.pi)
 
-        self.n_cells = self.aircraft_data['inputs']['structures']['wing_box']['n_cells']
+        self.n_cells = self.aircraft_data.data['inputs']['structures']['wing_box']['n_cells']
 
-        self.fuel_volume = self.aircraft_data['outputs']['max']['max_fuel_L']/1000
+        self.fuel_volume = self.aircraft_data.data['outputs']['max']['max_fuel_L']/1000
 
         self.fuel_density = 0.82 # TODO link to json data
 
@@ -57,8 +57,8 @@ class WingStructure:
 
         self.wing_mass = 30000
 
-        self.engine_positions = self.aircraft_data['outputs']['engine_positions']['y_engines']
-        self.engine_weight = self.aircraft_data['inputs']['engine']['engine_weight']
+        self.engine_positions = self.aircraft_data.data['outputs']['engine_positions']['y_engines']
+        self.engine_weight = self.aircraft_data.data['inputs']['engine']['engine_weight']
         self.I_xx_list = []
 
     def chord_span_function(self,y):
@@ -129,6 +129,8 @@ class WingStructure:
         spar_xs = [pos * self.chord_length for pos in spar_positions]
 
         spar_data = {}
+        spar_data['max_y'] = []
+        spar_data['min_y'] = []
         for i, x in enumerate(spar_xs):
             spar_top = get_y_top(x, self.element_functions['upper'], self.top_spar_margin)
             spar_bottom = get_y_bottom(x, self.element_functions['lower'], self.bottom_spar_margin)
@@ -144,7 +146,13 @@ class WingStructure:
             spar_data[f'{label}_top'] = spar_top
             spar_data[f'{label}_bottom'] = spar_bottom
             spar_data[f'{label}_height'] = spar_top - spar_bottom
+            spar_data['max_y'].append(spar_top)
+            spar_data['min_y'].append(spar_bottom)
 
+        spar_data['max_y'] = max(spar_data['max_y'])
+        spar_data['max_x'] = spar_positions[np.argmax(spar_data['max_y'])]
+        spar_data['min_y'] = min(spar_data['min_y'])
+        spar_data['min_x'] = spar_positions[np.argmin(spar_data['min_y'])]
         self.spar_info = spar_data
 
 
@@ -538,7 +546,6 @@ class WingStructure:
         # print(self.I_xx)
 
 
-
     def get_wing_structure(self):
         self.wing_structure = {}
     
@@ -564,7 +571,7 @@ class WingStructure:
             self.wing_structure[idx]['centroid'] = self.centroid
             self.wing_structure[idx]['panel_info'] = self.panel_info
             self.wing_structure[idx]['chord'] = chord
-            self.wing_structure[idx]['quarter_chord_dist'] = np.sqrt((chord / 4 - self.centroid[0]) ** 2 + (self.centroid[1]) ** 2)
+            self.wing_structure[idx]['quarter_chord_dist'] = self.centroid[0] - chord / 4 
             self.wing_structure[idx]['x_coords'] = self.x_array
             self.wing_structure[idx]['y_upper'] = self.y_upper
             self.wing_structure[idx]['y_lower'] = self.y_lower
@@ -574,9 +581,9 @@ class WingStructure:
             self.wing_structure[idx]['J'] = self.J
             self.wing_structure[idx]['stringers'] = self.stringer_dict
 
-        self.plot_moment_of_inertia()
-        self.plot_polar_moment()
-        self.plot_wing_weight()
+        # self.plot_moment_of_inertia()
+        # self.plot_polar_moment()
+        # self.plot_wing_weight()
 
     def get_fuel_length(self, slope, intercept):
         a = slope/2
@@ -619,20 +626,18 @@ class WingStructure:
     def gaussian_peak(self,x, x0, A, sigma=0.1):
         return A * np.exp(-((x - x0)**2) / (2 * sigma**2)) / (sigma * np.sqrt(2 * np.pi))
     
-    def wing_weight_dist(self,y):
-        self.weight_dist = self.wing_mass/self.S*self.chord_span_function(y)*9.81 + self.get_fuel_mass_distribution()
-
+    def wing_weight_dist(self):
+        self.weight_dist = self.wing_mass/self.S*self.chord_span_function(self.b_array)*9.81 + self.get_fuel_mass_distribution()
         for engine_y in self.engine_positions:
-            self.weight_dist += self.gaussian_peak(self.b_array, engine_y, self.engine_weight, sigma=0.1)
+            self.weight_dist[int(round(engine_y,2)*100)] += self.engine_weight*9.81
 
         return self.weight_dist
-    
+                                         
 
     def plot_wing_weight(self):
-
+        self.wing_weight_dist()
         fig, ax = plt.subplots()
-
-        ax.plot(self.b_array, self.wing_weight_dist(self.b_array), label='Weight Distribution', color='blue')
+        ax.plot(self.b_array, self.weight_dist, label='Weight Distribution', color='blue')
         ax.set_xlabel('Chord Length (m)')
         ax.set_ylabel('Weight (N)')
         ax.set_title('Weight Distribution vs Chord Length')
@@ -754,3 +759,4 @@ if __name__ == "__main__":
     wing_structure = WingStructure(aircraft_data, airfoil_data)
     wing_structure.get_wing_structure()
     wing_structure.plot_airfoil(chord_idx=0)
+    wing_structure.plot_moment_of_inertia()
