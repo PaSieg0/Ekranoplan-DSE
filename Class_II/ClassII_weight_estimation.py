@@ -291,8 +291,8 @@ class ClassII:
             self.W_military_cargo_handling_system +
             self.W_door +
             self.W_anchor +
-            self.W_floater 
-            # self.W_hull
+            self.W_floater +
+            self.W_hull
         )
 
         self.perc = (
@@ -318,8 +318,8 @@ class ClassII:
             self.perc_military_cargo_handling_system +
             self.perc_door +
             self.perc_anchor +
-            self.perc_floater 
-            # self.perc_hull
+            self.perc_floater +
+            self.perc_hull
         )
         
         self.weights_dict = {
@@ -346,7 +346,7 @@ class ClassII:
             'Door': self.W_door,
             'Anchor': self.W_anchor,
             'Floater': self.W_floater,
-            # 'Hull': self.W_hull,
+            'Hull': self.W_hull,
             'Total OEW': self.OEW
         }
         self.perc_dict = {
@@ -373,7 +373,7 @@ class ClassII:
             'Door': self.perc_door,
             'Anchor': self.perc_anchor,
             'Floater': self.perc_floater,
-            # 'Hull': self.perc_hull,
+            'Hull': self.perc_hull,
             'Total OEW': self.perc
         }
         

@@ -117,6 +117,8 @@ class ModifiedClassI:
         self.calculate_Mff()
         if self.mission_type == MissionType.DESIGN:
             self.MTOW = (self.design_payload*9.81 + self.design_crew*9.81 + self.class_ii_OEW*9.81) / (1 - (1-self.Mff) - self.tfo)
+            self.OEW = self.class_ii_OEW
+            self.EW = self.OEW - self.design_crew*9.81
             self.total_fuel = self.MTOW * (1-self.Mff)
             self.mission_fuel = self.calculate_fuel_mission()
             self.reserve_fuel = self.total_fuel - self.mission_fuel
@@ -125,6 +127,8 @@ class ModifiedClassI:
             self.fuel_max = 1.1 * self.total_fuel
         elif self.mission_type == MissionType.FERRY:
             self.MTOW = (self.design_payload*9.81 + self.design_crew*9.81 + self.class_ii_OEW) / (1 - (1-self.Mff) - self.tfo)
+            self.OEW = self.class_ii_OEW
+            self.EW = self.OEW - self.ferry_crew*9.81
             self.total_fuel = self.MTOW * (1-self.Mff)
             self.mission_fuel = self.calculate_fuel_mission()
             self.reserve_fuel = self.total_fuel - self.mission_fuel
@@ -133,6 +137,8 @@ class ModifiedClassI:
             self.fuel_max = 1.1 * self.total_fuel
         elif self.mission_type == MissionType.ALTITUDE:
             self.MTOW = (self.design_payload*9.81 + self.design_crew*9.81 + self.class_ii_OEW) / (1 - (1-self.Mff) - self.tfo)
+            self.OEW = self.class_ii_OEW
+            self.EW = self.OEW - self.altitude_crew*9.81
             self.total_fuel = self.MTOW * (1-self.Mff)
             self.mission_fuel = self.calculate_fuel_mission()
             self.reserve_fuel = self.total_fuel - self.mission_fuel
@@ -141,7 +147,7 @@ class ModifiedClassI:
             self.fuel_max = 1.1 * self.total_fuel
 
         self.update_attributes()
-        self.aircraft_data.save_design(self.design_file)
+        # self.aircraft_data.save_design(self.design_file)
 
     def update_attributes(self):
         self.aircraft_data.data['outputs'][self.mission_type.name.lower()]['MTOW'] = self.MTOW
@@ -159,17 +165,12 @@ class ModifiedClassI:
 
 
 if __name__=="__main__":
-    data = Data("design1.json")
+    data = Data("design3.json")
     
     classI = ModifiedClassI(
         aircraft_data=data,
-        mission_type=MissionType.DESIGN
+        mission_type=MissionType.DESIGN,
+        class_ii_OEW=158814
     )
     classI.main()
-    print(classI.total_fuel)
-    print(classI.mission_fuel)
-    print(classI.reserve_fuel)
-
     print(classI.MTOM)
-
-
