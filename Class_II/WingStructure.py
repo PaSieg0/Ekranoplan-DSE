@@ -131,6 +131,8 @@ class WingStructure:
         spar_data = {}
         spar_data['max_y'] = []
         spar_data['min_y'] = []
+        boom_data = []
+
         for i, x in enumerate(spar_xs):
             spar_top = get_y_top(x, self.element_functions['upper'], self.top_spar_margin)
             spar_bottom = get_y_bottom(x, self.element_functions['lower'], self.bottom_spar_margin)
@@ -148,6 +150,8 @@ class WingStructure:
             spar_data[f'{label}_height'] = spar_top - spar_bottom
             spar_data['max_y'].append(spar_top)
             spar_data['min_y'].append(spar_bottom)
+            boom_data.append(x)
+            boom_data.append(spar_top)
 
         spar_data['max_y'] = max(spar_data['max_y'])
         spar_data['max_x'] = spar_positions[np.argmax(spar_data['max_y'])]
@@ -163,7 +167,7 @@ class WingStructure:
         spar_xs = [spar_info[f"{label}_x"] for label in spar_labels]
 
         panel_info = {}
-
+        skin_length = []
         for i in range(self.n_cells):
             label_1 = spar_labels[i]
             label_2 = spar_labels[i + 1]
@@ -175,12 +179,12 @@ class WingStructure:
 
             top_angle = np.arctan2(spar_info[f'{label_1}_top'] - spar_info[f'{label_2}_top'], x1 - x2)
             bottom_angle = np.arctan2(spar_info[f'{label_1}_bottom'] - spar_info[f'{label_2}_bottom'], x1 - x2)
-
-
+            
             panel_info[f'top_panel_length_{i+1}'] = top_length
             panel_info[f'bottom_panel_length_{i+1}'] = bottom_length
             panel_info[f'top_panel_angle_{i+1}'] = top_angle
             panel_info[f'bottom_panel_angle_{i+1}'] = bottom_angle
+
 
         self.panel_info = panel_info
 
@@ -303,7 +307,6 @@ class WingStructure:
     def beam_standard_Ixy(self, length, thickness, xy, angle):
 
         A_web = length * thickness
-
         I_web = (thickness*length**3*np.sin(angle)*np.cos(angle)) / 12
 
         I_xx = I_web + A_web * xy
@@ -348,8 +351,8 @@ class WingStructure:
         top_panel_angles = [panel_info[f'top_panel_angle_{i}'] for i in range(1, n_cells + 1)]
         bottom_panel_angles = [panel_info[f'bottom_panel_angle_{i}'] for i in range(1, n_cells + 1)]
 
-        top_stringer_count = n_stringers // 3 * 2  
-        bottom_stringer_count = n_stringers - top_stringer_count
+        top_stringer_count = (n_stringers + 1) // 2  # Prioritize top
+        bottom_stringer_count = n_stringers // 2
 
         top_stringers_per_cell = [top_stringer_count // n_cells] * n_cells
         leftover_top = top_stringer_count % n_cells
@@ -488,6 +491,10 @@ class WingStructure:
                 I_xy_mid_spars += self.beam_standard_Ixy(mid_spar_height, self.t_mid_spar,
                                                         (mid_spar_x - self.centroid[0]) * (mid_spar_height / 2 - self.centroid[1]),
                                                         np.pi / 2)
+                
+                # print(mid_spar_height, self.t_mid_spar)
+                # print(self.beam_standard_Ixx(mid_spar_height, self.t_mid_spar,
+                #                                         abs(mid_spar_height / 2 - self.centroid[1]), np.pi / 2))
 
         I_xx_wing_top = 0
         I_yy_wing_top = 0
@@ -749,7 +756,6 @@ class WingStructure:
         plt.axis("equal")
         plt.grid(True)
         plt.show()
-
 
 
 if __name__ == "__main__":
