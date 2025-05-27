@@ -12,9 +12,9 @@ class OptimumSpeeds(AltitudeVelocity):
         super().__init__(aircraft_data, mission_type)
 
         if mission_type == MissionType.FERRY:
-            self._mtow = self.data.data['outputs']['design']['MTOW']-self.data.data['requirements']['design_payload']*9.81
+            self._mtow = self.data.data['outputs']['design']['MTOW']-self.data.data['requirements']['design_payload']*self.g
             self._oew = self.data.data['outputs']['design']['OEW']
-            self._zfw = self.data.data['outputs']['design']['ZFW']-self.data.data['requirements']['design_payload']*9.81
+            self._zfw = self.data.data['outputs']['design']['ZFW']-self.data.data['requirements']['design_payload']*self.g
         else:
             self._mtow = self.data.data['outputs']['design']['MTOW']
             self._oew = self.data.data['outputs']['design']['OEW']

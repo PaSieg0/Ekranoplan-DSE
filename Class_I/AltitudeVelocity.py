@@ -30,6 +30,7 @@ class AltitudeVelocity:
         self._k = 1 / (np.pi * self._AR * self._e)  # Induced drag factor
         self.velocity_steps = 2000  # Number of velocity steps for calculations
         self.height_steps = 7000  # Number of height steps for calculations
+        self.g = 9.81  # Gravitational acceleration in m/s^2
         
         # Pre-calculate the mps to fpm conversion factor
         self.mps2fpm = 196.85  # metres per second to feet per minute
@@ -111,25 +112,33 @@ class AltitudeVelocity:
         plt.grid()
         plt.show()
 
-    def plot_force_curve(self, h_list: np.array) -> None:
+    def plot_force_curve(self, h_list: np.array, n_list: float = [1]) -> None:
         """
-        Plot the power required and available curves.
+        Plot the drag and thrust available curves for different load factors.
         """
         plt.figure(figsize=(10, 6))
         color_list = ['b', 'g', 'r', 'c', 'm', 'y', 'k']
-        
-        for i, h in enumerate(h_list):
-            V_stall = self.calculate_stall_speed(h)
-            velocity_range = np.linspace(V_stall, self.dive_speed, self.velocity_steps)
-            
-            # Vectorized calculations instead of list comprehensions
-            drag = np.array([self.calculate_drag(v, h) for v in velocity_range])
-            thrust = np.array([self.calculate_thust(v, h) for v in velocity_range])
-            
-            plt.plot(velocity_range, drag, label=f'Drag at {h} m', color=color_list[i % len(color_list)])
-            plt.plot(velocity_range, thrust, label=f'Thrust Available at {h} m', color=color_list[i % len(color_list)])
 
-        plt.title(f'Thrust and Drag vs Velocity')
+        for n_idx, n in enumerate(n_list):
+            self._current_weight = self._mtow * n  # Adjust weight based on load factor
+
+            for i, h in enumerate(h_list):
+                V_stall = self.calculate_stall_speed(h)
+                velocity_range = np.linspace(V_stall, self.dive_speed, self.velocity_steps)
+
+                drag = np.array([self.calculate_drag(v, h) for v in velocity_range])
+                thrust = np.array([self.calculate_thust(v, h) for v in velocity_range])
+
+                label_drag = f'Drag at {h} m, n={n}'
+                label_thrust = f'Thrust Available at {h} m, n={n}'
+                color = color_list[(i + n_idx * len(h_list)) % len(color_list)]
+
+                plt.plot(velocity_range, drag, label=label_drag, color=color, linestyle='-')
+                plt.plot(velocity_range, thrust, label=label_thrust, color=color, linestyle='--')
+
+        self._current_weight = self._mtow  # Reset weight to original value
+
+        plt.title('Thrust and Drag vs Velocity')
         plt.xlabel('Velocity (m/s)')
         plt.ylabel('Force (N)')
         plt.legend()
@@ -359,7 +368,9 @@ class AltitudeVelocity:
         return zero_points, stall_points
 
     def plot_limit_points(
-        self,
+        self, 
+        zero_points: np.ndarray, 
+        stall_points: np.ndarray,
         airspeed_type='true',
         altitude_units='meters',
         plot=('thrust_limit', 'stall_limit', 'Vy', 'Vx', 'max_h', 'max_RoC', 'max_AoC', 'energy_height', 'roc_contours')
@@ -375,15 +386,12 @@ class AltitudeVelocity:
             plot (tuple): Which lines/points to plot. Options include:
                 'thrust_limit', 'stall_limit', 'Vy', 'Vx', 'max_h', 'max_RoC', 'max_AoC', 'energy_height', 'roc_contours'
         """
-
-        zero_points, stall_points = self.calculate_limit_points(airspeed_type, altitude_units)
-
         plt.figure(figsize=(10, 7))
 
         # Helper for x-axis transform
         def x_transform(V):
             if airspeed_type == 'energy':
-                return np.array(V)**2 / (2 * 9.81)
+                return np.array(V)**2 / (2 * self.g)
             return V
 
         # Plot thrust limit (zero RoC curve)
@@ -484,7 +492,7 @@ class AltitudeVelocity:
             H_m = H / self.m_to_ft if altitude_units == 'feet' else H
             E = self.energy_height(V, H_m)
             if airspeed_type == 'energy':
-                X = V**2 / (2 * 9.81)
+                X = V**2 / (2 * self.g)
                 cs = plt.contour(X, H, E, levels=10, colors='gray', linestyles='dotted', linewidths=1)
             else:
                 cs = plt.contour(x_transform(V), H, E, levels=10, colors='gray', linestyles='dotted', linewidths=1)
@@ -506,7 +514,7 @@ class AltitudeVelocity:
                 for j in range(H.shape[1]):
                     RoC[i, j] = self.calculate_RoC(V[i, j], H_m[i, j]) * self.mps2fpm  # ft/min
             if airspeed_type == 'energy':
-                X = V**2 / (2 * 9.81)
+                X = V**2 / (2 * self.g)
                 cs_roc = plt.contour(X, H, RoC, levels=10, colors='blue', linestyles='solid', linewidths=1)
             else:
                 cs_roc = plt.contour(x_transform(V), H, RoC, levels=10, colors='blue', linestyles='solid', linewidths=1)
@@ -613,14 +621,14 @@ class AltitudeVelocity:
         V_ias = self.equivalent_air_speed(V, h)
         dH = 0.1
         dV_dH = V_ias * np.sqrt(self._get_density(0)) * (np.sqrt(1/self._get_density(h + dH)) - np.sqrt(1/self._get_density(h)))/ dH
-        RoC = RoCs / (1 + V/9.81 * dV_dH)
+        RoC = RoCs / (1 + V/self.g * dV_dH)
         return RoC
     
     def energy_height(self, V: float, h: float) -> float:
         """
         Calculate the energy height at a given altitude.
         """
-        return h + V**2 / (2 * 9.81)  # h in meters, V in m/s, energy height in meters
+        return h + V**2 / (2 * self.g)  # h in meters, V in m/s, energy height in meters
 
 
 if __name__ == "__main__":
@@ -642,6 +650,8 @@ if __name__ == "__main__":
     print(f"Max AoC at h = 0 is {altitude_velocity.calculate_max_AoC(0)[0] * 180/np.pi} degrees")
     print(f"Max true RoC at h = 0 is {altitude_velocity.calculate_true_RoC(altitude_velocity.calculate_max_RoC(0)[1], 0) * 196.85} ft/min")
 
-    altitude_velocity.plot_limit_points(airspeed_type='energy', 
+    zero_points, stall_points = altitude_velocity.calculate_limit_points(airspeed_type='energy', altitude_units='feet')
+    altitude_velocity.plot_limit_points(zero_points, stall_points, 
+                                        airspeed_type='energy', 
                                         altitude_units='feet', 
                                         plot=('thrust_limit', 'stall_limit', 'Vy', 'energy_height', 'roc_contours'))
