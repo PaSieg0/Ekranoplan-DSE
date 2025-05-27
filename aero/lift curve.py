@@ -124,10 +124,10 @@ if __name__ == "__main__":  #if run seperately
     ax[1][0].plot(alphalst,L_D_lst)
 
     #lift distribution
-    curves.lift_dist(alpha=2,V=90,ct=4.5,cr=11.5)
-    ax[1][1].set_title('spanwise lift distr')
-    ax[1][1].plot(curves.ylst,curves.L_lst)
-    ax[1][1].set_ylim(0,100000)
+    #curves.lift_dist(alpha=2,V=90,ct=4.5,cr=11.5)
+    #ax[1][1].set_title('spanwise lift distr')
+    #ax[1][1].plot(curves.ylst,curves.L_lst)
+    #ax[1][1].set_ylim(0,100000)
 
     #show
     plt.show()
