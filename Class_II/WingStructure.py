@@ -34,10 +34,16 @@ class WingStructure:
         self.n_stringers = self.aircraft_data.data['inputs']['structures']['wing_box']['n_stringers']
         self.stringer_area = self.aircraft_data.data['inputs']['structures']['wing_box']['stringer_area']/1000000
         self.stringer_radius = np.sqrt(self.stringer_area / np.pi)
-
+        
+        self.material = self.aircraft_data.data['inputs']['structures']['materials']['Al7075']
+        self.material_stringer = self.aircraft_data.data['inputs']['structures']['materials']['Ti-6Al-4V']
+        self.E_stringer = self.material_stringer['E']
+        self.sigma_y_stringer = self.material_stringer['sigma_y']
+        self.poisson_ratio_stringer = self.material_stringer['poisson_ratio']
         self.n_cells = self.aircraft_data.data['inputs']['structures']['wing_box']['n_cells']
-
         self.fuel_volume = self.aircraft_data.data['outputs']['max']['max_fuel_L']/1000
+
+        self.C = self.aircraft_data.data['inputs']['structures']['wing_box']['C']
 
         self.fuel_density = 0.82 # TODO link to json data
 
@@ -190,9 +196,9 @@ class WingStructure:
 
         panel_info['top_skin_length'] = np.array(top_skin_length)
         panel_info['bottom_skin_length'] = np.array(bottom_skin_length)
+        panel_info['widths_top'] = np.array([panel_info[f'top_panel_length_{i+1}'] for i in range(self.n_cells)])
+        panel_info['widths_bottom'] = np.array([panel_info[f'bottom_panel_length_{i+1}'] for i in range(self.n_cells)])
         self.panel_info = panel_info
-        self.widths_top = np.array([panel_info[f'top_panel_length_{i+1}'] for i in range(self.n_cells)])
-        self.widths_bottom = np.array([panel_info[f'bottom_panel_length_{i+1}'] for i in range(self.n_cells)])
 
     def compute_wing_box_areas(self):
         if not hasattr(self, 'spar_info'):
@@ -337,6 +343,11 @@ class WingStructure:
 
         self.J = polar_moment_wingbox
 
+    def get_effective_sheet_width(self):
+        
+        self.stringer_width = self.t_skin*np.sqrt(self.C*np.pi**2/(12*(1-self.poisson_ratio_stringer**2)))*np.sqrt(self.E_stringer/self.sigma_y_stringer)
+        return self.stringer_width
+    
     def get_stringer_placement(self):
         spar_info = self.spar_info
         n_stringers = self.n_stringers
@@ -344,31 +355,33 @@ class WingStructure:
         n_cells = self.n_cells
         panel_info = self.panel_info
         clearance = 0.05
+        min_width = 0.1
+        self.stringer_width = self.get_effective_sheet_width()
 
-        stringer_info = {'top': {'x': [], 'y': [], 'I_xx': 0, 'I_yy': 0, 'I_xy': 0}, 'bottom': {'x': [], 'y': [], 'I_xx': 0, 'I_yy': 0, 'I_xy': 0}}
+        stringer_info = {
+            'top': {'x': [], 'y': [], 'I_xx': 0, 'I_yy': 0, 'I_xy': 0},
+            'bottom': {'x': [], 'y': [], 'I_xx': 0, 'I_yy': 0, 'I_xy': 0}
+        }
 
-        if self.n_stringers == 0:
+        if n_stringers == 0:
             self.stringer_dict = stringer_info
             return
-        
+
         spar_x_positions = [spar_info[f'{self.get_spar_label(i)}_x'] for i in range(n_cells + 1)]
         spar_tops = [spar_info[f'{self.get_spar_label(i)}_top'] for i in range(n_cells + 1)]
         spar_bottoms = [spar_info[f'{self.get_spar_label(i)}_bottom'] for i in range(n_cells + 1)]
         top_panel_angles = [panel_info[f'top_panel_angle_{i}'] for i in range(1, n_cells + 1)]
         bottom_panel_angles = [panel_info[f'bottom_panel_angle_{i}'] for i in range(1, n_cells + 1)]
 
-        top_stringer_count = (n_stringers + 1) // 2  # Prioritize top
+        top_stringer_count = (n_stringers + 1) // 2
         bottom_stringer_count = n_stringers // 2
 
         top_stringers_per_cell = [top_stringer_count // n_cells] * n_cells
-        leftover_top = top_stringer_count % n_cells
-        for i in range(leftover_top):
+        for i in range(top_stringer_count % n_cells):
             top_stringers_per_cell[i] += 1
 
         bottom_stringers_per_cell = [bottom_stringer_count // n_cells] * n_cells
-        leftover_bottom = bottom_stringer_count % n_cells
-
-        for i in range(leftover_bottom):
+        for i in range(bottom_stringer_count % n_cells):
             bottom_stringers_per_cell[i] += 1
 
         for i in range(n_cells):
@@ -377,49 +390,49 @@ class WingStructure:
             total_length = right_x - left_x
             available_length = total_length - 2 * (r + clearance)
 
-            n_top = top_stringers_per_cell[i]
-            if n_top == 1:
-                x_positions = np.array([left_x + r + clearance + available_length / 2])
-            elif n_top == 2:
-                x_positions = np.linspace(left_x + r + clearance, right_x - r - clearance, 4)[1:-1]
-            elif n_top > 2:
-                spacing = available_length / (n_top - 1)
-                x_positions = np.array([left_x + r + clearance + j * spacing for j in range(n_top)])
-            else:
-                x_positions = np.array([])
+            # --- Top ---
+            current_top_width = panel_info['widths_top'][i]
+            max_top_stringers = int((current_top_width - min_width) // self.stringer_width)
+            n_top = min(top_stringers_per_cell[i], max_top_stringers)
 
-            if x_positions.size > 0:
+            if n_top > 0:
+                if n_top == 1:
+                    x_positions = np.array([left_x + r + clearance + available_length / 2])
+                elif n_top == 2:
+                    x_positions = np.linspace(left_x + r + clearance, right_x - r - clearance, 4)[1:-1]
+                else:
+                    spacing = available_length / (n_top - 1)
+                    x_positions = np.array([left_x + r + clearance + j * spacing for j in range(n_top)])
                 y_positions = np.tan(top_panel_angles[i]) * (x_positions - left_x) + spar_tops[i] - r
                 stringer_info['top']['x'].extend(x_positions)
                 stringer_info['top']['y'].extend(y_positions)
-                I_xx = sum([self.stringer_area * (y - self.centroid[1])**2 for y in y_positions])
-                I_yy = sum([self.stringer_area * (x - self.centroid[0])**2 for x in x_positions])
-                I_xy = sum([self.stringer_area * (x - self.centroid[0]) * (y - self.centroid[1]) for x, y in zip(x_positions, y_positions)])
-                stringer_info['top']['I_xx'] += I_xx
-                stringer_info['top']['I_yy'] += I_yy
-                stringer_info['top']['I_xy'] += I_xy
+                dx = x_positions - self.centroid[0]
+                dy = y_positions - self.centroid[1]
+                stringer_info['top']['I_xx'] += np.sum(self.stringer_area * dy**2)
+                stringer_info['top']['I_yy'] += np.sum(self.stringer_area * dx**2)
+                stringer_info['top']['I_xy'] += np.sum(self.stringer_area * dx * dy)
 
-            n_bottom = bottom_stringers_per_cell[i]
-            if n_bottom == 1:
-                x_positions = np.array([left_x + r + clearance + available_length / 2])
-            elif n_bottom == 2:
-                x_positions = np.linspace(left_x + r + clearance, right_x - r - clearance, 4)[1:-1]
-            elif n_bottom > 2:
-                spacing = available_length / (n_bottom - 1)
-                x_positions = np.array([left_x + r + clearance + j * spacing for j in range(n_bottom)])
-            else:
-                x_positions = np.array([])
+            # --- Bottom ---
+            current_bottom_width = panel_info['widths_bottom'][i]
+            max_bottom_stringers = int((current_bottom_width - min_width) // self.stringer_width)
+            n_bottom = min(bottom_stringers_per_cell[i], max_bottom_stringers)
 
-            if x_positions.size > 0:
+            if n_bottom > 0:
+                if n_bottom == 1:
+                    x_positions = np.array([left_x + r + clearance + available_length / 2])
+                elif n_bottom == 2:
+                    x_positions = np.linspace(left_x + r + clearance, right_x - r - clearance, 4)[1:-1]
+                else:
+                    spacing = available_length / (n_bottom - 1)
+                    x_positions = np.array([left_x + r + clearance + j * spacing for j in range(n_bottom)])
                 y_positions = np.tan(bottom_panel_angles[i]) * (x_positions - left_x) + spar_bottoms[i] + r
                 stringer_info['bottom']['x'].extend(x_positions)
                 stringer_info['bottom']['y'].extend(y_positions)
-                I_xx = sum([self.stringer_area * (y - self.centroid[1])**2 for y in y_positions])
-                I_yy = sum([self.stringer_area * (x - self.centroid[0])**2 for x in x_positions])
-                I_xy = sum([self.stringer_area * (x - self.centroid[0]) * (y - self.centroid[1]) for x, y in zip(x_positions, y_positions)])
-                stringer_info['bottom']['I_xx'] += I_xx
-                stringer_info['bottom']['I_yy'] += I_yy
-                stringer_info['bottom']['I_xy'] += I_xy
+                dx = x_positions - self.centroid[0]
+                dy = y_positions - self.centroid[1]
+                stringer_info['bottom']['I_xx'] += np.sum(self.stringer_area * dy**2)
+                stringer_info['bottom']['I_yy'] += np.sum(self.stringer_area * dx**2)
+                stringer_info['bottom']['I_xy'] += np.sum(self.stringer_area * dx * dy)
 
         self.stringer_dict = stringer_info
 
@@ -778,5 +791,6 @@ if __name__ == "__main__":
 
     wing_structure = WingStructure(aircraft_data, airfoil_data)
     wing_structure.get_wing_structure()
+    #3187
     wing_structure.plot_airfoil(chord_idx=0)
     wing_structure.plot_moment_of_inertia()

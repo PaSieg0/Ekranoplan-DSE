@@ -43,14 +43,107 @@
             "wing_box": {
                 "front_spar": 0.15,
                 "rear_spar": 0.65,
-                "t_skin": 5,
+                "t_skin": 6,
                 "t_spar": 20,
-                "t_wing": 3,
-                "stringer_area": 5000,
+                "t_wing": 6,
+                "stringer_area": 3000,
                 "n_stringers": 70,
-                "n_cells": 3
+                "n_cells": 3,
+                "C": 4
+            },
+
+        "materials":{
+            "Al7075":{
+                "rho": 2810,
+                "E": 71.7e9,
+                "poisson_ratio": 0.33,
+                "G": 26.9e9,
+                "sigma_y": 503e6
+            },
+            "Al6061":{
+                "rho": 2700,
+                "E": 68.9e9,
+                "poisson_ratio": 0.33,
+                "G": 26e9,
+                "sigma_y": 276e6
+            },
+
+            "Al6063":{
+                "rho": 2700,
+                "E": 68.9e9,
+                "poisson_ratio": 0.33,
+                "G": 25.8e9,
+                "sigma_y": 276e6
+            },
+
+            "Al2024":{
+                "rho": 2780,
+                "E": 73.1e9,
+                "poisson_ratio": 0.33,
+                "G": 28e9,
+                "sigma_y": 324e6
+            },
+
+            "Al5052":{
+                "rho": 2680,
+                "E": 70.3e9,
+                "poisson_ratio": 0.33,
+                "G": 25.9e9,
+                "sigma_y": 193e6
+            },
+
+            "Ti-10-V2-Fe3-Al": {
+                "rho": 4650,
+                "E": 107e9,
+                "poisson_ratio": 0.32,
+                "G": 42.1e9,
+                "sigma_y": 1170e6
+            },
+
+            "Ti-6Al-4V": {
+                "rho": 4430,
+                "E": 113.8e9,
+                "poisson_ratio": 0.342,
+                "G": 44e9,
+                "sigma_y": 880e6
+            },
+
+             "INCONEL 718 (Nickel Based Alloy) ": {
+                "rho": 8190,
+                "E": 113.8e9,
+                "poisson_ratio": 0.3,
+                "G": 43.7,
+                "sigma_y": 760e6
+            },
+
+             "WASPALOY (Nickel Based Alloy) ": {
+                "rho": 8200,
+                "E": 213e9,
+                "poisson_ratio": 0.31,
+                "G": 81.2e9,
+                "sigma_y": 910e6
+            },
+
+            "Rene 41 (Nickel Based Alloy) ": {
+                "rho": 8240,
+                "E": 218e9,
+                "poisson_ratio": 0.31,
+                "G": 83.2e9,
+                "sigma_y": 1062e6
+            },
+
+             "HASTELLOY X (Nickel Based Alloy) ": {
+                "rho": 8220,
+                "E": 205e9,
+                "poisson_ratio": 0.32,
+                "G": 77.6e9,
+                "sigma_y": 245e6
+            }
+
+
             }
         },
+
         "engine": {
             "prop_diameter": 5.2,
             "engine_length": 4.2,
