@@ -43,13 +43,13 @@
             "wing_box": {
                 "front_spar": 0.15,
                 "rear_spar": 0.65,
-                "t_skin": 5,
+                "t_skin": 4,
                 "t_front_spar": 20,
                 "t_rear_spar":20,
                 "t_mid_spar": 20,
-                "t_wing": 3,
-                "stringer_area": 5000,
-                "n_stringers": 70,
+                "t_wing": 2,
+                "stringer_area": 500,
+                "n_stringers": 60,
                 "n_cells": 3
             }
         },
