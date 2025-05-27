@@ -25,6 +25,7 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
         self.dy = np.gradient(self.b_array)
         self.E = 70e9
         self.G = 26e9
+        self.E = 68.9e9
         self.max_load_factor = self.aircraft_data.data['outputs']['general']['nmax']
         self.min_load_factor = self.aircraft_data.data['outputs']['general']['nmin']
         self.evaluate_case = 'max'
@@ -33,6 +34,8 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
         self.I_yy_array = np.array([self.wing_structure[i]['I_yy'] for i in range(len(self.wing_structure))])
         self.I_xy_array = np.array([self.wing_structure[i]['I_xy'] for i in range(len(self.wing_structure))])
         self.internal_torque()
+        self.sigma_y = 276e6  # Yield strength in Pa of AL6061-T6
+        self.k_v = 1.5 
 
     def resultant_vertical_distribution(self):
         if self.evaluate_case == 'max':
@@ -157,8 +160,10 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
         return solution
 
     def calculate_shear_stress(self):
-
-        return
+        Vy_internal = self.internal_vertical_shear_force()
+        avg_shear_stress = Vy_internal / [sum(self.wing_structure[i]['spar_info']['spar_heights_t']) for i in range(len(self.wing_structure))]
+        self.max_shear_stress = avg_shear_stress * self.k_v
+        return self.max_shear_stress
     
     def calculate_torsion(self):
         for i in range(len(self.b_array)):
