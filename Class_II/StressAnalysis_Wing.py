@@ -99,73 +99,16 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
         #print(y[0], self.internal_bending_moment_x()[0], self.I_xx_array[0])
         #self.top_bending_stress = self.internal_bending_moment_x()*y/(self.I_xx_array)/1000000
         return self.top_bending_stress
+    
+    
 
     def calculate_shear_stress(self):
+
         return
     
     def bending_stress_span_point(self, y, x, idx):
         bending_stress = self.safety_factor*((self.internal_bending_moment_x()[idx]*self.I_yy_array[idx] -(self.internal_bending_moment_y()[idx]*self.I_xy_array[idx]))*y + (self.internal_bending_moment_y()[idx]*self.I_xx_array[idx] - (self.internal_bending_moment_x()[idx]*self.I_xy_array[idx]))*x) / (self.I_xx_array[idx]*self.I_yy_array[idx] - self.I_xy_array[idx]**2)/1000000
         return bending_stress
-
-    def stress_ratio(self,x1,x2,y1,y2,idx):
-        bending_stress1 = self.bending_stress_span_point(y1, x1, idx)
-        bending_stress2 = self.bending_stress_span_point(y2, x2, idx)
-        
-        return bending_stress1 / bending_stress2 if bending_stress2 != 0 else float('inf')
-
-    def connect_booms(self,b1, b2, boom_dict):
-        boom_dict[b1]['connected'].append(b2)
-        boom_dict[b2]['connected'].append(b1)
-    
-    def define_boom_areas(self):
-        self.boom_areas = {}
-
-        for i in range(len(self.wing_structure)):
-            section = self.wing_structure[i]
-            spar_xs = section['spar_info']['spar_xs']
-            spar_tops = section['spar_info']['top_y']
-            spar_bottoms = section['spar_info']['bottom_y']
-            boom_dict = {}
-
-            # Create booms and connect them
-            for idx, x in enumerate(spar_xs):
-                top_id = f'B{2*idx + 1}'
-                bottom_id = f'B{2*idx + 2}'
-                boom_dict[top_id] = {'x': x, 'y': spar_tops[idx], 'connected': []}
-                boom_dict[bottom_id] = {'x': x, 'y': spar_bottoms[idx], 'connected': []}
-
-                self.connect_booms(top_id, bottom_id, boom_dict)
-
-                if idx > 0:
-                    prev_top_id = f'B{2*(idx - 1) + 1}'
-                    prev_bottom_id = f'B{2*(idx - 1) + 2}'
-                    self.connect_booms(prev_top_id, top_id, boom_dict)
-                    self.connect_booms(prev_bottom_id, bottom_id, boom_dict)
-
-            self.boom_areas[i] = boom_dict
-
-            # Compute boom areas efficiently
-            for boom_id, boom_data in boom_dict.items():
-                x1, y1 = boom_data['x'], boom_data['y']
-                boom_index = int(boom_id[1:])  # e.g., B1 -> 1
-
-                # Determine thickness
-                if boom_index == 1:
-                    thickness = self.t_front_spar
-                elif boom_index == len(spar_xs) * 2 - 1:
-                    thickness = self.t_rear_spar
-                else:
-                    thickness = self.t_skin
-
-                boom_sum = 0
-                for conn_id in boom_data['connected']:
-                    x2, y2 = boom_dict[conn_id]['x'], boom_dict[conn_id]['y']
-                    b = ((x2 - x1)**2 + (y2 - y1)**2)**0.5
-                    ratio = self.stress_ratio(x1, x2, y1, y2, i)
-                    boom_sum += (thickness * b / 6) * (2 + ratio)
-
-                boom_data['area'] = boom_sum
-        print(self.boom_areas[0])
 
     def calculate_wing_deflection(self):
         moment = self.internal_bending_moment_x()

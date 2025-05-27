@@ -16,10 +16,8 @@ class WingStructure:
         self.front_spar = self.aircraft_data.data['inputs']['structures']['wing_box']['front_spar']
         self.rear_spar = self.aircraft_data.data['inputs']['structures']['wing_box']['rear_spar']
 
-        self.t_front_spar = self.aircraft_data.data['inputs']['structures']['wing_box']['t_front_spar']/1000
-        self.t_rear_spar = self.aircraft_data.data['inputs']['structures']['wing_box']['t_rear_spar']/1000
+        self.t_spar = self.aircraft_data.data['inputs']['structures']['wing_box']['t_spar']/1000
         self.t_skin = self.aircraft_data.data['inputs']['structures']['wing_box']['t_skin']/1000
-        self.t_mid_spar = self.aircraft_data.data['inputs']['structures']['wing_box']['t_mid_spar']/1000
         self.t_wing = self.aircraft_data.data['inputs']['structures']['wing_box']['t_wing']/1000
 
         self.b = self.aircraft_data.data['outputs']['wing_design']['b']
@@ -131,7 +129,7 @@ class WingStructure:
         spar_data = {}
         spar_data['max_y'] = []
         spar_data['min_y'] = []
-        boom_data = []
+        spar_data['spar_heights'] = []
 
         for i, x in enumerate(spar_xs):
             spar_top = get_y_top(x, self.element_functions['upper'], self.top_spar_margin)
@@ -150,8 +148,7 @@ class WingStructure:
             spar_data[f'{label}_height'] = spar_top - spar_bottom
             spar_data['max_y'].append(spar_top)
             spar_data['min_y'].append(spar_bottom)
-            boom_data.append(x)
-            boom_data.append(spar_top)
+            spar_data['spar_heights'].append(spar_top - spar_bottom)
 
         spar_data['max_y'] = max(spar_data['max_y'])
         spar_data['max_x'] = spar_positions[np.argmax(spar_data['max_y'])]
@@ -435,19 +432,19 @@ class WingStructure:
         front_spar_top = self.spar_info['front_spar_top']
         front_spar_bottom = self.spar_info['front_spar_bottom']
 
-        I_xx_front_spar = self.beam_standard_Ixx(front_spar_height, self.t_front_spar,
+        I_xx_front_spar = self.beam_standard_Ixx(front_spar_height, self.t_spar,
                                                 abs(front_spar_height / 2 - self.centroid[1]), np.pi / 2)
-        I_yy_front_spar = self.beam_standard_Iyy(front_spar_height, self.t_front_spar,
+        I_yy_front_spar = self.beam_standard_Iyy(front_spar_height, self.t_spar,
                                                 abs(front_spar_x - self.centroid[0]), np.pi / 2)
-        I_xy_front_spar = self.beam_standard_Ixy(front_spar_height, self.t_front_spar,
+        I_xy_front_spar = self.beam_standard_Ixy(front_spar_height, self.t_spar,
                                                 (front_spar_x - self.centroid[0]) * (front_spar_height / 2 - self.centroid[1]),
                                                 np.pi / 2)
         
-        I_xx_rear_spar = self.beam_standard_Ixx(rear_spar_height, self.t_rear_spar,
+        I_xx_rear_spar = self.beam_standard_Ixx(rear_spar_height, self.t_spar,
                                                 abs(rear_spar_height / 2 - self.centroid[1]), np.pi / 2)
-        I_yy_rear_spar = self.beam_standard_Iyy(rear_spar_height, self.t_rear_spar,
+        I_yy_rear_spar = self.beam_standard_Iyy(rear_spar_height, self.t_spar,
                                                 abs(rear_spar_x - self.centroid[0]), np.pi / 2)
-        I_xy_rear_spar = self.beam_standard_Ixy(rear_spar_height, self.t_rear_spar,
+        I_xy_rear_spar = self.beam_standard_Ixy(rear_spar_height, self.t_spar,
                                                 (rear_spar_x - self.centroid[0]) * (rear_spar_height / 2 - self.centroid[1]),
                                                 np.pi / 2)
 
@@ -486,16 +483,16 @@ class WingStructure:
                 mid_spar_height = self.spar_info[f'mid_spar_{i}_height']
                 mid_spar_x = self.spar_info[f'mid_spar_{i}_x']
 
-                I_xx_mid_spars += self.beam_standard_Ixx(mid_spar_height, self.t_mid_spar,
+                I_xx_mid_spars += self.beam_standard_Ixx(mid_spar_height, self.t_spar,
                                                         abs(mid_spar_height / 2 - self.centroid[1]), np.pi / 2)
-                I_yy_mid_spars += self.beam_standard_Iyy(mid_spar_height, self.t_mid_spar,
+                I_yy_mid_spars += self.beam_standard_Iyy(mid_spar_height, self.t_spar,
                                                         abs(mid_spar_x - self.centroid[0]), np.pi / 2)
-                I_xy_mid_spars += self.beam_standard_Ixy(mid_spar_height, self.t_mid_spar,
+                I_xy_mid_spars += self.beam_standard_Ixy(mid_spar_height, self.t_spar,
                                                         (mid_spar_x - self.centroid[0]) * (mid_spar_height / 2 - self.centroid[1]),
                                                         np.pi / 2)
                 
-                # print(mid_spar_height, self.t_mid_spar)
-                # print(self.beam_standard_Ixx(mid_spar_height, self.t_mid_spar,
+                # print(mid_spar_height, self.t_spar)
+                # print(self.beam_standard_Ixx(mid_spar_height, self.t_spar,
                 #                                         abs(mid_spar_height / 2 - self.centroid[1]), np.pi / 2))
 
         I_xx_wing_top = 0
