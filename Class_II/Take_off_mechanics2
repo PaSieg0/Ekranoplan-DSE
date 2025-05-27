@@ -38,7 +38,7 @@ class Take_off_mechanics:
 
         self.MTOW = self.aircraft_data.data['outputs']['design']['MTOW']
 
-        self.thrust = 110000*self.aircraft_data.data['inputs']['n_engines']
+        self.thrust = 0#110000*self.aircraft_data.data['inputs']['n_engines']
 
         #hardcoded variables for now, change these later on to be self-iterating
         self.rho_air = 1.225  # kg/m³ at sea level, 15°C
@@ -88,6 +88,7 @@ class Take_off_mechanics:
     #iteratively compute the bouyancy force
     def update_bouyancy_force(self, h):       
         zero_bouyancy_height = self.get_initial_submerged_condition()[0]
+        #print(zero_bouyancy_height)
         #no bouyancy after lifted out of water surface
         if h < zero_bouyancy_height:
             V = self.submerged_volume(h)
@@ -98,42 +99,56 @@ class Take_off_mechanics:
     def get_submerged_hull_surface(self,h):
         hmax = self.get_initial_submerged_condition()[0]
         S_hydro_initial = self.hull_surface
+        print(h,"h")
         S_realtime = S_hydro_initial*(h/hmax)**2
         return S_realtime
+    
+    def get_aero_lift(self,v):
+        F_mag = 0.5 * self.CLmax_takeoff * self.rho_air * v**2 * self.S
+
+        Fy = F_mag * np.cos(self.AOA)
+        Fx = F_mag * np.sin(self.AOA)
+
+        return np.array([Fx, Fy])
+    
+    def get_hydro_lift(self,S,v,y):
+        hmax = self.get_initial_submerged_condition()[0]
+        if y >= hmax:
+            Fy = 0
+            Fx = 0
+            return np.array([Fx, Fy]) 
+        else:
+            F_mag = 0.5 * self.CL_hydro * self.rho_water * v**2 * S
+            Fy = F_mag * np.cos(self.HydroLiftAngle)
+            Fx = F_mag * np.sin(self.HydroLiftAngle)
+            return np.array([Fx, Fy])
         
-    def get_hydro_force(self, coeff, v, S, theta, y):
-        rho = self.rho_water
-        zero_hydro_height = self.get_initial_submerged_condition()[0]
-        if y >= zero_hydro_height:
+    def get_aero_drag(self,v):
+        F_mag = 0.5 * self.Cd * self.rho_air * v**2 * self.S
+
+        Fx = F_mag * np.cos(self.AOA)
+        Fy = F_mag * np.sin(self.AOA)
+
+        return np.array([Fx, Fy])
+
+
+    def get_hydro_drag(self,S,v,y):
+        hmax = self.get_initial_submerged_condition()[0]
+        if y >= hmax:
             Fx = 0
             Fy = 0
             return np.array([Fx, Fy]) 
         else:
-            F_mag = 0.5 * coeff * rho * v *2 * S
-            Fx = F_mag * np.cos(theta)
-            Fy = F_mag * np.sin(theta)
+            F_mag = 0.5 * self.Cd_water * self.rho_water * v**2 * S
+            Fx = F_mag * np.cos(self.HydroDragAngle)
+            Fy = F_mag * np.sin(self.HydroDragAngle)
             return np.array([Fx, Fy])
 
 
-    def get_aero_force(self, coeff, v, theta):
-
-        '''if np.isfinite(v):
-            print(f"Warning: Invalid v_mag from velocity {v}")
-        if np.isfinite(theta):
-            print(f"Warning: Invalid theta: {theta}")'''
-        S = self.S
-        rho = self.rho_air
-        F_mag = 0.5 * coeff * rho * v *2 * S
-
-        Fx = F_mag * np.cos(theta)
-        Fy = F_mag * np.sin(theta)
-
-        return np.array([Fx, Fy])
-    
 
     def simulate_take_off(self):
-        dt = 0.5
-        t_max = 60
+        dt = 0.1
+        t_max = 8
         t = 0
         
 
@@ -152,6 +167,7 @@ class Take_off_mechanics:
 
 
         g = self.g
+        W = self.MTOW
         m = self.MTOW/g
         T = self.thrust
         L = 0
@@ -162,16 +178,18 @@ class Take_off_mechanics:
 
         while t < t_max:
             S_hull = self.get_submerged_hull_surface(h)
-            L = self.get_aero_force(self.CLmax_takeoff, v, np.deg2rad(self.AOA))
-            print(v)
-            print(L)
-            D = self.get_aero_force(self.Cd, v, np.deg2rad(self.AOA))
-            L_hydro = self.get_hydro_force(self.CL_hydro, v, S_hull, np.deg2rad(self.HydroLiftAngle),y)
-            D_hydro = self.get_hydro_force(self.Cd_water, v, S_hull, np.deg2rad(self.HydroDragAngle),y)
+            L = self.get_aero_lift(v)
+            #print(v)
+            #print(L)
+            D = self.get_aero_drag(v)
+            L_hydro = self.get_hydro_lift(S_hull, v, y)
+            print("Lhydro:",L_hydro)
+            D_hydro = self.get_hydro_drag(S_hull, v, y)
+            print("Dhy:",D_hydro)
             F_bouy = self.update_bouyancy_force(h)
 
-            Fx = L[0]-D[0]+L_hydro[0]-D_hydro[0]+F_bouy + T
-            Fy = L[1]-D[1]+L_hydro[1]-D_hydro[1]+F_bouy
+            Fx = L[0]-D[0]+L_hydro[0]-D_hydro[0]+ T
+            Fy = L[1]-D[1]+L_hydro[1]-D_hydro[1]+ F_bouy - W
             ax = Fx/m
             ay = Fy/m 
             vx += ax*dt
@@ -181,6 +199,7 @@ class Take_off_mechanics:
             y += vy*dt
 
             h -= vx * dt
+            #print(h)
             t += dt
 
             time.append(t)
