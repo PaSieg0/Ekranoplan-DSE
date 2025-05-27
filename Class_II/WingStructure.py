@@ -16,10 +16,8 @@ class WingStructure:
         self.front_spar = self.aircraft_data.data['inputs']['structures']['wing_box']['front_spar']
         self.rear_spar = self.aircraft_data.data['inputs']['structures']['wing_box']['rear_spar']
 
-        self.t_front_spar = self.aircraft_data.data['inputs']['structures']['wing_box']['t_front_spar']/1000
-        self.t_rear_spar = self.aircraft_data.data['inputs']['structures']['wing_box']['t_rear_spar']/1000
+        self.t_spar = self.aircraft_data.data['inputs']['structures']['wing_box']['t_spar']/1000
         self.t_skin = self.aircraft_data.data['inputs']['structures']['wing_box']['t_skin']/1000
-        self.t_mid_spar = self.aircraft_data.data['inputs']['structures']['wing_box']['t_mid_spar']/1000
         self.t_wing = self.aircraft_data.data['inputs']['structures']['wing_box']['t_wing']/1000
 
         self.b = self.aircraft_data.data['outputs']['wing_design']['b']
@@ -131,6 +129,8 @@ class WingStructure:
         spar_data = {}
         spar_data['max_y'] = []
         spar_data['min_y'] = []
+        spar_data['spar_heights'] = []
+
         spar_data['spar_heights_t'] = []
         for i, x in enumerate(spar_xs):
             spar_top = get_y_top(x, self.element_functions['upper'], self.top_spar_margin)
@@ -149,6 +149,7 @@ class WingStructure:
             spar_data[f'{label}_height'] = spar_top - spar_bottom
             spar_data['max_y'].append(spar_top)
             spar_data['min_y'].append(spar_bottom)
+            spar_data['spar_heights'].append(spar_top - spar_bottom)
             spar_data['spar_heights_t'].append((spar_top - spar_bottom)*self.t_spar)
 
         spar_data['max_y'] = max(spar_data['max_y'])
@@ -166,7 +167,7 @@ class WingStructure:
         spar_xs = [spar_info[f"{label}_x"] for label in spar_labels]
 
         panel_info = {}
-
+        skin_length = []
         for i in range(self.n_cells):
             label_1 = spar_labels[i]
             label_2 = spar_labels[i + 1]
@@ -178,12 +179,12 @@ class WingStructure:
 
             top_angle = np.arctan2(spar_info[f'{label_1}_top'] - spar_info[f'{label_2}_top'], x1 - x2)
             bottom_angle = np.arctan2(spar_info[f'{label_1}_bottom'] - spar_info[f'{label_2}_bottom'], x1 - x2)
-
-
+            
             panel_info[f'top_panel_length_{i+1}'] = top_length
             panel_info[f'bottom_panel_length_{i+1}'] = bottom_length
             panel_info[f'top_panel_angle_{i+1}'] = top_angle
             panel_info[f'bottom_panel_angle_{i+1}'] = bottom_angle
+
 
         self.panel_info = panel_info
         self.widths_top = np.array([panel_info[f'top_panel_length_{i+1}'] for i in range(self.n_cells)])
@@ -308,7 +309,6 @@ class WingStructure:
     def beam_standard_Ixy(self, length, thickness, xy, angle):
 
         A_web = length * thickness
-
         I_web = (thickness*length**3*np.sin(angle)*np.cos(angle)) / 12
 
         I_xy = I_web + A_web * xy
@@ -353,8 +353,8 @@ class WingStructure:
         top_panel_angles = [panel_info[f'top_panel_angle_{i}'] for i in range(1, n_cells + 1)]
         bottom_panel_angles = [panel_info[f'bottom_panel_angle_{i}'] for i in range(1, n_cells + 1)]
 
-        top_stringer_count = n_stringers // 3 * 2  
-        bottom_stringer_count = n_stringers - top_stringer_count
+        top_stringer_count = (n_stringers + 1) // 2  # Prioritize top
+        bottom_stringer_count = n_stringers // 2
 
         top_stringers_per_cell = [top_stringer_count // n_cells] * n_cells
         leftover_top = top_stringer_count % n_cells
@@ -435,19 +435,19 @@ class WingStructure:
         front_spar_top = self.spar_info['front_spar_top']
         front_spar_bottom = self.spar_info['front_spar_bottom']
 
-        I_xx_front_spar = self.beam_standard_Ixx(front_spar_height, self.t_front_spar,
+        I_xx_front_spar = self.beam_standard_Ixx(front_spar_height, self.t_spar,
                                                 abs(front_spar_height / 2 - self.centroid[1]), np.pi / 2)
-        I_yy_front_spar = self.beam_standard_Iyy(front_spar_height, self.t_front_spar,
+        I_yy_front_spar = self.beam_standard_Iyy(front_spar_height, self.t_spar,
                                                 abs(front_spar_x - self.centroid[0]), np.pi / 2)
-        I_xy_front_spar = self.beam_standard_Ixy(front_spar_height, self.t_front_spar,
+        I_xy_front_spar = self.beam_standard_Ixy(front_spar_height, self.t_spar,
                                                 (front_spar_x - self.centroid[0]) * (front_spar_height / 2 - self.centroid[1]),
                                                 np.pi / 2)
         
-        I_xx_rear_spar = self.beam_standard_Ixx(rear_spar_height, self.t_rear_spar,
+        I_xx_rear_spar = self.beam_standard_Ixx(rear_spar_height, self.t_spar,
                                                 abs(rear_spar_height / 2 - self.centroid[1]), np.pi / 2)
-        I_yy_rear_spar = self.beam_standard_Iyy(rear_spar_height, self.t_rear_spar,
+        I_yy_rear_spar = self.beam_standard_Iyy(rear_spar_height, self.t_spar,
                                                 abs(rear_spar_x - self.centroid[0]), np.pi / 2)
-        I_xy_rear_spar = self.beam_standard_Ixy(rear_spar_height, self.t_rear_spar,
+        I_xy_rear_spar = self.beam_standard_Ixy(rear_spar_height, self.t_spar,
                                                 (rear_spar_x - self.centroid[0]) * (rear_spar_height / 2 - self.centroid[1]),
                                                 np.pi / 2)
 
@@ -486,13 +486,17 @@ class WingStructure:
                 mid_spar_height = self.spar_info[f'mid_spar_{i}_height']
                 mid_spar_x = self.spar_info[f'mid_spar_{i}_x']
 
-                I_xx_mid_spars += self.beam_standard_Ixx(mid_spar_height, self.t_mid_spar,
+                I_xx_mid_spars += self.beam_standard_Ixx(mid_spar_height, self.t_spar,
                                                         abs(mid_spar_height / 2 - self.centroid[1]), np.pi / 2)
-                I_yy_mid_spars += self.beam_standard_Iyy(mid_spar_height, self.t_mid_spar,
+                I_yy_mid_spars += self.beam_standard_Iyy(mid_spar_height, self.t_spar,
                                                         abs(mid_spar_x - self.centroid[0]), np.pi / 2)
-                I_xy_mid_spars += self.beam_standard_Ixy(mid_spar_height, self.t_mid_spar,
+                I_xy_mid_spars += self.beam_standard_Ixy(mid_spar_height, self.t_spar,
                                                         (mid_spar_x - self.centroid[0]) * (mid_spar_height / 2 - self.centroid[1]),
                                                         np.pi / 2)
+                
+                # print(mid_spar_height, self.t_spar)
+                # print(self.beam_standard_Ixx(mid_spar_height, self.t_spar,
+                #                                         abs(mid_spar_height / 2 - self.centroid[1]), np.pi / 2))
 
         I_xx_wing_top = 0
         I_yy_wing_top = 0
@@ -754,7 +758,6 @@ class WingStructure:
         plt.axis("equal")
         plt.grid(True)
         plt.show()
-
 
 
 if __name__ == "__main__":

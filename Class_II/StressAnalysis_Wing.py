@@ -15,6 +15,7 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
         AerodynamicForces.__init__(self, aircraft_data, airfoil_aerodynamics)
         WingStructure.__init__(self, aircraft_data, airfoil_data)
         self.get_wing_structure()
+        self.safety_factor = 1.5
         self.lift_function = self.get_lift_function()
         self.drag_function = self.get_drag_function()
         self.moment_function = self.get_moment_function()
@@ -27,7 +28,9 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
         self.min_load_factor = self.aircraft_data.data['outputs']['general']['nmin']
         self.evaluate_case = 'max'
         self.drag_array = -self.drag_function(self.b_array)
-        self.poisson_ratio = 0.3
+        self.I_xx_array = np.array([self.wing_structure[i]['I_xx'] for i in range(len(self.wing_structure))])
+        self.I_yy_array = np.array([self.wing_structure[i]['I_yy'] for i in range(len(self.wing_structure))])
+        self.I_xy_array = np.array([self.wing_structure[i]['I_xy'] for i in range(len(self.wing_structure))])
         self.sigma_y = 276e6  # Yield strength in Pa of AL6061-T6
         self.k_v = 1.5 
 
@@ -48,6 +51,8 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
         self.horizontal_distribution = self.drag_array.copy()
         for engine_y in self.engine_positions:
             self.horizontal_distribution[int(round(engine_y,2)*100)] += self.engine_thrust
+
+        
         return self.horizontal_distribution
 
     def internal_vertical_shear_force(self):
@@ -92,7 +97,9 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
     def calculate_top_bending_stress(self): 
         y = [self.wing_structure[i]['spar_info']['max_y'] - self.wing_structure[i]['centroid'][1] for i in range(len(self.wing_structure))]
         x = [self.wing_structure[i]['centroid'][0] -self.wing_structure[i]['spar_info']['max_x'] for i in range(len(self.wing_structure))]
-        self.top_bending_stress = ((self.internal_bending_moment_x()*self.I_yy -(self.internal_bending_moment_y()*self.I_xy))*y + (self.internal_bending_moment_y()*self.I_xx - (self.internal_bending_moment_x()*self.I_xy))*x) / (self.I_xx*self.I_yy - self.I_xy**2)/1000000
+        self.top_bending_stress = self.safety_factor*((self.internal_bending_moment_x()*self.I_yy_array -(self.internal_bending_moment_y()*self.I_xy_array))*y + (self.internal_bending_moment_y()*self.I_xx_array - (self.internal_bending_moment_x()*self.I_xy_array))*x) / (self.I_xx_array*self.I_yy_array - self.I_xy_array**2)/1000000
+        #print(y[0], self.internal_bending_moment_x()[0], self.I_xx_array[0])
+        #self.top_bending_stress = self.internal_bending_moment_x()*y/(self.I_xx_array)/1000000
         return self.top_bending_stress
 
     def calculate_shear_stress(self):
@@ -102,7 +109,7 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
     def calculate_wing_deflection(self):
         moment = self.internal_bending_moment_x()
         moment_flipped = np.cumsum(moment[::-1]*self.dy[::-1])
-        self.wing_deflection = np.cumsum(moment_flipped*self.dy[::-1]) / (-self.E * self.I_xx)
+        self.wing_deflection = np.cumsum(moment_flipped*self.dy[::-1]) / (-self.E * self.I_xx_array[::-1])
 
         return self.wing_deflection
     
@@ -261,11 +268,9 @@ if __name__ == "__main__":
         airfoil_data=Data("Airfoil_data.dat", 'airfoil_geometry')
 
     )
-    stress_analysis.plot_bending_stress()
-    
-    
-    
-  
+
+    stress_analysis.define_boom_areas()
+
 
     
 
