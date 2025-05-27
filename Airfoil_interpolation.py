@@ -23,7 +23,7 @@ def interpolate_airfoil(points, num_interp=300, plot=False):
     if plot:
         plt.figure(figsize=(10, 4))
         plt.plot(points[:, 0], points[:, 1], 'o-', label='Original Points')
-        plt.plot(x_interp, y_interp, '-', label='Interpolated Airfoil')
+        #plt.plot(x_interp, y_interp, '-', label='Interpolated Airfoil')
         plt.axis('equal')
         plt.grid(True)
         plt.legend()
@@ -32,7 +32,7 @@ def interpolate_airfoil(points, num_interp=300, plot=False):
 
     return interpolated
 
-glenn_points = airfoil_points = [
+glenn_points_2 = airfoil_points = [
     (1.0000, 0.0082),
     (0.9500, 0.0265),
     (0.9000, 0.0423),
@@ -67,7 +67,41 @@ glenn_points = airfoil_points = [
     (0.9500, 0.0035),
     (1.0000, 0.0082)
 ]
+glenn_points_21 = [(0.0000, 0.0886),
+    (0.0125, 0.1221),
+    (0.0250, 0.1381),
+    (0.0500, 0.1598),
+    (0.0750, 0.1765),
+    (0.1000, 0.1892),
+    (0.1500, 0.2072),
+    (0.2000, 0.2168),
+    (0.3000, 0.2213),
+    (0.4000, 0.2113),
+    (0.5000, 0.1920),
+    (0.6000, 0.1664),
+    (0.7000, 0.1335),
+    (0.8000, 0.0943),
+    (0.9000, 0.0500),
+    (0.9500, 0.0257),
+    (1.0000, 0.0000),
+    (0.9500, 0.0000),
+    (0.9000, 0.0000),
+    (0.8000, 0.0000),
+    (0.7000, 0.0000),
+    (0.6000, 0.0000),
+    (0.5000, 0.0000),
+    (0.4000, 0.0000),
+    (0.3000, 0.0000),
+    (0.2000, 0.0028),
+    (0.1500, 0.0075),
+    (0.1000, 0.0172),
+    (0.0750, 0.0235),
+    (0.0500, 0.0333),
+    (0.0250, 0.0479),
+    (0.0125, 0.0603),
+    (0.0000, 0.0860)
+]
 
-for i in range(len(interpolate_airfoil(glenn_points, num_interp=200, plot=True))):
-    print(*interpolate_airfoil(glenn_points, num_interp=200, plot=False)[i])
+for i in range(len(interpolate_airfoil(glenn_points_21, num_interp=200, plot=True))):
+    print(*interpolate_airfoil(glenn_points_21, num_interp=200, plot=False)[i])
 # print(*interpolate_airfoil(glenn_points, num_interp=200, plot=True))
