@@ -103,7 +103,9 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
         return self.top_bending_stress
 
     def calculate_shear_stress(self):
-        avg_shear_stress = self.Vy_internal / sum([self.wing_structure[i]['spar_info']['spar_heights_t'] for i in range(len(self.wing_structure))])
+        Vy_internal = self.internal_vertical_shear_force()
+        avg_shear_stress = Vy_internal / [sum(self.wing_structure[i]['spar_info']['spar_heights_t']) for i in range(len(self.wing_structure))]
+        self.max_shear_stress = avg_shear_stress * self.k_v
         return self.max_shear_stress
     
     def calculate_wing_deflection(self):
@@ -268,8 +270,7 @@ if __name__ == "__main__":
         airfoil_data=Data("Airfoil_data.dat", 'airfoil_geometry')
 
     )
-
-    stress_analysis.define_boom_areas()
+    print(stress_analysis.calculate_shear_stress())
 
 
     
