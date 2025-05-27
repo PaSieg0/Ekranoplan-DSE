@@ -24,6 +24,7 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
         self.engine_thrust = self.engine_power / self.V
         self.dy = np.gradient(self.b_array)
         self.E = 70e9
+        self.G = 26e9
         self.max_load_factor = self.aircraft_data.data['outputs']['general']['nmax']
         self.min_load_factor = self.aircraft_data.data['outputs']['general']['nmin']
         self.evaluate_case = 'max'
@@ -31,6 +32,7 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
         self.I_xx_array = np.array([self.wing_structure[i]['I_xx'] for i in range(len(self.wing_structure))])
         self.I_yy_array = np.array([self.wing_structure[i]['I_yy'] for i in range(len(self.wing_structure))])
         self.I_xy_array = np.array([self.wing_structure[i]['I_xy'] for i in range(len(self.wing_structure))])
+        self.internal_torque()
 
     def resultant_vertical_distribution(self):
         if self.evaluate_case == 'max':
@@ -86,7 +88,7 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
         self.M_internal_y = M_flipped[::-1]
         return self.M_internal_y
     
-    def internal_torque(self,y):
+    def internal_torque(self):
         load = self.resultant_torque_distribution()
         T_flipped = np.cumsum(load[::-1] * self.dy[::-1])
         self.T_internal = T_flipped[::-1]
@@ -100,11 +102,67 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
         #self.top_bending_stress = self.internal_bending_moment_x()*y/(self.I_xx_array)/1000000
         return self.top_bending_stress
     
-    
+    def calculate_dtheta_dy(self,idx):
+        coefficient_matrix = np.zeros((self.n_cells+1, self.n_cells+1))
+        spar_heights = self.wing_structure[idx]['spar_info']['spar_heights']
+        top_skin_lengths = self.wing_structure[idx]['panel_info']['top_skin_length']
+        bottom_skin_lengths = self.wing_structure[idx]['panel_info']['bottom_skin_length']
+        cell_areas = self.wing_structure[idx]['cell_areas']
+        torque = self.T_internal[idx]
+
+        for i in range(self.n_cells):
+            area_factor = 1/(2*cell_areas[i])
+            if i == 0:
+                coefficient_left_spar = spar_heights[i] / (self.G*self.t_spar)
+                coefficient_top = top_skin_lengths[i] / (self.G*self.t_skin)
+                coefficient_bottom = bottom_skin_lengths[i] / (self.G*self.t_skin)
+                coefficient_right_spar2 = -spar_heights[i+1] / (self.G*self.t_spar)
+                coefficient_right_spar1 = spar_heights[i+1] / (self.G*self.t_spar)
+
+                coefficient_matrix[i, 0] = (coefficient_left_spar + coefficient_top + coefficient_bottom + coefficient_right_spar1)*area_factor
+                coefficient_matrix[i, i+1] = coefficient_right_spar2*area_factor
+                coefficient_matrix[i,-1] = -1
+                coefficient_matrix[-1, i] = 1/area_factor
+
+            elif i == self.n_cells:
+                coefficient_left_spar1 = -spar_heights[i] / (self.G*self.t_spar)
+                coefficient_left_spar2 = spar_heights[i] / (self.G*self.t_spar)
+                coefficient_top = top_skin_lengths[i] / (self.G*self.t_skin)
+                coefficient_bottom = bottom_skin_lengths[i] / (self.G*self.t_skin)
+
+                coefficient_matrix[i, i-1] = coefficient_left_spar1*area_factor
+                coefficient_matrix[i, i] = (coefficient_left_spar2 + coefficient_top + coefficient_bottom)*area_factor
+                coefficient_matrix[i, -1] = -1
+                coefficient_matrix[-1, i] = 1/area_factor
+
+            else:
+                coefficient_left_spar1 = -spar_heights[i] / (self.G*self.t_spar)
+                coefficient_left_spar2 = spar_heights[i] / (self.G*self.t_spar)
+                coefficient_top = top_skin_lengths[i] / (self.G*self.t_skin)
+                coefficient_bottom = bottom_skin_lengths[i] / (self.G*self.t_skin)
+                coefficient_right_spar1 = spar_heights[i+1] / (self.G*self.t_spar)
+                coefficient_right_spar2 = -spar_heights[i+1] / (self.G*self.t_spar)
+
+                coefficient_matrix[i, i-1] = coefficient_left_spar1*area_factor
+                coefficient_matrix[i, i] = (coefficient_left_spar2 + coefficient_top + coefficient_bottom + coefficient_right_spar1)*area_factor
+                coefficient_matrix[i, i+1] = coefficient_right_spar2*area_factor
+                coefficient_matrix[i, -1] = -1
+                coefficient_matrix[-1, i] = 1/area_factor
+
+        y = np.zeros(self.n_cells+1)
+        y[-1] = torque
+
+        solution = np.linalg.solve(coefficient_matrix, y)
+        
+        return solution
 
     def calculate_shear_stress(self):
 
         return
+    
+    def calculate_torsion(self):
+        for i in range(len(self.b_array)):
+            pass
     
     def bending_stress_span_point(self, y, x, idx):
         bending_stress = self.safety_factor*((self.internal_bending_moment_x()[idx]*self.I_yy_array[idx] -(self.internal_bending_moment_y()[idx]*self.I_xy_array[idx]))*y + (self.internal_bending_moment_y()[idx]*self.I_xx_array[idx] - (self.internal_bending_moment_x()[idx]*self.I_xy_array[idx]))*x) / (self.I_xx_array[idx]*self.I_yy_array[idx] - self.I_xy_array[idx]**2)/1000000
@@ -273,7 +331,7 @@ if __name__ == "__main__":
 
     )
 
-    stress_analysis.define_boom_areas()
+    stress_analysis.calculate_dtheta_dy(idx=0)
 
 
     

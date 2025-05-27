@@ -154,6 +154,7 @@ class WingStructure:
         spar_data['max_x'] = spar_positions[np.argmax(spar_data['max_y'])]
         spar_data['min_y'] = min(spar_data['min_y'])
         spar_data['min_x'] = spar_positions[np.argmin(spar_data['min_y'])]
+        spar_data['spar_heights'] = np.array(spar_data['spar_heights'])
         self.spar_info = spar_data
 
 
@@ -164,7 +165,8 @@ class WingStructure:
         spar_xs = [spar_info[f"{label}_x"] for label in spar_labels]
 
         panel_info = {}
-        skin_length = []
+        top_skin_length = []
+        bottom_skin_length = []
         for i in range(self.n_cells):
             label_1 = spar_labels[i]
             label_2 = spar_labels[i + 1]
@@ -181,8 +183,11 @@ class WingStructure:
             panel_info[f'bottom_panel_length_{i+1}'] = bottom_length
             panel_info[f'top_panel_angle_{i+1}'] = top_angle
             panel_info[f'bottom_panel_angle_{i+1}'] = bottom_angle
+            top_skin_length.append(top_length)
+            bottom_skin_length.append(bottom_length)
 
-
+        panel_info['top_skin_length'] = np.array(top_skin_length)
+        panel_info['bottom_skin_length'] = np.array(bottom_skin_length)
         self.panel_info = panel_info
         self.widths_top = np.array([panel_info[f'top_panel_length_{i+1}'] for i in range(self.n_cells)])
         self.widths_bottom = np.array([panel_info[f'bottom_panel_length_{i+1}'] for i in range(self.n_cells)])
@@ -198,7 +203,7 @@ class WingStructure:
         total_area = 0
         Cx_total = 0
         Cy_total = 0
-        self.cell_areas = {}
+        self.cell_areas = []
         for i in range(self.n_cells):
             # Get spar endpoints
             label_1 = spar_labels[i]
@@ -232,7 +237,7 @@ class WingStructure:
             Cx /= (6 * A)
             Cy /= (6 * A)
 
-            self.cell_areas[f'cell_area_{i+1}'] = abs(A)
+            self.cell_areas.append(abs(A))
             total_area += abs(A)
             Cx_total += Cx * abs(A)
             Cy_total += Cy * abs(A)
@@ -318,7 +323,7 @@ class WingStructure:
         for i in range(1, self.n_cells + 1):
             top_panel_length = self.panel_info[f'top_panel_length_{i}']
             bottom_panel_length = self.panel_info[f'bottom_panel_length_{i}']
-            cell_area = self.cell_areas[f'cell_area_{i}']
+            cell_area = self.cell_areas[i - 1]
 
             left_spar_height = self.spar_info[f'{self.get_spar_label(i - 1)}_height']
             right_spar_height = self.spar_info[f'{self.get_spar_label(i)}_height']
@@ -586,6 +591,14 @@ class WingStructure:
             self.wing_structure[idx]['I_xy'] = self.I_xy
             self.wing_structure[idx]['J'] = self.J
             self.wing_structure[idx]['stringers'] = self.stringer_dict
+        
+        root_chord_data = self.wing_structure[0]
+
+        self.normalized_data = {}
+        self.normalized_data['spar_heights'] = root_chord_data['spar_info']['spar_heights']/self.chord_root
+        self.normalized_data['top_skin_lengths'] = root_chord_data['panel_info']['top_skin_length']/self.chord_root
+        self.normalized_data['bottom_skin_lengths'] = root_chord_data['panel_info']['bottom_skin_length']/self.chord_root
+
 
         # self.plot_moment_of_inertia()
         # self.plot_polar_moment()
@@ -611,8 +624,8 @@ class WingStructure:
             return root
         
     def get_fuel_mass_distribution(self):
-        area1 = 0.75*sum(self.wing_structure[0]['cell_areas'][f'cell_area_{i}'] for i in range(1, self.n_cells + 1))
-        area2 = 0.75*sum(self.wing_structure[self.chord_array.shape[0]-1]['cell_areas'][f'cell_area_{i}'] for i in range(1, self.n_cells + 1))
+        area1 = 0.75*sum(self.wing_structure[0]['cell_areas'][i] for i in range(self.n_cells))
+        area2 = 0.75*sum(self.wing_structure[self.chord_array.shape[0]-1]['cell_areas'][i] for i in range(self.n_cells))
         area_slope = (area2 - area1) / (self.b / 2)
         area_intercept = area1
 
