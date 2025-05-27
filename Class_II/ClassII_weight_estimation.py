@@ -291,8 +291,8 @@ class ClassII:
             self.W_military_cargo_handling_system +
             self.W_door +
             self.W_anchor +
-            self.W_floater +
-            self.W_hull
+            self.W_floater
+            # self.W_hull
         )
 
         self.perc = (

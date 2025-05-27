@@ -11,10 +11,11 @@ from Class_I.PrelimWingPlanformDesign import WingPlanform
 from Class_I.Cd0Estimation import Cd0Estimation
 from Class_I.cgRange import CGRange
 from Class_I.empennage import Empennage
+from Optimum_Performance.Optimum_speeds import OptimumSpeeds
 
 
 def main(create_excel: bool = False) -> None:
-    for i in range(1, 5):
+    for i in range(3, 4):
         print(f"Running iteration for design {i}...")
         file_path = f"design{i}.json"
         aircraft_data = Data(file_path)

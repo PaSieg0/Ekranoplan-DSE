@@ -70,6 +70,8 @@ class WingLoading:
     def solve_piecewise(self, A):
         f1 = lambda x: self.w_fuselage * x / 2
         f2 = lambda x: self.w_fuselage * self.t_fuselage / 2 + self.w_fuselage * (x - self.t_fuselage)
+        f1(self.t_fuselage)
+        f2(self.t_fuselage)
         if f1(self.t_fuselage) >= A:
             # Solve f1(x) = A for x
             x = 2 * A / self.w_fuselage

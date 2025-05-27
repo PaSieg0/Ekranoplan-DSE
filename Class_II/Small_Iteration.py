@@ -92,6 +92,8 @@ class SmallIteration:
 
             self.class_i.main()
             self.curr_MTOM = self.class_i.MTOM
+            self.aircraft_data.data['outputs'][self.mission_type.name.lower()]['MTOM'] = self.curr_MTOM
+
             self.WP, self.TW, self.WS = main(aircraft_data=self.aircraft_data,
                                             mission_type=self.mission_type,
                                              PLOT_OUTPUT=False)
@@ -165,7 +167,7 @@ class SmallIteration:
         self.aircraft_data.data['outputs']['max']['MAC'] = max(self.aircraft_data.data['outputs']['design']['MAC'], self.aircraft_data.data['outputs']['ferry']['MAC'], self.aircraft_data.data['outputs']['altitude']['MAC'])
         self.aircraft_data.data['outputs']['max']['fuel_economy'] = min(self.aircraft_data.data['outputs']['design']['fuel_economy'], self.aircraft_data.data['outputs']['altitude']['fuel_economy'])
         self.aircraft_data.data['outputs']['max']['Mff'] = min(self.aircraft_data.data['outputs']['design']['Mff'], self.aircraft_data.data['outputs']['ferry']['Mff'], self.aircraft_data.data['outputs']['altitude']['Mff'])
-        self.aircraft_data.data['outputs']['max']['OEW'] = max(self.aircraft_data.data['outputs']['design']['OEW'], self.aircraft_data.data['outputs']['ferry']['OEW'], self.aircraft_data.data['outputs']['altitude']['OEW'])
+        self.aircraft_data.data['outputs']['max']['OEW'] = self.class_ii_OEW
         self.aircraft_data.data['outputs']['max']['total_fuel'] = max(self.aircraft_data.data['outputs']['design']['total_fuel'], self.aircraft_data.data['outputs']['ferry']['total_fuel'], self.aircraft_data.data['outputs']['altitude']['total_fuel'])
         self.aircraft_data.data['outputs']['max']['mission_fuel'] = max(self.aircraft_data.data['outputs']['design']['mission_fuel'], self.aircraft_data.data['outputs']['ferry']['mission_fuel'], self.aircraft_data.data['outputs']['altitude']['mission_fuel'])
         self.aircraft_data.data['outputs']['max']['reserve_fuel'] = max(self.aircraft_data.data['outputs']['design']['reserve_fuel'], self.aircraft_data.data['outputs']['ferry']['reserve_fuel'], self.aircraft_data.data['outputs']['altitude']['reserve_fuel'])
@@ -183,6 +185,6 @@ if __name__=='__main__':
         mission_type=MissionType.DESIGN,
         class_ii_OEW=158814
     )
-
+    print(iteration.aircraft_data.data['outputs']['max']['MTOM'])
     iteration.run_iteration()
     print(iteration.aircraft_data.data['outputs']['max']['MTOM'])
