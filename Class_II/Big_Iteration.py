@@ -98,6 +98,6 @@ if __name__ == "__main__":
         iteration.main()
         MTOM = iteration.aircraft_data.data['outputs']['max']['MTOM']
         if abs(prev_MTOM - MTOM) / prev_MTOM < iteration.tolerance:
-            print(f"Convergence achieved with MTOM: {MTOM}")
+            print(f"Convergence achieved with MTOM: {MTOM:,.0f} kg")
             break
         prev_MTOM = MTOM

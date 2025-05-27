@@ -9,7 +9,7 @@ class ClassII:
 
         self.aircraft_data = aircraft_data
         self.design_number = aircraft_data.data['design_id']
-        self.design_file = f"designs{self.design_number}.json"
+        self.design_file = f"design{self.design_number}.json"
 
         self.fudge_factor = 1.25 # fudge factor for weight estimation for flying boat
 
@@ -118,20 +118,20 @@ class ClassII:
 
     def wing_weight(self) -> float:
         W_wing_lbs = 0.0051 * (self.W_dg*self.N_z)**0.557 * self.S_w**0.649 * self.A**0.5 * self.t_c_root**-0.4 * (1+self.taper_ratio)**0.1 * np.cos(deg2rad(self.sweep_c_4))**-1.0 * self.S_csw**0.1
-        return lbs2kg(W_wing_lbs)
+        return lbs2kg(W_wing_lbs)*9.81
 
     def horizontal_tail(self) -> float:
         W_horizontal_tail_lbs = 0.0379 * self.K_uht * (1 + self.F_w/self.B_h)**-0.25 * self.W_dg**0.639 * self.N_z**0.10 * self.S_ht**0.75 * self.L_t**-1.0 * self.K_y**0.704 * np.cos(deg2rad(self.sweep_c_4_ht))**-1.0 * self.A_h**0.166 * (1 + self.S_e/self.S_ht)**0.1
-        return lbs2kg(W_horizontal_tail_lbs)
+        return lbs2kg(W_horizontal_tail_lbs)*9.81
 
     def vertical_tail(self) -> float:
         W_vertical_tail_lbs = 0.0026 * (1 + self.H_t_H_v)**0.225 * self.W_dg**0.556 * self.N_z**0.536 * self.L_t**-0.5 * self.S_vt**0.5 * self.K_z**0.875 * np.cos(deg2rad(self.sweep_c_4_vt))**-1.0 * self.A_v**0.35 * self.t_c_root**-0.5
-        return lbs2kg(W_vertical_tail_lbs)
+        return lbs2kg(W_vertical_tail_lbs)*9.81
 
     def fuselage(self) -> float:
         W_fuselage_lbs = 0.3280 * self.K_door * self.K_Lg * (self.W_dg*self.N_z)**0.5 * self.L**0.25 * self.S_f**0.302 * (1 + self.K_ws)**0.4 * (self.L/self.D)**0.10
         W_fuselage_lbs *= self.fudge_factor
-        return lbs2kg(W_fuselage_lbs)
+        return lbs2kg(W_fuselage_lbs)*9.81
 
     def main_landing_gear(self):
         return 0
@@ -141,81 +141,81 @@ class ClassII:
     
     def nacelle_group(self):
         W_nacelle_group_lbs = 0.6724 * self.K_ng * self.N_Lt**0.10 * self.N_w**0.294 * self.N_z**0.119 * self.W_ec**0.611 * self.N_en**0.984 * self.S_n**0.224
-        return lbs2kg(W_nacelle_group_lbs)
+        return lbs2kg(W_nacelle_group_lbs)*9.81
     
     def engine(self):
         W_engine_lbs = 2.575 * self.W_en**0.922 * self.N_en
-        return lbs2kg(W_engine_lbs)
+        return lbs2kg(W_engine_lbs)*9.81
     
     def engine_controls(self):
         W_engine_controls_lbs = 5.0*self.N_en + 0.80*self.L_ec
-        return lbs2kg(W_engine_controls_lbs)
+        return lbs2kg(W_engine_controls_lbs)*9.81
     
     def starter_pneumatic(self):
         W_starter_pneumatic_lbs = 49.19*(self.N_en*self.W_en/1000)**0.541
-        return lbs2kg(W_starter_pneumatic_lbs)
+        return lbs2kg(W_starter_pneumatic_lbs)*9.81
     
     def fuel_system(self):
         W_fuel_system_lbs = 2.405*self.V_t**0.606*(1 + self.V_i/self.V_t)**-1.0 * (1 + self.V_p/self.V_t) * self.N_t**0.5
-        return lbs2kg(W_fuel_system_lbs)
+        return lbs2kg(W_fuel_system_lbs)*9.81
     
     def flight_control(self):
         W_flight_control_system_lbs = 145.9 * self.N_f**0.554 * (1 + self.N_m/self.N_f)**-1.0 * self.S_cs**0.20 * (self.I_y*10**-6)**0.07
-        return lbs2kg(W_flight_control_system_lbs)
+        return lbs2kg(W_flight_control_system_lbs)*9.81
     
     def APU_installed(self):
         W_APU_installed_lbs = 2.2*self.W_APU_uninstalled
-        return lbs2kg(W_APU_installed_lbs)
+        return lbs2kg(W_APU_installed_lbs)*9.81
     
     def instruments(self):
         W_instruments_lbs = 4.509 * self.K_r * self.K_tp * self.N_c**0.541 * self.N_en * (self.N_f + self.B_w)**0.5
-        return lbs2kg(W_instruments_lbs)
+        return lbs2kg(W_instruments_lbs)*9.81
     
     def hydraulics(self):
         W_hydraulic_system_lbs = 0.2673 * self.N_f * (self.L_f + self.B_w)**0.937
-        return lbs2kg(W_hydraulic_system_lbs)
+        return lbs2kg(W_hydraulic_system_lbs)*9.81
     
     def electrical(self):
         W_electrical_system_lbs = 7.291 * self.R_kva**0.782 * self.L_a**0.346 * self.N_gen**0.10
-        return lbs2kg(W_electrical_system_lbs)
+        return lbs2kg(W_electrical_system_lbs)*9.81
     
     def avionics(self):
         W_avionics_lbs = 1.73 * self.W_uav**0.983
-        return lbs2kg(W_avionics_lbs)
+        return lbs2kg(W_avionics_lbs)*9.81
     
     def furnishings(self):
         W_furnishings_lbs = 0.0577 * self.N_c**0.1 * self.W_c ** 0.393 * self.S_f ** 0.75
-        return lbs2kg(W_furnishings_lbs)
+        return lbs2kg(W_furnishings_lbs)*9.81
     
     def air_conditioning(self):
         W_air_conditioning_lbs = 62.36 * self.N_p**0.25 * (self.V_pr/1000)**0.604 * self.W_uav**0.10
-        return lbs2kg(W_air_conditioning_lbs)
+        return lbs2kg(W_air_conditioning_lbs)*9.81
     
     def anti_ice(self):
         W_anti_ice_lbs = 0.002 * self.W_dg
-        return lbs2kg(W_anti_ice_lbs)
+        return lbs2kg(W_anti_ice_lbs)*9.81
     
     def handling_gear(self):
         W_handling_gear_lbs = 3*1e-4 * self.W_dg
-        return lbs2kg(W_handling_gear_lbs)
+        return lbs2kg(W_handling_gear_lbs)*9.81
     
     def military_cargo_handling_system(self):
         W_military_cargo_handling_system_lbs = 2.4 * self.S_c
-        return lbs2kg(W_military_cargo_handling_system_lbs)
+        return lbs2kg(W_military_cargo_handling_system_lbs)*9.81
     
     def door(self) -> float:
-        return 3100     # https://aviator.aero/press/stelia-aerospace-delivers-the-first-belugaxl-cargo-door/
+        return 3100 *9.81    # https://aviator.aero/press/stelia-aerospace-delivers-the-first-belugaxl-cargo-door/
     
     def anchor(self):
-        return 250
+        return 250*9.81
     
     def hull(self):
         W_hull_lbs = 0.12*self.W_dg   # https://www.icas.org/icas_archive/ICAS2012/PAPERS/198.PDF
-        return lbs2kg(W_hull_lbs)
+        return lbs2kg(W_hull_lbs)*9.81
     
     def floater(self):
-        W_floater_lbs = 0.0365*self.W_dg + 43.5     # https://www.icas.org/icas_archive/ICAS2012/PAPERS/198.PDF
-        return lbs2kg(W_floater_lbs)
+        W_floater_lbs = (0.0365*self.W_dg + 43.5)/5     # https://www.icas.org/icas_archive/ICAS2012/PAPERS/198.PDF
+        return lbs2kg(W_floater_lbs)*9.81
     
     def main(self):
         self.W_wing = self.wing_weight()
@@ -243,30 +243,30 @@ class ClassII:
         self.W_floater = self.floater()
         self.W_hull = self.hull()
 
-        self.perc_wing = self.W_wing / (self.aircraft_data.data['outputs']['max']['OEW']/9.81) * 100
-        self.perc_horizontal_tail = self.W_horizontal_tail / (self.aircraft_data.data['outputs']['max']['OEW']/9.81) * 100
-        self.perc_vertical_tail = self.W_vertical_tail / (self.aircraft_data.data['outputs']['max']['OEW']/9.81) * 100
-        self.perc_fuselage = self.W_fuselage / (self.aircraft_data.data['outputs']['max']['OEW']/9.81) * 100
-        self.perc_nacelle_group = self.W_nacelle_group / (self.aircraft_data.data['outputs']['max']['OEW']/9.81) * 100
-        self.perc_engine_controls = self.W_engine_controls / (self.aircraft_data.data['outputs']['max']['OEW']/9.81) * 100
-        self.perc_engine = self.W_engine / (self.aircraft_data.data['outputs']['max']['OEW']/9.81) * 100
-        self.perc_starter_pneumatic = self.W_starter_pneumatic / (self.aircraft_data.data['outputs']['max']['OEW']/9.81) * 100
-        self.perc_fuel_system = self.W_fuel_system / (self.aircraft_data.data['outputs']['max']['OEW']/9.81) * 100
-        self.perc_flight_control = self.W_flight_control / (self.aircraft_data.data['outputs']['max']['OEW']/9.81) * 100
-        self.perc_APU_installed = self.W_APU_installed / (self.aircraft_data.data['outputs']['max']['OEW']/9.81) * 100
-        self.perc_instruments = self.W_instruments / (self.aircraft_data.data['outputs']['max']['OEW']/9.81) * 100
-        self.perc_hydraulics = self.W_hydraulics / (self.aircraft_data.data['outputs']['max']['OEW']/9.81) * 100
-        self.perc_electrical = self.W_electrical / (self.aircraft_data.data['outputs']['max']['OEW']/9.81) * 100
-        self.perc_avionics = self.W_avionics / (self.aircraft_data.data['outputs']['max']['OEW']/9.81) * 100
-        self.perc_furnishings = self.W_furnishings / (self.aircraft_data.data['outputs']['max']['OEW']/9.81) * 100
-        self.perc_air_conditioning = self.W_air_conditioning / (self.aircraft_data.data['outputs']['max']['OEW']/9.81) * 100
-        self.perc_anti_ice = self.W_anti_ice / (self.aircraft_data.data['outputs']['max']['OEW']/9.81) * 100
-        self.perc_handling_gear = self.W_handling_gear / (self.aircraft_data.data['outputs']['max']['OEW']/9.81) * 100
-        self.perc_military_cargo_handling_system = self.W_military_cargo_handling_system / (self.aircraft_data.data['outputs']['max']['OEW']/9.81) * 100
-        self.perc_door = self.W_door / (self.aircraft_data.data['outputs']['max']['OEW']/9.81) * 100
-        self.perc_anchor = self.W_anchor / (self.aircraft_data.data['outputs']['max']['OEW']/9.81) * 100
-        self.perc_floater = self.W_floater / (self.aircraft_data.data['outputs']['max']['OEW']/9.81) * 100
-        self.perc_hull = self.W_hull / (self.aircraft_data.data['outputs']['max']['OEW']/9.81) * 100
+        self.perc_wing = self.W_wing / (self.aircraft_data.data['outputs']['max']['OEW']) * 100
+        self.perc_horizontal_tail = self.W_horizontal_tail / (self.aircraft_data.data['outputs']['max']['OEW']) * 100
+        self.perc_vertical_tail = self.W_vertical_tail / (self.aircraft_data.data['outputs']['max']['OEW']) * 100
+        self.perc_fuselage = self.W_fuselage / (self.aircraft_data.data['outputs']['max']['OEW']) * 100
+        self.perc_nacelle_group = self.W_nacelle_group / (self.aircraft_data.data['outputs']['max']['OEW']) * 100
+        self.perc_engine_controls = self.W_engine_controls / (self.aircraft_data.data['outputs']['max']['OEW']) * 100
+        self.perc_engine = self.W_engine / (self.aircraft_data.data['outputs']['max']['OEW']) * 100
+        self.perc_starter_pneumatic = self.W_starter_pneumatic / (self.aircraft_data.data['outputs']['max']['OEW']) * 100
+        self.perc_fuel_system = self.W_fuel_system / (self.aircraft_data.data['outputs']['max']['OEW']) * 100
+        self.perc_flight_control = self.W_flight_control / (self.aircraft_data.data['outputs']['max']['OEW']) * 100
+        self.perc_APU_installed = self.W_APU_installed / (self.aircraft_data.data['outputs']['max']['OEW']) * 100
+        self.perc_instruments = self.W_instruments / (self.aircraft_data.data['outputs']['max']['OEW']) * 100
+        self.perc_hydraulics = self.W_hydraulics / (self.aircraft_data.data['outputs']['max']['OEW']) * 100
+        self.perc_electrical = self.W_electrical / (self.aircraft_data.data['outputs']['max']['OEW']) * 100
+        self.perc_avionics = self.W_avionics / (self.aircraft_data.data['outputs']['max']['OEW']) * 100
+        self.perc_furnishings = self.W_furnishings / (self.aircraft_data.data['outputs']['max']['OEW']) * 100
+        self.perc_air_conditioning = self.W_air_conditioning / (self.aircraft_data.data['outputs']['max']['OEW']) * 100
+        self.perc_anti_ice = self.W_anti_ice / (self.aircraft_data.data['outputs']['max']['OEW']) * 100
+        self.perc_handling_gear = self.W_handling_gear / (self.aircraft_data.data['outputs']['max']['OEW']) * 100
+        self.perc_military_cargo_handling_system = self.W_military_cargo_handling_system / (self.aircraft_data.data['outputs']['max']['OEW']) * 100
+        self.perc_door = self.W_door / (self.aircraft_data.data['outputs']['max']['OEW']) * 100
+        self.perc_anchor = self.W_anchor / (self.aircraft_data.data['outputs']['max']['OEW']) * 100
+        self.perc_floater = self.W_floater / (self.aircraft_data.data['outputs']['max']['OEW']) * 100
+        self.perc_hull = self.W_hull / (self.aircraft_data.data['outputs']['max']['OEW']) * 100
 
         self.OEW = (
             self.W_wing + 
@@ -318,8 +318,8 @@ class ClassII:
             self.perc_military_cargo_handling_system +
             self.perc_door +
             self.perc_anchor +
-            self.perc_floater +
-            self.perc_hull
+            self.perc_floater
+            # self.perc_hull
         )
         
         self.weights_dict = {
@@ -346,7 +346,7 @@ class ClassII:
             'Door': self.W_door,
             'Anchor': self.W_anchor,
             'Floater': self.W_floater,
-            'Hull': self.W_hull,
+            # 'Hull': self.W_hull,
             'Total OEW': self.OEW
         }
         self.perc_dict = {
@@ -373,9 +373,39 @@ class ClassII:
             'Door': self.perc_door,
             'Anchor': self.perc_anchor,
             'Floater': self.perc_floater,
-            'Hull': self.perc_hull,
+            # 'Hull': self.perc_hull,
             'Total OEW': self.perc
         }
+
+        self.update_parameters()
+
+    def update_parameters(self):
+        self.aircraft_data.data['outputs']['component_weights']['air_conditioning'] = self.W_air_conditioning
+        self.aircraft_data.data['outputs']['component_weights']['anti_ice'] = self.W_anti_ice
+        self.aircraft_data.data['outputs']['component_weights']['apu_installed'] = self.W_APU_installed
+        self.aircraft_data.data['outputs']['component_weights']['avionics'] = self.W_avionics
+        self.aircraft_data.data['outputs']['component_weights']['electrical'] = self.W_electrical
+        self.aircraft_data.data['outputs']['component_weights']['furnishings'] = self.W_furnishings
+        self.aircraft_data.data['outputs']['component_weights']['fuselage'] = self.W_fuselage
+        self.aircraft_data.data['outputs']['component_weights']['handling_gear'] = self.W_handling_gear
+        self.aircraft_data.data['outputs']['component_weights']['horizontal_tail'] = self.W_horizontal_tail
+        self.aircraft_data.data['outputs']['component_weights']['instruments'] = self.W_instruments
+        self.aircraft_data.data['outputs']['component_weights']['nacelle_group'] = self.W_nacelle_group
+        self.aircraft_data.data['outputs']['component_weights']['starter_pneumatic'] = self.W_starter_pneumatic
+        self.aircraft_data.data['outputs']['component_weights']['vertical_tail'] = self.W_vertical_tail
+        self.aircraft_data.data['outputs']['component_weights']['wing'] = self.W_wing
+        self.aircraft_data.data['outputs']['component_weights']['engine'] = self.W_engine
+        self.aircraft_data.data['outputs']['component_weights']['engine_controls'] = self.W_engine_controls
+        self.aircraft_data.data['outputs']['component_weights']['fuel_system'] = self.W_fuel_system
+        self.aircraft_data.data['outputs']['component_weights']['flight_control'] = self.W_flight_control
+        self.aircraft_data.data['outputs']['component_weights']['military_cargo_handling_system'] = self.W_military_cargo_handling_system
+        self.aircraft_data.data['outputs']['component_weights']['door'] = self.W_door
+        self.aircraft_data.data['outputs']['component_weights']['anchor'] = self.W_anchor
+        self.aircraft_data.data['outputs']['component_weights']['floater'] = self.W_floater
+        self.aircraft_data.data['outputs']['component_weights']['total_OEW'] = self.OEW
+
+        self.aircraft_data.save_design(self.design_file)
+        
         
         
 
@@ -390,6 +420,6 @@ if __name__ == "__main__":
         perc = class_ii.perc_dict[name]
         if name == 'Total OEW':
             print("_________________________________________________________")
-        print(f"{name:<30} {weight:>10,.0f} kg   {perc:>7.2f} %")
+        print(f"{name:<30} {weight/9.81:>10,.0f} kg   {perc:>7.2f} %")
 
     print(f"{'OEW from Class I':<30} {class_ii.aircraft_data.data['outputs']['max']['OEW']/9.81:>10,.0f} kg")

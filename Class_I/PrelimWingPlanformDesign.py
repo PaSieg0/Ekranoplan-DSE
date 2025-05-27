@@ -24,8 +24,8 @@ class WingPlanform:
         self.x_c_OEW_cg = self.aircraft_data.data['inputs']['xc_OEW'] # x/c OEW CG position
         self.x_c_wing_cg = self.aircraft_data.data['inputs']['xc_wing'] # x/c wing CG position
         self.fuse_x_cg = self.aircraft_data.data['inputs']['xc_fuselage']  # normalized CG position
-        self.mass_fraction_wing = self.aircraft_data.data['inputs']['mf_wing'] # mass fraction of the wing
-        self.mass_fraction_fuse = self.aircraft_data.data['inputs']['mf_fuselage'] # mass fraction of the fuselage
+        self.mass_fraction_wing = self.aircraft_data.data['outputs']['component_weights']['wing'] / self.aircraft_data.data['outputs']['component_weights']['total_OEW'] # mass fraction of the wing
+        self.mass_fraction_fuse = self.aircraft_data.data['outputs']['component_weights']['fuselage'] / self.aircraft_data.data['outputs']['component_weights']['total_OEW'] # mass fraction of the fuselage
         self.d_fuselage = self.aircraft_data.data['outputs']['general']['d_fuselage']
 
     def calculate(self):

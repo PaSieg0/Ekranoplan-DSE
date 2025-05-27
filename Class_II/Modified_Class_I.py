@@ -116,7 +116,7 @@ class ModifiedClassI:
     def main(self):
         self.calculate_Mff()
         if self.mission_type == MissionType.DESIGN:
-            self.MTOW = (self.design_payload*9.81 + self.design_crew*9.81 + self.class_ii_OEW*9.81) / (1 - (1-self.Mff) - self.tfo)
+            self.MTOW = (self.design_payload*9.81 + self.design_crew*9.81 + self.class_ii_OEW) / (1 - (1-self.Mff) - self.tfo)
             self.OEW = self.class_ii_OEW
             self.EW = self.OEW - self.design_crew*9.81
             self.total_fuel = self.MTOW * (1-self.Mff)
