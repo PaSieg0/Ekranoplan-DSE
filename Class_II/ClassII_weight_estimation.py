@@ -26,26 +26,26 @@ class ClassII:
         self.H_t = m2ft(self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['tail_height']) - m2ft(self.aircraft_data.data['outputs']['general']['d_fuselage']) # horizontal tail height
         self.H_t_H_v = 1
         self.I_y = kgmsq2lbsftsq(10000) # Yawing moment of interia
-        self.K_cb = 1 # landging gear so 0???
+        # self.K_cb = 1 # landging gear so 0???
         # self.K_d = # Duct constant from figure
         self.K_door = 1.12 # door constant from Raymer
-        self.K_dw = 1 # door constant from Raymer for delta wing
-        self.K_dwf = 1 # door constant from Raymer for delta wing
+        # self.K_dw = 1 # door constant from Raymer for delta wing
+        # self.K_dwf = 1 # door constant from Raymer for delta wing
         self.K_Lg = 1 # landing gear constant from Raymer maybe 0???
-        self.K_mc = 1.45 # mission completed after failure
-        self.K_mp = 1 # landing gear constant from Raymer maybe 0???
+        # self.K_mc = 1.45 # mission completed after failure
+        # self.K_mp = 1 # landing gear constant from Raymer maybe 0???
         self.K_ng = 1.017 # Pylon mounted nacelle
-        self.K_np = 1 # landing gear constant from Raymer maybe 0???
-        self.K_p = 1.4 # For propeller
+        # self.K_np = 1 # landing gear constant from Raymer maybe 0???
+        # self.K_p = 1.4 # For propeller
         self.K_r = 1.133 # For reciprocating engine
-        self.K_rht = 1.047 # For rolling tail                                       # Check this
+        # self.K_rht = 1.047 # For rolling tail                                       # Check this
         self.K_tp = 0.793 # For turboprop
-        self.K_tpg = 1 # landing gear constant from Raymer maybe 0???
-        self.K_tr = 1 # For jet with thrust reverser
+        # self.K_tpg = 1 # landing gear constant from Raymer maybe 0???
+        # self.K_tr = 1 # For jet with thrust reverser
         self.K_uht = 1.143 # For all moving horizontal tail                         # Check this
-        self.K_vg = 1 # For variable geometry
-        self.K_vs = 1 # Variable sweep
-        self.K_vsh = 1 # Variable sweep
+        # self.K_vg = 1 # For variable geometry
+        # self.K_vs = 1 # Variable sweep
+        # self.K_vsh = 1 # Variable sweep
         self.taper_ratio = self.aircraft_data.data['outputs']['wing_design']['taper_ratio'] # wing taper ratio
         self.L_f = m2ft(self.aircraft_data.data['outputs']['general']['l_fuselage']) # total fuselage length
         self.sweep_c_4 = self.aircraft_data.data['outputs']['wing_design']['sweep_c_4'] # wing sweep at 25% MAC
@@ -55,17 +55,17 @@ class ClassII:
         self.L = m2ft(aircraft_data.data['outputs']['general']['l_fuselage']) # structural length
         self.L_a = m2ft(2*self.aircraft_data.data['outputs']['wing_design']['b'] + self.aircraft_data.data['outputs']['wing_design']['X_LE'] + 2*self.aircraft_data.data['outputs']['general']['l_fuselage']) # electrical routing distance, generators to avionics to cockpit
         # self.L_d = # duct length
-        self.L_m = 0 # landing gear
-        self.L_n = 0 # # landing gear
+        # self.L_m = 0 # landing gear
+        # self.L_n = 0 # # landing gear
         # self.L_s = # single duct length from figure
         # self.L_sh = # length of engine shroud
         self.L_t = m2ft(self.aircraft_data.data['outputs']['general']['l_tailcone']) # tail cone length, wing c/4 to tail c/4
         self.K_y = 0.3*self.L_t # Radius of gyration for pitching axis
         self.K_z = self.L_t # Radius of gyration for yawing axis
         # self.L_tp = # length of tailpipe
-        self.M = ISA(self.aircraft_data.data['inputs']['cruise_altitude']).Mach(self.aircraft_data.data['requirements']['cruise_speed']) # Mach
+        # self.M = ISA(self.aircraft_data.data['inputs']['cruise_altitude']).Mach(self.aircraft_data.data['requirements']['cruise_speed']) # Mach
         self.N_c = 5 # number of crew
-        self.N_ci = 2 # number of pilots
+        # self.N_ci = 2 # number of pilots
         self.N_en = self.aircraft_data.data['inputs']['n_engines'] # number of engines
         self.L_ec = self.N_en*m2ft(self.aircraft_data.data['outputs']['wing_design']['X_LE']*0.9) # length from engine front to cockpit, total if multiengine
         self.N_f = 3 # number of actions performed by control
@@ -73,18 +73,18 @@ class ClassII:
         # self.N_l = # ultimate landing load factor
         self.N_Lt = m2ft(4.2) # Nacelle length
         self.N_m = 2 # number of mechanical functions
-        self.N_mss = 0 # Number of main gear struts
-        self.N_mw = 0 # number of main wheels
-        self.N_nw = 0 # number of nose wheels
+        # self.N_mss = 0 # Number of main gear struts
+        # self.N_mw = 0 # number of main wheels
+        # self.N_nw = 0 # number of nose wheels
         self.N_p = 5 # number of people
         self.N_s = 3 # number of flight control systems
         self.N_t = 2 # number of fuel tanks
-        self.N_u = 8 # Number of hydraulic utility functions
+        # self.N_u = 8 # Number of hydraulic utility functions
         self.N_w = m2ft(1.3) # nacelle width
         self.N_z = 1.5*self.aircraft_data.data['outputs']['general']['nmax'] # ultimate load factor
-        self.q = Pa2lbfpftsq(0.5*ISA(self.aircraft_data.data['inputs']['cruise_altitude']).rho * self.aircraft_data.data['requirements']['cruise_speed']**2) # dynamic pressure
+        # self.q = Pa2lbfpftsq(0.5*ISA(self.aircraft_data.data['inputs']['cruise_altitude']).rho * self.aircraft_data.data['requirements']['cruise_speed']**2) # dynamic pressure
         self.R_kva = 50 # system electrical rating based on typical values Raymer
-        self.S_c = msq2ftsq(self.aircraft_data.data['requirements']['cargo_width'] * self.aircraft_data.data['outputs']['general']['cargo_length']) # cargo floor surface area
+        self.S_c = msq2ftsq(7 * self.aircraft_data.data['outputs']['general']['cargo_length']) # cargo floor surface area
         self.S_cs = msq2ftsq(80) # total control surface area
         self.S_csw = 2*msq2ftsq(20) # control surface area wing mounted 
         self.S_e = 2*msq2ftsq(20) # elevator area
@@ -95,7 +95,7 @@ class ClassII:
         # self.S_r = # rudder area
         self.S_vt = msq2ftsq(self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['S']) # vertical tail surface area
         self.S_w = msq2ftsq(self.aircraft_data.data['outputs']['wing_design']['S']) # wing surface area
-        self.SFC = kgpJ2lbsphrphp(self.aircraft_data.data['inputs']['prop_consumption']) # specific fuel consumption
+        # self.SFC = kgpJ2lbsphrphp(self.aircraft_data.data['inputs']['prop_consumption']) # specific fuel consumption
         # self.T = # total engine thrust
         # self.T_e = # engine thrust
         self.t_c_root = 0.1426 # root chord thickness
@@ -110,7 +110,7 @@ class ClassII:
         self.W_en = kg2lbs(2500) # weight of engine
         # self.W_fw = # weight of fuel in wing
         # self.W_l = # landing gross weight
-        self.W_press = 11.9 # weight penalty due to pressurization
+        # self.W_press = 11.9 # weight penalty due to pressurization
         self.W_uav = 1400 # uninstalled avionics weight
         self.W_APU_uninstalled = 700 # APU weight uninstalled
 
@@ -156,7 +156,7 @@ class ClassII:
         return lbs2kg(W_starter_pneumatic_lbs)
     
     def fuel_system(self):
-        W_fuel_system_lbs = 2.405*self.V_t**0.606*(1 + self.V_i/self.V_t)**-1.0 * (1 + self.V_p*self.V_t) * self.N_t**0.5
+        W_fuel_system_lbs = 2.405*self.V_t**0.606*(1 + self.V_i/self.V_t)**-1.0 * (1 + self.V_p/self.V_t) * self.N_t**0.5
         return lbs2kg(W_fuel_system_lbs)
     
     def flight_control(self):
@@ -208,7 +208,15 @@ class ClassII:
     
     def anchor(self):
         return 250	
-
+    
+    def hull(self):
+        W_hull_lbs = 0.12*self.W_dg   # https://www.icas.org/icas_archive/ICAS2012/PAPERS/198.PDF
+        return lbs2kg(W_hull_lbs)
+    
+    def floater(self):
+        W_floater_lbs = 0.0365*self.W_dg + 43.5     # https://www.icas.org/icas_archive/ICAS2012/PAPERS/198.PDF
+        return lbs2kg(W_floater_lbs)
+    
     def main(self):
         self.W_wing = self.wing_weight()
         self.W_horizontal_tail = self.horizontal_tail()
@@ -232,6 +240,8 @@ class ClassII:
         self.W_military_cargo_handling_system = self.military_cargo_handling_system()
         self.W_door = self.door()
         self.W_anchor = self.anchor()
+        self.W_floater = self.floater()
+        self.W_hull = self.hull()
 
         self.perc_wing = self.W_wing / (self.aircraft_data.data['outputs']['max']['OEW']/9.81) * 100
         self.perc_horizontal_tail = self.W_horizontal_tail / (self.aircraft_data.data['outputs']['max']['OEW']/9.81) * 100
@@ -255,6 +265,8 @@ class ClassII:
         self.perc_military_cargo_handling_system = self.W_military_cargo_handling_system / (self.aircraft_data.data['outputs']['max']['OEW']/9.81) * 100
         self.perc_door = self.W_door / (self.aircraft_data.data['outputs']['max']['OEW']/9.81) * 100
         self.perc_anchor = self.W_anchor / (self.aircraft_data.data['outputs']['max']['OEW']/9.81) * 100
+        self.perc_floater = self.W_floater / (self.aircraft_data.data['outputs']['max']['OEW']/9.81) * 100
+        self.perc_hull = self.W_hull / (self.aircraft_data.data['outputs']['max']['OEW']/9.81) * 100
 
         self.OEW = (
             self.W_wing + 
@@ -278,7 +290,9 @@ class ClassII:
             self.W_handling_gear + 
             self.W_military_cargo_handling_system +
             self.W_door +
-            self.W_anchor
+            self.W_anchor +
+            self.W_floater 
+            # self.W_hull
         )
 
         self.perc = (
@@ -303,7 +317,9 @@ class ClassII:
             self.perc_handling_gear +
             self.perc_military_cargo_handling_system +
             self.perc_door +
-            self.perc_anchor
+            self.perc_anchor +
+            self.perc_floater 
+            # self.perc_hull
         )
         
         self.weights_dict = {
@@ -329,6 +345,8 @@ class ClassII:
             'Military cargo handling system': self.W_military_cargo_handling_system,
             'Door': self.W_door,
             'Anchor': self.W_anchor,
+            'Floater': self.W_floater,
+            # 'Hull': self.W_hull,
             'Total OEW': self.OEW
         }
         self.perc_dict = {
@@ -354,10 +372,11 @@ class ClassII:
             'Military cargo handling system': self.perc_military_cargo_handling_system,
             'Door': self.perc_door,
             'Anchor': self.perc_anchor,
+            'Floater': self.perc_floater,
+            # 'Hull': self.perc_hull,
             'Total OEW': self.perc
         }
         
-        # Print weights and percentages in ascending order
         
 
 if __name__ == "__main__":
