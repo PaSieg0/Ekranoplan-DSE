@@ -25,12 +25,11 @@ class OptimumTurns(AltitudeVelocity):
         Returns:
         tuple: Zero points and stall points for the steepest turn.
         """
-        n_range = np.arange(1, 3.5, 0.001)
+        n_range = np.arange(1.02, 3.5, 0.001)
         V_stall = self.calculate_stall_speed(h)
         v_range = np.linspace(V_stall, self.dive_speed*2, self.velocity_steps)
 
         zero_points = np.array([])
-        stall_points = np.array([])
 
         for n in n_range:
             self._current_weight = self._mtow * n
