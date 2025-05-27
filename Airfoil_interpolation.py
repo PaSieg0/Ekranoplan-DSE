@@ -35,8 +35,8 @@ def interpolate_airfoil(points, num_interp=300, plot=False):
             # plt.legend()
             # plt.title("Smooth Airfoil Interpolation (Order Preserved)")
             # plt.show()
-            plt.pause(1)
-
+            plt.pause(0.5)
+        plt.show()
     return interpolated
 
 glenn_points_2 = airfoil_points = [
