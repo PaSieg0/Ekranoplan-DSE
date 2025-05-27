@@ -179,6 +179,48 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
         self.wingtip_twist = np.trapz(sectional_twist_flipped[::-1])
         return self.wingtip_twist
     
+    # def calculate_critical_buckling_load(self):
+    #     """Calculate the critical buckling load using Euler's formula
+    #     P_cr = (n^2 * pi^2 * E * I) / (L_e^2)
+    #     L_e is effective length, L is the length of the wing
+    #     One fixed, one free --> L_e / L = 2.0
+    #     B.C. Fixed-Free --> v(0) = 0, v'(0) = 0"""
+    #     n = 1 # Chosen to be conservative, as will result in lowest critical load
+    #     K = 2.0  # Effective length factor for fixed-free boundary condition
+    #     self.P_cr = (n**2 * np.pi**2 * self.E * self.I_xx) / (self.b/2*K)**2
+    #     return self.P_cr
+
+    def calculate_critical_buckling_stress(self):
+        """
+        Loop over each wing-box cell (using widths_top and widths_bottom from WingStructure),
+        compute the critical buckling stress for the top panels and bottom panels separately.
+        Returns:
+            buckling_span_points (np.ndarray): span coordinate.
+            buckling_stress_top (np.ndarray): computed buckling stress (in Pa) for the top panel.
+            buckling_stress_bottom (np.ndarray): computed buckling stress (in Pa) for the bottom panel.
+        """
+        C = 4.0
+        buckling_stress_top_list = []
+        buckling_stress_bottom_list = []
+        span_points = []
+        
+        for y in self.b_array:
+            # Loop over each wing-box cell (number of cells = self.n_cells)
+            for i in range(self.n_cells):
+                sigma_cr_top = C * ((np.pi**2 * self.E) / (12 * (1 - self.poisson_ratio**2))) * (self.t_skin / self.widths_top[i])
+                sigma_cr_bottom = C * ((np.pi**2 * self.E) / (12 * (1 - self.poisson_ratio**2))) * (self.t_skin / self.widths_bottom[i])
+                buckling_stress_top_list.append(sigma_cr_top)
+                buckling_stress_bottom_list.append(sigma_cr_bottom)
+                span_points.append(y)
+            
+            self.buckling_stress_top = np.array(buckling_stress_top_list)
+            self.buckling_stress_bottom = np.array(buckling_stress_bottom_list)
+            self.buckling_span_points = np.array(span_points)
+
+        return self.buckling_span_points, self.buckling_stress_top, self.buckling_stress_bottom
+    
+
+    
     def plot_internal_torque(self):
         plt.figure(figsize=(10, 6))
         plt.plot(self.b_array, self.internal_torque(self.b_array), label='Torque', color='purple')

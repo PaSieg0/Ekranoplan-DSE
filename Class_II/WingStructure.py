@@ -187,6 +187,8 @@ class WingStructure:
 
 
         self.panel_info = panel_info
+        self.widths_top = np.array([panel_info[f'top_panel_length_{i+1}'] for i in range(self.n_cells)])
+        self.widths_bottom = np.array([panel_info[f'bottom_panel_length_{i+1}'] for i in range(self.n_cells)])
 
     def compute_wing_box_areas(self):
         if not hasattr(self, 'spar_info'):
@@ -300,18 +302,18 @@ class WingStructure:
     def beam_standard_Iyy(self, length, thickness, distance, angle):
         A_web = length * thickness
         I_web = (thickness*length**3*np.cos(angle)**2) / 12
-        I_xx = I_web + A_web * distance ** 2
+        I_yy = I_web + A_web * distance ** 2
 
-        return I_xx
+        return I_yy
     
     def beam_standard_Ixy(self, length, thickness, xy, angle):
 
         A_web = length * thickness
         I_web = (thickness*length**3*np.sin(angle)*np.cos(angle)) / 12
 
-        I_xx = I_web + A_web * xy
+        I_xy = I_web + A_web * xy
 
-        return I_xx
+        return I_xy
 
     def get_polar_moment(self):
 
