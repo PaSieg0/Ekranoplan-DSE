@@ -1,0 +1,118 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+class DummyEkranoplan:
+    def __init__(self):
+        self.g = 9.81
+        self.MTOW = 5000.0  # kg
+        self.thrust = 2000.0  # N
+        self.S = 20.0  # wing area
+        self.hull_surface = 10.0  # hull area
+        self.rho_air = 1.225
+        self.rho_water = 1000.0
+        self.CLmax_takeoff = 1.5
+        self.CL_hydro = 0.8
+        self.Cd = 0.05
+        self.Cd_water = 0.1
+        self.AOA = 5  # deg
+        self.HydroLiftAngle = 10  # deg
+        self.HydroDragAngle = 15  # deg
+
+    def get_initial_submerged_condition(self):
+        return (0, -1.0)
+
+    def get_fluid_force(self, coeff, rho, v, S, theta):
+        if not np.all(np.isfinite(v)):
+            print(f"[Warning] Invalid velocity: {v}")
+            return np.array([0.0, 0.0])
+        v_mag = np.linalg.norm(v)
+        F_mag = 0.5 * coeff * rho * v_mag**2 * S
+        Fx = F_mag * np.cos(theta)
+        Fy = F_mag * np.sin(theta)
+        return np.array([Fx, Fy])
+
+    def update_bouyancy_force(self, h):
+        return np.array([0.0, self.MTOW * self.g]) if h < 0 else np.array([0.0, 0.0])
+
+    def simulate_takeoff(self):
+        dt = 0.1
+        t_max = 60
+
+        time = [0]
+        velocity = [np.array([0.0, 0.0])]
+        distance = [np.array([0.0, 0.0])]
+
+        h = self.get_initial_submerged_condition()[1]
+        v = np.array([0.0, 0.0])
+        x = np.array([0.0, 0.0])
+        t = 0
+        g = self.g
+        m = self.MTOW / g
+        T = np.array([self.thrust, 0])
+
+        while t < t_max:
+            L = self.get_fluid_force(self.CLmax_takeoff, self.rho_air, v, self.S, np.deg2rad(self.AOA))
+            D = self.get_fluid_force(self.Cd, self.rho_air, v, self.S, np.deg2rad(self.AOA))
+            L_hydro = self.get_fluid_force(self.CL_hydro, self.rho_water, v, self.hull_surface, np.deg2rad(self.HydroLiftAngle))
+            D_hydro = self.get_fluid_force(self.Cd_water, self.rho_water, v, self.hull_surface, np.deg2rad(self.HydroDragAngle))
+            F_bouy = self.update_bouyancy_force(h)
+
+            # Validate each force
+            forces = {
+                "Lift (Air)": L,
+                "Drag (Air)": D,
+                "Lift (Hydro)": L_hydro,
+                "Drag (Hydro)": D_hydro,
+                "Buoyancy": F_bouy
+            }
+
+            for name, force in forces.items():
+                if not np.all(np.isfinite(force)):
+                    print(f"[ERROR] Invalid force '{name}' at t = {t:.2f}s: {force}")
+                    return
+
+            F = L - D + L_hydro - D_hydro + F_bouy + T
+            if not np.all(np.isfinite(F)):
+                print(f"[ERROR] Invalid total force F at t = {t:.2f}s: {F}")
+                return
+
+            a = F / m
+            v += a * dt
+            x += v * dt
+            h += v[0] * dt
+            t += dt
+
+            time.append(t)
+            velocity.append(v.copy())
+            distance.append(x.copy())
+
+        return time, np.array(velocity), np.array(distance)
+
+# Run and plot
+if __name__ == "__main__":
+    plane = DummyEkranoplan()
+    result = plane.simulate_takeoff()
+    '''if result is None:
+        print("Simulation failed due to invalid force.")
+    else:'''
+    time, velocity, distance = result
+    plt.figure(figsize=(12, 6))
+
+    plt.subplot(2, 1, 1)
+    plt.plot(time, velocity[:, 0], label="Vx (m/s)")
+    plt.plot(time, velocity[:, 1], label="Vy (m/s)")
+    plt.ylabel("Velocity (m/s)")
+    plt.grid(True)
+    plt.legend()
+
+    plt.subplot(2, 1, 2)
+    plt.plot(time, distance[:, 0], label="X (m)")
+    plt.plot(time, distance[:, 1], label="Y (m)")
+    plt.xlabel("Time (s)")
+    plt.ylabel("Distance (m)")
+    plt.grid(True)
+    plt.legend()
+
+    plt.tight_layout()
+    plt.show()
+

@@ -71,11 +71,11 @@ class Take_off_mechanics:
 
     #solves for initial submerged volume and depth at MTOW when at rest
     def get_initial_submerged_condition(self):
-        """Return submerged volume required to balance MTOW"""
+      
         # Solve V such that buoyant force = weight
         V0 = self.MTOW / (self.rho_water * self.g)
 
-        # Use bisection method to find h
+        # Initial guesses
         h_low = 0
         h_high = 5
         for _ in range(100):
@@ -94,14 +94,16 @@ class Take_off_mechanics:
         Fy = self.rho_water * self.g * V
         return np.array([Fx, Fy])
 
-    #iterate the submerged volume
-    def update_submerged_volume(self, h):
-        return self.submerged_volume(h)
-
     @staticmethod
     def get_fluid_force(coeff, rho, v, S, theta):
-        v_mag = np.linalg.norm(v)  
-        F_mag = 0.5 * coeff * rho * v_mag**2 * S  
+        v_mag = np.linalg.norm(v)
+
+        if np.isfinite(v_mag):
+            print(f"Warning: Invalid v_mag from velocity {v}")
+        if np.isfinite(theta):
+            print(f"Warning: Invalid theta: {theta}")
+
+        F_mag = 0.5 * coeff * rho * v_mag**2 * S
 
         Fx = F_mag * np.cos(theta)
         Fy = F_mag * np.sin(theta)
@@ -116,25 +118,32 @@ class Take_off_mechanics:
         time = [0]
         velocity = [np.array([0.0, 0.0])]
         distance = [np.array([0.0, 0.0])]
-        
 
-        #V = self.get_initial_submerged_condition()[0]
         h = self.get_initial_submerged_condition()[1]
-        v = [np.array([0.0, 0.0])]
-        x = [np.array([0.0, 0.0])]
+        v = np.array([0.0, 0.0])
+        x = np.array([0.0, 0.0])
         t = 0
         g = self.g
         m = self.MTOW/g
-        L = self.get_fluid_force(self.CLmax_takeoff, self.rho_air, v, self.S, np.deg2rad(self.AOA))
-        D = self.get_fluid_force(self.Cd, self.rho_air, v, self.S, np.deg2rad(self.AOA))
-        L_hydro = self.get_fluid_force(self.CL_hydro, self.rho_water, v, self.hull_surface, np.deg2rad(self.HydroLiftAngle))
-        D_hydro = self.get_fluid_force(self.Cd_water, self.rho_water, v, self.hull_surface, np.deg2rad(self.HydroDragAngle))
-    
+        T = np.array([self.thrust,0])
+        L = 0
+        D = 0
+        L_hydro = 0
+        D_hydro = 0
+        F_bouy = np.array([0,self.MTOW])
 
         while t < t_max:
-            #V = self.update_submerged_volume
-            F = L-D+L_hydro-D_hydro+self.update_bouyancy_force(h)
 
+            L = self.get_fluid_force(self.CLmax_takeoff, self.rho_air, v, self.S, np.deg2rad(self.AOA))
+            D = self.get_fluid_force(self.Cd, self.rho_air, v, self.S, np.deg2rad(self.AOA))
+            L_hydro = self.get_fluid_force(self.CL_hydro, self.rho_water, v, self.hull_surface, np.deg2rad(self.HydroLiftAngle))
+            D_hydro = self.get_fluid_force(self.Cd_water, self.rho_water, v, self.hull_surface, np.deg2rad(self.HydroDragAngle))
+            F_bouy = self.update_bouyancy_force(h)
+            
+            #V = self.update_submerged_volume
+            F = L-D+L_hydro-D_hydro+F_bouy+T
+            if not np.all(np.isfinite(F)):
+                print(f"Invalid total force F: {F}")
             a = F/m
 
             v += a * dt
@@ -148,14 +157,13 @@ class Take_off_mechanics:
             distance.append(x)
 
 
+
         return time, velocity, distance
 
     def run_simulation(self, plot=True):
         time, velocity, distance = self.simulate_takeoff()
 
         if plot:
-            import matplotlib.pyplot as plt
-            import numpy as np
 
         # Ensure velocity is a NumPy array for easy slicing
             velocity = np.array(velocity)
@@ -183,8 +191,6 @@ class Take_off_mechanics:
             plt.show()
 
         return time, velocity, distance
-
-
 
 
 

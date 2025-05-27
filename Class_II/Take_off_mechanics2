@@ -1,0 +1,238 @@
+import sys
+import os
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.append(project_root)
+
+from utils import Data
+import pandas as pd
+import numpy as np
+from enum import Enum, auto
+import matplotlib.pyplot as plt
+
+class EmpType(Enum):
+    CRUCIFORM = auto()
+    T_TAIL = auto()
+    CONVENTIONAL = auto()
+    H_TAIL = auto()
+    NONE = auto()
+
+
+class Take_off_mechanics:
+
+    def __init__(self, aircraft_data: Data):
+        self.design_number = aircraft_data.data['design_id']
+        self.design_file = f"design{self.design_number}.json"
+        self.aircraft_data = aircraft_data
+        self.tail_type = EmpType[aircraft_data.data['inputs']['tail_type']]
+        if self.tail_type == EmpType.NONE:
+            return
+
+        self.S = self.aircraft_data.data['outputs']['wing_design']['S']
+        self.hull_surface = self.aircraft_data.data['outputs']['general']['hull_surface']
+        self.MAC = self.aircraft_data.data['outputs']['wing_design']['MAC']
+
+        self.CLmax_takeoff = self.aircraft_data.data['inputs']['CLmax_takeoff']
+        self.CL_hydro = self.aircraft_data.data['inputs']['CL_hydro']
+        self.Cd = self.aircraft_data.data['outputs']['general']['Cd']
+        self.Cd_water = self.aircraft_data.data['outputs']['general']['Cd_water']
+
+        self.MTOW = self.aircraft_data.data['outputs']['design']['MTOW']
+
+        self.thrust = 110000*self.aircraft_data.data['inputs']['n_engines']
+
+        #hardcoded variables for now, change these later on to be self-iterating
+        self.rho_air = 1.225  # kg/m³ at sea level, 15°C
+        self.P0 = 101325  # Pa
+        self.Temp_air = 288.15  # K (15°C)
+        self.rho_water = 1025  # kg/m³ at sea level
+        self.g = 9.80665
+        self.AOA = 5.0
+        self.ThrustVectorAngle = 3.0  # im just capping everything here
+        self.HydroLiftAngle = 0.0
+        self.HydroDragAngle = 0.0
+
+        #hull shaped fuselage sizing
+        self.triangle_height = 3.0
+        self.width = 6.43
+        self.length = 39.0
+
+    def submerged_volume(self, h):
+        #Piecewise volume as function of immersion depth h (m)
+        #Considering hull shape
+        if h <= self.triangle_height:
+            return 0.5 * self.width * h * self.length
+        else:
+            triangle_vol = 0.5 * self.width * self.triangle_height * self.length
+            rect_vol = self.width * (h - self.triangle_height) * self.length
+            return triangle_vol + rect_vol
+        
+    def get_initial_submerged_condition(self):
+      
+        # Solve V such that buoyant force = weight
+        V0 = self.MTOW / (self.rho_water * self.g)
+        Vmax_triangle = self.triangle_height*self.width*0.5*self.length
+        if V0 <= Vmax_triangle:
+
+            cross_section = V0/self.length
+            cross_sectionMax = Vmax_triangle/self.length
+            ratio = cross_sectionMax/cross_section
+
+            h = self.triangle_height*np.sqrt(ratio)
+            return np.array([h,V0])
+            
+        else:
+            Vsquare = V0-Vmax_triangle
+            h = self.triangle_height + Vsquare/(self.length*self.width)
+            return np.array([h,V0])
+
+    #iteratively compute the bouyancy force
+    def update_bouyancy_force(self, h):       
+        zero_bouyancy_height = self.get_initial_submerged_condition()[0]
+        #no bouyancy after lifted out of water surface
+        if h < zero_bouyancy_height:
+            V = self.submerged_volume(h)
+            F = self.rho_water * self.g * V
+            return F
+        else: return 0.0
+           
+    def get_submerged_hull_surface(self,h):
+        hmax = self.get_initial_submerged_condition()[0]
+        S_hydro_initial = self.hull_surface
+        S_realtime = S_hydro_initial*(h/hmax)**2
+        return S_realtime
+        
+    def get_hydro_force(self, coeff, v, S, theta, y):
+        rho = self.rho_water
+        zero_hydro_height = self.get_initial_submerged_condition()[0]
+        if y >= zero_hydro_height:
+            Fx = 0
+            Fy = 0
+            return np.array([Fx, Fy]) 
+        else:
+            F_mag = 0.5 * coeff * rho * v *2 * S
+            Fx = F_mag * np.cos(theta)
+            Fy = F_mag * np.sin(theta)
+            return np.array([Fx, Fy])
+
+
+    def get_aero_force(self, coeff, v, theta):
+
+        '''if np.isfinite(v):
+            print(f"Warning: Invalid v_mag from velocity {v}")
+        if np.isfinite(theta):
+            print(f"Warning: Invalid theta: {theta}")'''
+        S = self.S
+        rho = self.rho_air
+        F_mag = 0.5 * coeff * rho * v *2 * S
+
+        Fx = F_mag * np.cos(theta)
+        Fy = F_mag * np.sin(theta)
+
+        return np.array([Fx, Fy])
+    
+
+    def simulate_take_off(self):
+        dt = 0.5
+        t_max = 60
+        t = 0
+        
+
+        h = self.get_initial_submerged_condition()[0]
+        vx = 0
+        vy = 0
+        v = 0
+        x = 0
+        y = 0
+
+        time = [0]
+        Vx = [0]
+        Vy = [0]
+        X = [0]
+        Y = [0]
+
+
+        g = self.g
+        m = self.MTOW/g
+        T = self.thrust
+        L = 0
+        D = 0
+        L_hydro = 0
+        D_hydro = 0
+        F_bouy = self.MTOW
+
+        while t < t_max:
+            S_hull = self.get_submerged_hull_surface(h)
+            L = self.get_aero_force(self.CLmax_takeoff, v, np.deg2rad(self.AOA))
+            print(v)
+            print(L)
+            D = self.get_aero_force(self.Cd, v, np.deg2rad(self.AOA))
+            L_hydro = self.get_hydro_force(self.CL_hydro, v, S_hull, np.deg2rad(self.HydroLiftAngle),y)
+            D_hydro = self.get_hydro_force(self.Cd_water, v, S_hull, np.deg2rad(self.HydroDragAngle),y)
+            F_bouy = self.update_bouyancy_force(h)
+
+            Fx = L[0]-D[0]+L_hydro[0]-D_hydro[0]+F_bouy + T
+            Fy = L[1]-D[1]+L_hydro[1]-D_hydro[1]+F_bouy
+            ax = Fx/m
+            ay = Fy/m 
+            vx += ax*dt
+            vy += ay*dt
+            v = np.sqrt(vx**2+vy**2)
+            x += vx*dt
+            y += vy*dt
+
+            h -= vx * dt
+            t += dt
+
+            time.append(t)
+            Vx.append(vx)
+            Vy.append(vy)
+            X.append(x)
+            Y.append(y)
+        return time,Vx,Vy,X,Y
+
+    def run_simulation(self, plot=True):
+        time, Vx, Vy, X, Y = self.simulate_take_off()
+
+        if plot:
+            plt.figure(figsize=(12, 10))
+
+            plt.subplot(3, 2, 1)
+            plt.plot(time, Vx, label="Vx")
+            plt.ylabel("Vx (m/s)")
+            plt.xlabel("Time (s)")
+            plt.grid(True)
+            plt.legend()
+
+            plt.subplot(3, 2, 2)
+            plt.plot(time, Vy, label="Vy")
+            plt.ylabel("Vy (m/s)")
+            plt.xlabel("Time (s)")
+            plt.grid(True)
+            plt.legend()
+
+            plt.subplot(3, 2, 3)
+            plt.plot(time, X, label="X position")
+            plt.ylabel("X (m)")
+            plt.xlabel("Time (s)")
+            plt.grid(True)
+            plt.legend()
+
+            plt.subplot(3, 2, 4)
+            plt.plot(time, Y, label="Y position")
+            plt.ylabel("Y (m)")
+            plt.xlabel("Time (s)")
+            plt.grid(True)
+            plt.legend()
+
+            plt.tight_layout()
+            plt.show()
+
+        return time, Vx, Vy, X, Y
+
+
+
+if __name__ == "__main__":
+    data = Data("design3.json")
+    model = Take_off_mechanics(data)
+    time, Vx, Vy, X, Y = model.run_simulation()
+        
