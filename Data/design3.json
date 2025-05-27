@@ -5,7 +5,6 @@
         "aircraft_type": "PROP",
         "wing_type": "HIGH",
         "tail_type": "CONVENTIONAL",
-        "flap_type": "DOUBLE_SLOT",
         "n_wings": 1,
         "n_fuselages": 1,
         "depth": 0.1,
@@ -44,10 +43,15 @@
         "lnd": 1.5,
         "lfd": 8.5,
         "engine_power": 8202000,
-        "object_distance": 2200,
-        "aileron_deflection": 25,
-        "aileron_chord": 0.25,
-        "flap_chord": 0.35
+        "object_distance": 2130,
+        "control_surfaces": {
+            "aileron_end": 0.985,
+            "LE_flap_chord": 0.1,
+            "flap_chord": 0.35,
+            "flap_type": "DOUBLE_SLOT",
+            "aileron_deflection": 25,
+            "aileron_chord": 0.25
+        }
     },
     "requirements": {
         "design_range": 3704000,
@@ -230,6 +234,25 @@
                 "LE_pos": 66.6046868120255,
                 "relative_pos_mac/4": 0.9316122996141338
             }
+        },
+        "control_surfaces": {
+            "aileron": {
+                "b1": 26.55,
+                "b2": 33.84471167101082,
+                "area_single": 20.95386379642845,
+                "roll_rate": 16.77162164428814,
+                "bank_angle": 35.97138836317529,
+                "turn_radius": 1881.7442069731414
+            },
+            "rudder": {},
+            "elevator": {}
+        },
+        "HLD": {
+            "b1": 5.416363005162699,
+            "b2": 24.12170825664208,
+            "flapped_area_single": 170.34351328250182,
+            "flap_area": 67.21885015029379,
+            "Swf_single": 170.34351328250182
         }
     },
     "kinematic_viscosity": 1.006e-06,

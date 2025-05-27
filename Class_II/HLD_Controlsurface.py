@@ -14,7 +14,7 @@ class MobileSurfaceDesign:
         self.design_number = aircraft_data.data['design_id']
         self.design_file = f"design{self.design_number}.json"
 
-        self.flaptype = FlapType[self.aircraft_data.data['inputs']['flap_type']]
+        self.flaptype = FlapType[self.aircraft_data.data['inputs']['control_surfaces']['flap_type']]
 
         self.S = self.aircraft_data.data['outputs']['wing_design']['S']
         self.b = self.aircraft_data.data['outputs']['wing_design']['b']
@@ -30,20 +30,23 @@ class MobileSurfaceDesign:
 
         self.cruise_altitude = self.aircraft_data.data['inputs']['cruise_altitude']
 
-        self.max_aileron_deflection = np.deg2rad(self.aircraft_data.data['inputs']['aileron_deflection'])
+        self.max_aileron_deflection = np.deg2rad(self.aircraft_data.data['inputs']['control_surfaces']['aileron_deflection'])
 
         #self.aileron_start = 0.6*self.b/2
-        self.aileron_end = 0.985*self.b/2
+
+        self.aileron_end = self.aircraft_data.data['inputs']['control_surfaces']['aileron_end']*self.b/2
 
         self.flap_start = 1 + self.d_fuselage/2
 
-        self.rel_flap_chord = self.aircraft_data.data['inputs']['flap_chord']
+        self.rel_flap_chord = self.aircraft_data.data['inputs']['control_surfaces']['flap_chord']
 
-        self.rel_LE_flap_chord = 0.1
+        self.rel_LE_flap_chord = self.aircraft_data.data['inputs']['control_surfaces']['LE_flap_chord']
 
         self.avg_chord = (self.root_chord + self.tip_chord)/2
 
-        self.aileron_chord_ratio = self.aircraft_data.data['inputs']['aileron_chord']
+        self.aileron_chord_ratio = self.aircraft_data.data['inputs']['control_surfaces']['aileron_chord']
+
+        self.dihedral = self.aircraft_data.data['outputs']['wing_design']['dihedral']
 
         self.airfoil_Cd0 = 0.015 #TODO link to airfoil data
         self.airfoil_Cl_alpha = 0.11 #TODO link to airfoil data
@@ -73,15 +76,14 @@ class MobileSurfaceDesign:
 
     def calculate_yaw_rate(self):
 
-        self.bank_angle = np.arcsin((0.75+self.cruise_altitude + self.d_fuselage)/self.b*2)
+        self.bank_angle = np.arcsin((0.75+self.cruise_altitude + self.d_fuselage + np.tan(np.deg2rad(self.dihedral))*self.b/2)/(self.b/2))
         self.turn_radius = self.V**2/(9.81*np.tan(self.bank_angle))
-        print(self.turn_radius)
         if (self.object_distance)/self.turn_radius < 1.03:
             raise ValueError("This is NOT doable")
         
         self.turn_time = self.turn_radius*np.pi/2/self.V
 
-        self.yaw_rate = np.pi/self.turn_time
+        self.yaw_rate = np.pi/2/self.turn_time
         return self.yaw_rate
     
     def calculate_roll_rate(self):
@@ -191,13 +193,16 @@ class MobileSurfaceDesign:
         self.CL_increase_TO = self.calculate_CLmax_increase(self.tot_LE_flap_area,self.clmax_increase*0.6)
         self.CL_max_TO = self.CLMax_clean + self.CL_increase_TO + self.CL_increase_TO_TE
 
-        print(f"LE flap area: {self.LE_flap_area}")
-        print(f"LE flap chord: {self.flap_LE_chord}")
-        print(f"LE flap end: {self.LE_flap_end}")
-        print(f"TE flap area: {self.tot_TE_flap_area}")
-        print(f"TE flap chord: {self.flap_chord}")
-        print(f"TE flap end: {self.flap_end}")
-        print(f"TO CLmax: {self.CL_max_TO}")
+        self.actual_LE_flap_area = self.chord_span_function((self.LE_flap_end - self.flap_start)/2)*self.rel_LE_flap_chord*(self.LE_flap_end - self.flap_start)
+        self.actual_flap_area = self.chord_span_function((self.flap_end - self.flap_start)/2)*self.rel_flap_chord*(self.flap_end - self.flap_start)
+
+        # print(f"LE flap area: {self.LE_flap_area}")
+        # print(f"LE flap chord: {self.flap_LE_chord}")
+        # print(f"LE flap end: {self.LE_flap_end}")
+        # print(f"TE flap area: {self.tot_TE_flap_area}")
+        # print(f"TE flap chord: {self.flap_chord}")
+        # print(f"TE flap end: {self.flap_end}")
+        # print(f"TO CLmax: {self.CL_max_TO}")
     
     def calculate_flap_size(self):
         self.get_clmax_increase()
@@ -205,7 +210,6 @@ class MobileSurfaceDesign:
         self.flap_area = self.calculate_flapped_area()/2
         self.tot_flap_area = self.flap_area*2
         self.flap_end = self.calculate_flap_endpoint()
-        print(self.flap_end, self.aileron_start-1)
         if self.flap_end > self.aileron_start-1:
             self.add_LE_flap()
             self.LE_flap = True
@@ -215,11 +219,39 @@ class MobileSurfaceDesign:
         self.CL_max_TO = self.CLMax_clean + self.CL_increase_TO
 
         self.CL_increase = self.calculate_CLmax_increase(self.tot_flap_area,self.clmax_increase)
-        print(f"TO CLmax: {self.CL_max_TO}")
-        print(f"Flap area: {self.flap_area}")
-        print(f"Flap chord: {self.flap_chord}")
-        print(f"Flap end: {self.flap_end}")
-        print(f"CL increase: {self.CL_increase}")
+
+        self.actual_flap_area = self.chord_span_function((self.flap_end - self.flap_start)/2)*self.rel_flap_chord*(self.flap_end - self.flap_start)
+        # print(f"TO CLmax: {self.CL_max_TO}")
+        # print(f"Flap area: {self.flap_area}")
+        # print(f"Flap chord: {self.flap_chord}")
+        # print(f"Flap end: {self.flap_end}")
+        # print(f"CL increase: {self.CL_increase}")
+
+    def main(self):
+        self.calculate_yaw_rate()
+        self.calculate_roll_rate()
+        self.calculate_aileron_size()
+        self.calculate_flap_size()
+        self.update_attributes()
+        self.aircraft_data.save_design(design_file=self.design_file)
+
+    def update_attributes(self):
+
+        self.aircraft_data.data['outputs']['control_surfaces']['aileron']['b1'] = self.aileron_start
+        self.aircraft_data.data['outputs']['control_surfaces']['aileron']['b2'] = self.aileron_end
+        self.aircraft_data.data['outputs']['control_surfaces']['aileron']['area_single'] = self.aileron_area
+        self.aircraft_data.data['outputs']['control_surfaces']['aileron']['roll_rate'] = np.rad2deg(self.roll_rate)
+        self.aircraft_data.data['outputs']['control_surfaces']['aileron']['bank_angle'] = np.rad2deg(self.bank_angle)
+        self.aircraft_data.data['outputs']['control_surfaces']['aileron']['turn_radius'] = self.turn_radius
+        self.aircraft_data.data['outputs']['HLD']['b1'] = self.flap_start
+        self.aircraft_data.data['outputs']['HLD']['b2'] = self.flap_end
+        self.aircraft_data.data['outputs']['HLD']['Swf_single'] = self.flap_area
+        self.aircraft_data.data['outputs']['HLD']['flap_area'] = self.actual_flap_area
+        if self.LE_flap:
+            self.aircraft_data.data['outputs']['HLD']['b2'] = self.LE_flap_end
+            self.aircraft_data.data['outputs']['HLD']['b1'] = self.flap_start
+            self.aircraft_data.data['outputs']['HLD']['LE_flap_area'] = self.actual_LE_flap_area
+            self.aircraft_data.data['outputs']['HLD']['Swf_LE_single'] = self.LE_flap_area
 
     def plot_wing(self):
 
@@ -307,23 +339,13 @@ class MobileSurfaceDesign:
 if __name__ == "__main__":
     aircraft_data = Data("design3.json")
     control_surface = MobileSurfaceDesign(aircraft_data=aircraft_data)
-    #control_surface.plot_wing()
-    yaw_rate = control_surface.calculate_yaw_rate()
-    roll_rate = control_surface.calculate_roll_rate()
-    print(f"Bank angle: {np.rad2deg(control_surface.bank_angle)}")
-    print(f"Yaw rate: {np.rad2deg(yaw_rate)}")
-    print(f"Roll rate: {np.rad2deg(roll_rate)}")
-    print(f"turn time: {control_surface.turn_time/2}")
-    print(f"turn radius: {control_surface.turn_radius}")
-    control_surface.calculate_aileron_size()
+    control_surface.main()
+    control_surface.plot_wing()
+    # print(f"Bank angle: {np.rad2deg(control_surface.bank_angle)}")
+    # print(f"Yaw rate: {np.rad2deg(yaw_rate)}")
+    # print(f"Roll rate: {np.rad2deg(roll_rate)}")
+    # print(f"turn time: {control_surface.turn_time/2}")
+    # print(f"turn radius: {control_surface.turn_radius}")
+
     #print(control_surface.aileron_start)
 
-    control_surface.calculate_flap_size()
-    control_surface.plot_wing()
-
-'''    def calculate_Clda(self):
-        
-        integral,_ = quad(self.c, self.aileron_start, self.aileron_end)
-        self.Clda = 2*self.airfoil_Cl_alpha*self.tau/self.aileron_area/self.b*integral
-        return self.Clda
-    '''
