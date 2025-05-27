@@ -11,7 +11,6 @@ fuselage_width = 5.0  # meters
 fuselage_height = 5.0  # meters
 fuselage_hull_depth = 1.0  # meters
 fuselage_skin_thickness = 0.05  # meters
-+
 stringer_area = 0.1  # square meters
 number_of_stringers_top = 10  # number of stringers
 number_of_stringers_sides = 10  # number of stringers
