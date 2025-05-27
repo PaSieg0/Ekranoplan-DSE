@@ -17,9 +17,11 @@ class CGRange:
         self.most_forward_cg = float('inf')
         self.most_forward_mission = None
 
+        self.l_fuselage = aircraft_data.data["outputs"]["general"]["l_fuselage"]
+
         self.plot = plot
 
-    def calculate_cg_range(self):
+    def calculate_cg_range(self, ax=None, idx=None):
         g = 9.81
         cg_points = []  # Store (label, x_cg) tuples
 
@@ -75,30 +77,19 @@ class CGRange:
         masses_kg = [w / g for w in weights_newton]
         masses_tonnes = np.array(masses_kg) / 1000  # Convert once
 
-        if self.plot:
-            fig, ax = plt.subplots()
-            ax.scatter(cgs, masses_tonnes, label="CG vs Mass", color='blue', marker='o')
+        if self.plot and ax:
+            # Normalize CGs
+            cgs_norm = [cg / self.l_fuselage for cg in cgs]
+            aft_index = min(range(len(cgs)), key=lambda i: abs(cgs_norm[i] - self.most_aft_cg / self.l_fuselage))
+            forward_index = min(range(len(cgs)), key=lambda i: abs(cgs_norm[i] - self.most_forward_cg / self.l_fuselage))
 
-            aft_index = min(range(len(cgs)), key=lambda i: abs(cgs[i] - self.most_aft_cg))
-            forward_index = min(range(len(cgs)), key=lambda i: abs(cgs[i] - self.most_forward_cg))
+            # Plot
+            print(self.most_forward_cg, self.most_aft_cg)
 
-            ax.axvline(self.most_aft_cg, color='r', linestyle='--', label="Most Aft CG")
-            ax.axvline(self.most_forward_cg, color='g', linestyle='--', label="Most Forward CG")
-
-            ax.annotate(labels[aft_index], (cgs[aft_index], masses_tonnes[aft_index]),
-                        textcoords="offset points", xytext=(0, 0), ha='center', fontsize=8, rotation=-20)
-
-            ax.annotate(labels[forward_index], (cgs[forward_index], masses_tonnes[forward_index]),
-                        textcoords="offset points", xytext=(10, 0), ha='center', fontsize=8, rotation=-20)
-
-            ax.set_title(f"Total Mass vs CG Position design {self.design_number}")
-            ax.set_xlabel("x_cg [m]")
-            ax.set_ylabel("Total Mass [tonnes]")
-            ax.grid(True)
-            plt.tight_layout()
-            plt.show()
-
-
+            colors = ['blue', 'orange', 'green']
+            designs = ['2', '7', '10']
+            ax.scatter([self.most_forward_cg/self.l_fuselage, self.most_aft_cg/self.l_fuselage], [masses_tonnes[forward_index], masses_tonnes[aft_index]], label=f'Design {designs[idx]}', color=colors[idx], marker='o')
+            ax.axvline(x=self.most_aft_cg/self.l_fuselage, color=colors[idx], linestyle='--')
 
     def update_attributes(self):
         self.aircraft_data.data["outputs"]["cg_range"]["most_aft_cg"] = self.most_aft_cg
@@ -107,6 +98,18 @@ class CGRange:
         self.aircraft_data.data["outputs"]["cg_range"]["most_forward_mission"] = self.most_forward_mission
 
 if __name__ == "__main__":
-    data = Data("design3.json")
-    cg_range = CGRange(data)
-    cg_range.calculate_cg_range()
+    fig, ax = plt.subplots()
+
+
+
+    for i in range(1, 4):
+        data = Data(f"design{i}.json")
+        cg_range = CGRange(data,plot=True)
+        cg_range.calculate_cg_range(ax=ax,idx=i-1)
+
+        ax.set_title(f"Total Mass vs CG Position - Design Comparison")
+        ax.set_xlabel("x_cg / l_fuselage")
+        ax.set_ylabel("Total Mass [tonnes]")
+        ax.legend(loc='upper left')
+        ax.grid(True)
+    plt.show()
