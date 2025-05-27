@@ -1,7 +1,11 @@
+import sys
 import os
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.append(project_root)
+
+from utils import Data
 import pandas as pd
 import numpy as np
-from utils import Data
 from enum import Enum, auto
 import matplotlib.pyplot as plt
 
@@ -29,14 +33,14 @@ class Take_off_mechanics:
         self.hull_surface = self.aircraft_data.data['outputs']['general']['hull_surface']
         self.MAC = self.aircraft_data.data['outputs']['wing_design']['MAC']
 
-        self.CLmax_takeoff = self.aircraft_data.data['outputs']['inputs']['CLmax_takeoff']
-        self.CL_hydro = self.aircraft_data.data['outputs']['inputs']['CL_hydro']
+        self.CLmax_takeoff = self.aircraft_data.data['inputs']['CLmax_takeoff']
+        self.CL_hydro = self.aircraft_data.data['inputs']['CL_hydro']
         self.Cd = self.aircraft_data.data['outputs']['general']['Cd']
         self.Cd_water = self.aircraft_data.data['outputs']['general']['Cd_water']
 
         self.MTOW = self.aircraft_data.data['outputs']['design']['MTOW']
 
-        self.thrust = 110000*self.aircraft_data.data['outputs']['inputs']['n_engines']
+        self.thrust = 110000*self.aircraft_data.data['inputs']['n_engines']
 
         #hardcoded variables for now, change these later on to be self-iterating
         self.rho_air = 1.225  # kg/m³ at sea level, 15°C
@@ -49,14 +53,15 @@ class Take_off_mechanics:
         self.HydroLiftAngle = 0.0
         self.HydroDragAngle = 0.0
 
-        #hull shaped fuselage initial sizing
-        self.triangle_height = 3
-        self.width = 6
-        self.length = 60
+        #hull shaped fuselage sizing
+        self.triangle_height = 3.0
+        self.width = 6.0
+        self.length = 60.0
 
-
-    def immersed_volume(self, h):
-        """Piecewise volume as function of immersion depth h (m)"""
+    #solves for submerged volume given a submerged height
+    def submerged_volume(self, h):
+        #Piecewise volume as function of immersion depth h (m)
+        #Considering hull shape
         if h <= self.triangle_height:
             return 0.5 * self.width * h * self.length
         else:
@@ -64,38 +69,43 @@ class Take_off_mechanics:
             rect_vol = self.width * (h - self.triangle_height) * self.length
             return triangle_vol + rect_vol
 
-    def get_initial_submerged_volume(self):
+    #solves for initial submerged volume and depth at MTOW when at rest
+    def get_initial_submerged_condition(self):
         """Return submerged volume required to balance MTOW"""
         # Solve V such that buoyant force = weight
-        target_volume = self.MTOW / (self.rho_water * self.g)
+        V0 = self.MTOW / (self.rho_water * self.g)
 
         # Use bisection method to find h
         h_low = 0
         h_high = 5
         for _ in range(100):
             h_mid = 0.5 * (h_low + h_high)
-            vol = self.immersed_volume(h_mid)
-            if vol > target_volume:
+            vol = self.submerged_volume(h_mid)
+            if vol > V0:
                 h_high = h_mid
             else:
                 h_low = h_mid
-        return self.immersed_volume(h_mid), h_mid
+        return self.submerged_volume(h_mid), h_mid
 
+    #iteratively compute the bouyancy force
     def update_bouyancy_force(self, h):
-        """Returns buoyancy force for a given immersion depth h (m)"""
-        V = self.immersed_volume(h)
+        V = self.submerged_volume(h)
         Fx = 0
         Fy = self.rho_water * self.g * V
         return np.array([Fx, Fy])
 
-    def get_new_submerged_volume(self, h):
-        """Returns volume submerged at depth h"""
-        return self.immersed_volume(h)
+    #iterate the submerged volume
+    def update_submerged_volume(self, h):
+        return self.submerged_volume(h)
 
+    @staticmethod
     def get_fluid_force(coeff, rho, v, S, theta):
-        F_mag = 0.5 * coeff * rho * v ** 2 * S
+        v_mag = np.linalg.norm(v)  
+        F_mag = 0.5 * coeff * rho * v_mag**2 * S  
+
         Fx = F_mag * np.cos(theta)
         Fy = F_mag * np.sin(theta)
+
         return np.array([Fx, Fy])
 
 
@@ -104,11 +114,14 @@ class Take_off_mechanics:
         t_max = 600
 
         time = [0]
-        velocity = [0]
-        distance = [0]
+        velocity = [np.array([0.0, 0.0])]
+        distance = [np.array([0.0, 0.0])]
+        
 
-        v = 0
-        x = 0
+        #V = self.get_initial_submerged_condition()[0]
+        h = self.get_initial_submerged_condition()[1]
+        v = [np.array([0.0, 0.0])]
+        x = [np.array([0.0, 0.0])]
         t = 0
         g = self.g
         m = self.MTOW/g
@@ -116,16 +129,19 @@ class Take_off_mechanics:
         D = self.get_fluid_force(self.Cd, self.rho_air, v, self.S, np.deg2rad(self.AOA))
         L_hydro = self.get_fluid_force(self.CL_hydro, self.rho_water, v, self.hull_surface, np.deg2rad(self.HydroLiftAngle))
         D_hydro = self.get_fluid_force(self.Cd_water, self.rho_water, v, self.hull_surface, np.deg2rad(self.HydroDragAngle))
-        F_bouy = self.update_bouyancy_force(x)
+    
 
         while t < t_max:
-            F = L-D+L_hydro-D_hydro+F_bouy
+            #V = self.update_submerged_volume
+            F = L-D+L_hydro-D_hydro+self.update_bouyancy_force(h)
 
             a = F/m
 
             v += a * dt
             x += v * dt
+            h += v[0] * dt
             t += dt
+            #V = self.update_submerged_volume(h-x[1])
 
             time.append(t)
             velocity.append(v)
@@ -139,16 +155,25 @@ class Take_off_mechanics:
 
         if plot:
             import matplotlib.pyplot as plt
+            import numpy as np
+
+        # Ensure velocity is a NumPy array for easy slicing
+            velocity = np.array(velocity)
+            distance = np.array(distance)
+
             plt.figure(figsize=(12, 6))
 
+        # Plot Vx and Vy separately
             plt.subplot(2, 1, 1)
-            plt.plot(time, velocity, label="Velocity (m/s)")
-            plt.ylabel("Velocity (m/s)")
+            plt.plot(time, velocity[:, 0], label="Vx (m/s)")
+            plt.plot(time, velocity[:, 1], label="Vy (m/s)")
+            plt.ylabel("Velocity Components (m/s)")
             plt.grid(True)
             plt.legend()
 
             plt.subplot(2, 1, 2)
-            plt.plot(time, distance, label="Distance (m)", color="orange")
+            plt.plot(time, distance[:, 0], label="Distance (m)", color="orange")
+            plt.plot(time, distance[:, 1], label="Distance (m)", color="orange")
             plt.xlabel("Time (s)")
             plt.ylabel("Distance (m)")
             plt.grid(True)
@@ -158,6 +183,9 @@ class Take_off_mechanics:
             plt.show()
 
         return time, velocity, distance
+
+
+
 
 
 if __name__ == "__main__":
