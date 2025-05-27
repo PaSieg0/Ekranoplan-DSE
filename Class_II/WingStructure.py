@@ -131,6 +131,7 @@ class WingStructure:
         spar_data = {}
         spar_data['max_y'] = []
         spar_data['min_y'] = []
+        spar_data['spar_heights_t'] = []
         for i, x in enumerate(spar_xs):
             spar_top = get_y_top(x, self.element_functions['upper'], self.top_spar_margin)
             spar_bottom = get_y_bottom(x, self.element_functions['lower'], self.bottom_spar_margin)
@@ -148,11 +149,13 @@ class WingStructure:
             spar_data[f'{label}_height'] = spar_top - spar_bottom
             spar_data['max_y'].append(spar_top)
             spar_data['min_y'].append(spar_bottom)
+            spar_data['spar_heights_t'].append((spar_top - spar_bottom)*self.t_spar)
 
         spar_data['max_y'] = max(spar_data['max_y'])
         spar_data['max_x'] = spar_positions[np.argmax(spar_data['max_y'])]
         spar_data['min_y'] = min(spar_data['min_y'])
         spar_data['min_x'] = spar_positions[np.argmin(spar_data['min_y'])]
+        spar_data['spar_heights_t'] = np.array(spar_data['spar_heights_t'])
         self.spar_info = spar_data
 
 

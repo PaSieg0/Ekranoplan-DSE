@@ -22,12 +22,14 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
         self.engine_power = self.aircraft_data.data['inputs']['engine']['engine_power']
         self.engine_thrust = self.engine_power / self.V
         self.dy = np.gradient(self.b_array)
-        self.E = 70e9
+        self.E = 68.9e9
         self.max_load_factor = self.aircraft_data.data['outputs']['general']['nmax']
         self.min_load_factor = self.aircraft_data.data['outputs']['general']['nmin']
         self.evaluate_case = 'max'
         self.drag_array = -self.drag_function(self.b_array)
         self.poisson_ratio = 0.3
+        self.sigma_y = 276e6  # Yield strength in Pa of AL6061-T6
+        self.k_v = 1.5 
 
     def resultant_vertical_distribution(self):
         if self.evaluate_case == 'max':
@@ -93,8 +95,9 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
         self.top_bending_stress = ((self.internal_bending_moment_x()*self.I_yy -(self.internal_bending_moment_y()*self.I_xy))*y + (self.internal_bending_moment_y()*self.I_xx - (self.internal_bending_moment_x()*self.I_xy))*x) / (self.I_xx*self.I_yy - self.I_xy**2)/1000000
         return self.top_bending_stress
 
-    def calculate_shear_stress(self): #TODO: Implement shear stress calculation
-        return 
+    def calculate_shear_stress(self):
+        avg_shear_stress = self.Vy_internal / sum([self.wing_structure[i]['spar_info']['spar_heights_t'] for i in range(len(self.wing_structure))])
+        return self.max_shear_stress
     
     def calculate_wing_deflection(self):
         moment = self.internal_bending_moment_x()
