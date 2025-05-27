@@ -76,8 +76,9 @@ class MobileSurfaceDesign:
 
     def calculate_yaw_rate(self):
 
-        self.bank_angle = np.arcsin((0.75+self.cruise_altitude + self.d_fuselage + np.tan(np.deg2rad(self.dihedral))*self.b/2)/(self.b/2))
+        self.bank_angle = np.arcsin((0.75+self.cruise_altitude + np.tan(np.deg2rad(self.dihedral))*self.b/2)/(self.b/2))
         self.turn_radius = self.V**2/(9.81*np.tan(self.bank_angle))
+        print(self.turn_radius, np.rad2deg(self.bank_angle))
         if (self.object_distance)/self.turn_radius < 1.03:
             raise ValueError("This is NOT doable")
         
