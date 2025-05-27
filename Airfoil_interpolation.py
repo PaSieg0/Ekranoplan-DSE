@@ -21,14 +21,21 @@ def interpolate_airfoil(points, num_interp=300, plot=False):
     interpolated = np.column_stack((x_interp, y_interp))
 
     if plot:
-        plt.figure(figsize=(10, 4))
-        plt.plot(points[:, 0], points[:, 1], 'o-', label='Original Points')
-        #plt.plot(x_interp, y_interp, '-', label='Interpolated Airfoil')
-        plt.axis('equal')
-        plt.grid(True)
-        plt.legend()
-        plt.title("Smooth Airfoil Interpolation (Order Preserved)")
-        plt.show()
+        fig=plt.figure(figsize=(10, 4))
+        ax=plt.subplot()
+        ax.set_xlim(-0.1,1.1)
+        ax.set_ylim(-0.5,0.5)
+        for i in range(len(points[:,0])-1):
+            
+            ax.plot(points[:, 0][i:i+2], points[:, 1][i:i+2], 'b-', label='Original Points')
+            #ax.plot(points[:, 0][i+1], points[:, 1][i+1], 'o-', label='Original Points')
+            #plt.plot(x_interp, y_interp, '-', label='Interpolated Airfoil')
+            # plt.axis('equal')
+            # plt.grid(True)
+            # plt.legend()
+            # plt.title("Smooth Airfoil Interpolation (Order Preserved)")
+            # plt.show()
+            plt.pause(1)
 
     return interpolated
 
@@ -99,7 +106,7 @@ glenn_points_21 = [(0.0000, 0.0886),
     (0.0500, 0.0333),
     (0.0250, 0.0479),
     (0.0125, 0.0603),
-    (0.0000, 0.0860)
+    (0.0000, 0.0886)
 ]
 
 for i in range(len(interpolate_airfoil(glenn_points_21, num_interp=200, plot=True))):
