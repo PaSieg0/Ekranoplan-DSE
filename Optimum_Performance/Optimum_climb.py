@@ -20,7 +20,7 @@ class OptimumClimb(AltitudeVelocity):
         Calculate the fuel burnt during the climb phase.
         """
         LD = self._LD if WIG else self._LD_g
-        range_fraction = np.exp(-range*self.prop_consumption*9.81/self.prop_efficiency * LD**-1)
+        range_fraction = np.exp(-range*self.prop_consumption*self.g/self.prop_efficiency * LD**-1)
         return range_fraction * self._current_weight
     
     def energy_to_climb(self, h_start: float, h_end: float, V_ias: float=None) -> float:
@@ -45,7 +45,7 @@ class OptimumClimb(AltitudeVelocity):
             
             dh = roc * dt  # roc in m/s
             de = self.calculate_power_required(V_tas, h, RoC=roc)*dt
-            dKE = 0.5 * self._current_weight/9.81 * (V_tas**2 - V_prev**2)  # Kinetic energy change
+            dKE = 0.5 * self._current_weight/self.g * (V_tas**2 - V_prev**2)  # Kinetic energy change
             energy += de + dKE  # Total energy change
             h += dh
             t += dt
