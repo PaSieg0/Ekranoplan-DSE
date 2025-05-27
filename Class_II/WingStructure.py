@@ -183,6 +183,8 @@ class WingStructure:
             panel_info[f'bottom_panel_angle_{i+1}'] = bottom_angle
 
         self.panel_info = panel_info
+        self.widths_top = np.array([panel_info[f'top_panel_length_{i+1}'] for i in range(self.n_cells)])
+        self.widths_bottom = np.array([panel_info[f'bottom_panel_length_{i+1}'] for i in range(self.n_cells)])
 
     def compute_wing_box_areas(self):
         if not hasattr(self, 'spar_info'):
