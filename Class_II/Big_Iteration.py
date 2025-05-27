@@ -43,7 +43,7 @@ class BigIteration:
     def main_iteration(self, mission_type: MissionType):
         while True:
             self.class_ii.main()
-            self.aircraft_data.data['outputs'][mission_type.name.lower()]['OEW'] = self.class_ii.OEW
+            self.aircraft_data.data['outputs'][mission_type.name.lower()]['OEW'] = self.class_ii.OEW*9.81
             iteration = SmallIteration(aircraft_data=self.aircraft_data, mission_type=mission_type, class_ii_OEW=self.class_ii.OEW)
             iteration.run_iteration()
 
