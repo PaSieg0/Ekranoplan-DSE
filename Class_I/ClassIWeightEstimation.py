@@ -49,6 +49,7 @@ class ClassI:
             2: 0.985,
             3: 0.995
         } # Raymers
+        self.climb_fraction = 0.985
 
 
     def calculate_LD(self) -> float:
@@ -115,6 +116,9 @@ class ClassI:
         self.Mff = 1
         for fraction in self.fuel_fractions.values():
             self.Mff *= fraction
+
+        if self.mission_type == MissionType.ALTITUDE:
+            self.Mff *= self.climb_fraction
 
         if self.mission_type == MissionType.DESIGN or self.mission_type == MissionType.ALTITUDE:
             self.Mff **= 2
@@ -231,6 +235,10 @@ class ClassI:
         self.aircraft_data.data['outputs'][self.mission_type.name.lower()]['ZFW'] = self.ZFW
         self.aircraft_data.data['outputs'][self.mission_type.name.lower()]['MTOM'] = self.MTOM
         self.aircraft_data.data['outputs'][self.mission_type.name.lower()]['max_fuel'] = self.fuel_max
+        self.aircraft_data.data['outputs'][self.mission_type.name.lower()]['max_fuel_L'] = self.fuel_max/9.81/0.82
+        self.aircraft_data.data['outputs'][self.mission_type.name.lower()]['total_fuel_L'] = self.total_fuel/9.81/0.82
+        self.aircraft_data.data['outputs'][self.mission_type.name.lower()]['mission_fuel_L'] = self.mission_fuel/9.81/0.82
+        self.aircraft_data.data['outputs'][self.mission_type.name.lower()]['reserve_fuel_L'] = self.reserve_fuel/9.81/0.82
 
 
 

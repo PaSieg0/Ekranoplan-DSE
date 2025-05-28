@@ -20,6 +20,15 @@ def solve_hb(target_A_A):
     raise ValueError
 
 def Ainf_Ah(h_b):
+    # HB = np.arange(0,1.5,0.001)
+    # A_A = 1 - np.exp(-4.74*HB**0.814) - HB**2*np.exp(-3.88*HB**0.758)
+    # plt.plot(HB, A_A)
+    # plt.xlabel('h/b')
+    # plt.ylabel('Aeinf/Aeh')
+    # plt.xlim(-0.0001,1)
+    # plt.title('Aeinf/Aeh vs h/b')
+    # plt.grid()
+    # plt.show()
     return 1 - np.exp(-4.74*h_b**0.814) - h_b**2*np.exp(-3.88*h_b**0.758)
 
 class AircraftIteration:
@@ -166,6 +175,10 @@ class AircraftIteration:
         self.aircraft_data.data['outputs']['max']['reserve_fuel'] = max(self.aircraft_data.data['outputs']['design']['reserve_fuel'], self.aircraft_data.data['outputs']['ferry']['reserve_fuel'], self.aircraft_data.data['outputs']['altitude']['reserve_fuel'])
         self.aircraft_data.data['outputs']['max']['max_fuel'] = 1.1 * self.aircraft_data.data['outputs']['max']['total_fuel']
         self.aircraft_data.data['outputs']['max']['LD'] = max(self.aircraft_data.data['outputs']['design']['LD'], self.aircraft_data.data['outputs']['ferry']['LD'], self.aircraft_data.data['outputs']['altitude']['LD'])
+        self.aircraft_data.data['outputs']['max']['total_fuel_L'] = max(self.aircraft_data.data['outputs']['design']['total_fuel_L'], self.aircraft_data.data['outputs']['ferry']['total_fuel_L'], self.aircraft_data.data['outputs']['altitude']['total_fuel_L'])
+        self.aircraft_data.data['outputs']['max']['mission_fuel_L'] = max(self.aircraft_data.data['outputs']['design']['mission_fuel_L'], self.aircraft_data.data['outputs']['ferry']['mission_fuel_L'], self.aircraft_data.data['outputs']['altitude']['mission_fuel_L'])
+        self.aircraft_data.data['outputs']['max']['reserve_fuel_L'] = max(self.aircraft_data.data['outputs']['design']['reserve_fuel_L'], self.aircraft_data.data['outputs']['ferry']['reserve_fuel_L'], self.aircraft_data.data['outputs']['altitude']['reserve_fuel_L'])
+        self.aircraft_data.data['outputs']['max']['max_fuel_L'] = 1.1 * self.aircraft_data.data['outputs']['max']['total_fuel_L']
 
 if __name__=='__main__':
     iteration = AircraftIteration(

@@ -46,10 +46,10 @@ class Cd0Estimation:
     def get_Cfc(self) -> float:
         # Calculate the Reynolds number based on the air density, velocity, and viscosity
         isa = ISA(altitude=self.iteration.aircraft_data.data['inputs']['cruise_altitude'])
-        Re = isa.rho * self.iteration.aircraft_data.data['requirements']['cruise_speed']*0.5144444 * self.iteration.aircraft_data.data['outputs']['wing_design']['MAC'] / self.iteration.aircraft_data.data['viscosity_air']
+        Re = isa.rho * self.iteration.aircraft_data.data['requirements']['cruise_speed'] * self.iteration.aircraft_data.data['outputs']['wing_design']['MAC'] / self.iteration.aircraft_data.data['viscosity_air']
         Re2 = (38.21*(self.iteration.aircraft_data.data['outputs']['wing_design']['MAC']/1e-5)**1.053)
         Re = min(Re, Re2)
-        mach = isa.Mach(self.iteration.aircraft_data.data['requirements']['cruise_speed']*0.5144444)
+        mach = isa.Mach(self.iteration.aircraft_data.data['requirements']['cruise_speed'])
         Cfc_lam = 1.328 / np.sqrt(Re)
         Cfc_turb = 0.455 / (np.log10(Re)**2.58*(1 + 0.144 * mach**2)**0.65)
         Cfc = 0.1*Cfc_lam + 0.9*Cfc_turb
@@ -146,7 +146,7 @@ class Cd0Estimation:
         
 
 if __name__ == '__main__':
-    data = Data('design2.json')
+    data = Data('design3.json')
     est = Cd0Estimation(
         aircraft_data=data,
         mission_type=MissionType.DESIGN

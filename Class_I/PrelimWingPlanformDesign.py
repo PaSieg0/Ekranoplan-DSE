@@ -3,10 +3,12 @@ import os
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from utils import Data, WingType, ISA
+from matplotlib import pyplot as plt
 
 class WingPlanform:
     def __init__(self, 
-                 aircraft_data: Data
+                 aircraft_data: Data,
+                 count: int = 0
                  ) -> None:
         
         self.aircraft_data = aircraft_data
@@ -15,6 +17,7 @@ class WingPlanform:
         self.wing_type = WingType[aircraft_data.data['inputs']['wing_type']]
         self.S = aircraft_data.data['outputs']['max']['S']
         self.aspect_ratio = aircraft_data.data['inputs']['aspect_ratio']
+        self.count = count
 
         self.fuselage_length = self.aircraft_data.data['outputs']['general']['l_fuselage']
         self.x_c = 0 #Where along the wing we want to look, so in this case 0 is the leading edge of the wing
@@ -23,7 +26,7 @@ class WingPlanform:
         self.fuse_x_cg = self.aircraft_data.data['inputs']['xc_fuselage']  # normalized CG position
         self.mass_fraction_wing = self.aircraft_data.data['inputs']['mf_wing'] # mass fraction of the wing
         self.mass_fraction_fuse = self.aircraft_data.data['inputs']['mf_fuselage'] # mass fraction of the fuselage
-
+        self.d_fuselage = self.aircraft_data.data['outputs']['general']['d_fuselage']
 
     def calculate(self):
         self.mach = ISA(self.aircraft_data.data['inputs']['cruise_altitude']).Mach(self.aircraft_data.data['requirements']['cruise_speed'])
@@ -60,7 +63,7 @@ class WingPlanform:
                          self.x_c_OEW_cg * (1 + self.mass_fraction_wing / self.mass_fraction_fuse))
 
         self.X_LE = self.X_LEMAC - self.y_MAC * np.tan(np.deg2rad(self.sweep_x_c))
-        self.oswald = 4.61*(1-0.045*self.aspect_ratio**0.68)*(np.cos(np.deg2rad(self.sweep_x_c)))**0.15 -3.1
+        #self.oswald = 4.61*(1-0.045*self.aspect_ratio**0.68)*(np.cos(np.deg2rad(self.sweep_x_c)))**0.15 -3.1
         self.update_design_data()
         self.aircraft_data.save_design(self.design_file)
 
@@ -79,17 +82,55 @@ class WingPlanform:
         self.aircraft_data.data['outputs']['wing_design']['S'] = self.S
         self.aircraft_data.data['outputs']['wing_design']['b'] = self.b
         self.aircraft_data.data['outputs']['wing_design']['aspect_ratio'] = self.aspect_ratio
-        self.aircraft_data.data['inputs']['oswald_factor'] = self.oswald
-        
+        #self.aircraft_data.data['inputs']['oswald_factor'] = self.oswald
+
+    def plot_wing(self, ax):
+        b_array = np.arange(0, self.b/2, 0.1)
+        leading_edge = self.chord_root/2 - np.tan(np.deg2rad(self.sweep_x_c)) * b_array
+        y_tip_LE = leading_edge[-1]
+        y_tip_TE = y_tip_LE - self.chord_tip
+
+        y_root_LE = self.chord_root/2 
+        y_root_TE = y_root_LE - self.chord_root
+
+        colors = ['blue', 'orange', 'green']
+        designs = ['2', '7', '10']
+
+        # Main planform
+        ax.plot(b_array, leading_edge, label=f'Design {designs[self.count-1]}', color = colors[self.count-1])
+        ax.plot(-b_array, leading_edge, color = colors[self.count-1])  # Mirror
+
+        ax.plot([0, 0], [y_root_LE, y_root_TE], color = colors[self.count-1])
+        ax.plot([self.b/2, self.b/2], [y_tip_LE, y_tip_TE], color = colors[self.count-1])
+        ax.plot([-self.b/2, -self.b/2], [y_tip_LE, y_tip_TE], color = colors[self.count-1])
+
+        ax.plot([0, self.b/2], [y_root_TE, y_tip_TE], color = colors[self.count-1])
+        ax.plot([0, -self.b/2], [y_root_TE, y_tip_TE], color = colors[self.count-1])
 
 
 if __name__ == "__main__":
-    data = Data('design1.json')
-    wing = WingPlanform(data)
-    wing.calculate()
-    print(f"x_LE: {wing.X_LE}")
-    print(f"x_LEMAC: {wing.X_LEMAC}")
-    print(f"y_MAC: {wing.y_MAC}")
-    print(f"chord_root: {wing.chord_root}")
-    print(f"chord_tip: {wing.chord_tip}")
-    print(f"sweep_x_c: {wing.sweep_x_c}")
+    # data = Data('design1.json')
+    # wing = WingPlanform(data)
+    # wing.calculate()
+    # print(f"x_LE: {wing.X_LE}")
+    # print(f"x_LEMAC: {wing.X_LEMAC}")
+    # print(f"y_MAC: {wing.y_MAC}")
+    # print(f"chord_root: {wing.chord_root}")
+    # print(f"chord_tip: {wing.chord_tip}")
+    # print(f"sweep_x_c: {wing.sweep_x_c}")
+    fig, ax = plt.subplots()
+
+    for i in range(1, 4):
+        data = Data(f'design{i}.json')
+        wing = WingPlanform(data, count=i)
+        wing.calculate()
+        wing.plot_wing(ax=ax)
+
+    ax.set_aspect('equal', adjustable='box')
+    ax.set_title("Wing Planform Comparison")
+    ax.set_xlabel("Spanwise Direction (m)")
+    ax.set_ylabel("Chordwise Direction (m)")
+    ax.set_ylim(-20, 20)
+    ax.legend(loc='upper right', bbox_to_anchor=(1.2, 1))
+    ax.legend()
+    plt.show()

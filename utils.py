@@ -157,7 +157,7 @@ def design_json_to_excel(json_file: str, excel_file: str) -> None:
         "sweep_c_4": "[deg]", "dihedral": "[deg]", "sweep_x_c": "[deg]", "sweep_TE": "[deg]", "chord_root": "[m]", "chord_tip": "[m]",
         "y_MAC": "[m]", "X_LEMAC": "[m]", "X_LE": "[m]", "total_fuel": "[N]", "rho_air": "[kg/m³]", "S_h": "[m²]", 
         "S_v": "[m²]", "l_h": "[m]", "l_v": "[m]", "most_aft_cg": "[m]", "most_forward_cg": "[m]", "sweep": "[deg]",
-        "r_float": "[m]", "upsweep": "[deg]", "LE_pos": "[m]"
+        "r_float": "[m]", "upsweep": "[deg]", "LE_pos": "[m]", "mission_fuel_L": "[L]", "total_fuel_L": "[L]", "max_fuel_L": "[L]", "reserve_fuel_L": "[L]"
     }
 
     requirements = data.get('requirements', {})

@@ -309,7 +309,7 @@ def __plot_prop(WL, PLOT_OUTPUT: bool=False):
 
     # Find the index in WL.WS where WS is reached or just below
     idx = np.searchsorted(WL.WS, WL.max_WS, side='right')
-    plt.fill_between(WL.WS[:idx], 0, prop_cruise_high[0][:idx], color='green', alpha=0.1)
+    plt.fill_between(WL.WS[:idx], 0, prop_cruise_high[0][:idx], color='lightgreen', alpha=0.3)
     #plt.suptitle(f"Wing Loading Requirements")
     plt.ylabel('W/P [N/W]', fontsize=14)
     plt.xlabel('W/S [N/m^2]', fontsize=14)
@@ -426,7 +426,7 @@ def __plot_mixed(WL_prop, WL_jet, PLOT_OUTPUT: bool=False):
     
 
 if __name__ == "__main__":
-    aircraft_data = Data("design1.json")
+    aircraft_data = Data("design3.json")
     WP, TW, WS = main(
         aircraft_data=aircraft_data,
         mission_type=MissionType.DESIGN,
