@@ -234,6 +234,7 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
          stringer_I_xx_bottom = np.array([self.wing_structure[i]['I_xx'] for i in range(len(self.wing_structure))])
          self.sigma_col_top = (k * np.pi**2 * self.E_stringer * stringer_I_xx_top) / (self.l_stringer**2 * self.stringer_area)/1000000
          self.sigma_col_bottom = (k * np.pi**2 * self.E_stringer * stringer_I_xx_bottom) / (self.l_stringer**2 * self.n_stringers/2*self.stringer_area)/1000000
+     
 
     def calculate_critical_buckling_stress(self):
         # b spacing between stringers, only subtract 2we once and use areabalance

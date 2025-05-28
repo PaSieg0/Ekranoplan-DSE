@@ -348,6 +348,69 @@ class WingStructure:
         self.stringer_width = self.t_skin*np.sqrt(self.C*np.pi**2/(12*(1-self.poisson_ratio_stringer**2)))*np.sqrt(self.E_stringer/self.sigma_y_stringer)
         return self.stringer_width
     
+    def calculate_stringer_thickness(self):
+        """Using an I shaped stringer, with fixed length ratios and constant thickness, a relationship is derived to calculate the stringer thickness."""
+        A = self.stringer_area * 1000000  # Convert to mm^2
+        L_stringer = 100 # mm
+
+        D = 10.5625*(L_stringer**2) - (4*2*A)
+
+        t_stringer1 = ((3.25*L_stringer) + np.sqrt(D)) / 4
+        t_stringer2 = ((3.25*L_stringer) - np.sqrt(D)) / 4
+
+        return L_stringer, min(t_stringer1, t_stringer2) 
+
+
+    def crippling_stress_stringer(self):
+        alpha = 0.8
+        n = 0.6
+        L_stringer0 = self.calculate_stringer_thickness()[0] # mm
+        t_stringer0 = self.calculate_stringer_thickness()[1] # mm
+        C_1234 = 0.425
+        C_5 = 4.0
+        crippling_yield_ratio_list = []
+        crippling_stress_list = []
+        areas_list = []
+
+        for i in range(5):
+            C = C_1234 if i < 4 else C_5
+            if i < 2:
+                L_stringer = 0.5*L_stringer0 - 0.5*t_stringer0
+                t_stringer = t_stringer0 
+            elif i < 4 and i >= 2:
+                L_stringer = 0.75*L_stringer0 - 0.5*t_stringer0 
+                t_stringer = t_stringer0
+            else:
+                L_stringer = t_stringer0
+                t_stringer = 0.75*L_stringer0
+
+            sigma_cc_sigma_y = alpha * ((C / self.sigma_y_stringer) * ((np.pi**2 * self.E_stringer) / (12 * (1 - self.poisson_ratio_stringer**2)))*(((t_stringer / L_stringer)**2)))**(1 - n)
+            crippling_yield_ratio_list.append(sigma_cc_sigma_y)
+
+        for i in crippling_yield_ratio_list:
+            if i > 1.0:
+                crippling_stress_list.append(self.sigma_y_stringer)
+            else: 
+                crippling_stress_list.append(i * self.sigma_y_stringer)
+
+        for i in range(5):
+            if i < 2:
+                A = (0.5*L_stringer0 - 0.5*t_stringer0) * t_stringer0
+                areas_list.append(A)
+            elif i < 4 and i >= 2:
+                A = (0.75*L_stringer0 - 0.5*t_stringer0) * t_stringer0
+                areas_list.append(A)
+            else:
+                A = t_stringer0 * (0.75*L_stringer0)
+                areas_list.append(A)
+
+        areas_array = np.array(areas_list)
+        crippling_stress_array = np.array(crippling_stress_list)
+
+        crippling_stress_stringer = (np.sum(crippling_stress_array * areas_array) / np.sum(areas_array)) / 1000000 # Convert to MPa
+
+        return crippling_stress_stringer
+    
     def get_stringer_placement(self):
         spar_info = self.spar_info
         n_stringers = self.n_stringers
