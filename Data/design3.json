@@ -186,9 +186,10 @@
             "step_depth": 0.464,
             "h_afterbody": 6.836,
             "l_fuselage": 69.252,
-            "l_tailcone": 30.252,
+            "l_tailcone": 15.252,
+            "l_afterbody": 15.000,
             "l_nose": 13.000,
-            "l_cargo_straight": 26.000,
+            "l_fus_straight": 26.000,
             "Re": 4837280592.753655,
             "Cd": 0.0012700434697589557,
             "hull_depth": 2.713,
@@ -204,7 +205,10 @@
             "xcg_payload": 0.44404883931977346,
             "nmax": 3.443126045275873,
             "nmin": -1.443126045275873,
-            "cargo_distance_from_nose": 8.000
+            "cargo_distance_from_nose": 8.000,
+            "cargo_length": 18.000,
+            "cargo_width": 7.000,
+            "cargo_height": 4.500
         },
         "design": {
             "MTOW": 2538643.19660158,

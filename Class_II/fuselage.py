@@ -43,8 +43,29 @@ def calculate_centroid(fus_width, fus_height, fus_rectangle_height, fus_hull_dep
 print("Enclosed Area:", calculate_enclosed_area(fuselage_width, fuselage_rectangle_height, fuselage_hull_depth))
 print("Centroid:", calculate_centroid(fuselage_width, fuselage_height, fuselage_rectangle_height, fuselage_hull_depth, fuselage_skin_thickness, stringer_area, number_of_stringers_top + number_of_stringers_sides))
 '''
+#THINGS I SHOULD BE GETTING FROM THE JSONS
+
 aircraft_data = Data("design3.json")
-MTOW = aircraft_data.data['outputs']['max']['MTOW']  # Maximum Takeoff Weight
+
+
+class Cross_section():
+    def __init__(self, x_coordinate, width, rect_height, hull_depth, skin_thickness, hull_skin_thickness, boom_location, boom_area, tail_lift_force, rudder_side_force, wing_lift_force):
+        self.x_coordinate = x_coordinate
+        self.width = width
+        self.rect_height = rect_height
+        self.hull_depth = hull_depth
+        self.skin_thickness = skin_thickness
+        self.hull_skin_thickness = hull_skin_thickness
+        self.boom_location = boom_location
+        self.boom_area = boom_area
+        self.tail_lift_force = tail_lift_force
+        self.rudder_side_force = rudder_side_force
+        self.wing_lift_force = wing_lift_force
+
+
+
+print("Center of Gravity (CG) X-coordinate:", calculate_cg(aircraft_data, component_masses, 2.0)/aircraft_data.data['outputs']['general']['l_fuselage'])  # Normalized CG position along the fuselage length
+
 
 
 #weight_per_unit_length = 
