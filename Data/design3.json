@@ -40,7 +40,7 @@
         "lnd": 1.5,
         "lfd": 8.5,
         "engine_power": 8202000,
-        "object_distance": 900,
+        "object_distance": 1450,
         "control_surfaces": {
             "aileron_end": 0.985,
             "LE_flap_chord": 0.1,
@@ -262,12 +262,12 @@
         },
         "control_surfaces": {
             "aileron": {
-                "b1": 24.88,
+                "b1": 23.474,
                 "b2": 31.33200057495772,
-                "area_single": 17.209292938706774,
-                "roll_rate": 17.229900347383964,
-                "bank_angle": 73.11607437521981,
-                "turn_radius": 410.939791293906
+                "area_single": 20.663550888365197,
+                "roll_rate": 20.987393578799765,
+                "bank_angle": 46.16408607320507,
+                "turn_radius": 1300
             },
             "rudder": {
                 "end": 9.906963200924071,
@@ -291,7 +291,9 @@
             "b2": 22.358634663816837,
             "flapped_area_single": 170.34351328250182,
             "flap_area": 56.60086005376283,
-            "Swf_single": 142.05270870317577
+            "Swf_single": 142.05270870317577,
+            "LE_flap_area": 0.15286201891674056,
+            "Swf_LE_single": 1.3722482225090784
         }
     },
     "kinematic_viscosity": 1.006e-06,
