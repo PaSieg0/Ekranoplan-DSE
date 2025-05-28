@@ -14,9 +14,22 @@ class AircraftType(Enum):
     PROP = auto()
     MIXED = auto()
 
-class StringerType(Enum):
-    FUCKOFF = auto()
-
+class StressOutput(Enum):
+    DEFLECTION = auto()
+    TWIST = auto()
+    BENDING_STRESS = auto()
+    BENDING_STRESS_BOTTOM = auto()
+    SHEAR_STRESS = auto()
+    TORSION = auto()
+    RESULTANT_VERTICAL = auto()
+    RESULTANT_HORIZONTAL = auto()
+    INTERNAL_SHEAR_VERTICAL = auto()
+    INTERNAL_SHEAR_HORIZONTAL = auto()
+    INTERNAL_MOMENT_X = auto()
+    INTERNAL_MOMENT_Y = auto()
+    INTERNAL_TORQUE = auto()
+    SHEAR_STRESS_TOP = auto()
+    SHEAR_STRESS_BOTTOM = auto()
 class WingType(Enum):
     HIGH = auto()
     LOW = auto()
