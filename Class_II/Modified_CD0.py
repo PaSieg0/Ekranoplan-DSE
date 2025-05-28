@@ -5,10 +5,11 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from utils import Data, ISA, EmpType, AircraftType, MissionType
 from Class_I.ClassIWeightEstimation import ClassI, MissionType, AircraftType
 from Class_I.Iteration import AircraftIteration
+from Class_II.Small_Iteration import SmallIteration
 
 class Cd0Estimation:
     #TODO: this is very preliminary, need to consider form factors, IFF Cfc etc. later
-    def __init__(self, aircraft_data: Data, mission_type: MissionType) -> None:
+    def __init__(self, aircraft_data: Data, mission_type: MissionType, class_ii_OEW) -> None:
         self.design_number = aircraft_data.data['design_id']
         self.design_file = f'design{self.design_number}.json'
         self.aircraft_data = aircraft_data
@@ -19,9 +20,10 @@ class Cd0Estimation:
         self.max_iterations = 100
         self.iteration_number = 0
 
-        self.iteration = AircraftIteration(
+        self.iteration = SmallIteration(
             aircraft_data=self.aircraft_data,
-            mission_type=self.mission_type
+            mission_type=self.mission_type,
+            class_ii_OEW=class_ii_OEW
         )
     
     def wing_wet(self) -> float:
@@ -117,7 +119,9 @@ class Cd0Estimation:
     def mainloop(self):
         self.iteration.run_iteration()
 
+        mission_type = self.mission_type.name.lower()
         self.prev_Cd0 = self.iteration.aircraft_data.data['inputs']['Cd0']
+        self.prev_MTOM = self.aircraft_data.data['outputs'][mission_type]['MTOM']
         
         while True:
             self.iteration_number += 1
@@ -134,15 +138,18 @@ class Cd0Estimation:
             self.iteration.run_iteration()
 
             self.curr_Cd0 = self.Cd0
+            self.curr_MTOM = self.aircraft_data.data['outputs'][mission_type]['MTOM']
 
 
-            stop_condition = abs((self.curr_Cd0 - self.prev_Cd0) / self.prev_Cd0) < self.tolerance or self.iteration_number >= self.max_iterations
+
+            stop_condition = (abs((self.curr_Cd0 - self.prev_Cd0) / self.prev_Cd0) < self.tolerance and abs(self.curr_MTOM-self.prev_MTOM)/self.prev_MTOM) or self.iteration_number >= self.max_iterations
             if stop_condition:
                 self.update_attributes()
                 self.aircraft_data.save_design(self.design_file)
                 break
 
             self.prev_Cd0 = self.curr_Cd0
+            self.prev_MTOM = self.curr_MTOM
         
 
 if __name__ == '__main__':

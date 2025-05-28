@@ -66,11 +66,38 @@ class WingLoading:
         self.aircraft_data.data['outputs']['general']['Re'] = self.Re
         Cd = 0.075 / (np.log10(self.Re) - 2)**2
         return Cd
+    
+    def solve_piecewise(self, A):
+        f1 = lambda x: self.w_fuselage * x / 2
+        f2 = lambda x: self.w_fuselage * self.t_fuselage / 2 + self.w_fuselage * (x - self.t_fuselage)
+        f1(self.t_fuselage)
+        f2(self.t_fuselage)
+        if f1(self.t_fuselage) >= A:
+            # Solve f1(x) = A for x
+            x = 2 * A / self.w_fuselage
+            return x
+        elif f2(self.t_fuselage) < A:
+            # Solve f2(x) = A for x
+            x = (A - self.w_fuselage * self.t_fuselage / 2) / self.w_fuselage + self.t_fuselage
+            return x
+        else:
+            raise ValueError("No solution found for the piecewise function.")
+
+
 
     def calculate_hull_surface(self):
-        tail_part_in_water = self.depth*self.d_fuselage/np.sin(self.upsweep*np.pi/180)
-        length_in_water = tail_part_in_water + (self.L-self.tail_length)
-        return 2*abs(np.arccos(1-2*self.depth))*self.r_float*length_in_water*self.n_fuselages
+        self.w_fuselage = self.aircraft_data.data['inputs']['w_fuselage']
+        self.h_fuselage = self.aircraft_data.data['inputs']['h_fuselage']
+        self.t_fuselage = self.aircraft_data.data['inputs']['t_fuselage']
+
+        rho_water = self.aircraft_data.data['rho_water']
+        V_disp = self.aircraft_data.data['outputs']['max']['MTOM'] / rho_water
+        A_disp = V_disp / (self.aircraft_data.data['outputs']['general']['l_fuselage'] - self.aircraft_data.data['outputs']['general']['l_tailcone'])
+        depth = self.solve_piecewise(A_disp)
+        self.aircraft_data.data['outputs']['general']['resting_depth'] = depth
+        L = np.sqrt(1 + ((self.w_fuselage/2) / self.t_fuselage)**2)
+        A_hull = 2* (self.aircraft_data.data['outputs']['general']['l_fuselage'] - self.aircraft_data.data['outputs']['general']['l_tailcone']) * depth * L
+        return A_hull
     
     def take_off_requirement(self):
         CL_takeoff = self.CLmax_takeoff/1.21

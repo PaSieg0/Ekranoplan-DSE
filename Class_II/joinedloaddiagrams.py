@@ -3,6 +3,9 @@ from gustloads import Calculate_K_g, Calculate_mu, Calculate_V_b, Calculate_U_re
 
 import numpy as np
 import matplotlib.pyplot as plt
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from utils import Data, ISA
 
 class LoadDiagram:

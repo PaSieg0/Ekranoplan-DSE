@@ -4,7 +4,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import numpy as np
 from scipy.optimize import fsolve
 from Class_I.WingLoading import main, WingLoading
-from Class_I.ClassIWeightEstimation import ClassI
+from Class_II.Modified_Class_I import ModifiedClassI
 import matplotlib.pyplot as plt
 from utils import Data, ISA, MissionType, AircraftType, WingType
 
@@ -23,20 +23,21 @@ def Ainf_Ah(h_b):
     # HB = np.arange(0,1.5,0.001)
     # A_A = 1 - np.exp(-4.74*HB**0.814) - HB**2*np.exp(-3.88*HB**0.758)
     # plt.plot(HB, A_A)
-    # plt.xlabel('h/b')
-    # plt.ylabel('Aeinf/Aeh')
+    # plt.xlabel('h_b')
+    # plt.ylabel('Aeinf_Aeh')
     # plt.xlim(-0.0001,1)
-    # plt.title('Aeinf/Aeh vs h/b')
+    # plt.title('Aeinf_Aeh vs h_b')
     # plt.grid()
     # plt.show()
     return 1 - np.exp(-4.74*h_b**0.814) - h_b**2*np.exp(-3.88*h_b**0.758)
 
-class AircraftIteration:
-    def __init__(self, aircraft_data: Data, mission_type: MissionType) -> None:
+class SmallIteration:
+    def __init__(self, aircraft_data: Data, mission_type: MissionType, class_ii_OEW) -> None:
         self.design_number = aircraft_data.data['design_id']
         self.design_file = f'design{self.design_number}.json'
         self.aircraft_data = aircraft_data
         self.mission_type = mission_type
+        self.class_ii_OEW = class_ii_OEW
 
         self.tolerance = 0.00015
         self.max_iterations = 20
@@ -44,9 +45,10 @@ class AircraftIteration:
 
         self.V_lof = 1.05 * self.aircraft_data.data['requirements']['stall_speed_takeoff']
 
-        self.class_i = ClassI(
+        self.class_i = ModifiedClassI(
             aircraft_data=self.aircraft_data,
             mission_type=self.mission_type,
+            class_ii_OEW=self.class_ii_OEW
         )
 
     def get_initial_conditions(self):
@@ -88,14 +90,10 @@ class AircraftIteration:
             self.class_i.k = self.new_k
             self.class_i.Cd0 = self.new_Cd0
 
-            # print(f"k: {self.new_k}")
-            # print(f"Iteration: {self.iteration}")
-            # print(f"MTOM: {self.class_i.MTOM}")
-            # print(f"MTOW: {self.class_i.MTOW}")
-            # print(f"S: {self.S}")
-
             self.class_i.main()
             self.curr_MTOM = self.class_i.MTOM
+            self.aircraft_data.data['outputs'][self.mission_type.name.lower()]['MTOM'] = self.curr_MTOM
+
             self.WP, self.TW, self.WS = main(aircraft_data=self.aircraft_data,
                                             mission_type=self.mission_type,
                                              PLOT_OUTPUT=False)
@@ -169,7 +167,7 @@ class AircraftIteration:
         self.aircraft_data.data['outputs']['max']['MAC'] = max(self.aircraft_data.data['outputs']['design']['MAC'], self.aircraft_data.data['outputs']['ferry']['MAC'], self.aircraft_data.data['outputs']['altitude']['MAC'])
         self.aircraft_data.data['outputs']['max']['fuel_economy'] = min(self.aircraft_data.data['outputs']['design']['fuel_economy'], self.aircraft_data.data['outputs']['altitude']['fuel_economy'])
         self.aircraft_data.data['outputs']['max']['Mff'] = min(self.aircraft_data.data['outputs']['design']['Mff'], self.aircraft_data.data['outputs']['ferry']['Mff'], self.aircraft_data.data['outputs']['altitude']['Mff'])
-        self.aircraft_data.data['outputs']['max']['OEW'] = max(self.aircraft_data.data['outputs']['design']['OEW'], self.aircraft_data.data['outputs']['ferry']['OEW'], self.aircraft_data.data['outputs']['altitude']['OEW'])
+        self.aircraft_data.data['outputs']['max']['OEW'] = self.class_ii_OEW
         self.aircraft_data.data['outputs']['max']['total_fuel'] = max(self.aircraft_data.data['outputs']['design']['total_fuel'], self.aircraft_data.data['outputs']['ferry']['total_fuel'], self.aircraft_data.data['outputs']['altitude']['total_fuel'])
         self.aircraft_data.data['outputs']['max']['mission_fuel'] = max(self.aircraft_data.data['outputs']['design']['mission_fuel'], self.aircraft_data.data['outputs']['ferry']['mission_fuel'], self.aircraft_data.data['outputs']['altitude']['mission_fuel'])
         self.aircraft_data.data['outputs']['max']['reserve_fuel'] = max(self.aircraft_data.data['outputs']['design']['reserve_fuel'], self.aircraft_data.data['outputs']['ferry']['reserve_fuel'], self.aircraft_data.data['outputs']['altitude']['reserve_fuel'])
@@ -182,9 +180,11 @@ class AircraftIteration:
         self.aircraft_data.data['outputs']['max']['WS'] = min(self.aircraft_data.data['outputs']['design']['WS'], self.aircraft_data.data['outputs']['ferry']['WS'], self.aircraft_data.data['outputs']['altitude']['WS'])
 
 if __name__=='__main__':
-    iteration = AircraftIteration(
-        aircraft_data=Data('design1.json'),
-        mission_type=MissionType.DESIGN
+    iteration = SmallIteration(
+        aircraft_data=Data('design3.json'),
+        mission_type=MissionType.DESIGN,
+        class_ii_OEW=158814
     )
-
+    print(iteration.aircraft_data.data['outputs']['max']['MTOM'])
     iteration.run_iteration()
+    print(iteration.aircraft_data.data['outputs']['max']['MTOM'])
