@@ -178,8 +178,8 @@
     },
     "outputs": {
         "general": {
-            "h_fuselage_straight": 8.963
-            "w_fuselage": 6.430
+            "h_fuselage_straight": 8.963,
+            "w_fuselage": 6.430,
             "d_fuselage_equivalent_straight": 7.590,
             "r_fuselage_equivalent_straight": 3.795,
             "step_depth": 0.464,
@@ -194,7 +194,7 @@
             "hull_surface": 420.472,
             "hull_nose_surface": 78.58,
             "hull_tail_surface": 139.684,
-            "hull_straight_surface": 202.208
+            "hull_straight_surface": 202.208,
             "take_off_power": 46205736.735140644,
             "take_off_thrust": null,
             "V_lof": 64.8165,
@@ -202,7 +202,8 @@
             "Cd_water": 0.0012700434697589557,
             "xcg_payload": 0.44404883931977346,
             "nmax": 3.443126045275873,
-            "nmin": -1.443126045275873
+            "nmin": -1.443126045275873,
+            "cargo_distance_from_nose": 8.000
         },
         "design": {
             "MTOW": 2538643.19660158,
