@@ -10,7 +10,7 @@
         "depth": 0.1,
         "jet_consumption": 2.7e-05,
         "prop_consumption": 2.1e-08,
-        "prop_efficiency": 0.85,
+        "prop_efficiency": 0.8,
         "Cd0": 0.01731060138067915,
         "oswald_factor": 0.6560637537879077,
         "aspect_ratio": 8,
@@ -43,14 +43,20 @@
         "lnd": 1.5,
         "lfd": 8.5,
         "engine_power": 8202000,
-        "object_distance": 4080,
+        "object_distance": 900,
         "control_surfaces": {
             "aileron_end": 0.985,
             "LE_flap_chord": 0.1,
             "flap_chord": 0.35,
             "flap_type": "DOUBLE_SLOT",
             "aileron_deflection": 25,
-            "aileron_chord": 0.25
+            "aileron_chord": 0.25,
+            "rudder_chord": 0.35,
+            "rudder_deflection": 37,
+            "rudder_start": 0.05,
+            "elevator_start": 0.05,
+            "elevator_chord": 0.40,
+            "elevator_deflection": 30
         }
     },
     "requirements": {
@@ -61,6 +67,7 @@
         "reserve_range": 185200,
         "ferry_payload": 0,
         "ferry_crew": 170,
+        "climb_rate": 5.08,
         "altitude_range_WIG": 943600,
         "altitude_range_WOG": 538000,
         "altitude_payload": 90000,
@@ -92,7 +99,9 @@
             "V_lof": 64.8165,
             "LD_g": 15.431455064691253,
             "Cd_water": 0.0012700434697589557,
-            "xcg_payload": 0.44404883931977346
+            "xcg_payload": 0.44404883931977346,
+            "nmax": 3.443126045275873,
+            "nmin": -1.443126045275873
         },
         "design": {
             "MTOW": 2556615.691548755,
@@ -237,12 +246,12 @@
         },
         "control_surfaces": {
             "aileron": {
-                "b1": 28.361,
+                "b1": 26.263,
                 "b2": 33.84471167101082,
-                "area_single": 16.01782380408744,
-                "roll_rate": 12.579563828054448,
-                "bank_angle": 19.288067470495374,
-                "turn_radius": 3902.5236938133444
+                "area_single": 21.71997919713351,
+                "roll_rate": 17.432557805494895,
+                "bank_angle": 73.11607437521981,
+                "turn_radius": 414.5226198424151
             },
             "rudder": {},
             "elevator": {}
