@@ -33,6 +33,7 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
         self.I_xy_array = np.array([self.wing_structure[i]['I_xy'] for i in range(len(self.wing_structure))])
         self.sigma_y = 276e6  # Yield strength in Pa of AL6061-T6
         self.k_v = 1.5 
+        self.poisson_ratio = 0.3
 
     def resultant_vertical_distribution(self):
         if self.evaluate_case == 'max':
@@ -150,6 +151,28 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
             for i in range(self.n_cells):
                 sigma_cr_top = C * ((np.pi**2 * self.E) / (12 * (1 - self.poisson_ratio**2))) * (self.t_skin / self.widths_top[i])
                 sigma_cr_bottom = C * ((np.pi**2 * self.E) / (12 * (1 - self.poisson_ratio**2))) * (self.t_skin / self.widths_bottom[i])
+                buckling_stress_top_list.append(sigma_cr_top)
+                buckling_stress_bottom_list.append(sigma_cr_bottom)
+                span_points.append(y)
+            
+            self.buckling_stress_top = np.array(buckling_stress_top_list)
+            self.buckling_stress_bottom = np.array(buckling_stress_bottom_list)
+            self.buckling_span_points = np.array(span_points)
+
+        return self.buckling_span_points, self.buckling_stress_top, self.buckling_stress_bottom
+    
+    def calculate_critical_buckling_shear_stress(self):
+       
+        k_s = 10
+        buckling_stress_top_list = []
+        buckling_stress_bottom_list = []
+        span_points = []
+        
+        for y in self.b_array:
+            # Loop over each wing-box cell (number of cells = self.n_cells)
+            for i in range(self.n_cells):
+                sigma_cr_top = k_s * ((np.pi**2 * self.E) / (12 * (1 - self.poisson_ratio**2))) * (self.t_spar / self.widths_top[i])
+                sigma_cr_bottom = k_s * ((np.pi**2 * self.E) / (12 * (1 - self.poisson_ratio**2))) * (self.t_spar / self.widths_bottom[i])
                 buckling_stress_top_list.append(sigma_cr_top)
                 buckling_stress_bottom_list.append(sigma_cr_bottom)
                 span_points.append(y)
