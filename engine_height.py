@@ -4,17 +4,19 @@ from utils import Data
 class EngineHeight:
     def __init__(self, data: Data):
         self.data = data
-        self.diameter_engine = self.data.data['inputs']['engine']['diameter']  # m
+        self.design_number = self.data.data['design_id']
+        self.design_file = f"design{self.design_number}.json"
+        self.diameter_engine = self.data.data['inputs']['engine']['prop_diameter']  # m
         self.clearance_engine_fuselage = 2  # m
         self.clearance_enginetips = 0.1  # m
-        self.sea_water_density = self.data.data['rho_density']  # kg/m^3
+        self.sea_water_density = self.data.data['rho_water']  # kg/m^3
         
         # Extract required data from input
         self.wing_type = self.data.data['inputs']['wing_type']
         self.d_fuselage = self.data.data['outputs']['general']['d_fuselage']
         self.l_fuselage = self.data.data['outputs']['general']['l_fuselage']
         self.dihedral = self.data.data['outputs']['wing_design']['dihedral']
-        self.n_engines = self.data.data['inputs']['n_engines']
+        self.n_engines = self.data.data['inputs']['engine']['n_engines']
         self.MTOM = self.data.data['outputs']['design']['MTOM']
         self.n_fuselage = self.data.data['inputs']['n_fuselages']
         if 'fuselage_separation' in self.data.data['outputs']['general']:
@@ -48,13 +50,24 @@ class EngineHeight:
         
         self.wing_tip_clearance = self.z_engines - floating_depth
 
+        self.update_attributes()
+        self.data.save_design(design_file=self.design_file)
+        print(self.y_engines)
+
+
+    def update_attributes(self):
+        self.data.data['outputs']['engine_positions'] = {
+            'y_engines': self.y_engines.tolist(),
+            'z_engines': self.z_engines.tolist(),
+            'wing_tip_clearance': self.wing_tip_clearance.tolist()
+        }
 
 def main():
 
     json_file = "design3.json"
     aircraft_data = Data(json_file)
     engine_height = EngineHeight(aircraft_data)
-    y_engines, z_engines, wing_tip_clearance = engine_height.calculate_engine_positions()
+    engine_height.calculate_engine_positions()
     
     # print(f"\nEngine y-coordinates (spanwise position) for design 3:")
     # print(f"Left side engines: {-y_engines[::-1]} m")

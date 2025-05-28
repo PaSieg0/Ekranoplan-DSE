@@ -7,6 +7,7 @@ import openpyxl
 from openpyxl.styles import Font
 from openpyxl.utils import get_column_letter
 import numpy as np
+from typing import Any
 
 class AircraftType(Enum):
     JET = auto()
@@ -19,9 +20,26 @@ class FlapType(Enum):
     FOWLER = auto()
     DOUBLE_SLOT = auto()
     TRIPLE_SLOT = auto()
+class StressOutput(Enum):
+    DEFLECTION = auto()
+    TWIST = auto()
+    BENDING_STRESS = auto()
+    BENDING_STRESS_BOTTOM = auto()
+    SHEAR_STRESS = auto()
+    TORSION = auto()
+    RESULTANT_VERTICAL = auto()
+    RESULTANT_HORIZONTAL = auto()
+    INTERNAL_SHEAR_VERTICAL = auto()
+    INTERNAL_SHEAR_HORIZONTAL = auto()
+    INTERNAL_MOMENT_X = auto()
+    INTERNAL_MOMENT_Y = auto()
+    INTERNAL_TORQUE = auto()
+    SHEAR_STRESS_TOP = auto()
+    SHEAR_STRESS_BOTTOM = auto()
 class WingType(Enum):
     HIGH = auto()
     LOW = auto()
+    
 class LoadCase(Enum):
     OEW = auto()
     OEW_PAYLOAD = auto()
@@ -45,12 +63,23 @@ class AircraftType(Enum):
     PROP = auto()
     MIXED = auto()
 
-
 class MissionType(Enum):
     DESIGN = auto()
     FERRY = auto()
     ALTITUDE = auto()
 
+class Materials(Enum):
+    Al7075 = auto()
+    Al6061 = auto()
+    Al6063 = auto()
+    Al2024 = auto()
+    Al5052 = auto()
+    Ti10V2Fe3Al = auto()
+    Ti6Al4V = auto()
+    INCONEL_718 = auto()
+    WASPALOY = auto()
+    Rene_41 = auto()
+    HASTELLOY_X = auto()
 
 class EnumEncoder(json.JSONEncoder):
     """
@@ -63,8 +92,13 @@ class EnumEncoder(json.JSONEncoder):
 
 
 class Data:
-    def __init__(self, design_file):
-        self.data = self.load_design(design_file)
+    def __init__(self, design_file, file_type='design'):
+        if file_type == 'design':
+            self.data = self.load_design(design_file)
+        elif file_type == 'airfoil_geometry':
+            self.data = self.load_dat_file(design_file)
+        elif file_type == 'aerodynamics':
+            self.data = self.load_aerodynamic_distribution(design_file)
 
     def load_design(self, design_file) -> dict[str, Any]:
         file_path = os.path.join("Data", design_file)
@@ -84,6 +118,88 @@ class Data:
                 json.dump(self.data, file, cls=EnumEncoder, indent=4)
         except IOError as e:
             print(f"Error: Failed to write to {file_path}. {e}")
+
+    def load_dat_file(self, dat_file) -> dict[str, list[float]]:
+        """
+        Load a .dat file as a dictionary with 'x' and 'y' keys.
+        Assumes each line contains two numeric values separated by space or comma.
+        """
+        file_path = os.path.join("Data", dat_file)
+        x_vals, y_vals = [], []
+        try:
+            with open(file_path, 'r') as file:
+                for line in file:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    parts = line.replace(',', ' ').split()
+                    if len(parts) != 2:
+                        print(f"Warning: Skipping malformed line: {line}")
+                        continue
+                    try:
+                        x, y = float(parts[0]), float(parts[1])
+                        x_vals.append(x)
+                        y_vals.append(y)
+                    except ValueError:
+                        print(f"Warning: Non-numeric data encountered in line: {line}")
+            return {"x": x_vals, "y": y_vals}
+        except FileNotFoundError:
+            print(f"Error: {file_path} not found.")
+        except IOError as e:
+            print(f"Error: Failed to read from {file_path}. {e}")
+        return {}
+
+    def load_aerodynamic_distribution(self, filename: str):
+        
+        folder_path = os.path.join(os.path.dirname(__file__), "Data")
+        file_path = os.path.join(folder_path, filename)
+
+        yspan_values = []
+        cl_values = []
+        chord_values = []
+        induced_cd_values = []
+        Cm_values = []
+        header_found = False
+
+        with open(file_path, 'r') as f:
+            for line in f:
+                stripped = line.strip()
+                # Look for table header by checking for both 'y-span' and 'Cl'
+                if not header_found and "y-span" in stripped and "Cl" in stripped and "Chord" in stripped:
+                    header_found = True
+                    continue  # skip the header line
+                if header_found:
+                    # Stop reading if we hit an empty line
+                    if not stripped:
+                        break
+                    # Split by whitespace. This assumes the columns are space-separated.
+                    parts = stripped.split()
+                    if len(parts) < 4:
+                        continue
+                    try:
+                        y_span = float(parts[0])
+                        cl = float(parts[3])
+                        chord = float(parts[1])
+                        Icd =float(parts[5])
+                        Cm = float(parts[7])
+                        yspan_values.append(y_span)
+                        cl_values.append(cl)
+                        chord_values.append(chord)
+                        induced_cd_values.append(Icd)
+                        Cm_values.append(Cm)
+                    except ValueError:
+                        # In case conversion fails, skip the row
+                        continue
+            
+            forces_dict = {
+                "yspan": yspan_values,
+                "cl": cl_values,
+                "chord": chord_values,
+                "induced_cd": induced_cd_values,
+                "cm": Cm_values
+            }
+
+            return forces_dict
 
 
 def generate_df():

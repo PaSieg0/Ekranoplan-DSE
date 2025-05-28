@@ -21,6 +21,8 @@
         "h_position": 0.9376103975594868,
         "v_position": 0.8970738482497326,
         "tfo": 0.001,
+        "rho_fuel": 0.82, 
+        "fuel_fuselage": 0,
         "n_engines": 6.0,
         "CLmax_clean": 1.6,
         "CLmax_takeoff": 2.08,
@@ -61,7 +63,120 @@
         "airfoils": {
             "wing": 0.14,
             "horizontal_tail": 0.12,
-            "vertical_tail": 0.12
+            "vertical_tail": 0.12,
+        "structures": {
+            "wing_box": {
+                "front_spar": 0.15,
+                "rear_spar": 0.65,
+                "t_skin": 0.5,
+                "t_spar": 15,
+                "t_wing": 0.5,
+                "stringer_area": 3000,
+                "n_stringers": 60,
+                "n_cells": 4,
+                "C": 4,
+                "L_stringer": 100
+            },
+
+        "materials":{
+            "al7075":{
+                "rho": 2810,
+                "E": 71.7e9,
+                "poisson_ratio": 0.33,
+                "G": 26.9e9,
+                "sigma_y": 503e6
+            },
+            "al6061":{
+                "rho": 2700,
+                "E": 68.9e9,
+                "poisson_ratio": 0.33,
+                "G": 26e9,
+                "sigma_y": 276e6
+            },
+
+            "al6063":{
+                "rho": 2700,
+                "E": 68.9e9,
+                "poisson_ratio": 0.33,
+                "G": 25.8e9,
+                "sigma_y": 276e6
+            },
+
+            "al2024":{
+                "rho": 2780,
+                "E": 73.1e9,
+                "poisson_ratio": 0.33,
+                "G": 28e9,
+                "sigma_y": 324e6
+            },
+
+            "al5052":{
+                "rho": 2680,
+                "E": 70.3e9,
+                "poisson_ratio": 0.33,
+                "G": 25.9e9,
+                "sigma_y": 193e6
+            },
+
+            "ti10v2fe3al": {
+                "rho": 4650,
+                "E": 107e9,
+                "poisson_ratio": 0.32,
+                "G": 42.1e9,
+                "sigma_y": 1170e6
+            },
+
+            "ti6al4v": {
+                "rho": 4430,
+                "E": 113.8e9,
+                "poisson_ratio": 0.342,
+                "G": 44e9,
+                "sigma_y": 880e6
+            },
+
+             "INCONEL718": {
+                "rho": 8190,
+                "E": 113.8e9,
+                "poisson_ratio": 0.3,
+                "G": 43.7,
+                "sigma_y": 760e6
+            },
+
+             "WASPALOY": {
+                "rho": 8200,
+                "E": 213e9,
+                "poisson_ratio": 0.31,
+                "G": 81.2e9,
+                "sigma_y": 910e6
+            },
+
+            "Rene_41": {
+                "rho": 8240,
+                "E": 218e9,
+                "poisson_ratio": 0.31,
+                "G": 83.2e9,
+                "sigma_y": 1062e6
+            },
+
+             "HASTELLOY_X": {
+                "rho": 8220,
+                "E": 205e9,
+                "poisson_ratio": 0.32,
+                "G": 77.6e9,
+                "sigma_y": 245e6
+            }
+
+
+            }
+        },
+
+        "engine": {
+            "prop_diameter": 5.2,
+            "engine_length": 4.2,
+            "engine_weight": 1900,
+            "engine_power": 8202000,
+            "engine_efficiency": 0.85,
+            "n_engines": 6.0
         }
     },
     "requirements": {
@@ -90,22 +205,36 @@
     },
     "outputs": {
         "general": {
-            "d_fuselage": 9.416708503608765,
-            "r_fuselage": 4.708354251804383,
-            "l_fuselage": 80.0420222806745,
-            "l_tailcone": 42.37518826623944,
-            "l_nose": 14.125062755413147,
-            "l_cargo_straight": 16.776307657276142,
-            "Re": 5157101130.3731,
+            "h_fuselage_straight": 8.963,
+            "w_fuselage": 6.430,
+            "d_fuselage_equivalent_straight": 7.590,
+            "r_fuselage_equivalent_straight": 3.795,
+            "step_depth": 0.464,
+            "h_afterbody": 6.836,
+            "l_fuselage": 69.252,
+            "l_tailcone": 15.252,
+            "l_afterbody": 15.000,
+            "l_nose": 13.000,
+            "l_fus_straight": 26.000,
+            "Re": 4837280592.753655,
             "Cd": 0.0012700434697589557,
-            "hull_surface": 238.26358203715887,
-            "take_off_power": 48122370.089952774,
+            "hull_depth": 2.713,
+            "hull_surface": 420.472,
+            "hull_nose_surface": 78.58,
+            "hull_tail_surface": 139.684,
+            "hull_straight_surface": 202.208,
+            "take_off_power": 46205736.735140644,
             "take_off_thrust": null,
             "V_lof": 64.8165,
             "LD_g": 17.437940525815858,
             "Cd_water": 0.0012700434697589557,
             "xcg_payload": 0.44404883931977346,
-            "l_bottom": 35.33090404130159
+            "nmax": 3.443126045275873,
+            "nmin": -1.443126045275873,
+            "cargo_distance_from_nose": 8.000,
+            "cargo_length": 18.000,
+            "cargo_width": 7.000,
+            "cargo_height": 4.500
         },
         "design": {
             "MTOW": 2528161.707915953,
@@ -318,11 +447,29 @@
             "door": 30411.0,
             "anchor": 2452.5,
             "floater": 18702.8904745383,
-            "total_OEW": 1210435.7945997093
+            "total_OEW": 1210435.7945997093,
+        "engine_positions": {
+            "y_engines": [
+                7.016363005162699,
+                12.3163630051627,
+                17.6163630051627
+            ],
+            "z_engines": [
+                8.955197082140456,
+                9.047708926260011,
+                9.140220770379564
+            ],
+            "wing_tip_clearance": [
+                8.564963882660816,
+                8.65747572678037,
+                8.749987570899924
+            ]
         }
     },
     "kinematic_viscosity": 1.006e-06,
     "rho_water": 1000,
     "viscosity_air": 1.484e-05,
     "rho_air": 1.225
+        }
+    }
 }

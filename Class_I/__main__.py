@@ -12,6 +12,12 @@ from Class_I.Cd0Estimation import Cd0Estimation
 from Class_I.cgRange import CGRange
 from Class_I.empennage import Empennage
 from Optimum_Performance.Optimum_speeds import OptimumSpeeds
+from Fuselage import Fuselage
+from PrelimWingPlanformDesign import WingPlanform
+from Cd0Estimation import Cd0Estimation
+from cgRange import CGRange
+from empennage import Empennage
+from engine_height import EngineHeight
 
 
 def main(create_excel: bool = False) -> None:
@@ -73,6 +79,8 @@ def main_iteration(
         mission_type=mission
     )
     opt.update_cruise_speed(aircraft_data.data['inputs']['cruise_altitude'])
+    engine_height = EngineHeight(data=aircraft_data)
+    engine_height.calculate_engine_positions()
 
     S = aircraft_data.data['outputs']['wing_design']['S']
     MTOM = aircraft_data.data['outputs']['max']['MTOM']
@@ -89,8 +97,8 @@ def main_iteration(
     if stop_condition:
         #aircraft_data.save_design(file_path)
         if create_excel:
-            design_json_to_excel(file_path,'concepts.xlsx')
-        return
+            #design_json_to_excel(file_path,'concepts.xlsx')
+            return
     else:
         return main_iteration(
             aircraft_data=aircraft_data,
