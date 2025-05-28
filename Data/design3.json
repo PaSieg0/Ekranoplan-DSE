@@ -467,10 +467,11 @@
                 8.749987570899924
             ]
         }
+    }
     },
     "kinematic_viscosity": 1.006e-06,
     "rho_water": 1000,
     "viscosity_air": 1.484e-05,
     "rho_air": 1.225
-        }
+
     }
