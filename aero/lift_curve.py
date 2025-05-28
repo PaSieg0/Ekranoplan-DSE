@@ -16,6 +16,7 @@ class lift_curve():
         #lift coefficient data
         self.cl_lst=self.data[:,1]
         self.cd_lst=self.data[:,2]
+        self.cm_lst=self.data[:,3]
 
 
     
@@ -72,6 +73,33 @@ class lift_curve():
 
         #returns cl
         return cd
+ 
+    def interpolate_Cm(self, alpha):   #gets a cl for a given alpha and linearly interpolates
+        #distance list in alpha
+        # print(self.alpha)
+        # print(alpha)
+        dist=abs(self.alpha-alpha)
+        # print(dist)
+
+
+        #determines the index of the closest alpha
+        ind=np.where(min(dist)==dist)[0][0]
+        # print(ind)
+
+        #uses point below
+        if dist[ind] > 0:
+            cm=self.cm_lst[ind-1]+(alpha-self.alpha[ind-1])*(self.cm_lst[ind]-self.cm_lst[ind-1])/(self.alpha[ind]-self.alpha[ind-1])
+        
+        #uses point ahead
+        elif dist[ind]<0:
+            cm=self.cm_lst[ind]+(alpha-self.alpha[ind])*(self.cm_lst[ind+1]-self.cm_lst[ind])/(self.alpha[ind+1]-self.alpha[ind])
+        
+        #uses selected alpha
+        elif dist[ind]==0:
+            cm=self.cm_lst[ind]
+
+        #returns cl
+        return cm
     
     def calc_drag(self,h_b='no',AR=8,e=0.85,alpha='n',cl='n',CD_0=0.00632):   #calculates the drag for only the wing using method from paper the values still need to be updated
         
