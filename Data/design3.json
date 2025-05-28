@@ -63,7 +63,8 @@
         "airfoils": {
             "wing": 0.14,
             "horizontal_tail": 0.12,
-            "vertical_tail": 0.12,
+            "vertical_tail": 0.12
+        },
         "structures": {
             "wing_box": {
                 "front_spar": 0.15,
@@ -168,6 +169,7 @@
 
 
             }
+        
         },
 
         "engine": {
@@ -472,4 +474,3 @@
     "rho_air": 1.225
         }
     }
-}
