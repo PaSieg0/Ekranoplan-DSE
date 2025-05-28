@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 class lift_curve():
     def __init__(self):
         #importing lift curve data which is generated from xfoil without WIG
-        self.data=np.loadtxt('aero\\lift curve no WIG.txt')
+        self.data=np.loadtxt('aero\\lift curve WIG.txt')
         #print(self.data)
 
         #angle of attack data
@@ -15,18 +15,22 @@ class lift_curve():
 
         #lift coefficient data
         self.cl_lst=self.data[:,1]
+        self.cd_lst=self.data[:,2]
+        self.cm_lst=self.data[:,3]
 
 
     
-    def interpolate(self, alpha):   #gets a cl for a given alpha and linearly interpolates
+    def interpolate_Cl(self, alpha):   #gets a cl for a given alpha and linearly interpolates
         #distance list in alpha
+        # print(self.alpha)
+        # print(alpha)
         dist=abs(self.alpha-alpha)
-        #print(dist)
+        # print(dist)
 
 
         #determines the index of the closest alpha
         ind=np.where(min(dist)==dist)[0][0]
-        #print(ind)
+        # print(ind)
 
         #uses point below
         if dist[ind] > 0:
@@ -43,10 +47,67 @@ class lift_curve():
         #returns cl
         return cl
     
-    def calc_drag(self,AR,e,h_b,alpha='n',cl='n',CD_0=0.0234):   #calculates the drag using method from paper
+    def interpolate_Cd(self, alpha):   #gets a cd for a given alpha and linearly interpolates
+        #distance list in alpha
+        # print(self.alpha)
+        # print(alpha)
+        dist=abs(self.alpha-alpha)
+        # print(dist)
+
+
+        #determines the index of the closest alpha
+        ind=np.where(min(dist)==dist)[0][0]
+        # print(ind)
+
+        #uses point below
+        if dist[ind] > 0:
+            cd=self.cd_lst[ind-1]+(alpha-self.alpha[ind-1])*(self.cd_lst[ind]-self.cd_lst[ind-1])/(self.alpha[ind]-self.alpha[ind-1])
+        
+        #uses point ahead
+        elif dist[ind]<0:
+            cd=self.cd_lst[ind]+(alpha-self.alpha[ind])*(self.cd_lst[ind+1]-self.cd_lst[ind])/(self.alpha[ind+1]-self.alpha[ind])
+        
+        #uses selected alpha
+        elif dist[ind]==0:
+            cd=self.cd_lst[ind]
+
+        #returns cl
+        return cd
+ 
+    def interpolate_Cm(self, alpha):   #gets a cl for a given alpha and linearly interpolates
+        #distance list in alpha
+        # print(self.alpha)
+        # print(alpha)
+        dist=abs(self.alpha-alpha)
+        # print(dist)
+
+
+        #determines the index of the closest alpha
+        ind=np.where(min(dist)==dist)[0][0]
+        # print(ind)
+
+        #uses point below
+        if dist[ind] > 0:
+            cm=self.cm_lst[ind-1]+(alpha-self.alpha[ind-1])*(self.cm_lst[ind]-self.cm_lst[ind-1])/(self.alpha[ind]-self.alpha[ind-1])
+        
+        #uses point ahead
+        elif dist[ind]<0:
+            cm=self.cm_lst[ind]+(alpha-self.alpha[ind])*(self.cm_lst[ind+1]-self.cm_lst[ind])/(self.alpha[ind+1]-self.alpha[ind])
+        
+        #uses selected alpha
+        elif dist[ind]==0:
+            cm=self.cm_lst[ind]
+
+        #returns cl
+        return cm
+    
+    def calc_drag(self,h_b='no',AR=8,e=0.85,alpha='n',cl='n',CD_0=0.00632):   #calculates the drag for only the wing using method from paper the values still need to be updated
         
         #correction factor
-        sigma=np.exp(-2.48*(h_b)**(0.768))
+        if h_b=='no':
+            sigma=np.exp(-2.48*(h_b)**(0.768))
+        else: 
+            sigma=0
 
         # calculates cl for given alpha
         if cl=='n':
@@ -90,7 +151,7 @@ class lift_curve():
 
 
 
-if __name__ == "__main__":  #if run seperately
+if __name__ == "__main__":  #if run seperately  
     #defines instance
     curves=lift_curve()
 

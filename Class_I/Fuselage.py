@@ -69,6 +69,7 @@ class Fuselage:
         self.aircraft_data.data['outputs']['general']['l_cargo_straight'] = self.cargo_straight
         self.aircraft_data.data['outputs']['general']['xcg_payload'] = (self.ln + self.tot_cargo_length/2)/self.lf
         self.aircraft_data.data['outputs']['general']['cargo_length'] = self.tot_cargo_length
+        self.aircraft_data.data['outputs']['general']['l_bottom'] = self.lf - self.ltc
 
 if __name__ == "__main__":
     aircraft_data = Data("design3.json")
