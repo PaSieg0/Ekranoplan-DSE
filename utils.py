@@ -57,12 +57,23 @@ class AircraftType(Enum):
     PROP = auto()
     MIXED = auto()
 
-
 class MissionType(Enum):
     DESIGN = auto()
     FERRY = auto()
     ALTITUDE = auto()
 
+class Materials(Enum):
+    Al7075 = auto()
+    Al6061 = auto()
+    Al6063 = auto()
+    Al2024 = auto()
+    Al5052 = auto()
+    Ti10V2Fe3Al = auto()
+    Ti6Al4V = auto()
+    INCONEL_718 = auto()
+    WASPALOY = auto()
+    Rene_41 = auto()
+    HASTELLOY_X = auto()
 
 class EnumEncoder(json.JSONEncoder):
     """

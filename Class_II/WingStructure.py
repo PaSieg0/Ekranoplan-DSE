@@ -7,11 +7,12 @@ import matplotlib.transforms as transforms
 from scipy.integrate import quad
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from utils import Data
+from utils import Data, Materials
 
 
 class WingStructure:
-    def __init__(self, aircraft_data: Data, airfoil_data: Data):
+    def __init__(self, aircraft_data: Data, airfoil_data: Data, wingbox_mat: Materials, 
+                 stringer_mat: Materials, wing_mat: Materials):
         self.data = airfoil_data.data
         self.aircraft_data = aircraft_data
 
@@ -34,26 +35,32 @@ class WingStructure:
         self.S = self.aircraft_data.data['outputs']['wing_design']['S']
 
         self.n_stringers = self.aircraft_data.data['inputs']['structures']['wing_box']['n_stringers']
-        self.stringer_area = self.aircraft_data.data['inputs']['structures']['wing_box']['stringer_area']/1000000
-        self.stringer_radius = np.sqrt(self.stringer_area / np.pi)
-        
-        self.material = self.aircraft_data.data['inputs']['structures']['materials']['Al7075']
-        self.material_stringer = self.aircraft_data.data['inputs']['structures']['materials']['Ti-6Al-4V']
+
+        self.material = self.aircraft_data.data['inputs']['structures']['materials'][wingbox_mat.name.lower()]
+        self.rho_wingbox = self.material['rho']
+        self.material_stringer = self.aircraft_data.data['inputs']['structures']['materials'][stringer_mat.name.lower()]
         self.E_stringer = self.material_stringer['E']
         self.sigma_y_stringer = self.material_stringer['sigma_y']
+        self.rho_stringer = self.material_stringer['rho']
+
         self.poisson_ratio_stringer = self.material_stringer['poisson_ratio']
         self.n_cells = self.aircraft_data.data['inputs']['structures']['wing_box']['n_cells']
         self.fuel_volume = self.aircraft_data.data['outputs']['max']['max_fuel_L']/1000
 
         self.L_stringer = self.aircraft_data.data['inputs']['structures']['wing_box']['L_stringer']
+        self.stringer_area = self.aircraft_data.data['inputs']['structures']['wing_box']['stringer_area']/1000000
 
         self.C = self.aircraft_data.data['inputs']['structures']['wing_box']['C']
 
-        self.fuel_density = 0.82 # TODO link to json data
+        self.fuel_density = self.aircraft_data.data['inputs']['rho_fuel']
+        self.buoy_mass = 950 #TODO link to json
 
-        self.fuselage_fuel = 0 #TODO link to json etc.
+        self.fuselage_fuel = self.aircraft_data.data['inputs']['fuel_fuselage']
 
         self.fuel_wing = (1- self.fuselage_fuel)/2*self.fuel_volume
+
+        self.wing_material = self.aircraft_data.data['inputs']['structures']['materials'][wing_mat.name.lower()]
+        self.rho_wing = self.wing_material['rho']
 
         self.mid_spar_positions = [
             self.front_spar + (self.rear_spar - self.front_spar) * i / self.n_cells
@@ -62,8 +69,6 @@ class WingStructure:
 
         self.bottom_spar_margin = 0.05
         self.top_spar_margin = 0.98
-
-        self.wing_mass = 30000
 
         self.engine_positions = self.aircraft_data.data['outputs']['engine_positions']['y_engines']
         self.engine_weight = self.aircraft_data.data['inputs']['engine']['engine_weight']
@@ -449,9 +454,20 @@ class WingStructure:
         # Weighted average and conversion to MPa
         crippling_stress = np.array(crippling_stress)
         areas = np.array(areas)
-        stringer_cr = np.sum(crippling_stress * areas) / np.sum(areas) / 1e6
+        stringer_cr = np.sum(crippling_stress * areas) / np.sum(areas)
 
         return stringer_cr
+    
+    def calculate_stringer_moments_inertia(self):
+        L = self.L_stringer / 1000  # Convert to meters
+        t = self.t_stringer/1000
+        self.x_centroid_stringer = 0.5*L
+        self.y_centroid_stringer = 0.3375*L
+
+        self.I_xx_stringer = 0.3235609375*(L**3)*t # mm^4
+        self.I_yy_stringer = 0.1184895833*(L**3)*t # mm^4
+        self.I_xy_stringer = 0                     # mm^4
+
     
     def get_stringer_placement(self):
         spar_info = self.spar_info
@@ -459,12 +475,12 @@ class WingStructure:
         n_stringers = self.n_stringers
         n_cells = self.n_cells
         clearance = 0.05
-        min_width = 0.1
+        min_width = 0.2
         self.stringer_width = self.get_effective_sheet_width()
         l_stringer = self.L_stringer/1000
         stringer_info = {
-            'top': {'x': [], 'y': [], 'angle': [], 'I_xx': 0, 'I_yy': 0, 'I_xy': 0},
-            'bottom': {'x': [], 'y': [], 'angle': [], 'I_xx': 0, 'I_yy': 0, 'I_xy': 0}
+            'top': {'x': [], 'y': [], 'angle': [], 'spacing': [], 'n_stringers': [], 'I_xx': 0, 'I_yy': 0, 'I_xy': 0},
+            'bottom': {'x': [], 'y': [], 'angle': [], 'spacing': [], 'n_stringers': [], 'I_xx': 0, 'I_yy': 0, 'I_xy': 0}
         }
 
         if n_stringers == 0:
@@ -511,14 +527,16 @@ class WingStructure:
                     spacing = available_length / (n_top - 1)
                     x_positions = np.array([left_x + l_stringer + clearance + j * spacing for j in range(n_top)])
                 y_positions = np.tan(top_panel_angles[i]) * (x_positions - left_x) + spar_tops[i] - 0.375*l_stringer
+                stringer_info['top']['n_stringers'].append(n_top)
+                stringer_info['top']['spacing'].append(spacing)
                 stringer_info['top']['angle'].extend([top_panel_angles[i] for _ in range(x_positions.size)])
                 stringer_info['top']['x'].extend(x_positions)
                 stringer_info['top']['y'].extend(y_positions)
                 dx = x_positions - self.centroid[0]
                 dy = y_positions - self.centroid[1]
-                stringer_info['top']['I_xx'] += np.sum(self.stringer_area * dy**2)
-                stringer_info['top']['I_yy'] += np.sum(self.stringer_area * dx**2)
-                stringer_info['top']['I_xy'] += np.sum(self.stringer_area * dx * dy)
+                stringer_info['top']['I_xx'] += np.sum(self.stringer_area * dy**2) + self.I_xx_stringer*n_top
+                stringer_info['top']['I_yy'] += np.sum(self.stringer_area * dx**2) + self.I_yy_stringer*n_top
+                stringer_info['top']['I_xy'] += np.sum(self.stringer_area * dx * dy) + self.I_xy_stringer*n_top
 
             # --- Bottom ---
             current_bottom_width = panel_info['widths_bottom'][i]
@@ -535,14 +553,16 @@ class WingStructure:
                     spacing = available_length / (n_bottom - 1)
                     x_positions = np.array([left_x + l_stringer + clearance + j * spacing for j in range(n_bottom)])
                 y_positions = np.tan(bottom_panel_angles[i]) * (x_positions - left_x) + spar_bottoms[i] + 0.375*l_stringer
+                stringer_info['bottom']['n_stringers'].append(n_bottom)
+                stringer_info['bottom']['spacing'].append(spacing)
                 stringer_info['bottom']['angle'].extend([bottom_panel_angles[i] for _ in range(x_positions.size)])
                 stringer_info['bottom']['x'].extend(x_positions)
                 stringer_info['bottom']['y'].extend(y_positions)
                 dx = x_positions - self.centroid[0]
                 dy = y_positions - self.centroid[1]
-                stringer_info['bottom']['I_xx'] += np.sum(self.stringer_area * dy**2)
-                stringer_info['bottom']['I_yy'] += np.sum(self.stringer_area * dx**2)
-                stringer_info['bottom']['I_xy'] += np.sum(self.stringer_area * dx * dy)
+                stringer_info['bottom']['I_xx'] += np.sum(self.stringer_area * dy**2) + self.I_xx_stringer*n_bottom
+                stringer_info['bottom']['I_yy'] += np.sum(self.stringer_area * dx**2) + self.I_yy_stringer*n_bottom
+                stringer_info['bottom']['I_xy'] += np.sum(self.stringer_area * dx * dy) + self.I_xy_stringer*n_bottom
 
         if not any_stringers_placed:
             raise ValueError("No stringers could be placed with the given geometry and constraints.")
@@ -689,6 +709,7 @@ class WingStructure:
     def get_wing_structure(self):
         self.wing_structure = {}
         self.cr_stringer = self.crippling_stress_stringer()
+        self.calculate_stringer_moments_inertia()
     
         for idx, chord in enumerate(self.chord_array):
             self.chord_length = chord
@@ -729,9 +750,51 @@ class WingStructure:
         self.normalized_data['top_skin_lengths'] = root_chord_data['panel_info']['top_skin_length']/self.chord_root
         self.normalized_data['bottom_skin_lengths'] = root_chord_data['panel_info']['bottom_skin_length']/self.chord_root
 
+        self.calculate_wing_mass()
         # self.plot_moment_of_inertia()
         # self.plot_polar_moment()
-        # self.plot_wing_weight()
+        self.plot_wing_weight()
+
+    def calculate_wing_mass(self):
+
+        wing_area = []
+        wing_box_area = []
+        stringers_area = []
+        for i in range(len(self.b_array)):
+
+            elements = self.wing_structure[i]['elements']
+
+            upper_length = sum(elem['length'] for elem in elements['upper'])
+            lower_length = sum(elem['length'] for elem in elements['lower'])
+            total_length = upper_length + lower_length
+            airfoil_area = total_length * self.t_wing
+
+            spar_heights = self.wing_structure[i]['spar_info']['spar_heights']
+            spar_area = sum(spar_heights) * self.t_spar
+
+            panel_lengths_top = self.wing_structure[i]['panel_info']['widths_top']
+            panel_lengths_bottom = self.wing_structure[i]['panel_info']['widths_bottom']
+            panel_area = sum(panel_lengths_top) * self.t_skin + sum(panel_lengths_bottom) * self.t_skin
+
+            stringer_info = self.wing_structure[i]['stringers']
+
+            n_stringers = sum(stringer_info['top']['n_stringers']) + sum(stringer_info['bottom']['n_stringers'])
+            stringer_area = n_stringers * self.stringer_area
+
+            wing_area.append(airfoil_area)
+            wing_box_area.append(panel_area + spar_area + stringer_area)
+            stringers_area.append(stringer_area)
+            
+
+        wing_area = np.array(wing_area)
+        wing_box_area = np.array(wing_box_area)
+        stringers_area = np.array(stringers_area)
+
+        wing_volume = np.trapz(wing_area, self.b_array)
+        wing_box_volume = np.trapz(wing_box_area, self.b_array)
+        stringers_volume = np.trapz(stringers_area, self.b_array)
+        self.wing_mass = (wing_volume * self.rho_wing + wing_box_volume * self.rho_wingbox + stringers_volume * self.rho_stringer)
+        print(self.wing_mass)
 
     def get_fuel_length(self, slope, intercept):
         a = slope/2
@@ -778,6 +841,8 @@ class WingStructure:
         self.weight_dist = self.wing_mass/self.S*self.chord_span_function(self.b_array)*9.81 + self.get_fuel_mass_distribution()
         for engine_y in self.engine_positions:
             self.weight_dist[int(round(engine_y,2)*100)] += self.engine_weight*9.81
+        
+        self.weight_dist[-1] += self.buoy_mass*9.81
 
         return self.weight_dist
                                          
@@ -896,10 +961,13 @@ class WingStructure:
 
 
 if __name__ == "__main__":
-    airfoil_data = Data("airfoil_data.dat","airfoil_geometry")
+    airfoil_data = Data("Airfoil_data.dat","airfoil_geometry")
     aircraft_data = Data("design3.json")
-
-    wing_structure = WingStructure(aircraft_data, airfoil_data)
+    stringer_material = Materials.Al7075
+    wingbox_material = Materials.Ti10V2Fe3Al
+    wing_material = Materials.Al7075
+    wing_structure = WingStructure(aircraft_data, airfoil_data, wingbox_mat=wingbox_material,
+                                   wing_mat=wing_material, stringer_mat=stringer_material)
     wing_structure.get_wing_structure()
     #3187
     wing_structure.plot_airfoil(chord_idx=0)

@@ -2,7 +2,7 @@ import os
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import matplotlib.pyplot as plt
-from utils import Data, StressOutput
+from utils import Data, StressOutput, Materials
 from AerodynamicForces import AerodynamicForces
 from WingStructure import WingStructure
 from scipy.integrate import quad
@@ -10,9 +10,10 @@ import numpy as np
 
 class StressAnalysisWing(AerodynamicForces, WingStructure):
 
-    def __init__(self, aircraft_data: Data, airfoil_aerodynamics: Data, airfoil_data: Data, PLOT: bool = False):
+    def __init__(self, aircraft_data: Data, airfoil_aerodynamics: Data, airfoil_data: Data,
+                 wing_mat: Materials, wingbox_mat: Materials, stringer_mat: Materials, PLOT: bool = False):
         AerodynamicForces.__init__(self, aircraft_data, airfoil_aerodynamics)
-        WingStructure.__init__(self, aircraft_data, airfoil_data)
+        WingStructure.__init__(self, aircraft_data, airfoil_data, wingbox_mat=wingbox_mat, wing_mat=wing_mat, stringer_mat=stringer_mat)
         self.get_wing_structure()
         self.safety_factor = 1.5
         self.lift_function = self.get_lift_function()
@@ -20,6 +21,7 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
         self.moment_function = self.get_moment_function()
 
         self.PLOT = PLOT
+        self.runs = 0
 
         self.engine_power = self.aircraft_data.data['inputs']['engine']['engine_power']
         self.engine_thrust = self.engine_power / self.V
@@ -29,6 +31,7 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
         self.max_load_factor = self.aircraft_data.data['outputs']['general']['nmax']
         self.min_load_factor = self.aircraft_data.data['outputs']['general']['nmin']
         self.evaluate_case = 'max'
+        self.load_factor = self.max_load_factor
         self.drag_array = -self.drag_function(self.b_array)
         self.I_xx_array = np.array([self.wing_structure[i]['I_xx'] for i in range(len(self.wing_structure))])
         self.I_yy_array = np.array([self.wing_structure[i]['I_yy'] for i in range(len(self.wing_structure))])
@@ -39,8 +42,10 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
         self.spar_heights = np.array([self.wing_structure[i]['spar_info']['spar_heights'] for i in range(len(self.wing_structure))])
         self.poisson_ratio = self.material['poisson_ratio']
         self.l_stringer = self.b/2
-        self.widths_top = np.array([self.wing_structure[i]['panel_info']['widths_top'] for i in range(len(self.wing_structure))])
-        self.widths_bottom = np.array([self.wing_structure[i]['panel_info']['widths_bottom'] for i in range(len(self.wing_structure))])
+        self.widths_top = np.array([self.wing_structure[i]['stringers']['top']['spacing'] for i in range(len(self.wing_structure))])
+        self.widths_bottom = np.array([self.wing_structure[i]['stringers']['bottom']['spacing'] for i in range(len(self.wing_structure))])
+
+        self.load_data = {}
 
     def main_analysis(self):
         self.resultant_horizontal_distribution()
@@ -60,6 +65,12 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
         self.column_buckling()
         self.calculate_horizontal_shear_stress()
         self.get_margins()
+        self.runs += 1
+
+        self.evaluate_case = 'min'
+        self.load_factor = self.min_load_factor
+        if self.runs < 2:
+            self.main_analysis()
 
     def resultant_vertical_distribution(self):
         if self.evaluate_case == 'max':
@@ -229,40 +240,42 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
         return self.wing_deflection
 
     def column_buckling(self):
-         k = 1/4 # for one fixed, one free end
-         stringer_I_xx_top = np.array([self.wing_structure[i]['I_xx'] for i in range(len(self.wing_structure))])
-         stringer_I_xx_bottom = np.array([self.wing_structure[i]['I_xx'] for i in range(len(self.wing_structure))])
-         self.sigma_col_top = (k * np.pi**2 * self.E_stringer * stringer_I_xx_top) / (self.l_stringer**2 * self.stringer_area)/1000000
-         self.sigma_col_bottom = (k * np.pi**2 * self.E_stringer * stringer_I_xx_bottom) / (self.l_stringer**2 * self.n_stringers/2*self.stringer_area)/1000000
-     
+        k = 1/4 # for one fixed, one free end
+        stringer_I_xx_top = np.array([self.wing_structure[i]['I_xx'] for i in range(len(self.wing_structure))])
+        stringer_I_xx_bottom = np.array([self.wing_structure[i]['I_xx'] for i in range(len(self.wing_structure))])
+        n_stringers_top = np.array([self.wing_structure[i]['stringers']['top']['n_stringers'] for i in range(len(self.wing_structure))])
+        n_stringers_bottom = np.array([self.wing_structure[i]['stringers']['bottom']['n_stringers'] for i in range(len(self.wing_structure))])
+        top_column_buckling = []
+        bottom_column_buckling = []
+        for y in range(len(self.b_array)):
+            sigma_col_top = np.min((k * np.pi**2 * self.E_stringer * stringer_I_xx_top[y]) / (self.l_stringer**2 * n_stringers_top[y]*self.stringer_area)/1000000)
+            sigma_col_bottom = np.min((k * np.pi**2 * self.E_stringer * stringer_I_xx_bottom[y]) / (self.l_stringer**2 * n_stringers_bottom[y]*self.stringer_area)/1000000)
+            top_column_buckling.append(sigma_col_top)
+            bottom_column_buckling.append(sigma_col_bottom)
 
+        self.sigma_col_top = np.array(top_column_buckling)
+        self.sigma_col_bottom = np.array(bottom_column_buckling)    
+    
     def calculate_critical_buckling_stress(self):
-        # b spacing between stringers, only subtract 2we once and use areabalance
         skin_stresses_top = []
         skin_stresses_bottom = []
-
-        b = 1 #TODO:Change this
 
         factor = self.C * ((np.pi**2 * self.E) / (12 * (1 - self.poisson_ratio**2)))
 
         for y in range(len(self.b_array)):
-            sigma_cr_top = factor * (self.t_skin / self.widths_top[y])**2
+            sigma_cr_top = factor * (self.t_skin / (self.widths_top[y]-self.stringer_width))**2
             sigma_cr_bottom = factor * (self.t_skin / self.widths_bottom[y])**2
-            skin_stresses_top.append(np.min(sigma_cr_top))
-            skin_stresses_bottom.append(np.min(sigma_cr_bottom))
-
-        self.critical_buckling_stress_top = np.array(skin_stresses_top)
-        self.critical_buckling_stress_bottom = np.array(skin_stresses_bottom)
-
-        self.buckling_stress_top_panel = ((self.stringer_area + self.stringer_width*self.t_skin)*self.crippling_stress_stringer + (b - self.stringer_width)*self.t_skin*self.critical_buckling_stress_top) / (self.stringer_area + (b*self.t_skin))
-        self.buckling_stress_bottom_panel = ((self.stringer_area + self.stringer_width*self.t_skin)*self.crippling_stress_stringer + (b - self.stringer_width)*self.t_skin*self.critical_buckling_stress_bottom) / (self.stringer_area + (b*self.t_skin))
-
-
-        return self.buckling_stress_top_panel, self.buckling_stress_bottom_panel
+            buckling_stress_top_panel = ((self.stringer_area + self.stringer_width*self.t_skin)*self.cr_stringer + (self.widths_top[y] - self.stringer_width)*self.t_skin*sigma_cr_top) / (self.stringer_area + (self.widths_top[y]*self.t_skin))
+            buckling_stress_bottom_panel = ((self.stringer_area + self.stringer_width*self.t_skin)*self.cr_stringer + (self.widths_bottom[y] - self.stringer_width)*self.t_skin*sigma_cr_bottom) / (self.stringer_area + (self.widths_bottom[y]*self.t_skin))
+            skin_stresses_top.append(np.min(buckling_stress_top_panel))
+            skin_stresses_bottom.append(np.min(buckling_stress_bottom_panel))
+            
+        self.buckling_stress_top = np.array(skin_stresses_top)
+        self.buckling_stress_bottom = np.array(skin_stresses_bottom)
     
     def calculate_critical_web_stress(self):
       
-        k_s = 10
+        k_s = 15
         
         web_stresses = []
         for y in range(len(self.b_array)):
@@ -278,17 +291,26 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
 
         relevant_stresses = [StressOutput.BENDING_STRESS, StressOutput.BENDING_STRESS_BOTTOM, StressOutput.SHEAR_STRESS]
 
+        self.load_data[self.evaluate_case] = {}
         for i in relevant_stresses:
-            if self.PLOT == True:
-                self.plot(i)
             output = self.get_output(i)
             main_stress = output['main']
             references = output['references']
             labels = output['labels']
 
+            self.load_data[self.evaluate_case][i] = {
+                'main': main_stress,
+                'references': references,
+                'labels': labels,
+                'unit': output['unit']
+            }
+
             for idx,ref in enumerate(references):
                 margin = np.min(abs(ref)/abs(main_stress))
                 print(f'Margin for {i.name}: {margin} ({labels[0]} vs {labels[1:][idx]})')
+        
+        if self.runs == 1 and self.PLOT:
+            self.plot_output()
 
     def get_output(self, output_type: StressOutput):
         output_map = {
@@ -307,22 +329,21 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
             StressOutput.BENDING_STRESS: {
                 'main': self.top_bending_stress,
                 'references': [
-                    np.full_like(self.top_bending_stress, -self.sigma_y / 1e6),
+                    np.full_like(self.top_bending_stress, np.sign(self.load_factor)*self.sigma_y / 1e6),
                     -self.sigma_col_top,
-                    -self.buckling_stress_top
                 ],
                 'labels': ['Top Bending Stress', 'Yield Stress', 'Column Buckling Stress', 'Critical Skin Buckling Stress'],
                 'unit': '[MPa]'
             },
             StressOutput.BENDING_STRESS_BOTTOM: {
                 'main': self.bottom_bending_stress,
-                'references': [np.full_like(self.bottom_bending_stress, self.sigma_y / 1e6)],
+                'references': [np.full_like(self.bottom_bending_stress, np.sign(self.load_factor)*self.sigma_y / 1e6)],
                 'labels': ['Bottom Bending Stress', 'Yield Stress'],
                 'unit': '[MPa]'
             },
             StressOutput.SHEAR_STRESS: {
                 'main': self.shear_stress,
-                'references': [np.full_like(self.shear_stress, -self.sigma_y / 1e6), -self.cr_web_stress],
+                'references': [np.full_like(self.shear_stress, self.sigma_y / 1e6), np.sign(self.load_factor)*self.cr_web_stress],
                 'labels': ['Shear Stress', 'Yield Stress', 'Critical Web Stress'],
                 'unit': '[MPa]'
             },
@@ -376,13 +397,13 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
             },
             StressOutput.SHEAR_STRESS_TOP: {
                 'main': self.max_horizontal_shear_stress_top,
-                'references': [np.full_like(self.max_horizontal_shear_stress_top, self.sigma_y / 1e6)],
+                'references': [np.full_like(self.max_horizontal_shear_stress_top, np.sign(self.load_factor)*self.sigma_y / 1e6)],
                 'labels': ['Horizontal Shear Stress', 'Yield Stress'],
                 'unit': '[MPa]'
             },
             StressOutput.SHEAR_STRESS_BOTTOM: {
                 'main': self.max_horizontal_shear_stress_bottom,
-                'references': [np.full_like(self.max_horizontal_shear_stress_bottom, self.sigma_y / 1e6)],
+                'references': [np.full_like(self.max_horizontal_shear_stress_bottom, np.sign(self.load_factor)*self.sigma_y / 1e6)],
                 'labels': ['Horizontal Shear Stress', 'Yield Stress'],
                 'unit': '[MPa]'
             },
@@ -390,41 +411,53 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
 
         return output_map[output_type]
 
-
-
-    def plot(self, output_type: StressOutput):
+    def plot_output(self):
         plt.figure()
-        
-        output = self.get_output(output_type)
+        color = {'max': 'blue', 'min': 'red'}
+        n_dict = {'max': self.max_load_factor, 'min': self.min_load_factor}
+        all_output_types = set()
 
-        main_line = output['main']
-        references = output.get('references', [])
-        labels = output.get('labels', [])
+        for output_dict in self.load_data.values():
+            all_output_types.update(output_dict.keys())
 
-        plt.plot(self.b_array, main_line, label=labels[0], color='blue')
-        for idx,i in enumerate(references):
-            plt.plot(self.b_array, i, label=labels[idx+1] if output.get('labels') else 'Reference', linestyle='--')
-        plt.xlabel('Spanwise Position (m)')
-        plt.ylabel(output_type.name.replace('_', ' ').title())
-        plt.title(f'{output_type.name.replace("_", " ").title()} Distribution')
-        plt.grid(True)
-        plt.legend()
-        plt.tight_layout()
-        plt.show()
+        for output_type in all_output_types:
+            for load_case in ['max', 'min']:
+                output = self.load_data[load_case][output_type]
+                main_line = output['main']
+                references = output['references']
+                labels = output['labels']
+                unit = output['unit']
 
+                plt.plot(self.b_array, main_line, label=f'{labels[0]} (n={n_dict[load_case]:.2f})', color=color[load_case])
+                for idx, ref in enumerate(references):
+                    plt.plot(self.b_array, ref, label=f'{labels[1:][idx]} (n={n_dict[load_case]:.2f})', linestyle='--',)
+
+            plt.xlabel('Spanwise Position [m]')
+            plt.ylabel(f'{output_type.name} {unit}')
+            plt.title(f'{output_type.name} Distribution')
+            plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+            plt.grid()
+            plt.tight_layout()
+            plt.show()
 
 
 if __name__ == "__main__":
+    stringer_material = Materials.Ti10V2Fe3Al
+    wingbox_material = Materials.Al7075
+    wing_material = Materials.Al5052
 
     stress_analysis = StressAnalysisWing(
         aircraft_data=Data("design3.json"),
         airfoil_aerodynamics=Data("AeroForces.txt", 'aerodynamics'),
         airfoil_data=Data("Airfoil_data.dat", 'airfoil_geometry'),
+        wingbox_mat=wingbox_material,
+        wing_mat=wing_material, stringer_mat=stringer_material,
         PLOT=True
 
     )
 
     stress_analysis.main_analysis()
+
 
 
     
