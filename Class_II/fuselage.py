@@ -3,18 +3,9 @@ import os
 import numpy as np
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from utils import Data  
-
-
 # Define the fuselage cross-section
 
-fuselage_width = 5.0  # meters
-fuselage_height = 5.0  # meters
-fuselage_hull_depth = 1.0  # meters
-fuselage_skin_thickness = 0.05  # meters
-fuselage_rectangle_height = fuselage_height - fuselage_hull_depth  # height of the rectangular cargo hold
-hull_skin_thickness = 0.05
-
-
+'''
 class fuselage_cross_section:
     def __init__(self, width, height, hull_depth, skin_thickness, rectangle_height, moment_y, moment_z, torque_x, hull_skin_thickness, stringers):
         self.width = width
@@ -51,6 +42,9 @@ def calculate_centroid(fus_width, fus_height, fus_rectangle_height, fus_hull_dep
 
 print("Enclosed Area:", calculate_enclosed_area(fuselage_width, fuselage_rectangle_height, fuselage_hull_depth))
 print("Centroid:", calculate_centroid(fuselage_width, fuselage_height, fuselage_rectangle_height, fuselage_hull_depth, fuselage_skin_thickness, stringer_area, number_of_stringers_top + number_of_stringers_sides))
+'''
+aircraft_data = Data("design3.json")
+MTOW = aircraft_data.data['outputs']['max']['MTOW']  # Maximum Takeoff Weight
 
 
-
+#weight_per_unit_length = 
