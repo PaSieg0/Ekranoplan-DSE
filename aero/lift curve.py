@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 class lift_curve():
     def __init__(self):
         #importing lift curve data which is generated from xfoil without WIG
-        self.data=np.loadtxt('aero\\lift curve no WIG.txt')
+        self.data=np.loadtxt('aero\\lift curve WIG.txt')
         #print(self.data)
 
         #angle of attack data
