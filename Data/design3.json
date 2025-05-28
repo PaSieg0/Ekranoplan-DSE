@@ -51,12 +51,12 @@
             "flap_type": "DOUBLE_SLOT",
             "aileron_deflection": 25,
             "aileron_chord": 0.25,
-            "rudder_chord": 0.35,
-            "rudder_deflection": 37,
+            "rudder_chord": 0.3,
+            "rudder_deflection": 35,
             "rudder_start": 0.05,
-            "elevator_start": 0.05,
-            "elevator_chord": 0.40,
-            "elevator_deflection": 30
+            "elevator_start": 0.1,
+            "elevator_chord": 0.4,
+            "elevator_deflection": 35
         }
     },
     "requirements": {
@@ -253,8 +253,22 @@
                 "bank_angle": 73.11607437521981,
                 "turn_radius": 414.5226198424151
             },
-            "rudder": {},
-            "elevator": {}
+            "rudder": {
+                "end": 11.382507848913077,
+                "start": 0.5995078489130667,
+                "chord_ratio": 0.3,
+                "deflection": 35,
+                "area": 26.508811224148005,
+                "CN_OEI": 0.0029331504064317115
+            },
+            "elevator": {
+                "end": 10.279,
+                "area": 25.748649515272927,
+                "start": 1.1953720753270298,
+                "chord_ratio": 0.4,
+                "deflection": 35,
+                "pitch_rate": 9.500116190148336
+            }
         },
         "HLD": {
             "b1": 5.416363005162699,
