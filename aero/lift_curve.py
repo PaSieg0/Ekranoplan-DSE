@@ -46,7 +46,7 @@ class lift_curve():
         #returns cl
         return cl
     
-    def interpolate_Cd(self, alpha):   #gets a cl for a given alpha and linearly interpolates
+    def interpolate_Cd(self, alpha):   #gets a cd for a given alpha and linearly interpolates
         #distance list in alpha
         # print(self.alpha)
         # print(alpha)
@@ -60,23 +60,26 @@ class lift_curve():
 
         #uses point below
         if dist[ind] > 0:
-            cl=self.cd_lst[ind-1]+(alpha-self.alpha[ind-1])*(self.cd_lst[ind]-self.cd_lst[ind-1])/(self.alpha[ind]-self.alpha[ind-1])
+            cd=self.cd_lst[ind-1]+(alpha-self.alpha[ind-1])*(self.cd_lst[ind]-self.cd_lst[ind-1])/(self.alpha[ind]-self.alpha[ind-1])
         
         #uses point ahead
         elif dist[ind]<0:
-            cl=self.cd_lst[ind]+(alpha-self.alpha[ind])*(self.cd_lst[ind+1]-self.cd_lst[ind])/(self.alpha[ind+1]-self.alpha[ind])
+            cd=self.cd_lst[ind]+(alpha-self.alpha[ind])*(self.cd_lst[ind+1]-self.cd_lst[ind])/(self.alpha[ind+1]-self.alpha[ind])
         
         #uses selected alpha
         elif dist[ind]==0:
-            cl=self.cd_lst[ind]
+            cd=self.cd_lst[ind]
 
         #returns cl
-        return cl
+        return cd
     
-    def calc_drag(self,AR,e,h_b,alpha='n',cl='n',CD_0=0.0234):   #calculates the drag using method from paper
+    def calc_drag(self,h_b='no',AR=8,e=0.85,alpha='n',cl='n',CD_0=0.00632):   #calculates the drag for only the wing using method from paper the values still need to be updated
         
         #correction factor
-        sigma=np.exp(-2.48*(h_b)**(0.768))
+        if h_b=='no':
+            sigma=np.exp(-2.48*(h_b)**(0.768))
+        else: 
+            sigma=0
 
         # calculates cl for given alpha
         if cl=='n':
@@ -120,7 +123,7 @@ class lift_curve():
 
 
 
-if __name__ == "__main__":  #if run seperately
+if __name__ == "__main__":  #if run seperately  
     #defines instance
     curves=lift_curve()
 
