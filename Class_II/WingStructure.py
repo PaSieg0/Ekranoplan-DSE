@@ -402,6 +402,22 @@ class WingStructure:
         self.crippling_stress_stringer = np.sum(crippling_stress * areas) / np.sum(areas) / 1e6
 
         return self.crippling_stress_stringer
+    
+    def calculate_stringer_moments_inertia(self):
+
+        """Calculates the moments of inertia for the stringers based on their area. 
+        These equations were derived by hand using an I-shaped stringer keeping the length and thickness as a variable.
+        For the centroid, the distances are taken with the lower left corner as the origin. With x-axis positive to the
+        right and y-axis positive upwards."""
+
+        L, t = self.calculate_stringer_thickness()  # mm
+        self.x_centroid_stringer = 0.5*L
+        self.y_centroid_stringer = 0.3375*L
+
+        self.I_xx_stringer = 0.3235609375*(L**3)*t # mm^4
+        self.I_yy_stringer = 0.1184895833*(L**3)*t # mm^4
+        self.I_xy_stringer = 0                     # mm^4
+        return self.I_xx_stringer, self.I_yy_stringer, self.I_xy_stringer, self.x_centroid_stringer, self.y_centroid_stringer
 
     
     def get_stringer_placement(self):
