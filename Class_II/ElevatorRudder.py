@@ -43,18 +43,22 @@ class ElevatorRudder:
         self.chord_tip_h = self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['chord_tip']
         self.b_v = self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['b']
         self.b_h = self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['b']
-        self.elevator_start = self.aircraft_data.data['inputs']['control_surfaces']['elevator_start']*self.b_h/2
+        self.elevator_start = self.aircraft_data.data['inputs']['control_surfaces']['elevator_start']
         self.rudder_start = self.aircraft_data.data['inputs']['control_surfaces']['rudder_start']*self.b_v
         self.sweep_v = self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['sweep']
         self.taper_v = self.chord_tip_v / self.chord_root_v
         self.sweep_h = self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['sweep']
+
+        self.vertical_tail_thickness = self.aircraft_data.data['inputs']['airfoils']['vertical_tail']*self.chord_root_v/2
+        print(f"Vertical tail thickness: {self.vertical_tail_thickness}")
+        self.elevator_start = self.vertical_tail_thickness + self.elevator_start
 
         self.MAC = self.aircraft_data.data['outputs']['wing_design']['MAC']
 
         self.nmax = self.aircraft_data.data['outputs']['general']['nmax']
         self.climb_rate = self.aircraft_data.data['requirements']['climb_rate']
 
-        self.engine_thrust = 0.8*self.engine_power * self.prop_efficiency / self.V
+        self.engine_thrust = 0.75*self.engine_power * self.prop_efficiency / self.V
 
         self.prop_diameter = 5.2 # TODO link to json
         high_altitude = self.aircraft_data.data['requirements']['high_altitude']
@@ -97,7 +101,7 @@ class ElevatorRudder:
         for b in self.b_test:
             integral_test, _ = quad(self.chord_v,self.rudder_start, b)
             cndr_test = integral_test * -(self.airfoil_cl_alpha * self.control_surface_effectiveness(self.rudder_chord_ratio)*self.l_v) / (self.S * self.b)
-            #print(integral, integral_test)
+            #print(cndr_test, CNe_dr)
             if abs(CNe_dr - cndr_test) < tolerance:
                 self.rudder_end = b
                 break
@@ -167,38 +171,71 @@ class ElevatorRudder:
 
 
     def plot_horizontal_tail(self):
-        b = np.arange(0, self.b_h/2 + 0.001, 0.001)
+        b_half = np.arange(0, self.b_h/2 + 0.001, 0.001)
+
+        # Main tail
         y_root_LE = self.chord_root_h / 2
-        leading_edge_h = y_root_LE + np.tan(self.sweep_h) * b
-        trailing_edge_h = leading_edge_h - self.chord_h(b)
+        leading_edge_h = y_root_LE - np.tan(np.deg2rad(self.sweep_h)) * b_half
+        trailing_edge_h = leading_edge_h - self.chord_h(b_half)
 
-        y_root_TE = trailing_edge_h[0]
-        y_tip_LE = leading_edge_h[-1]
-        y_tip_TE = trailing_edge_h[-1]
-
+        # Elevator
         b_elevator = np.array([self.elevator_start, self.elevator_end])
-        le_elevator = y_root_LE + np.tan(self.sweep_h) * b_elevator
+        le_elevator = y_root_LE - np.tan(np.deg2rad(self.sweep_h)) * b_elevator
         te_elevator = le_elevator - self.chord_h(b_elevator)
         le_elevator_actual = te_elevator + self.chord_h(b_elevator) * self.elevator_chord_ratio
 
-        plt.figure(figsize=(10, 6))
-        plt.plot(b, leading_edge_h, color='green')
-        plt.plot(b, trailing_edge_h, color='green')
-        plt.plot([0, 0], [y_root_LE, y_root_TE], color='green',)
-        plt.plot([self.b_h/2, self.b_h/2], [y_tip_LE, y_tip_TE], color='green')
-        plt.plot(b_elevator, le_elevator_actual, color='red', )
-        plt.plot(b_elevator, te_elevator, color='red',)
+        # Mirror for left side
+        b_half_mirror = -b_half
+        leading_edge_h_mirror = leading_edge_h
+        trailing_edge_h_mirror = trailing_edge_h
+
+        b_elevator_mirror = -b_elevator
+        le_elevator_mirror = le_elevator
+        te_elevator_mirror = te_elevator
+        le_elevator_actual_mirror = le_elevator_actual
+
+        # Plotting
+        plt.figure(figsize=(10, 5))
+
+        # Horizontal tail (right and left)
+        plt.plot(b_half, leading_edge_h, color='green', label='Horizontal Tail LE')
+        plt.plot(b_half, trailing_edge_h, color='green', label='Horizontal Tail TE')
+        plt.plot(b_half_mirror, leading_edge_h_mirror, color='green')
+        plt.plot(b_half_mirror, trailing_edge_h_mirror, color='green')
+        plt.plot([0, 0], [y_root_LE, trailing_edge_h[0]], color='green')  # Root vertical line
+
+        # Tip vertical lines
+        plt.plot([self.b_h/2, self.b_h/2], [leading_edge_h[-1], trailing_edge_h[-1]], color='green')
+        plt.plot([-self.b_h/2, -self.b_h/2], [leading_edge_h[-1], trailing_edge_h[-1]], color='green')
+
+        # Elevator (right and left)
+        # Right
+        plt.plot(b_elevator, le_elevator_actual, color='red', label='Elevator LE')
+        plt.plot(b_elevator, te_elevator, color='red', label='Elevator TE')
         plt.plot([b_elevator[0], b_elevator[0]], [le_elevator_actual[0], te_elevator[0]], color='red')
         plt.plot([b_elevator[1], b_elevator[1]], [le_elevator_actual[1], te_elevator[1]], color='red')
+        # Left (mirror)
+        plt.plot(b_elevator_mirror, le_elevator_actual_mirror, color='red')
+        plt.plot(b_elevator_mirror, te_elevator_mirror, color='red')
+        plt.plot([b_elevator_mirror[0], b_elevator_mirror[0]], [le_elevator_actual_mirror[0], te_elevator_mirror[0]], color='red')
+        plt.plot([b_elevator_mirror[1], b_elevator_mirror[1]], [le_elevator_actual_mirror[1], te_elevator_mirror[1]], color='red')
+
+        # Final touches
+        plt.title('Horizontal Tail and Elevator Planform')
+        plt.xlabel('Spanwise Position (m)')
+        plt.ylabel('Chordwise Position (m)')
+        plt.ylim(-5, 5)
+        plt.xlim(-self.b_h/2 - 1, self.b_h/2 + 1)
         plt.gca().set_aspect('equal')
+        plt.grid(True)
         plt.show()
+
 
     def plot_vertical_tail(self):
         b = np.arange(0, self.b_v + 0.001, 0.001)
         x_root_LE = 0
-        leading_edge_v = x_root_LE + np.tan(self.sweep_v) * b
+        leading_edge_v = x_root_LE + np.tan(np.deg2rad(self.sweep_v)) * b
         x_root_TE = x_root_LE + self.chord_root_v
-
         x_tip_LE = leading_edge_v[-1]
         x_tip_TE = x_tip_LE + self.chord_tip_v
 
@@ -209,8 +246,8 @@ class ElevatorRudder:
 
         trailing_edge_v = leading_edge_v + self.chord_v(b)
 
-        x_tail_TE_root = x_root_LE + np.tan(self.sweep_v) * y_rudder_root + c_rudder_root
-        x_tail_TE_tip = x_root_LE + np.tan(self.sweep_v) * y_rudder_tip + c_rudder_tip
+        x_tail_TE_root = x_root_LE + np.tan(np.deg2rad(self.sweep_v)) * y_rudder_root + c_rudder_root
+        x_tail_TE_tip = x_root_LE + np.tan(np.deg2rad(self.sweep_v)) * y_rudder_tip + c_rudder_tip
 
         x_rudder_LE_root = x_tail_TE_root - self.rudder_chord_ratio * c_rudder_root
         x_rudder_LE_tip = x_tail_TE_tip - self.rudder_chord_ratio * c_rudder_tip
@@ -229,7 +266,6 @@ class ElevatorRudder:
         plt.plot([x_rudder_LE_tip, x_rudder_TE_tip], [y_rudder_tip, y_rudder_tip], color='red')
         plt.plot([x_rudder_LE_root, x_rudder_LE_tip], [y_rudder_root, y_rudder_tip], color='red')
         plt.plot([x_rudder_TE_root, x_rudder_TE_tip], [y_rudder_root, y_rudder_tip], color='red')
-
         plt.gca().set_aspect('equal')
         plt.title('Vertical Tail Chord Distribution with Rudder')
         plt.xlabel('Chordwise Position (m)')

@@ -5,7 +5,7 @@ import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from utils import Data, FlapType
 from scipy.integrate import quad
-from scipy.interpolate import CubicSpline
+from ..Optimum_Performance.Optimum_turn import OptimumTurns
 
 
 class AileronHLD:
@@ -107,7 +107,7 @@ class AileronHLD:
         tolerance = 0.0001
         for b in self.b_test:
             ratio = self.Clda_Clp_ratio(b)
-            print(ratio, self.required_Cla_Clp)
+            #print(ratio, self.required_Cla_Clp)
             if abs(ratio - self.required_Cla_Clp) < tolerance:
                 self.aileron_start = b
                 break

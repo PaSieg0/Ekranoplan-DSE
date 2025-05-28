@@ -4,7 +4,7 @@
         "cruise_altitude": 10,
         "aircraft_type": "PROP",
         "wing_type": "HIGH",
-        "tail_type": "CONVENTIONAL",
+        "tail_type": "T_TAIL",
         "n_wings": 1,
         "n_fuselages": 1,
         "depth": 0.1,
@@ -17,9 +17,9 @@
         "aspect_h": 4.5,
         "aspect_v": 1.5,
         "sweep_hc4": 10,
-        "sweep_vc4": 10,
-        "h_position": 0.9376107824411253,
-        "v_position": 0.8970745343562955,
+        "sweep_vc4": 15,
+        "h_position": 0.9515784144313126,
+        "v_position": 0.8985724650673726,
         "tfo": 0.001,
         "n_engines": 6.0,
         "CLmax_clean": 1.6,
@@ -48,12 +48,17 @@
             "flap_type": "DOUBLE_SLOT",
             "aileron_deflection": 25,
             "aileron_chord": 0.25,
-            "rudder_chord": 0.3,
-            "rudder_deflection": 35,
-            "rudder_start": 0.05,
-            "elevator_start": 0.1,
-            "elevator_chord": 0.4,
+            "rudder_chord": 0.36,
+            "rudder_deflection": 40,
+            "rudder_start": 0.03,
+            "elevator_start": 0.3,
+            "elevator_chord": 0.33,
             "elevator_deflection": 35
+        },
+        "airfoils": {
+            "wing": 0.14,
+            "horizontal_tail": 0.12,
+            "vertical_tail": 0.12
         }
     },
     "requirements": {
@@ -226,67 +231,67 @@
         },
         "empennage_design": {
             "vertical_tail": {
-                "S": 76.07477242254149,
-                "l_v": 35.48183993391456,
-                "b": 10.682329270052119,
-                "chord_root": 10.433795619634568,
-                "chord_tip": 3.8093100737682573,
-                "sweep": 25.938031088089183,
-                "taper": 0.36509341496011344,
+                "S": 75.83440736709044,
+                "l_v": 35.59430332249141,
+                "b": 10.665440030802088,
+                "chord_root": 10.552213807635024,
+                "chord_tip": 3.668372900101094,
+                "sweep": 30.568917073525085,
+                "taper": 0.3476401224401702,
                 "aspect_ratio": 1.5,
-                "LE_pos": 64.34437546813132,
-                "relative_pos_mac/4": 0.8970745343562955,
-                "MAC": 7.635062209196207,
-                "sweep_c_4": 10
+                "LE_pos": 64.22595728013086,
+                "relative_pos_mac/4": 0.8985724650673726,
+                "MAC": 7.665676740575285,
+                "sweep_c_4": 15
             },
             "horizontal_tail": {
-                "S": 99.74020283736353,
-                "l_h": 38.525228652197555,
-                "b": 21.18562986479599,
-                "chord_root": 6.897575940427495,
-                "chord_tip": 2.51825955503739,
+                "S": 97.0971977546472,
+                "l_h": 39.57389305750675,
+                "b": 20.903047382999265,
+                "chord_root": 6.805573288626886,
+                "chord_tip": 2.4846699927061193,
                 "sweep": 15.62539227213675,
                 "taper": 0.36509341496011344,
-                "MAC": 5.047388631871958,
+                "MAC": 4.980064525140675,
                 "sweep_c_4": 10,
                 "aspect_ratio": 4.5,
-                "tail_height": 8.832726010325398,
-                "LE_pos": 67.88059514733837,
-                "relative_pos_mac/4": 0.9376107824411253
+                "tail_height": 19.498166041127487,
+                "LE_pos": 68.9627855902991,
+                "relative_pos_mac/4": 0.9515784144313126
             }
         },
         "control_surfaces": {
             "aileron": {
-                "b1": 26.263,
-                "b2": 33.84471167101082,
-                "area_single": 21.71997919713351,
-                "roll_rate": 17.432557805494895,
+                "b1": 24.88,
+                "b2": 31.33200057495772,
+                "area_single": 17.209292938706774,
+                "roll_rate": 17.229900347383964,
                 "bank_angle": 73.11607437521981,
-                "turn_radius": 414.5226198424151
+                "turn_radius": 410.939791293906
             },
             "rudder": {
-                "end": 11.382507848913077,
-                "start": 0.5995078489130667,
-                "chord_ratio": 0.3,
-                "deflection": 35,
-                "area": 26.508811224148005,
-                "CN_OEI": 0.0029331504064317115
+                "end": 9.906963200924071,
+                "start": 0.31996320092406266,
+                "chord_ratio": 0.36,
+                "deflection": 40,
+                "area": 25.741064345799252,
+                "CN_OEI": 0.0037307631996182475
             },
             "elevator": {
-                "end": 10.279,
-                "area": 25.748649515272927,
-                "start": 1.1953720753270298,
-                "chord_ratio": 0.4,
+                "end": 9.732,
+                "area": 17.120241955639553,
+                "start": 0.9331328284581013,
+                "chord_ratio": 0.33,
                 "deflection": 35,
-                "pitch_rate": 9.500116190148336
+                "pitch_rate": 9.541520545196612
             }
         },
         "HLD": {
             "b1": 5.416363005162699,
-            "b2": 24.12170825664208,
+            "b2": 22.358634663816837,
             "flapped_area_single": 170.34351328250182,
-            "flap_area": 67.21885015029379,
-            "Swf_single": 170.34351328250182
+            "flap_area": 56.60086005376283,
+            "Swf_single": 142.05270870317577
         }
     },
     "kinematic_viscosity": 1.006e-06,
