@@ -14,25 +14,29 @@ def P_PTO_comparison():
         Ps.append(aircraft_data.data['outputs']['design']['P'] / 1e6)
         P_TOs.append(aircraft_data.data['outputs']['general']['take_off_power'] / 1e6)
 
-    # Labels and positions
+    # Labels and values (flipped for top-to-bottom order)
     designs = ['Design 2', 'Design 7', 'Design 10']
-    x = list(range(len(designs)))
-    bar_width = 0.35
-    x1 = [i - bar_width / 2 for i in x]
-    x2 = [i + bar_width / 2 for i in x]
+    designs_flipped = designs[::-1]
+    Ps_flipped = Ps[::-1]
+    P_TOs_flipped = P_TOs[::-1]
+
+    y = list(range(len(designs)))
+    bar_height = 0.35
+    y1 = [i - bar_height / 2 for i in y]
+    y2 = [i + bar_height / 2 for i in y]
 
     # Create the figure and axis
-    fig, ax = plt.subplots(figsize=(8, 6))
+    fig, ax = plt.subplots(figsize=(10, 6))
 
-    # Plot bars on the same axis
-    bars1 = ax.bar(x1, Ps, width=bar_width, color='blue', label='Design Power (MW)')
-    bars2 = ax.bar(x2, P_TOs, width=bar_width, color='orange', label='Take-off Power (MW)')
+    # Plot horizontal bars
+    bars1 = ax.barh(y1, Ps_flipped, height=bar_height, color='blue', label='Design Power (MW)')
+    bars2 = ax.barh(y2, P_TOs_flipped, height=bar_height, color='orange', label='Take-off Power (MW)')
 
     # Titles and labels
     ax.set_title('Power vs Take-off Power by Design')
-    ax.set_ylabel('Power (MW)')
-    ax.set_xticks(x)
-    ax.set_xticklabels(designs)
+    ax.set_xlabel('Power (MW)')
+    ax.set_yticks(y)
+    ax.set_yticklabels(designs_flipped)
 
     # Legend
     ax.legend(loc='upper left', bbox_to_anchor=(1.05, 1))

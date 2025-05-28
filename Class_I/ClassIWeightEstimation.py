@@ -49,6 +49,7 @@ class ClassI:
             2: 0.985,
             3: 0.995
         } # Raymers
+        self.climb_fraction = 0.985
 
 
     def calculate_LD(self) -> float:
@@ -115,6 +116,9 @@ class ClassI:
         self.Mff = 1
         for fraction in self.fuel_fractions.values():
             self.Mff *= fraction
+
+        if self.mission_type == MissionType.ALTITUDE:
+            self.Mff *= self.climb_fraction
 
         if self.mission_type == MissionType.DESIGN or self.mission_type == MissionType.ALTITUDE:
             self.Mff **= 2
