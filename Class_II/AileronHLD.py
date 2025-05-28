@@ -5,10 +5,10 @@ import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from utils import Data, FlapType
 from scipy.integrate import quad
-from scipy.interpolate import CubicSpline
 
 
-class MobileSurfaceDesign:
+
+class AileronHLD:
     def __init__(self, aircraft_data: Data):
         self.aircraft_data = aircraft_data
         self.design_number = aircraft_data.data['design_id']
@@ -24,7 +24,6 @@ class MobileSurfaceDesign:
         self.root_chord = self.aircraft_data.data['outputs']['wing_design']['chord_root']
         self.tip_chord = self.aircraft_data.data['outputs']['wing_design']['chord_tip']
 
-        self.object_distance = self.aircraft_data.data['inputs']['object_distance']
         self.d_fuselage = self.aircraft_data.data['outputs']['general']['d_fuselage']
         self.V = self.aircraft_data.data['requirements']['cruise_speed']
 
@@ -32,9 +31,12 @@ class MobileSurfaceDesign:
 
         self.max_aileron_deflection = np.deg2rad(self.aircraft_data.data['inputs']['control_surfaces']['aileron_deflection'])
 
-        #self.aileron_start = 0.6*self.b/2
+        self.turn_radius = 1300 #TODO link to turn performance class
+        self.object_distance = self.turn_radius*1.195
 
         self.aileron_end = self.aircraft_data.data['inputs']['control_surfaces']['aileron_end']*self.b/2
+
+        self.nmax = self.aircraft_data.data['outputs']['general']['nmax']
 
         self.flap_start = 1 + self.d_fuselage/2
 
@@ -76,8 +78,8 @@ class MobileSurfaceDesign:
 
     def calculate_yaw_rate(self):
 
-        self.bank_angle = np.arcsin((0.75+self.cruise_altitude + self.d_fuselage + np.tan(np.deg2rad(self.dihedral))*self.b/2)/(self.b/2))
-        self.turn_radius = self.V**2/(9.81*np.tan(self.bank_angle))
+        self.bank_angle = np.arctan(self.V**2/(self.turn_radius*9.81))
+        #print(self.turn_radius, np.rad2deg(self.bank_angle))
         if (self.object_distance)/self.turn_radius < 1.03:
             raise ValueError("This is NOT doable")
         
@@ -338,7 +340,7 @@ class MobileSurfaceDesign:
 
 if __name__ == "__main__":
     aircraft_data = Data("design3.json")
-    control_surface = MobileSurfaceDesign(aircraft_data=aircraft_data)
+    control_surface = AileronHLD(aircraft_data=aircraft_data)
     control_surface.main()
     control_surface.plot_wing()
     # print(f"Bank angle: {np.rad2deg(control_surface.bank_angle)}")

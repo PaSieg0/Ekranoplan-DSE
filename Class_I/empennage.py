@@ -206,7 +206,7 @@ class Empennage:
 
 
 if __name__ == "__main__":
-    data = Data("design1.json")
+    data = Data("design3.json")
 
     empennage = Empennage(data)
     empennage.run_iteration()
