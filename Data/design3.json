@@ -178,15 +178,23 @@
     },
     "outputs": {
         "general": {
-            "d_fuselage": 8.832726010325398,
-            "r_fuselage": 4.416363005162699,
-            "l_fuselage": 75.07817108776588,
-            "l_tailcone": 39.747267046464295,
-            "l_nose": 13.249089015488098,
-            "l_cargo_straight": 15.316351424067726,
+            "h_fuselage_straight": 8.963
+            "w_fuselage": 6.430
+            "d_fuselage_equivalent_straight": 7.590,
+            "r_fuselage_equivalent_straight": 3.795,
+            "step_depth": 0.464,
+            "h_afterbody": 6.836,
+            "l_fuselage": 69.252,
+            "l_tailcone": 30.252,
+            "l_nose": 13.000,
+            "l_cargo_straight": 26.000,
             "Re": 4837280592.753655,
             "Cd": 0.0012700434697589557,
-            "hull_surface": 227.12738815886908,
+            "hull_depth": 2.713,
+            "hull_surface": 420.472,
+            "hull_nose_surface": 78.58,
+            "hull_tail_surface": 139.684,
+            "hull_straight_surface": 202.208
             "take_off_power": 46205736.735140644,
             "take_off_thrust": null,
             "V_lof": 64.8165,
