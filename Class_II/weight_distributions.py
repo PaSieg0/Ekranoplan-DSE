@@ -167,4 +167,5 @@ def output_load_distributions(data, component_masses, nacelle_length=0.0):
     x_LE_horizontal_tail = data.data['outputs']['empennage_design']['horizontal_tail']['LE_pos']  # Leading edge of the horizontal tail
     x_MAC_horizontal_tail = data.data['outputs']['empennage_design']['horizontal_tail']['MAC']  # Mean Aerodynamic Chord of the horizontal tail
 
+    # Only cargo and 
 calculate_cg(data, component_masses, nacelle_length=0, plot=False)  # Calculate CG to ensure it is correct
