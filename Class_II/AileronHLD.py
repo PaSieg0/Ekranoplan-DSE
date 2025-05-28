@@ -8,7 +8,7 @@ from scipy.integrate import quad
 from scipy.interpolate import CubicSpline
 
 
-class MobileSurfaceDesign:
+class AileronHLD:
     def __init__(self, aircraft_data: Data):
         self.aircraft_data = aircraft_data
         self.design_number = aircraft_data.data['design_id']
@@ -35,6 +35,8 @@ class MobileSurfaceDesign:
         #self.aileron_start = 0.6*self.b/2
 
         self.aileron_end = self.aircraft_data.data['inputs']['control_surfaces']['aileron_end']*self.b/2
+
+        self.nmax = self.aircraft_data.data['outputs']['general']['nmax']
 
         self.flap_start = 1 + self.d_fuselage/2
 
@@ -76,7 +78,7 @@ class MobileSurfaceDesign:
 
     def calculate_yaw_rate(self):
 
-        self.bank_angle = np.arcsin((0.75+self.cruise_altitude + np.tan(np.deg2rad(self.dihedral))*self.b/2)/(self.b/2))
+        self.bank_angle = np.arccos(1/self.nmax)
         self.turn_radius = self.V**2/(9.81*np.tan(self.bank_angle))
         print(self.turn_radius, np.rad2deg(self.bank_angle))
         if (self.object_distance)/self.turn_radius < 1.03:
@@ -105,7 +107,7 @@ class MobileSurfaceDesign:
         tolerance = 0.0001
         for b in self.b_test:
             ratio = self.Clda_Clp_ratio(b)
-            #print(ratio, self.required_Cla_Clp)
+            print(ratio, self.required_Cla_Clp)
             if abs(ratio - self.required_Cla_Clp) < tolerance:
                 self.aileron_start = b
                 break
@@ -339,7 +341,7 @@ class MobileSurfaceDesign:
 
 if __name__ == "__main__":
     aircraft_data = Data("design3.json")
-    control_surface = MobileSurfaceDesign(aircraft_data=aircraft_data)
+    control_surface = AileronHLD(aircraft_data=aircraft_data)
     control_surface.main()
     control_surface.plot_wing()
     # print(f"Bank angle: {np.rad2deg(control_surface.bank_angle)}")

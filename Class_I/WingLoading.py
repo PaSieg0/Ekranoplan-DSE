@@ -35,6 +35,7 @@ class WingLoading:
         self.r_float = self.aircraft_data.data['inputs']['r_float']
         self.cruise_altitude = self.aircraft_data.data['inputs']['cruise_altitude']
         self.high_altitude = self.aircraft_data.data['requirements']['high_altitude']
+        self.climb_rate = self.aircraft_data.data['requirements']['climb_rate']
         self.isa_cruise = ISA(self.cruise_altitude)
         self.isa_high = ISA(self.high_altitude)
         self.WS = np.arange(1, 10000, 1)
@@ -124,8 +125,7 @@ class WingLoading:
 
     def climb_rate_requirement(self):
         x = self.WS.copy()
-        c = 5.08
-
+        c = self.climb_rate
         Cd = 4*self.Cd0
         Cl = [np.sqrt(3*self.Cd0*np.pi*A*self.e) for A in self.k**2 * self.aspect_ratios]
 
