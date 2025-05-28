@@ -55,7 +55,8 @@ class ElevatorRudder:
 
         self.MAC = self.aircraft_data.data['outputs']['wing_design']['MAC']
 
-        self.nmax = self.aircraft_data.data['outputs']['general']['nmax']
+        self.nmax = 2.5 #TODO ask jaime which value and speed
+        #self.aircraft_data.data['outputs']['general']['nmax']
         self.climb_rate = self.aircraft_data.data['requirements']['climb_rate']
 
         self.engine_thrust = 0.75*self.engine_power * self.prop_efficiency / self.V
@@ -111,13 +112,12 @@ class ElevatorRudder:
         self.rudder_area = self.rudder_chord_ratio * self.chord_v((self.rudder_end-self.rudder_start)/2) * (self.rudder_end - self.rudder_start)
 
     def calculate_pitch_rate(self):
-        pitch_rate = (self.nmax-1)*9.81/(self.V*np.sqrt(1-(self.climb_rate/self.V)**2))*0.8
+        pitch_rate = (self.nmax-1)*9.81/(self.V*np.sqrt(1-(self.climb_rate/self.V)**2))*0.85
         return pitch_rate
     
     def calculate_Cmde_Cmq(self,b):
         self.pitch_rate = self.calculate_pitch_rate()
         integral, _ = quad(self.chord_h, self.elevator_start, b)
-        integral*=2
         elevator_effectiveness = self.control_surface_effectiveness(self.elevator_chord_ratio)
         ratio = (self.airfoil_cl_alpha * elevator_effectiveness)/(self.Sh*self.l_h*self.tail_lift_slope)*integral
         return ratio
