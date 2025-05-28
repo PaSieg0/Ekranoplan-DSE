@@ -360,56 +360,49 @@ class WingStructure:
 
         return L_stringer, min(t_stringer1, t_stringer2) 
 
-
+    
     def crippling_stress_stringer(self):
         alpha = 0.8
         n = 0.6
-        L_stringer0 = self.calculate_stringer_thickness()[0] # mm
-        t_stringer0 = self.calculate_stringer_thickness()[1] # mm
-        C_1234 = 0.425
-        C_5 = 4.0
-        crippling_yield_ratio_list = []
-        crippling_stress_list = []
-        areas_list = []
+        L0, t0 = self.calculate_stringer_thickness()  # mm
+        C_values = [0.425, 0.425, 0.425, 0.425, 4.0]
+        
+        E = self.E_stringer
+        nu = self.poisson_ratio_stringer
+        sigma_y = self.sigma_y_stringer
+        
+        crippling_stress = []
+        areas = []
 
-        for i in range(5):
-            C = C_1234 if i < 4 else C_5
+        for i, C in enumerate(C_values):
             if i < 2:
-                L_stringer = 0.5*L_stringer0 - 0.5*t_stringer0
-                t_stringer = t_stringer0 
-            elif i < 4 and i >= 2:
-                L_stringer = 0.75*L_stringer0 - 0.5*t_stringer0 
-                t_stringer = t_stringer0
+                L = 0.5 * L0 - 0.5 * t0
+                t = t0
+            elif i < 4:
+                L = 0.75 * L0 - 0.5 * t0
+                t = t0
             else:
-                L_stringer = t_stringer0
-                t_stringer = 0.75*L_stringer0
+                L = t0
+                t = 0.75 * L0
 
-            sigma_cc_sigma_y = alpha * ((C / self.sigma_y_stringer) * ((np.pi**2 * self.E_stringer) / (12 * (1 - self.poisson_ratio_stringer**2)))*(((t_stringer / L_stringer)**2)))**(1 - n)
-            crippling_yield_ratio_list.append(sigma_cc_sigma_y)
+            # Crippling stress to yield ratio
+            sigma_cr_sigma_y = alpha * (((C / sigma_y) * ((np.pi**2 * E) / (12 * (1 - nu**2))) * ((t / L) ** 2)) ** (1 - n))
 
-        for i in crippling_yield_ratio_list:
-            if i > 1.0:
-                crippling_stress_list.append(self.sigma_y_stringer)
-            else: 
-                crippling_stress_list.append(i * self.sigma_y_stringer)
+            # Effective crippling stress
+            stress = min(sigma_cr_sigma_y, 1.0) * sigma_y
+            crippling_stress.append(stress)
 
-        for i in range(5):
-            if i < 2:
-                A = (0.5*L_stringer0 - 0.5*t_stringer0) * t_stringer0
-                areas_list.append(A)
-            elif i < 4 and i >= 2:
-                A = (0.75*L_stringer0 - 0.5*t_stringer0) * t_stringer0
-                areas_list.append(A)
-            else:
-                A = t_stringer0 * (0.75*L_stringer0)
-                areas_list.append(A)
+            # Area
+            A = L * t
+            areas.append(A)
 
-        areas_array = np.array(areas_list)
-        crippling_stress_array = np.array(crippling_stress_list)
-
-        self.crippling_stress_stringer = (np.sum(crippling_stress_array * areas_array) / np.sum(areas_array)) / 1000000 # Convert to MPa
+        # Weighted average and conversion to MPa
+        crippling_stress = np.array(crippling_stress)
+        areas = np.array(areas)
+        self.crippling_stress_stringer = np.sum(crippling_stress * areas) / np.sum(areas) / 1e6
 
         return self.crippling_stress_stringer
+
     
     def get_stringer_placement(self):
         spar_info = self.spar_info
@@ -857,3 +850,5 @@ if __name__ == "__main__":
     #3187
     wing_structure.plot_airfoil(chord_idx=0)
     wing_structure.plot_moment_of_inertia()
+    print(f"Stringer Length, thickness in mm:{wing_structure.calculate_stringer_thickness()}")
+    print(f"Crippling stress stringer in MPa: {wing_structure.crippling_stress_stringer()}")
