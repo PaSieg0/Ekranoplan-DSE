@@ -112,7 +112,7 @@ class ElevatorRudder:
         self.rudder_area = self.rudder_chord_ratio * self.chord_v((self.rudder_end-self.rudder_start)/2) * (self.rudder_end - self.rudder_start)
 
     def calculate_pitch_rate(self):
-        pitch_rate = (self.nmax-1)*9.81/(self.V*np.sqrt(1-(self.climb_rate/self.V)**2))*0.85
+        pitch_rate = (self.nmax-1)*9.81/(self.V*np.sqrt(1-(self.climb_rate/self.V)**2))*0.7
         return pitch_rate
     
     def calculate_Cmde_Cmq(self,b):
@@ -136,12 +136,12 @@ class ElevatorRudder:
             if abs(ratio - self.required_Cmde_Cmq) < tolerance:
                 self.elevator_end = b
                 break
-
-        self.elevator_area = self.elevator_chord_ratio * self.chord_h((self.elevator_end-self.elevator_start)/2) * (self.elevator_end - self.elevator_start)
         
         if not hasattr(self, 'elevator_end'):
             raise ValueError("Aint gonna work cuh")
         
+        self.elevator_area = self.elevator_chord_ratio * self.chord_h((self.elevator_end-self.elevator_start)/2) * (self.elevator_end - self.elevator_start)
+
     def main(self):
         self.calculate_required_rudder_surface()
         if self.plot:
