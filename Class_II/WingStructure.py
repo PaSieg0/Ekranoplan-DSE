@@ -2,6 +2,8 @@ import os
 import sys
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.patches as patches
+import matplotlib.transforms as transforms
 from scipy.integrate import quad
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -43,6 +45,8 @@ class WingStructure:
         self.n_cells = self.aircraft_data.data['inputs']['structures']['wing_box']['n_cells']
         self.fuel_volume = self.aircraft_data.data['outputs']['max']['max_fuel_L']/1000
 
+        self.L_stringer = self.aircraft_data.data['inputs']['structures']['wing_box']['L_stringer']
+
         self.C = self.aircraft_data.data['inputs']['structures']['wing_box']['C']
 
         self.fuel_density = 0.82 # TODO link to json data
@@ -67,6 +71,51 @@ class WingStructure:
 
     def chord_span_function(self,y):
         return self.chord_root + (self.chord_tip - self.chord_root) / (self.b/2) * y
+            
+    def draw_I_beam(self, x, y, L, thickness, color, top=True, angle=0):
+        if top:
+            top_w = L
+            bottom_w = 0.75 * L
+        else:
+            top_w = 0.75 * L
+            bottom_w = L
+
+        web_h = 0.75 * L
+
+        # Web centered at (x, y)
+        top_y = y + web_h / 2
+        bottom_y = y - web_h / 2
+
+        # Create the rectangles (unrotated)
+        top_flange = patches.Rectangle(
+            (x - top_w / 2, top_y - thickness),
+            top_w,
+            thickness,
+            facecolor=color
+        )
+
+        bottom_flange = patches.Rectangle(
+            (x - bottom_w / 2, bottom_y),
+            bottom_w,
+            thickness,
+            facecolor=color
+        )
+
+        web = patches.Rectangle(
+            (x - thickness / 2, bottom_y + thickness),
+            thickness,
+            web_h - 2 * thickness,
+            facecolor=color
+        )
+
+        # Create a transform that rotates around the center (x, y)
+        trans = transforms.Affine2D().rotate_deg_around(x, y, -angle) + plt.gca().transData
+
+        # Apply transform to each part
+        for part in [top_flange, bottom_flange, web]:
+            part.set_transform(trans)
+            plt.gca().add_patch(part)
+
 
     def split_airfoil_surfaces(self):
         x = np.array(self.data['x']) * self.chord_length
@@ -351,20 +400,21 @@ class WingStructure:
     def calculate_stringer_thickness(self):
         """Using an I shaped stringer, with fixed length ratios and constant thickness, a relationship is derived to calculate the stringer thickness."""
         A = self.stringer_area * 1000000  # Convert to mm^2
-        L_stringer = 100 # mm
+        L_stringer = self.L_stringer
 
         D = 10.5625*(L_stringer**2) - (4*2*A)
 
         t_stringer1 = ((3.25*L_stringer) + np.sqrt(D)) / 4
         t_stringer2 = ((3.25*L_stringer) - np.sqrt(D)) / 4
 
-        return L_stringer, min(t_stringer1, t_stringer2) 
-
+        self.t_stringer = min(t_stringer1, t_stringer2)
+        return self.t_stringer
     
     def crippling_stress_stringer(self):
         alpha = 0.8
         n = 0.6
-        L0, t0 = self.calculate_stringer_thickness()  # mm
+        t0 = self.calculate_stringer_thickness()  # mm
+        L0 = self.L_stringer  # mm
         C_values = [0.425, 0.425, 0.425, 0.425, 4.0]
         
         E = self.E_stringer
@@ -399,24 +449,22 @@ class WingStructure:
         # Weighted average and conversion to MPa
         crippling_stress = np.array(crippling_stress)
         areas = np.array(areas)
-        self.crippling_stress_stringer = np.sum(crippling_stress * areas) / np.sum(areas) / 1e6
+        stringer_cr = np.sum(crippling_stress * areas) / np.sum(areas) / 1e6
 
-        return self.crippling_stress_stringer
-
+        return stringer_cr
     
     def get_stringer_placement(self):
         spar_info = self.spar_info
-        n_stringers = self.n_stringers
-        r = self.stringer_radius
-        n_cells = self.n_cells
         panel_info = self.panel_info
+        n_stringers = self.n_stringers
+        n_cells = self.n_cells
         clearance = 0.05
         min_width = 0.1
         self.stringer_width = self.get_effective_sheet_width()
-
+        l_stringer = self.L_stringer/1000
         stringer_info = {
-            'top': {'x': [], 'y': [], 'I_xx': 0, 'I_yy': 0, 'I_xy': 0},
-            'bottom': {'x': [], 'y': [], 'I_xx': 0, 'I_yy': 0, 'I_xy': 0}
+            'top': {'x': [], 'y': [], 'angle': [], 'I_xx': 0, 'I_yy': 0, 'I_xy': 0},
+            'bottom': {'x': [], 'y': [], 'angle': [], 'I_xx': 0, 'I_yy': 0, 'I_xy': 0}
         }
 
         if n_stringers == 0:
@@ -440,11 +488,13 @@ class WingStructure:
         for i in range(bottom_stringer_count % n_cells):
             bottom_stringers_per_cell[i] += 1
 
+        any_stringers_placed = False  # Flag to check if any stringer was added
+
         for i in range(n_cells):
             left_x = spar_x_positions[i]
             right_x = spar_x_positions[i + 1]
             total_length = right_x - left_x
-            available_length = total_length - 2 * (r + clearance)
+            available_length = total_length - 2 * (l_stringer + clearance)
 
             # --- Top ---
             current_top_width = panel_info['widths_top'][i]
@@ -452,14 +502,16 @@ class WingStructure:
             n_top = min(top_stringers_per_cell[i], max_top_stringers)
 
             if n_top > 0:
+                any_stringers_placed = True
                 if n_top == 1:
-                    x_positions = np.array([left_x + r + clearance + available_length / 2])
+                    x_positions = np.array([left_x + l_stringer + clearance + available_length / 2])
                 elif n_top == 2:
-                    x_positions = np.linspace(left_x + r + clearance, right_x - r - clearance, 4)[1:-1]
+                    x_positions = np.linspace(left_x + l_stringer + clearance, right_x - l_stringer - clearance, 4)[1:-1]
                 else:
                     spacing = available_length / (n_top - 1)
-                    x_positions = np.array([left_x + r + clearance + j * spacing for j in range(n_top)])
-                y_positions = np.tan(top_panel_angles[i]) * (x_positions - left_x) + spar_tops[i] - r
+                    x_positions = np.array([left_x + l_stringer + clearance + j * spacing for j in range(n_top)])
+                y_positions = np.tan(top_panel_angles[i]) * (x_positions - left_x) + spar_tops[i] - 0.375*l_stringer
+                stringer_info['top']['angle'].extend([top_panel_angles[i] for _ in range(x_positions.size)])
                 stringer_info['top']['x'].extend(x_positions)
                 stringer_info['top']['y'].extend(y_positions)
                 dx = x_positions - self.centroid[0]
@@ -474,14 +526,16 @@ class WingStructure:
             n_bottom = min(bottom_stringers_per_cell[i], max_bottom_stringers)
 
             if n_bottom > 0:
+                any_stringers_placed = True
                 if n_bottom == 1:
-                    x_positions = np.array([left_x + r + clearance + available_length / 2])
+                    x_positions = np.array([left_x + l_stringer + clearance + available_length / 2])
                 elif n_bottom == 2:
-                    x_positions = np.linspace(left_x + r + clearance, right_x - r - clearance, 4)[1:-1]
+                    x_positions = np.linspace(left_x + l_stringer + clearance, right_x - l_stringer - clearance, 4)[1:-1]
                 else:
                     spacing = available_length / (n_bottom - 1)
-                    x_positions = np.array([left_x + r + clearance + j * spacing for j in range(n_bottom)])
-                y_positions = np.tan(bottom_panel_angles[i]) * (x_positions - left_x) + spar_bottoms[i] + r
+                    x_positions = np.array([left_x + l_stringer + clearance + j * spacing for j in range(n_bottom)])
+                y_positions = np.tan(bottom_panel_angles[i]) * (x_positions - left_x) + spar_bottoms[i] + 0.375*l_stringer
+                stringer_info['bottom']['angle'].extend([bottom_panel_angles[i] for _ in range(x_positions.size)])
                 stringer_info['bottom']['x'].extend(x_positions)
                 stringer_info['bottom']['y'].extend(y_positions)
                 dx = x_positions - self.centroid[0]
@@ -490,7 +544,11 @@ class WingStructure:
                 stringer_info['bottom']['I_yy'] += np.sum(self.stringer_area * dx**2)
                 stringer_info['bottom']['I_xy'] += np.sum(self.stringer_area * dx * dy)
 
+        if not any_stringers_placed:
+            raise ValueError("No stringers could be placed with the given geometry and constraints.")
+
         self.stringer_dict = stringer_info
+
 
     def get_moment_of_inertia(self):
         I_xx_mid_spars = 0
@@ -630,6 +688,7 @@ class WingStructure:
 
     def get_wing_structure(self):
         self.wing_structure = {}
+        self.cr_stringer = self.crippling_stress_stringer()
     
         for idx, chord in enumerate(self.chord_array):
             self.chord_length = chord
@@ -669,7 +728,6 @@ class WingStructure:
         self.normalized_data['spar_heights'] = root_chord_data['spar_info']['spar_heights']/self.chord_root
         self.normalized_data['top_skin_lengths'] = root_chord_data['panel_info']['top_skin_length']/self.chord_root
         self.normalized_data['bottom_skin_lengths'] = root_chord_data['panel_info']['bottom_skin_length']/self.chord_root
-
 
         # self.plot_moment_of_inertia()
         # self.plot_polar_moment()
@@ -823,14 +881,10 @@ class WingStructure:
 
         stringers = self.wing_structure[chord_idx]['stringers']
 
-        stringer_xs_top = stringers['top']['x']
-        for x,y in zip(stringers['top']['x'], stringers['top']['y']):
-            circle = plt.Circle((x,y), self.stringer_radius, color='black', label='Stringer (Top)')
-            plt.gca().add_patch(circle)
-
-        for x, y in zip(stringers['bottom']['x'], stringers['bottom']['y']):
-            circle = plt.Circle((x, y), self.stringer_radius, color='purple', label='Stringer (Bottom)')
-            plt.gca().add_patch(circle)
+        for x,y,a in zip(stringers['top']['x'], stringers['top']['y'], stringers['top']['angle']):
+            self.draw_I_beam(x, y, self.L_stringer/1000, self.t_stringer/1000, top=True, color='black',angle=a)
+        for x,y,a in zip(stringers['bottom']['x'], stringers['bottom']['y'], stringers['bottom']['angle']):
+            self.draw_I_beam(x, y, self.L_stringer/1000, self.t_stringer/1000, top=False, color='purple',angle=0)
 
         plt.scatter(centroid[0], centroid[1], color='green', label='Centroid')
         plt.title(f"Airfoil with Spar Positions, Wing Box and Stringers, chord = {chord:.2f} m")

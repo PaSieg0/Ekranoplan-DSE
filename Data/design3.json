@@ -49,7 +49,8 @@
                 "stringer_area": 3000,
                 "n_stringers": 70,
                 "n_cells": 3,
-                "C": 4
+                "C": 4,
+                "L_stringer": 100
             },
 
         "materials":{
