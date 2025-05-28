@@ -2,6 +2,8 @@ import os
 import plotnine as gg   # pip install plotnine
 import pandas as pd
 import numpy as np
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from utils import Data
 from ClassIWeightEstimation import MissionType, AircraftType
 
