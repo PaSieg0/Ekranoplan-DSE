@@ -86,13 +86,26 @@ class DerivativesDatcom:
         CnB_Vtail = -dcyB_Vtail * (self.lp / self.b)
         return CnB_wb + CnB_Vtail
     
-    def Cyp(self):
+    def Cyp(self, Cl, alpha):
         """
         Calculate the side force coefficient due to the roll rate.
 
         Returns:
         float: Side force coefficient.
         """
+        z = 0
+        K =  0
+        B = np.sqrt(1 - 0.34**2 * np.cos(self.Delta_c4)**2) # p.2522
+        Cyp__Cl_0 = -0.18 #p2529
+        Cyp__Cl = ((self.A + 4 * np.cos(self.Delta_c4)) * (self.A * B + np.cos(self.Delta_c4)) * Cyp__Cl_0) / (self.A * B + 4 * np.cos(self.Delta_c4) * (self.A + np.cos(self.Delta_c4)))
+
+        clp_cl0 =  0 # p2526
+        dCyp_dihedral = (3 * np.sin(self.dihedral(1 - 2 * z / (self.b / 2)) * np.sin(self.dihedral))) * clp_cl0
+        Cyp_wb = K*((Cyp__Cl * Cl)) + dCyp_dihedral
+
+        z_zp = 0
+        dCyB_VWBH = 0
+        Cyp_Vtail = Cyp_wb + 2 * (z_zp / self.b) * ()
     
     
     
