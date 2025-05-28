@@ -407,9 +407,9 @@ class WingStructure:
         areas_array = np.array(areas_list)
         crippling_stress_array = np.array(crippling_stress_list)
 
-        crippling_stress_stringer = (np.sum(crippling_stress_array * areas_array) / np.sum(areas_array)) / 1000000 # Convert to MPa
+        self.crippling_stress_stringer = (np.sum(crippling_stress_array * areas_array) / np.sum(areas_array)) / 1000000 # Convert to MPa
 
-        return crippling_stress_stringer
+        return self.crippling_stress_stringer
     
     def get_stringer_placement(self):
         spar_info = self.spar_info

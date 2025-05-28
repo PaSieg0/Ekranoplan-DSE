@@ -240,17 +240,25 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
         # b spacing between stringers, only subtract 2we once and use areabalance
         skin_stresses_top = []
         skin_stresses_bottom = []
+
+        b = 1 #TODO:Change this
+
         factor = self.C * ((np.pi**2 * self.E) / (12 * (1 - self.poisson_ratio**2)))
+
         for y in range(len(self.b_array)):
             sigma_cr_top = factor * (self.t_skin / self.widths_top[y])**2
             sigma_cr_bottom = factor * (self.t_skin / self.widths_bottom[y])**2
             skin_stresses_top.append(np.min(sigma_cr_top))
             skin_stresses_bottom.append(np.min(sigma_cr_bottom))
 
-        self.buckling_stress_top = np.array(skin_stresses_top)/1000000
-        self.buckling_stress_bottom = np.array(skin_stresses_bottom)/1000000
+        self.critical_buckling_stress_top = np.array(skin_stresses_top)
+        self.critical_buckling_stress_bottom = np.array(skin_stresses_bottom)
 
-        return self.buckling_stress_top, self.buckling_stress_bottom
+        self.buckling_stress_top_panel = ((self.stringer_area + self.stringer_width*self.t_skin)*self.crippling_stress_stringer + (b - self.stringer_width)*self.t_skin*self.critical_buckling_stress_top) / (self.stringer_area + (b*self.t_skin))
+        self.buckling_stress_bottom_panel = ((self.stringer_area + self.stringer_width*self.t_skin)*self.crippling_stress_stringer + (b - self.stringer_width)*self.t_skin*self.critical_buckling_stress_bottom) / (self.stringer_area + (b*self.t_skin))
+
+
+        return self.buckling_stress_top_panel, self.buckling_stress_bottom_panel
     
     def calculate_critical_web_stress(self):
       
