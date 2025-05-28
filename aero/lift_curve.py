@@ -15,18 +15,21 @@ class lift_curve():
 
         #lift coefficient data
         self.cl_lst=self.data[:,1]
+        self.cd_lst=self.data[:,2]
 
 
     
-    def interpolate(self, alpha):   #gets a cl for a given alpha and linearly interpolates
+    def interpolate_Cl(self, alpha):   #gets a cl for a given alpha and linearly interpolates
         #distance list in alpha
+        # print(self.alpha)
+        # print(alpha)
         dist=abs(self.alpha-alpha)
-        #print(dist)
+        # print(dist)
 
 
         #determines the index of the closest alpha
         ind=np.where(min(dist)==dist)[0][0]
-        #print(ind)
+        # print(ind)
 
         #uses point below
         if dist[ind] > 0:
@@ -39,6 +42,33 @@ class lift_curve():
         #uses selected alpha
         elif dist[ind]==0:
             cl=self.cl_lst[ind]
+
+        #returns cl
+        return cl
+    
+    def interpolate_Cd(self, alpha):   #gets a cl for a given alpha and linearly interpolates
+        #distance list in alpha
+        # print(self.alpha)
+        # print(alpha)
+        dist=abs(self.alpha-alpha)
+        # print(dist)
+
+
+        #determines the index of the closest alpha
+        ind=np.where(min(dist)==dist)[0][0]
+        # print(ind)
+
+        #uses point below
+        if dist[ind] > 0:
+            cl=self.cd_lst[ind-1]+(alpha-self.alpha[ind-1])*(self.cd_lst[ind]-self.cd_lst[ind-1])/(self.alpha[ind]-self.alpha[ind-1])
+        
+        #uses point ahead
+        elif dist[ind]<0:
+            cl=self.cd_lst[ind]+(alpha-self.alpha[ind])*(self.cd_lst[ind+1]-self.cd_lst[ind])/(self.alpha[ind+1]-self.alpha[ind])
+        
+        #uses selected alpha
+        elif dist[ind]==0:
+            cl=self.cd_lst[ind]
 
         #returns cl
         return cl
