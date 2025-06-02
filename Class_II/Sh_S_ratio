@@ -1,0 +1,25 @@
+import os
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from utils import Data
+
+class Sh_S_ratio:
+    def __init__(self, aircraft_data: Data):
+        self.aircraft_data = aircraft_data
+        self.design_id = aircraft_data.data['design_id']
+        self.design_file = f"design{self.design_id}.json"
+
+    def get_Sh_S_ratio(self):
+        X_cg = 0
+        CL_alpha_h = 0
+        CL_alpha_A_h = 0
+        lh = 0
+        downwash = 0
+        c = 0
+        X_ac = 0
+        Stability_margin = 0.05
+        Vh_V = 1
+
+        Sh_S = 1/((CL_alpha_h/CL_alpha_A_h)*(1-downwash)*(lh/c)*Vh_V**2)*X_cg - (X_ac-Stability_margin)/((CL_alpha_h/CL_alpha_A_h)*(1-downwash)*(lh/c)*Vh_V**2)
+        return Sh_S
+
