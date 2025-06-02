@@ -45,7 +45,7 @@ class WingLoading:
         self.prop_efficiency = self.aircraft_data.data['inputs']['prop_efficiency']
         self.CL_hydro = self.aircraft_data.data['inputs']['CL_hydro']
         self.upsweep = self.aircraft_data.data['inputs']['upsweep']
-        self.d_fuselage = self.aircraft_data.data['outputs']['general']['d_fuselage']
+        self.d_fuselage = self.aircraft_data.data['outputs']['general']['d_fuselage_equivalent_straight']
         self.hull_surface = self.calculate_hull_surface()
         self.TW = None
         self.WP = None
