@@ -12,8 +12,6 @@ class LoadingDiagram:
         self.design_id = aircraft_data.data['design_id']
         self.design_file = f"design{self.design_id}.json"
 
-        self.component_positions = {key: np.asarray(self.aircraft_data.data['outputs']['component_positions'][key]) 
-                                   for key in self.aircraft_data.data['outputs']['component_positions']}
 
         # Precompute and store constants
         general = self.aircraft_data.data['outputs']['general']

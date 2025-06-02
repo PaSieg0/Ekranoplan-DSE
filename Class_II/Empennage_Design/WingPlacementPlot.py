@@ -3,8 +3,8 @@ import sys
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.widgets as widgets
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from Class_II.LoadingDiagram import LoadingDiagram
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
+from Class_II.Empennage_Design.LoadingDiagram import LoadingDiagram
 from utils import Data
 
 
@@ -79,4 +79,4 @@ if __name__ == "__main__":
     print(f"Min CG (MAC): {min_cg:.4f}")
     print(f"Max CG (MAC): {max_cg:.4f}")
     # Optionally, still show the interactive plot
-    # plot_wing_placement(loading_diagram)
+    plot_wing_placement(loading_diagram)
