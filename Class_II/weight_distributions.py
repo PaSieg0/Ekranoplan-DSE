@@ -25,7 +25,7 @@ class CGCalculation:
 
     def _init_aircraft_parameters(self):
         """Initialize aircraft parameters needed for CG calculation"""
-        self.x_LEMAC_wing = self.aircraft_data.data['outputs']['wing_design']['X_LE']
+        self.x_LEMAC_wing = self.aircraft_data.data['outputs']['wing_design']['X_LEMAC']
         self.MAC_wing = self.aircraft_data.data['outputs']['wing_design']['MAC']
         self.cargo_length = self.aircraft_data.data['outputs']['general']['cargo_length']
         self.cargo_width = self.aircraft_data.data['outputs']['general']['cargo_width']
