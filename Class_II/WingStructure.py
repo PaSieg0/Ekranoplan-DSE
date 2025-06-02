@@ -775,31 +775,46 @@ class WingStructure:
         # print(self.I_xx)
 
     def get_wing_rib(self, ribs: dict = None):  
-        spacing_diameter = 3
-        self.cutout_diameter = self.cutout_spacing/spacing_diameter
+
         available_length = self.chord_length - 2 * self.cutout_spacing
 
         self.cutout_amount = int(available_length // self.cutout_spacing)
 
-        tot_cutout_area = self.airfoil_area/3
+        tot_cutout_area = self.airfoil_area/3.5
 
         self.cutout_area = tot_cutout_area / self.cutout_amount
         self.cutout_diameter = np.sqrt(self.cutout_area / (np.pi / 4)) * 2  
 
+    def calculate_rib_masses(self, ribs: dict = None):
         if ribs:
             self.x_positions = ribs['x_positions']
             self.thicknesses = ribs['thicknesses']
-            print(f'rib amount:{len(self.x_positions)}')
+            print(f'rib amount: {len(self.x_positions)}')
             self.rib_masses = []
+            self.cutout_positioning = {}
             for i in range(len(self.x_positions)):
                 idx = np.argmin(np.abs(self.b_array - self.x_positions[i]))
+                self.cutout_positioning[i] = {'x': [], 'y': []}
                 spar_height = max(self.wing_structure[idx]['spar_info']['spar_heights'])
-                rib_area = self.wing_structure[idx]['airfoil_area'] - self.cutout_amount * self.cutout_area
+                front_spar_x = self.wing_structure[idx]['spar_info']['front_spar_x']
+                rear_spar_x = self.wing_structure[idx]['spar_info']['rear_spar_x']
+                rib_area = self.wing_structure[idx]['airfoil_area'] - self.wing_structure[idx]['ribs']['area'] * self.wing_structure[idx]['ribs']['amount']
                 self.rib_volume = rib_area * self.thicknesses[i]
                 self.rib_masses.append(self.rib_volume * self.rho_wingbox)
 
-                cutout_height = spar_height/2
+                first_x = front_spar_x - 2*self.cutout_spacing 
+                last_x = rear_spar_x 
 
+                for j in range(self.cutout_amount):
+                    cutout_x = first_x + j * (self.cutout_spacing+self.wing_structure[idx]['ribs']['diameter'])
+                    if cutout_x < front_spar_x:
+                        continue
+                    if cutout_x > last_x:
+                        break
+
+                    cutout_y = spar_height / 2 
+                    self.cutout_positioning[i]['x'].append(cutout_x)
+                    self.cutout_positioning[i]['y'].append(cutout_y)
 
     def get_wing_structure(self):
         self.wing_structure = {}
@@ -823,6 +838,7 @@ class WingStructure:
             self.get_stringer_placement()
             self.get_moment_of_inertia()
             self.get_polar_moment()
+            self.get_wing_rib()
 
             self.wing_structure[idx]['elements'] = self.element_functions
             self.wing_structure[idx]['area'] = self.wingbox_area
@@ -841,6 +857,12 @@ class WingStructure:
             self.wing_structure[idx]['I_xy'] = self.I_xy
             self.wing_structure[idx]['J'] = self.J
             self.wing_structure[idx]['stringers'] = self.stringer_dict
+            self.wing_structure[idx]['ribs'] = {
+                'diameter': self.cutout_diameter,
+                'amount': self.cutout_amount,
+                'spacing': self.cutout_spacing,
+                'area': self.cutout_area,
+            }
 
             self.we2.append(self.stringer_width)
         
@@ -850,7 +872,6 @@ class WingStructure:
         self.normalized_data['top_skin_lengths'] = root_chord_data['panel_info']['top_skin_length']/self.chord_root
         self.normalized_data['bottom_skin_lengths'] = root_chord_data['panel_info']['bottom_skin_length']/self.chord_root
 
-        self.get_wing_rib()
         self.calculate_wing_mass()
         # self.plot_moment_of_inertia()
         # self.plot_polar_moment()
@@ -982,7 +1003,6 @@ class WingStructure:
         else:
             self.wing_mass = self.calculate_wing_mass() + self.tank_mass
 
-        print(self.tank_mass)
         self.weight_dist = self.wing_mass/(self.S/2)*self.chord_span_function(self.b_array)*9.81 + fuel_dist
         for engine_y in self.engine_positions:
             self.weight_dist[int(round(engine_y,2)*100)] += self.engine_weight*9.81
@@ -1081,7 +1101,30 @@ class WingStructure:
         ax.grid()
         plt.show()
 
-    
+    def plot_rib(self,id=40):
+        print(len(self.cutout_positioning))
+        cutout_positions = self.cutout_positioning[id]
+        idx = np.argmin(np.abs(self.b_array - self.x_positions[id]))
+        x_coords = self.wing_structure[idx]['x_coords']
+        y_upper = self.wing_structure[idx]['y_upper']
+        y_lower = self.wing_structure[idx]['y_lower']
+        fig, ax = plt.subplots()
+
+        ax.plot(x_coords, y_upper, label='Airfoil Upper Surface', color='blue')
+        ax.plot(x_coords, y_lower, label='Airfoil Lower Surface', color='blue')
+        ax.set_xlabel('x (m)')
+        ax.set_ylabel('y (m)')
+
+        for i in cutout_positions['x']:
+            cutout_x = i
+            cutout_y = cutout_positions['y'][cutout_positions['x'].index(i)]
+            circle = plt.Circle((cutout_x, cutout_y), self.cutout_diameter/2, color='red', alpha=0.5)
+            ax.add_artist(circle)
+        ax.set_title(f"Rib Cutouts for Chord Index {idx}")
+        ax.set_aspect('equal')
+        plt.show()
+
+
     def plot_airfoil(self, chord_idx=0):
         wing_data = self.wing_structure[chord_idx]
         
