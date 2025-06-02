@@ -217,8 +217,8 @@
             "LD_g": 17.437940525815858,
             "Cd_water": 0.0012700434697589557,
             "xcg_payload": 0.44404883931977346,
-            "nmax": 3.443126045275873,
-            "nmin": -1.443126045275873,
+            "nmax": 2.5,
+            "nmin": -1.0,
             "cargo_distance_from_nose": 8.0,
             "cargo_length": 18.0,
             "cargo_width": 7.0,
@@ -455,7 +455,6 @@
             ]
         }
     },
-    
     "kinematic_viscosity": 1.006e-06,
     "rho_water": 1000,
     "viscosity_air": 1.484e-05,
