@@ -174,7 +174,7 @@ class Cd0Estimation:
             self.iteration.run_iteration()
 
             self.curr_Cd0 = self.Cd0
-
+            self.curr_MTOM = self.aircraft_data.data['outputs'][mission_type]['MTOM']
 
             stop_condition = (abs((self.curr_Cd0 - self.prev_Cd0) / self.prev_Cd0) < self.tolerance and abs(self.curr_MTOM-self.prev_MTOM)/self.prev_MTOM) or self.iteration_number >= self.max_iterations
             if stop_condition:
