@@ -36,6 +36,12 @@ class StressOutput(Enum):
     INTERNAL_TORQUE = auto()
     SHEAR_STRESS_TOP = auto()
     SHEAR_STRESS_BOTTOM = auto()
+    WING_BENDING_STRESS = auto()
+
+class EvaluateType(Enum):
+    VERTICAL = auto()
+    WING = auto()
+    HORIZONTAL = auto()
 class WingType(Enum):
     HIGH = auto()
     LOW = auto()
@@ -142,6 +148,8 @@ class Data:
                         y_vals.append(y)
                     except ValueError:
                         print(f"Warning: Non-numeric data encountered in line: {line}")
+            if any(i for i in y_vals if i < 0):
+                y_vals = [i + max(y_vals) for i in y_vals] 
             return {"x": x_vals, "y": y_vals}
         except FileNotFoundError:
             print(f"Error: {file_path} not found.")
