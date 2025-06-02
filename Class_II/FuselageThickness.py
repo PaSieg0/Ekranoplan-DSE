@@ -49,6 +49,8 @@ class FuselageThickness:
         self.fuselage_height = np.array([4.5, 6, 4.5])
         self.fuselage_ratio =  self.fuselage_height / self.fuselage_width
 
+        self.t_fuselage = self.aircraft_data.data['inputs']['t_fuselage']/1000
+
 
     def calculate_fuselage_centroid(self):
 
@@ -70,11 +72,11 @@ class FuselageThickness:
         # All moments of inertia still have to be multiplied by the thickness of the skin
         # Unit is m^4 --> means that t_skin must also be in METERS!
 
-        self.I_xy_fuselage = 0 # * t_skin
+        self.I_xy_fuselage = 0 # * t_fuselage
 
-        self.I_xx_fuselage = self.fuselage_width*(((self.fuselage_ratio + self.a_dim)*self.fuselage_width - self.y_bar_fuselage)**2) + 2*(((self.fuselage_ratio*self.fuselage_width)**3)/12 + self.fuselage_ratio*self.fuselage_width*((self.a_dim + self.fuselage_ratio/2)*self.fuselage_width - self.y_bar_fuselage)**2) + 2*(((self.s_dim**3 * (np.sin(np.radians(25)))**2)/12) + self.s_dim*(self.o_dim -self.y_bar_fuselage)**2) # * t_skin
+        self.I_xx_fuselage = self.fuselage_width*(((self.fuselage_ratio + self.a_dim)*self.fuselage_width - self.y_bar_fuselage)**2) + 2*(((self.fuselage_ratio*self.fuselage_width)**3)/12 + self.fuselage_ratio*self.fuselage_width*((self.a_dim + self.fuselage_ratio/2)*self.fuselage_width - self.y_bar_fuselage)**2) + 2*(((self.s_dim**3 * (np.sin(np.radians(25)))**2)/12) + self.s_dim*(self.o_dim -self.y_bar_fuselage)**2) # * t_fuselage
 
-        self.I_yy_fuselage = (self.fuselage_width**3) / 12 + 2*(self.fuselage_ratio*self.fuselage_width*(self.fuselage_width/2)**2) + 2*(self.s_dim*(0.25*self.fuselage_width)**2)
+        self.I_yy_fuselage = (self.fuselage_width**3) / 12 + 2*(self.fuselage_ratio*self.fuselage_width*(self.fuselage_width/2)**2) + 2*(self.s_dim*(0.25*self.fuselage_width)**2) # * self.t_fuselage
 
         return self.I_xx_fuselage, self.I_yy_fuselage, self.I_xy_fuselage
         
@@ -94,18 +96,223 @@ class FuselageThickness:
         for i in range(5):
             # All boom areas are a function of the skin thickness
             if i == 0:
-                B1 = (self.fuselage_width / 6) * (2 + (self.sigma_2 / self.sigma_1)) + ((0.8*self.fuselage_width / 6) * (2+ (sigma_3/sigma_1)))
+                B1 = (self.fuselage_width / 6) * (2 + (self.sigma_2 / self.sigma_1)) + ((self.fuselage_ratio*self.fuselage_width / 6) * (2+ (self.sigma_3/self.sigma_1)))
             elif i == 1:
-                B2 = (self.fuselage_width / 6) * (2 + (self.sigma_1 / self.sigma_2)) + ((0.8*self.fuselage_width / 6) * (2+ (sigma_4/sigma_2)))
+                B2 = (self.fuselage_width / 6) * (2 + (self.sigma_1 / self.sigma_2)) + ((self.fuselage_ratio*self.fuselage_width / 6) * (2+ (self.sigma_4/self.sigma_2)))
             elif i == 2:
-                B3 = (0.8*self.fuselage_width / 6) * (2 + (self.sigma_1 / self.sigma_3)) + ((0.5517*self.fuselage_width / 6) * (2+ (sigma_5/sigma_3)))
+                B3 = (self.fuselage_ratio*self.fuselage_width / 6) * (2 + (self.sigma_1 / self.sigma_3)) + ((self.s_dim*self.fuselage_width / 6) * (2+ (self.sigma_5/self.sigma_3)))
             elif i == 3:
-                B4 = (0.8*self.fuselage_width / 6) * (2 + (self.sigma_2 / self.sigma_4)) + ((0.5517*self.fuselage_width / 6) * (2+ (sigma_5/sigma_4)))
+                B4 = (self.fuselage_ratio*self.fuselage_width / 6) * (2 + (self.sigma_2 / self.sigma_4)) + ((self.s_dim*self.fuselage_width / 6) * (2+ (self.sigma_5/self.sigma_4)))
             elif i == 4:
-                B5 = (0.5517*self.fuselage_width / 6) * (2 + (self.sigma_3 / self.sigma_5)) + ((0.5517*self.fuselage_width / 6) * (2+ (sigma_4/sigma_5)))
+                B5 = (self.s_dim*self.fuselage_width / 6) * (2 + (self.sigma_3 / self.sigma_5)) + ((self.s_dim*self.fuselage_width / 6) * (2 + (self.sigma_4/self.sigma_5)))
         return B1, B2, B3, B4, B5
             
-        
+    # def iterate_booms_per_station(self, M_x, M_y, tol=1e-100, max_iter=5000, alpha=0.5):
+    #     n_stations = len(self.fuselage_width)
+
+    #     boom_areas_all = np.zeros((n_stations, 5))
+    #     I_xx_all = np.zeros(n_stations)
+    #     I_yy_all = np.zeros(n_stations)
+    #     iterations_to_converge = np.zeros(n_stations, dtype=int)
+
+    #     for i in range(n_stations):
+    #         w = self.fuselage_width[i]
+    #         h = self.fuselage_height[i]
+    #         t = self.t_fuselage[i] if hasattr(self.t_fuselage, '__getitem__') else self.t_fuselage
+
+    #         fr = h / w
+    #         a_dim = 0.5 / np.tan(np.radians(65))
+    #         s_dim = 0.5 / np.sin(np.radians(65))
+    #         o_dim = s_dim / 2 * np.sin(np.radians(25))
+
+    #         y_bar = (2 * (fr * ((a_dim + 0.4) * w)) + 2 * (s_dim * (o_dim * w)) + ((a_dim + fr) * w)) / (2 * s_dim + 2 * fr + 1)
+    #         x_bar = (s_dim * 0.25 * w + s_dim * 0.75 * w + 0.5 * w + fr * w) / (2 * s_dim + 2 * fr + 1)
+
+    #         I_xx = (
+    #             w * (((fr + a_dim) * w - y_bar) ** 2)
+    #             + 2 * (((fr * w) ** 3) / 12 + fr * w * (((a_dim + fr / 2) * w - y_bar) ** 2))
+    #             + 2 * (((s_dim ** 3) * (np.sin(np.radians(25))) ** 2) / 12 + s_dim * (o_dim - y_bar) ** 2)
+    #         ) * t
+
+    #         I_yy = (
+    #             (w ** 3) / 12
+    #             + 2 * (fr * w * (w / 2) ** 2)
+    #             + 2 * (s_dim * (0.25 * w) ** 2)
+    #         ) * t
+
+    #         sigma_1 = ((M_x * I_yy * ((a_dim + fr * w - y_bar)) + M_y * I_xx * (-0.5 * w)) / (I_xx * I_yy))
+    #         sigma_2 = ((M_x * I_yy * ((a_dim + fr * w - y_bar)) + M_y * I_xx * (0.5 * w)) / (I_xx * I_yy))
+    #         sigma_3 = ((M_x * I_yy * (-(y_bar - a_dim)) + M_y * I_xx * (-0.5 * w)) / (I_xx * I_yy))
+    #         sigma_4 = ((M_x * I_yy * (-(y_bar - a_dim)) + M_y * I_xx * (0.5 * w)) / (I_xx * I_yy))
+    #         sigma_5 = ((M_x * I_yy * (-y_bar)) / (I_xx * I_yy))
+
+    #         B_old = np.ones(5) * 0.01
+
+    #         for iteration in range(max_iter):
+    #             B1 = (w / 6) * (2 + sigma_2 / sigma_1) + (fr * w / 6) * (2 + sigma_3 / sigma_1)
+    #             B2 = (w / 6) * (2 + sigma_1 / sigma_2) + (fr * w / 6) * (2 + sigma_4 / sigma_2)
+    #             B3 = (fr * w / 6) * (2 + sigma_1 / sigma_3) + (s_dim * w / 6) * (2 + sigma_5 / sigma_3)
+    #             B4 = (fr * w / 6) * (2 + sigma_2 / sigma_4) + (s_dim * w / 6) * (2 + sigma_5 / sigma_4)
+    #             B5 = (s_dim * w / 6) * (2 + sigma_3 / sigma_5) + (s_dim * w / 6) * (2 + sigma_4 / sigma_5)
+
+    #             B_new = np.array([B1, B2, B3, B4, B5])
+    #             #B_i = alpha * B_new + (1 - alpha) * B_old
+    #             B_i = B_new
+
+    #             y_coords = np.array([
+    #                 (a_dim + fr * w - y_bar),
+    #                 (a_dim + fr * w - y_bar),
+    #                 (y_bar - a_dim),
+    #                 (y_bar - a_dim),
+    #                 -y_bar
+    #             ])
+    #             x_coords = np.array([
+    #                 -0.5 * w,
+    #                 0.5 * w,
+    #                 -0.5 * w,
+    #                 0.5 * w,
+    #                 0
+    #             ])
+
+    #             I_xx_new = np.sum((y_coords ** 2) * B_i)
+    #             I_yy_new = np.sum((x_coords ** 2) * B_i)
+
+    #             if np.all(np.abs(B_i - B_old) < tol):
+    #                 iterations_to_converge[i] = iteration + 1
+    #                 print(f"Station {i}: Converged in {iteration + 1} iteration(s)")
+    #                 break
+
+    #             B_old = B_i.copy()
+
+    #         else:
+    #             iterations_to_converge[i] = max_iter
+    #             print(f"Warning: Station {i} did not converge after {max_iter} iterations.")
+
+    #         boom_areas_all[i, :] = B_i
+    #         I_xx_all[i] = I_xx_new
+    #         I_yy_all[i] = I_yy_new
+
+    #     # Report iterations
+    #     # for i, n_iter in enumerate(iterations_to_converge):
+    #         # print(f"Station {i}: Converged in {n_iter} iteration(s)")
+
+    #     return boom_areas_all, I_xx_all, I_yy_all
+
+    def iterate_booms_per_station(
+    self, 
+    M_x, 
+    M_y, 
+    t_fuselage_init=0.005, 
+    I_xx_init=10.0, 
+    I_yy_init=3.0, 
+    tol=1e-4, 
+    max_iter=100, 
+    alpha=0.5
+):
+        n_stations = len(self.fuselage_width)
+
+        boom_areas_all = np.zeros((n_stations, 5))
+        I_xx_all = np.zeros(n_stations)
+        I_yy_all = np.zeros(n_stations)
+        t_fuselage_final = np.zeros(n_stations)
+        iterations_to_converge = np.zeros(n_stations, dtype=int)
+
+        for i in range(n_stations):
+            w = self.fuselage_width[i]
+            h = self.fuselage_height[i]
+            fr = h / w
+
+            # Initial skin thickness (scalar or array)
+            t = t_fuselage_init if np.isscalar(t_fuselage_init) else t_fuselage_init[i]
+
+            # Initial MOI (scalar or array)
+            I_xx_old = I_xx_init if np.isscalar(I_xx_init) else I_xx_init[i]
+            I_yy_old = I_yy_init if np.isscalar(I_yy_init) else I_yy_init[i]
+
+            # Geometry setup
+            a_dim = 0.5 / np.tan(np.radians(65))
+            s_dim = 0.5 / np.sin(np.radians(65))
+            o_dim = s_dim / 2 * np.sin(np.radians(25))
+
+            y_bar = (2 * (fr * ((a_dim + 0.4) * w)) + 2 * (s_dim * (o_dim * w)) + ((a_dim + fr) * w)) / (2 * s_dim + 2 * fr + 1)
+
+            y_coords = np.array([
+                (a_dim + fr * w - y_bar),
+                (a_dim + fr * w - y_bar),
+                (y_bar - a_dim),
+                (y_bar - a_dim),
+                -y_bar
+            ])
+            x_coords = np.array([
+                -0.5 * w,
+                0.5 * w,
+                -0.5 * w,
+                0.5 * w,
+                0.0
+            ])
+
+            # Initial boom areas
+            B_old = np.ones(5) * 0.01
+
+            for iteration in range(max_iter):
+                # --- Stress calculation using current MOIs ---
+                sigma = np.zeros(5)
+                for j in range(5):
+                    sigma[j] = (M_x * I_yy_old * y_coords[j] + M_y * I_xx_old * x_coords[j]) / (I_xx_old * I_yy_old)
+
+                # --- Boom area update ---
+                B1 = (w / 6) * (2 + sigma[1] / sigma[0]) + (fr * w / 6) * (2 + sigma[2] / sigma[0])
+                B2 = (w / 6) * (2 + sigma[0] / sigma[1]) + (fr * w / 6) * (2 + sigma[3] / sigma[1])
+                B3 = (fr * w / 6) * (2 + sigma[0] / sigma[2]) + (s_dim * w / 6) * (2 + sigma[4] / sigma[2])
+                B4 = (fr * w / 6) * (2 + sigma[1] / sigma[3]) + (s_dim * w / 6) * (2 + sigma[4] / sigma[3])
+                B5 = (s_dim * w / 6) * (2 + sigma[2] / sigma[4]) + (s_dim * w / 6) * (2 + sigma[3] / sigma[4])
+                B_new = np.array([B1, B2, B3, B4, B5]) * t
+
+                # Under-relaxation: boom areas
+                B_i = alpha * B_new + (1 - alpha) * B_old
+
+                # --- Update MOIs from updated boom areas ---
+                I_xx_new = np.sum((y_coords ** 2) * B_i)
+                I_yy_new = np.sum((x_coords ** 2) * B_i)
+
+                # Under-relaxation: moments of inertia
+                I_xx_relaxed = alpha * I_xx_new + (1 - alpha) * I_xx_old
+                I_yy_relaxed = alpha * I_yy_new + (1 - alpha) * I_yy_old
+
+                # --- Optional thickness update based on stress ratio ---
+                sigma_max = np.max(np.abs(sigma))
+                t_new = t * (sigma_max / self.sigma_y)
+                t = alpha * t_new + (1 - alpha) * t
+
+                # --- Convergence check ---
+                if (
+                    np.all(np.abs(B_i - B_old) < tol) and
+                    abs(I_xx_relaxed - I_xx_old) < tol and
+                    abs(I_yy_relaxed - I_yy_old) < tol and
+                    abs(t_new - t) < tol
+                ):
+                    iterations_to_converge[i] = iteration + 1
+                    print(f"Station {i}: Converged in {iteration + 1} iteration(s)")
+                    break
+
+                # Update for next iteration
+                B_old = B_i.copy()
+                I_xx_old = I_xx_relaxed
+                I_yy_old = I_yy_relaxed
+
+            else:
+                iterations_to_converge[i] = max_iter
+                print(f"Warning: Station {i} did not converge after {max_iter} iterations.")
+
+            # Save final results
+            boom_areas_all[i, :] = B_i
+            I_xx_all[i] = I_xx_relaxed
+            I_yy_all[i] = I_yy_relaxed
+            t_fuselage_final[i] = t
+
+        return boom_areas_all, I_xx_all, I_yy_all, t_fuselage_final
+
+
 
 
 if __name__ == '__main__':
@@ -115,7 +322,12 @@ if __name__ == '__main__':
     
     fuselage = FuselageThickness(aircraft_data, airfoil_data, fuselage_material)
     
-    x_bar, y_bar = fuselage.calculate_fuselage_centroid()
-    Ixx, Iyy, Ixy = fuselage.calculate_fuselage_moi()
-    print(x_bar, y_bar)
-    print(Ixx, Iyy, Ixy)
+    M_x = 200e6  # Nm # TODO: Replace with actual bending moment
+    M_y = 100e6  # Nm # TODO: Replace with actual moment
+
+    boom_areas, I_xx_array, I_yy_array, t_fuselage = fuselage.iterate_booms_per_station(M_x, M_y)
+
+    print("Boom Areas per Station(must still be multiplied by t_fuselage):\n", boom_areas)
+    print("I_xx per Station(must still be multiplied by t_fuselage):\n", I_xx_array)
+    print("I_yy per Station(must still be multiplied by t_fuselage):\n", I_yy_array)
+    print("Fuselage Thickness per Station:\n", t_fuselage)
