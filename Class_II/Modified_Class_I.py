@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from utils import Data, AircraftType, MissionType
+from utils import Data, AircraftType, MissionType, ISA
 
 
 class ModifiedClassI:
@@ -48,8 +48,26 @@ class ModifiedClassI:
             3: 0.995
         } # Raymers
 
+    def oswald_efficiency(self, A_eff) -> float: # Howe 2000
+        def f_Lambda(Z):
+            return 0.005 * (1 + 1.5 * (Z - 0.6)**2)
+
+        isa = ISA()
+        M = isa.Mach(self.cruise_speed)
+        taper = self.aircraft_data.data['outputs']['wing_design']['taper_ratio']
+        t_c = self.aircraft_data.data['inputs']['airfoils']['wing']
+        sweepc4 = self.aircraft_data.data['outputs']['wing_design']['sweep_c_4']
+        N_e = self.aircraft_data.data['inputs']['n_engines']
+
+        term1 = 1 + 0.12 * M**6
+        term2 = (0.142 + f_Lambda(taper) * A_eff * (10 / t_c)**0.33) / np.cos(np.radians(sweepc4))**2
+        term3 = 0.1 * (3 * N_e + 1) / (4 + A_eff)**0.8
+        efficiency =  1 / (term1*(1 + term2 + term3))
+
+        return efficiency
 
     def calculate_LD(self) -> float:
+        self.e = self.oswald_efficiency(self.A*self.k**2)
         LD = np.sqrt(np.pi*self.A*self.e/(4*self.Cd0))
         
         self.aircraft_data.data['outputs']['general']['LD_g'] = LD
@@ -150,6 +168,7 @@ class ModifiedClassI:
         # self.aircraft_data.save_design(self.design_file)
 
     def update_attributes(self):
+        self.aircraft_data.data['inputs']['oswald_factor'] = self.e
         self.aircraft_data.data['outputs'][self.mission_type.name.lower()]['MTOW'] = self.MTOW
         self.aircraft_data.data['outputs'][self.mission_type.name.lower()]['total_fuel'] = self.total_fuel
         self.aircraft_data.data['outputs'][self.mission_type.name.lower()]['mission_fuel'] = self.mission_fuel
