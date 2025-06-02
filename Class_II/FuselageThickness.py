@@ -113,10 +113,10 @@ class FuselageThickness:
         M_x, 
         M_y, 
         t_fuselage_init=0.005, 
-        I_xx_init=10.0, 
-        I_yy_init=3.0, 
-        tol=1e-4, 
-        max_iter=100, 
+        I_xx_init=0.001, 
+        I_yy_init=0.001, 
+        tol=1e-5, 
+        max_iter=1000, 
         alpha=0.5
     ):
         n_stations = len(self.fuselage_width)
