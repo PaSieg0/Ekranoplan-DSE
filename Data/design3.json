@@ -199,7 +199,7 @@
             "r_fuselage_equivalent_straight": 3.795,
             "step_depth": 0.464,
             "h_afterbody": 6.836,
-            "l_fuselage": 69.252,
+            "l_fuselage": 54.252,
             "l_tailcone": 15.252,
             "l_afterbody": 15.0,
             "l_nose": 13.0,
@@ -343,9 +343,9 @@
             "aspect_ratio": 8
         },
         "cg_range": {
-            "most_aft_cg": 31.868885105060734,
+            "most_aft_cg": 29.868682803176704,
             "most_aft_mission": "DESIGN_OEW_PAYLOAD_FUEL",
-            "most_forward_cg": 32.0168089122698,
+            "most_forward_cg": 27.7008,
             "most_forward_mission": "DESIGN_OEW"
         },
         "empennage_design": {
@@ -438,28 +438,116 @@
             "total_OEW": 1210435.7945997093
         },
         "component_positions": {
-            "air_conditioning": [0.0, 0.0, 0.0],
-            "anti_ice": [1.0, 0.0, 3.0],
-            "apu_installed": [0.0, 0.0, 0.0],
-            "avionics": [0.0, 0.0, 0.0],
-            "electrical": [0.0, 0.0, 0.0],
-            "furnishings": [0.0, 0.0, 0.0],
-            "fuselage": [0.0, 0.0, 0.0],
-            "handling_gear": [0.0, 0.0, 0.0],
-            "horizontal_tail": [67, 0.0, 8.8],
-            "instruments": [0.0, 0.0, 0.0],
-            "nacelle_group": [0.0, 0.0, 0.0],
-            "starter_pneumatic": [0.0, 0.0, 0.0],
-            "vertical_tail": [64.0, 0.0, 30.0],
-            "wing": [0.0, 0.0, 0.0],
-            "engine": [30.0, 0.0, 6.0],
-            "engine_controls": [0.0, 0.0, 0.0],
-            "fuel_system": [0.0, 0.0, 0.0],
-            "flight_control": [0.0, 0.0, 0.0],
-            "military_cargo_handling_system": [0.0, 0.0, 0.0],
-            "door": [0.0, 0.0, 0.0],
-            "anchor": [0.0, 0.0, 0.0],
-            "floater": [0.0, 0.0, 0.0]
+            "air_conditioning": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "anti_ice": [
+                1.0,
+                0.0,
+                3.0
+            ],
+            "apu_installed": [
+                54.0,
+                0.0,
+                8.4
+            ],
+            "avionics": [
+                4.0,
+                0.0,
+                8.0
+            ],
+            "electrical": [
+                10.0,
+                0.0,
+                4.0
+            ],
+            "furnishings": [
+                20.0,
+                0.0,
+                5.0
+            ],
+            "fuselage": [
+                30.0,
+                0.0,
+                4.4
+            ],
+            "handling_gear": [
+                10.0,
+                0.0,
+                0.0
+            ],
+            "horizontal_tail": [
+                67,
+                0.0,
+                8.8
+            ],
+            "instruments": [
+                5.0,
+                0.0,
+                0.0
+            ],
+            "nacelle_group": [
+                20.0,
+                0.0,
+                0.0
+            ],
+            "starter_pneumatic": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "vertical_tail": [
+                64.0,
+                0.0,
+                30.0
+            ],
+            "wing": [
+                20.0,
+                0.0,
+                6.0
+            ],
+            "engine": [
+                30.0,
+                0.0,
+                6.0
+            ],
+            "engine_controls": [
+                4.0,
+                0.0,
+                6.0
+            ],
+            "fuel_system": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "flight_control": [
+                50.0,
+                0.0,
+                0.0
+            ],
+            "military_cargo_handling_system": [
+                25.0,
+                0.0,
+                5.0
+            ],
+            "door": [
+                4.0,
+                0.0,
+                5.0
+            ],
+            "anchor": [
+                10.0,
+                0.0,
+                1.0
+            ],
+            "floater": [
+                30.0,
+                0.0,
+                1.0
+            ]
         },
         "engine_positions": {
             "y_engines": [
@@ -479,7 +567,6 @@
             ]
         }
     },
-    
     "kinematic_viscosity": 1.006e-06,
     "rho_water": 1000,
     "viscosity_air": 1.484e-05,
