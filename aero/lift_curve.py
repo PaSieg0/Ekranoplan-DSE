@@ -101,7 +101,7 @@ class lift_curve():
         #returns cl
         return cm
     
-    def calc_drag(self,h_b='no',AR=8,e=0.85,alpha='n',cl='n',CD_0=0.00632):   #calculates the drag for only the wing using method from paper the values still need to be updated
+    def calc_drag(self,h_b='no',AR=8,e=0.85,alpha='n',cl='n',CD_0=0.0169):   #calculates the drag for only the wing using method from paper the values still need to be updated
         
         #correction factor
         if h_b=='no':
