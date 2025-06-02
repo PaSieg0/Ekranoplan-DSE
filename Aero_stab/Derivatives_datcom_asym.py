@@ -1,7 +1,7 @@
 import numpy as np
 
-class DerivativesDatcom:
-    def __init__(self, Delta_c4, A, S, Av, Sh, Sv, dihedral, l_b, d_fusel, V_b, b, lp, Cl_alpha, e, taper, MAC=8.456, x_ac=31.69, x_cg=32.73, Cd0 = 0.017):
+class DerivativesDatcom_asym:
+    def __init__(self, Delta_c4, A, S, Av, Sh, Sv, dihedral, l_b, d_fusel, V_b, b, lp, Cl_alpha, e, taper, MAC=8.456, x_ac=31.69, x_cg=32.73, Cd0 = 0.017, c_h=5.107):
         self.Delta_c4 = Delta_c4 #Quarter chord sweep: 0 
         self.l_b = l_b # length of body: 60 
         self.dihedral = dihedral #1
@@ -13,13 +13,14 @@ class DerivativesDatcom:
         self.d_fusel = d_fusel # Diameter of the fuselage: 6
         self.V_b = V_b # total body volume [m3]: 20000
         self.b = b #: 63.79
-        self.lp = lp # 36.431 
+        self.lp = lp # 36.431
         self.Cl_alpha = Cl_alpha # Lift curve slope of the wing, in rad: 9.167
         self.e = e # Oswald efficiency factor of the wing : 0.85 (guessed, typical value for a subsonic aircraft)
         self.taper = taper # Taper ratio of the wing: 0.4
         self.MAC = MAC # Mean Aerodynamic Chord: 8.456
         self.x_bar = x_ac - x_cg # Distance from the leading edge of the wing to the center of gravity: 31.5(from excel)
         self.Cd0 = Cd0 # Zero-lift drag coefficient of the wing
+        self.c_h = c_h
 
 
     def CyB(self, Cl, z_w=2, d=6, k2__k1=0.9, S0=30):
@@ -145,7 +146,7 @@ class DerivativesDatcom:
         return Cnp_w - Cnp_tail, Cnp_w, Cnp_tail
     
     def Cyr(self):
-        print('Cyr is very very vry very very very very small, Sam said so')
+        print('Cyr is very very vry very very very very small, Sam said so, therby it is true')
 
     def Clr(self, Cl, alpha):
         """
@@ -189,6 +190,34 @@ class DerivativesDatcom:
 
         return Cnr_wb + Cnr_tail
     
+    def CyBdot(self, Cl, alpha):
+        """
+        Calculate the side force coefficient due to the rate of change of the roll angle.
+        !!!!!!THIS IS THE MOST SKETCHY ONE, IT SHOULD BE VERY SMALL BUT IT IS NOT. HOWEVER CLBDOT DEPENDS ON THIS AND LOOKS FINE!!!!!
+
+        Returns:
+        float: Side force coefficient.
+        """
+        # p.2825
+        zp = 7
+        C_L_alpha_V = 0.124
+        sigma_B_alpha = -.001 # p.2834
+        sigma_B_dihedral = np.rad2deg(-0.93) # p.2846
+        sigma_B_WB = 0.135 # p.2867
+        sigma_B = sigma_B_alpha * alpha + sigma_B_dihedral / 57.3 * self.dihedral + sigma_B_WB
+        CyBdot = 2*C_L_alpha_V * sigma_B * self.Sv / self.S * (self.lp * np.cos(alpha) + zp * np.sin(alpha) / self.b) 
+        return CyBdot
+    
+    def ClBdot(self, Cl, alpha_f):
+        zp = 7
+        ClB_dot = self.CyBdot(Cl,alpha_f) * (zp * np.cos(alpha_f) - self.lp * np.sin(alpha_f)) / self.b
+        return ClB_dot
+    
+    
+    
+    
+
+    
 
 
 
@@ -203,8 +232,10 @@ class DerivativesDatcom:
 # print(Cnp.Cnp(1, np.deg2rad(2)))
 # Cnr = DerivativesDatcom(0, 8, 507, 1.5, 100, 75, 1,60, 6, 2000, 63.79, 36.431, 0.16, 0.85, 0.4)
 # print(Cnr.Cnr(1, np.deg2rad(2)))
-Clr = DerivativesDatcom(0, 8, 507, 1.5, 100, 75, np.deg2rad(1) ,60, 6, 2000, 63.79, 36.431, 0.16, 0.85, 0.4)
-print(Clr.Clr(1, np.deg2rad(2)))
+# Clr = DerivativesDatcom(0, 8, 507, 1.5, 100, 75, np.deg2rad(1) ,60, 6, 2000, 63.79, 36.431, 0.16, 0.85, 0.4)
+# print(Clr.Clr(1, np.deg2rad(2)))
+CyBdot = DerivativesDatcom_asym(0, 8, 507, 1.5, 100, 75, np.deg2rad(1), 60, 6, 2000, 63.79, 36.431, 0.16, 0.85, 0.4)
+print(CyBdot.ClBdot(1, np.deg2rad(2)))
 
 
     
