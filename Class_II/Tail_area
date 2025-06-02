@@ -1,0 +1,54 @@
+import os
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from utils import Data
+
+class Tail_area:
+    def __init__(self, aircraft_data: Data):
+        self.aircraft_data = aircraft_data
+        self.design_id = aircraft_data.data['design_id']
+        self.design_file = f"design{self.design_id}.json"
+        self.tail_type = self.aircraft_data.data['inputs']['tail_type']
+        self.A = self.aircraft_data.data['inputs']['aspect_ratio']
+        self.S = self.aircraft_data.data['wing_design']['S']
+        self.c_root = self.aircraft_data.data['wing_design']['chord_root']
+        self.c_tip = self.aircraft_data.data['wing_design']['chord_tip']
+
+    def get_mean_aerodynamic_chord(self):
+        c_root = self.c_root
+        c_tip = self.c_tip
+        c_mean = (c_root+c_tip)/2
+        return c_mean
+
+    def get_downwash(self):
+        if self.tail_type == "T_TAIL":
+            downwash = 0
+            return downwash
+        else:
+            downwash = 4/(self.A+2)
+            return downwash
+        
+    def get_aerodynamic_center(self):
+
+        X_ac = 0
+        return X_ac
+            
+    def get_Sh_S_ratio(self):
+        X_cg = 0
+        CL_alpha_h = 0.132
+        CL_alpha_A_h = 0
+        lh = 0
+        downwash = self.get_downwash
+        c = self.get_mean_aerodynamic_chord
+        X_ac = self.get_aerodynamic_center
+        Stability_margin = 0.05 #maybe look up if this needs to be bigger for ekrano
+        Vh_V = 1
+
+        Sh_S = 1/((CL_alpha_h/CL_alpha_A_h)*(1-downwash)*(lh/c)*Vh_V**2)*X_cg - (X_ac-Stability_margin)/((CL_alpha_h/CL_alpha_A_h)*(1-downwash)*(lh/c)*Vh_V**2)
+        return Sh_S
+    
+    def get_tail_area(self):
+        
+        Sh = self.get_Sh_S_ratio*self.S
+        return Sh
+
