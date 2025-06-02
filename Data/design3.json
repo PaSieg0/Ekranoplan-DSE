@@ -437,6 +437,30 @@
             "floater": 18702.8904745383,
             "total_OEW": 1210435.7945997093
         },
+        "component_positions": {
+            "air_conditioning": [0.0, 0.0, 0.0],
+            "anti_ice": [1.0, 0.0, 3.0],
+            "apu_installed": [0.0, 0.0, 0.0],
+            "avionics": [0.0, 0.0, 0.0],
+            "electrical": [0.0, 0.0, 0.0],
+            "furnishings": [0.0, 0.0, 0.0],
+            "fuselage": [0.0, 0.0, 0.0],
+            "handling_gear": [0.0, 0.0, 0.0],
+            "horizontal_tail": [67, 0.0, 8.8],
+            "instruments": [0.0, 0.0, 0.0],
+            "nacelle_group": [0.0, 0.0, 0.0],
+            "starter_pneumatic": [0.0, 0.0, 0.0],
+            "vertical_tail": [64.0, 0.0, 30.0],
+            "wing": [0.0, 0.0, 0.0],
+            "engine": [30.0, 0.0, 6.0],
+            "engine_controls": [0.0, 0.0, 0.0],
+            "fuel_system": [0.0, 0.0, 0.0],
+            "flight_control": [0.0, 0.0, 0.0],
+            "military_cargo_handling_system": [0.0, 0.0, 0.0],
+            "door": [0.0, 0.0, 0.0],
+            "anchor": [0.0, 0.0, 0.0],
+            "floater": [0.0, 0.0, 0.0]
+        },
         "engine_positions": {
             "y_engines": [
                 7.016363005162699,
