@@ -195,7 +195,8 @@
         "cargo_width": 3.5,
         "cargo_height": 4,
         "cargo_length": 7.32,
-        "cargo_density": 160
+        "cargo_density": 160,
+        "cargo_mass": 90000
     },
     "outputs": {
         "general": {
@@ -225,9 +226,9 @@
             "xcg_payload": 0.44404883931977346,
             "nmax": 3.4299549962557774,
             "nmin": -1.4299549962557774,
-            "cargo_distance_from_nose": 8.0,
-            "cargo_length": 18.0,
-            "cargo_width": 7.0,
+            "cargo_distance_from_nose": 0,
+            "cargo_length": 28.3,
+            "cargo_width": 5,
             "cargo_height": 4.5
         },
         "design": {
@@ -459,6 +460,10 @@
                 8.65747572678037,
                 8.749987570899924
             ]
+        },
+        "cg_positions": {
+            "OEW_CG": 33.324447128706844,
+            "MTOW_CG": 33.04991403041844
         }
     },
     "kinematic_viscosity": 1.006e-06,
