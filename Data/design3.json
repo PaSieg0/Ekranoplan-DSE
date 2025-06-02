@@ -46,10 +46,12 @@
         "w_fuselage": 7,
         "h_fuselage": 6,
         "t_fuselage": 3,
+        "fuel_tank": 0.4,
+        "fuel_tank_thickness": 2,
         "control_surfaces": {
             "aileron_end": 0.985,
             "LE_flap_chord": 0.1,
-            "flap_chord": 0.35,
+            "flap_chord": 0.3,
             "flap_type": "DOUBLE_SLOT",
             "aileron_deflection": 25,
             "aileron_chord": 0.25,
@@ -69,14 +71,18 @@
             "wing_box": {
                 "front_spar": 0.15,
                 "rear_spar": 0.65,
-                "t_skin": 0.5,
-                "t_spar": 15,
-                "t_wing": 0.5,
-                "stringer_area": 3000,
-                "n_stringers": 60,
-                "n_cells": 4,
+                "t_skin": 14,
+                "t_spar": 18,
+                "t_wing": 5,
+                "stringer_area": 1500,
+                "n_stringers": 30,
+                "n_cells": 3,
                 "C": 4,
-                "L_stringer": 100
+                "L_stringer": 150,
+                "min_skin_thickness": 4,
+                "min_spar_thickness": 4,
+                "thickness_threshold": 0.25,
+                "cutout_spacing": 0.3
             },
             "materials": {
                 "al7075": {
@@ -189,7 +195,8 @@
         "cargo_width": 3.5,
         "cargo_height": 4,
         "cargo_length": 7.32,
-        "cargo_density": 160
+        "cargo_density": 160,
+        "cargo_mass": 90000
     },
     "outputs": {
         "general": {
@@ -217,11 +224,11 @@
             "LD_g": 17.437940525815858,
             "Cd_water": 0.0012700434697589557,
             "xcg_payload": 0.44404883931977346,
-            "nmax": 3.443126045275873,
-            "nmin": -1.443126045275873,
-            "cargo_distance_from_nose": 8.0,
-            "cargo_length": 18.0,
-            "cargo_width": 7.0,
+            "nmax": 3.4299549962557774,
+            "nmin": -1.4299549962557774,
+            "cargo_distance_from_nose": 0,
+            "cargo_length": 28.3,
+            "cargo_width": 5,
             "cargo_height": 4.5
         },
         "design": {
@@ -412,6 +419,28 @@
             "flap_area": 67.21885015029379,
             "Swf_single": 170.34351328250182
         },
+        "wing_stresses": {
+            "bending_stress_max_margin": 1.1393819838587615,
+            "bending_stress_bottom_max_margin": 1.6441747264759952,
+            "shear_stress_max_margin": 1.8549268866402266,
+            "wing_bending_stress_max_margin": 1.098554862524398,
+            "max_bending_stress": -444.51376556570966,
+            "max_bending_stress_bottom": 305.92855607146674,
+            "max_shear_stress": -70.51289572750363,
+            "max_wing_bending_stress": -457.87426478104436,
+            "max_moment_x": -57249822.512195796,
+            "max_moment_y": 1701226.309900394,
+            "max_torque": 4855986.282588747,
+            "max_vertical_shearforce": -4290607.446738046,
+            "bending_stress_min_margin": 2.3365969346502005,
+            "bending_stress_bottom_min_margin": 3.4534232416593262,
+            "shear_stress_min_margin": 4.830228159963336,
+            "wing_bending_stress_min_margin": 2.2745880160658913,
+            "min_moment_x": 27597703.99519368,
+            "min_moment_y": 1701226.309900394,
+            "min_torque": -4144211.608247595,
+            "min_vertical_shearforce": 2082170.443417112
+        },
         "component_weights": {
             "air_conditioning": 0.0,
             "anti_ice": 5113.473349735867,
@@ -426,7 +455,7 @@
             "nacelle_group": 47353.35620448121,
             "starter_pneumatic": 1452.8499942368344,
             "vertical_tail": 32105.41750592084,
-            "wing": 315622.02971437335,
+            "wing": 445517.9031872845,
             "engine": 193516.54734878984,
             "engine_controls": 2082.8691140756987,
             "fuel_system": 2349.8222965275627,
@@ -565,6 +594,10 @@
                 8.65747572678037,
                 8.749987570899924
             ]
+        },
+        "cg_positions": {
+            "OEW_CG": 33.324447128706844,
+            "MTOW_CG": 33.04991403041844
         }
     },
     "kinematic_viscosity": 1.006e-06,
