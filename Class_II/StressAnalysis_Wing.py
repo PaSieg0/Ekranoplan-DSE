@@ -29,8 +29,9 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
         self.dy = np.gradient(self.b_array)
 
         self.max_load_factor = 2.5
-        self.min_load_factor = self.aircraft_data.data['outputs']['general']['nmin']
+        self.min_load_factor = -1
         self.evaluate_case = 'max'
+        self.margins = {}
         self.load_factor = self.max_load_factor
         self.drag_array = -self.drag_function(self.b_array)
         self.I_xx_array = np.array([self.wing_structure[i]['I_xx'] for i in range(len(self.wing_structure))])
@@ -71,7 +72,7 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
         while True:
             self.rib_iteraion += 1
             print(f'Rib Iteration: {self.rib_iteraion}, {self.tot_weight}')
-            self.get_wing_rib(ribs={'x_positions': self.rib_positions, 'thicknesses': self.rib_thicknesses})
+            self.calculate_rib_masses(ribs={'x_positions': self.rib_positions, 'thicknesses': self.rib_thicknesses})
             self.wing_weight = self.wing_weight_dist()
             self.curr_weight = self.tot_weight
 
@@ -414,13 +415,34 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
 
             for idx,ref in enumerate(references):
                 margin = np.min(abs(ref)/abs(main_stress))
-                print(f'Margin for {i.name} (n={self.load_factor:.2f}): {margin} ({labels[0]} vs {labels[1:][idx]})')
-        
+                if margin < 1:
+                    print(f'Warning: Margin for {i.name} (n={self.load_factor:.2f}) is below 1: {margin} ({labels[0]} vs {labels[1:][idx]})')
+                # print(f'Margin for {i.name} (n={self.load_factor:.2f}): {margin} ({labels[0]} vs {labels[1:][idx]})')
+                self.margins[f'{i.name.lower()}_{self.evaluate_case}_margin'] = margin
+
+        for i in relevant_stresses:
+            self.margins[f'max_{i.name.lower()}'] = self.load_data['max'][i]['main'][0]
+
+        self.margins[f'{self.evaluate_case}_moment_x'] = self.M_internal[0]
+        self.margins[f'{self.evaluate_case}_moment_y'] = self.M_internal_y[0]
+        self.margins[f'{self.evaluate_case}_torque'] = self.T_internal[0]
+        self.margins[f'{self.evaluate_case}_vertical_shearforce'] = self.Vy_internal[0]
+
         self.plot_any(StressOutput.DEFLECTION)
         if self.runs == 1 and self.PLOT:
-            self.plot_output()
-            self.plot_wing_ribs()
-            self.plot_any(StressOutput.TWIST)
+            # self.plot_output()
+            # self.plot_wing_ribs()
+            self.plot_rib(id=0)
+            self.plot_rib(id=len(self.rib_positions)-1)
+
+            self.update_attributes()
+
+    def update_attributes(self):
+
+        self.aircraft_data.data['outputs']['wing_stresses'] = self.margins
+        self.aircraft_data.data['outputs']['component_weights']['wing'] = self.wing_mass*2*9.81
+
+        self.aircraft_data.save_design(self.design_file)
 
     def get_output(self, output_type: StressOutput):
         output_map = {
