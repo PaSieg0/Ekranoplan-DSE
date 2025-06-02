@@ -20,10 +20,10 @@ class ClassII:
         self.A_v = self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['aspect_ratio'] # vertical tail aspect ratio
         self.B_h = m2ft(aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['b']) # horizontal tail span
         self.B_w = m2ft(aircraft_data.data['outputs']['wing_design']['b']) # wing span
-        self.D = m2ft(self.aircraft_data.data['outputs']['general']['d_fuselage']) # fuselage structural depth
+        self.D = m2ft(self.aircraft_data.data['outputs']['general']['d_fuselage_equivalent_straight']) # fuselage structural depth
         self.D_e = m2ft(5.3) # engine diameter
-        self.F_w = m2ft(aircraft_data.data['outputs']['general']['d_fuselage']) # fuselage width at horizontal tail
-        self.H_t = m2ft(self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['tail_height']) - m2ft(self.aircraft_data.data['outputs']['general']['d_fuselage']) # horizontal tail height
+        self.F_w = m2ft(aircraft_data.data['outputs']['general']['d_fuselage_equivalent_straight']) # fuselage width at horizontal tail
+        self.H_t = m2ft(self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['tail_height']) - m2ft(self.aircraft_data.data['outputs']['general']['d_fuselage_equivalent_straight']) # horizontal tail height
         self.H_t_H_v = 1
         self.I_y = kgmsq2lbsftsq(10000) # Yawing moment of interia
         # self.K_cb = 1 # landging gear so 0???
@@ -88,7 +88,7 @@ class ClassII:
         self.S_cs = msq2ftsq(100) # total control surface area
         self.S_csw = 2*msq2ftsq(self.aircraft_data.data['outputs']['control_surfaces']['aileron']['area_single']) # control surface area wing mounted 
         self.S_e = 2*msq2ftsq(self.aircraft_data.data['outputs']['control_surfaces']['aileron']['area_single']) # elevator area
-        self.S_f = msq2ftsq(2*np.pi*self.aircraft_data.data['outputs']['general']['r_fuselage']*self.aircraft_data.data['outputs']['general']['l_fuselage'] + 2*np.pi*self.aircraft_data.data['outputs']['general']['r_fuselage']**2) # fuselage wetted area
+        self.S_f = msq2ftsq(2*np.pi*self.aircraft_data.data['outputs']['general']['r_fuselage_equivalent_straight']*self.aircraft_data.data['outputs']['general']['l_fuselage'] + 2*np.pi*self.aircraft_data.data['outputs']['general']['r_fuselage_equivalent_straight']**2) # fuselage wetted area
         # self.S_fw = # firewall surface area
         self.S_ht = msq2ftsq(self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['S']) # horizontal tail surface area
         self.S_n = msq2ftsq(np.pi*self.N_w*self.N_Lt + np.pi*(self.N_w/2)**2) # nacelle wetted area
