@@ -1,7 +1,7 @@
 import numpy as np
 
 class DerivativesDatcom:
-    def __init__(self, Delta_c4, A, S, Av, Sh, Sv, dihedral, l_b, d_fusel, V_b, b, lp):
+    def __init__(self, Delta_c4, A, S, Av, Sh, Sv, dihedral, l_b, d_fusel, V_b, b, lp, Cl_alpha, e, taper, MAC=8.456, x_ac=31.69, x_cg=32.73, Cd0 = 0.017):
         self.Delta_c4 = Delta_c4 #Quarter chord sweep: 0 
         self.l_b = l_b # length of body: 60 
         self.dihedral = dihedral #1
@@ -13,7 +13,14 @@ class DerivativesDatcom:
         self.d_fusel = d_fusel # Diameter of the fuselage: 6
         self.V_b = V_b # total body volume [m3]: 20000
         self.b = b #: 63.79
-        self.lp = lp
+        self.lp = lp # 36.431 
+        self.Cl_alpha = Cl_alpha # Lift curve slope of the wing, in rad: 9.167
+        self.e = e # Oswald efficiency factor of the wing : 0.85 (guessed, typical value for a subsonic aircraft)
+        self.taper = taper # Taper ratio of the wing: 0.4
+        self.MAC = MAC # Mean Aerodynamic Chord: 8.456
+        self.x_bar = x_ac - x_cg # Distance from the leading edge of the wing to the center of gravity: 31.5(from excel)
+        self.Cd0 = Cd0 # Zero-lift drag coefficient of the wing
+
 
     def CyB(self, Cl, z_w=2, d=6, k2__k1=0.9, S0=30):
         """
@@ -21,11 +28,9 @@ class DerivativesDatcom:
 
         Parameters:
         CL (float): Lift coefficient.
-        Delta_c4 (float): Elevator deflection in radians.
-        A (float): Aspect ratio of the wing.
 
         Returns:
-        float: Side force coefficient.
+        tuple(float: total Side force coefficient, side force due to tail(needed for Cyp).
         """
         z_w = 2 #TODO #distance from centerline wing to centerline body
         d = 6 #max body height at wing intersection
@@ -52,7 +57,7 @@ class DerivativesDatcom:
         CyB_wing_body = K * CyB_body * (S_ref_body / S_ref_wing) * delta_CyB_dihedral
         CyB_tail = - 1 * Cl_alpha_Vtail * sidewash_coeff *self.Sv / self.S
 
-        return CyB_wing_body + CyB_tail
+        return CyB_wing_body + CyB_tail, CyB_tail
     
     def ClB(self, Cl, alpha):
         clB__cl_s = -0.002/5 # from plot->p1563
@@ -86,34 +91,120 @@ class DerivativesDatcom:
         CnB_Vtail = -dcyB_Vtail * (self.lp / self.b)
         return CnB_wb + CnB_Vtail
     
-    def Cyp(self, Cl, alpha):
+    def Cyp(self, Cl, alpha, h_b):
         """
         Calculate the side force coefficient due to the roll rate.
 
         Returns:
         float: Side force coefficient.
         """
-        z = 0
-        K =  0
+        sigma=np.exp(-2.48*(h_b)**(0.768))
+        zp = 7 # Guessed, distance from the centerline of the body to the centerline of the vertical tail
+        z = zp * np.cos(alpha) - self.lp * np.sin(alpha) # distance from the centerline of the body to the centerline of the wing
+        K =  (self.Cl_alpha * np.tan(alpha) + Cl / (np.cos(alpha))**2 - 2 * Cl / (np.pi * self.A * self.e) * (1 - sigma) * self.Cl_alpha) / (self.Cl_alpha * np.tan(alpha) + Cl / (np.cos(alpha))**2 - 2 * Cl / (np.pi * self.A * self.e) * self.Cl_alpha)
         B = np.sqrt(1 - 0.34**2 * np.cos(self.Delta_c4)**2) # p.2522
         Cyp__Cl_0 = -0.18 #p2529
         Cyp__Cl = ((self.A + 4 * np.cos(self.Delta_c4)) * (self.A * B + np.cos(self.Delta_c4)) * Cyp__Cl_0) / (self.A * B + 4 * np.cos(self.Delta_c4) * (self.A + np.cos(self.Delta_c4)))
 
         clp_cl0 =  0 # p2526
-        dCyp_dihedral = (3 * np.sin(self.dihedral(1 - 2 * z / (self.b / 2)) * np.sin(self.dihedral))) * clp_cl0
+        dCyp_dihedral = (3 * np.sin(self.dihedral * (1 - 2 * z / (self.b / 2)) * np.sin(self.dihedral))) * clp_cl0
         Cyp_wb = K*((Cyp__Cl * Cl)) + dCyp_dihedral
 
-        z_zp = 0
-        dCyB_VWBH = 0
-        Cyp_Vtail = Cyp_wb + 2 * (z_zp / self.b) * ()
+        dCyB_VWBH = self.CyB(Cl)[1]
+        Cyp_Vtail = Cyp_wb + 2 * ((z - zp) / self.b) * dCyB_VWBH
+        return Cyp_wb + Cyp_Vtail, K
     
-    
-    
+    def Clp(self):
+        """
+        Calculate the roll moment coefficient due to the roll rate. Method taken from FD lecture notes.
+
+        Returns:
+        float: Roll moment coefficient.
+        """
+        Clp = -0.3 + self.taper / 0.5 * ((0.3- 0.5))
+        return Clp
         
-        
+    def Cnp(self,Cl, alpha):
+        """
+        Calculate the yaw moment coefficient due to the roll rate.
+
+        Returns:
+        float: Yaw moment coefficient.
+        """
+        x__c = self.x_bar / self.MAC # Distance from the leading edge of the wing to the center of gravity, normalized by the mean aerodynamic chord
+        print(x__c)
+        print(f"x__c: {x__c}")
+        B = np.sqrt(1 - 0.34**2 * np.cos(self.Delta_c4)**2) # p.2522
+        Cnp__Cl_M0 = (-(1 / 6) * (self.A + 6 * (self.A + np.cos(self.Delta_c4)))*(x__c * np.tan(self.Delta_c4) / self.A  + (np.tan(self.Delta_c4))**2 / 12)) / (self.A + 4 * np.cos(self.Delta_c4))
+        Cnp__Cl = ((self.A + 4 * np.cos(self.Delta_c4)) / (self.A * B + 4 * np.cos(self.Delta_c4))) * ((self.A * B + 0.5 * (self.A * B + np.cos(self.Delta_c4) * (np.tan(self.Delta_c4))**2)) / (self.A + 0.5 * (self.A + np.cos(self.Delta_c4) * (np.tan(self.Delta_c4))**2))) * Cnp__Cl_M0
+        Cnp_w = -self.Clp() * np.tan(alpha) - self.Cyp(Cl, alpha, h_b = 0.05)[1] * (-self.Clp() * np.tan(alpha) - Cnp__Cl * Cl) # p.2559 
+
+        zp = 7 # Guessed, distance from the centerline of the body to the centerline of the vertical tail
+        z = zp * np.cos(alpha) - self.lp * np.sin(alpha) # distance from the centerline of the body to the centerline of the wing
+        Cnp_tail = 2 / self.b * (self.lp * np.cos(alpha) + zp * np.sin(alpha) * (z - zp) / self.b * self.CyB(Cl)[1])
+        return Cnp_w - Cnp_tail, Cnp_w, Cnp_tail
     
-cyb = DerivativesDatcom(0, 8, 507, 1.5, 100, 75, 1,60, 6, 2000, 63.79, 66)
-print(cyb.CnB())
+    def Cyr(self):
+        print('Cyr is very very vry very very very very small, Sam said so')
+
+    def Clr(self, Cl, alpha):
+        """
+        Calculate the roll moment coefficient due to the yaw rate.
+
+        Returns:
+        float: Roll moment coefficient.
+        """
+        # p2580
+        B = np.sqrt(1 - 0.34**2 * np.cos(self.Delta_c4)**2) # p.2522
+        Clr__cl_M0 = .24 #p.2589
+        Clr__Cl = (1 + (self.A*(1-B**2))/(2*B*(self.A*B + 2*np.cos(self.Delta_c4))) + (self.A*B+2*np.cos(self.Delta_c4))/(self.A*B+4*np.cos(self.Delta_c4)) * np.tan(self.Delta_c4)**2 / 8 * Clr__cl_M0) / (1 + (self.A + 2 * np.cos(self.Delta_c4)) / (self.A + 4 * np.cos(self.Delta_c4)) * np.tan(self.Delta_c4)**2 / 8) #p.2581
+
+        clB__cl_s = -0.002/5 # from plot->p1563
+        Km_s = 1.03 #from plot p1564
+        kf = 0.95 # from plot p1625
+        clB__Cl_A = 0 #from plot
+        ClB__Cl = clB__cl_s*Km_s*kf+clB__Cl_A
+        dClr_Cl = Cl * ClB__Cl - self.ClB(Cl, alpha)
+        dClr__dihedral = 1/12 * (np.pi * self.A * np.sin(self.Delta_c4)) / (self.A + 4 * np.cos(self.Delta_c4))
+
+        Clr_wb = Cl * Clr__Cl + dClr_Cl + dClr__dihedral * self.dihedral
+
+        zp = 7 # Guessed, distance from the centerline of the body to the centerline of the vertical tail
+        Clr_tail = 2 / self.b**2 * (self.lp * np.cos(alpha) + zp * np.sin(alpha)*(zp*np.cos(alpha - self.lp * np.sin(alpha))) * self.CyB(Cl)[1]) #p.2802
+        return Clr_wb - Clr_tail
+    
+    def Cnr(self, Cl, alpha):
+        """
+        Calculate the yaw moment coefficient due to the yaw rate.
+
+        Returns:
+        float: Yaw moment coefficient.
+        """
+        Cnr__Cl2 = -.015
+        Cnr__Cd0 = -.3
+        Cnr_wb = Cnr__Cl2 * Cl**2 + Cnr__Cd0 * self.Cd0
+
+        zp = 7 # Guessed, distance from the centerline of the body to the centerline of the vertical tail
+        Cnr_tail = 2 / self.b**2 * (self.lp * np.cos(alpha) + zp * np.sin(alpha))**2 * self.CyB(Cl)[1]
+
+        return Cnr_wb + Cnr_tail
+    
+
+
+
+
+# cyb = DerivativesDatcom(0, 8, 507, 1.5, 100, 75, 1,60, 6, 2000, 63.79, 36.431, 0.16, 0.85)
+# print(cyb.CnB())
+# Cyp = DerivativesDatcom(0, 8, 507, 1.5, 100, 75, 1,60, 6, 2000, 63.79, 36.431, 0.16, 0.85)
+# print(Cyp.Cyp(0.5, 0.1, 0.05))
+# Clp = DerivativesDatcom(0, 8, 507, 1.5, 100, 75, 1,60, 6, 2000, 63.79, 36.431, 0.16, 0.85, 0.4)
+# print(Clp.Clp())
+# Cnp = DerivativesDatcom(0, 8, 507, 1.5, 100, 75, 1,60, 6, 2000, 63.79, 36.431, 0.16, 0.85, 0.4)
+# print(Cnp.Cnp(1, np.deg2rad(2)))
+# Cnr = DerivativesDatcom(0, 8, 507, 1.5, 100, 75, 1,60, 6, 2000, 63.79, 36.431, 0.16, 0.85, 0.4)
+# print(Cnr.Cnr(1, np.deg2rad(2)))
+Clr = DerivativesDatcom(0, 8, 507, 1.5, 100, 75, np.deg2rad(1) ,60, 6, 2000, 63.79, 36.431, 0.16, 0.85, 0.4)
+print(Clr.Clr(1, np.deg2rad(2)))
 
 
     
