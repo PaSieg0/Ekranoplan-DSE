@@ -28,7 +28,7 @@ class LoadingDiagram:
         self.cargo_density_heavy = 100000 * 9.81 / (self.cargo_cross_section * self.cargo_length)
         self.step_size = np.array([0.1, 0.0, 0.0])
 
-        self.X_LEMAC = 25#self.aircraft_data.data['outputs']['wing_design']['X_LEMAC']
+        self.X_LEMAC = self.aircraft_data.data['outputs']['wing_design']['X_LEMAC']
         self.MAC = self.aircraft_data.data['outputs']['wing_design']['MAC']
 
         self.fuel_pos = self.X_LEMAC + 0.5*self.MAC
@@ -37,10 +37,28 @@ class LoadingDiagram:
     def determine_OEW_cg(self):
         self.component_cgs = {}
         for key, positions in self.component_positions.items():
-            weight = self.aircraft_data.data['outputs']['component_weights'][key]
-            self.component_cgs[key] = np.asarray(positions) * weight
+            if key == 'wing':
+                positions = np.asarray(positions)
+                positions[0] = self.X_LEMAC + 0.5*self.MAC
+                print(f"Positions for {key}: {positions}")
+                weight = self.aircraft_data.data['outputs']['component_weights'][key]
+                self.component_cgs[key] = positions * weight
+            if key == 'engine':
+                positions = np.asarray(positions)
+                positions[0] = self.X_LEMAC
+                weight = self.aircraft_data.data['outputs']['component_weights'][key]
+                self.component_cgs[key] = positions * weight
+            if key == 'nacelle_group':
+                positions = np.asarray(positions)
+                positions[0] = self.X_LEMAC
+                weight = self.aircraft_data.data['outputs']['component_weights'][key]
+                self.component_cgs[key] = positions * weight
+            else:
+                weight = self.aircraft_data.data['outputs']['component_weights'][key]
+                self.component_cgs[key] = np.asarray(positions) * weight
         self.OEW_cg = np.sum(list(self.component_cgs.values()), axis=0) / np.sum(list(self.aircraft_data.data['outputs']['component_weights'].values()))
-        self.OEW_cg[0] = 22
+        self.OEW_cg[0] = self.X_LEMAC + 0.5*self.MAC
+        print(f"OEW CG: {self.OEW_cg}")
         return self.OEW_cg
     
     def load_front_to_back_regular(self):
@@ -107,9 +125,21 @@ class LoadingDiagram:
         curr_cg, curr_weight = self.load_front_to_back_regular()
         curr_cg = np.asarray(curr_cg[-1])
         curr_weight = curr_weight[-1]
+        MTOW = self.aircraft_data.data['outputs']['max']['MTOW']
+        self.fuel_weight = MTOW - curr_weight
         new_cg = (curr_cg*curr_weight + self.fuel_pos*self.fuel_weight)/(curr_weight+ self.fuel_weight)
         return new_cg, curr_weight + self.fuel_weight
     
+    def add_fuel_heavy(self):
+        curr_cg, curr_weight = self.load_front_to_back_heavy()
+        curr_cg = np.asarray(curr_cg[-1])
+        curr_weight = curr_weight[-1]
+        MTOW = self.aircraft_data.data['outputs']['max']['MTOW']
+        fuel_weight = MTOW - curr_weight
+        print(fuel_weight)
+        new_cg = (curr_cg*curr_weight + self.fuel_pos*fuel_weight)/(curr_weight+fuel_weight)
+        return new_cg, curr_weight + fuel_weight
+
     def determine_range(self):
         OEW_cg = self.determine_OEW_cg()
         f2b_cg, f2b_weight = self.load_front_to_back_regular()
@@ -145,23 +175,27 @@ class LoadingDiagram:
 
     def plot(self):
         OEW_cg = self.determine_OEW_cg()
+        print(f"OEW CG: {OEW_cg}")
         f2b_cg, f2b_weight = self.load_front_to_back_regular()
         f2b_heavy_cg, f2b_heavy_weight = self.load_front_to_back_heavy()
         b2f_cg, b2f_weight = self.load_back_to_front_regular()
         b2f_heavy_cg, b2f_heavy_weight = self.load_back_to_front_heavy()
         fuel_cg, fuel_weight = self.add_fuel_regular()
+        fuel_heavy_cg, fuel_heavy_weight = self.add_fuel_heavy()
 
         f2b_cg_mac = (f2b_cg[:, 0] - self.X_LEMAC) / self.MAC
         b2f_cg_mac = (b2f_cg[:, 0] - self.X_LEMAC) / self.MAC
         f2b_heavy_cg_mac = (f2b_heavy_cg[:, 0] - self.X_LEMAC) / self.MAC
         b2f_heavy_cg_mac = (b2f_heavy_cg[:, 0] - self.X_LEMAC) / self.MAC
         fuel_cg_mac = (fuel_cg[0] - self.X_LEMAC) / self.MAC
+        fuel_heavy_cg_mac = (fuel_heavy_cg[0] - self.X_LEMAC) / self.MAC
 
         f2b_weight = f2b_weight / 9.81  # Convert to kg
         b2f_weight = b2f_weight / 9.81
         f2b_heavy_weight = f2b_heavy_weight / 9.81
         b2f_heavy_weight = b2f_heavy_weight / 9.81
         fuel_weight = fuel_weight / 9.81
+        fuel_heavy_weight = fuel_heavy_weight / 9.81
 
         fig, axs = plt.subplots(1, 2, figsize=(16, 6))
 
@@ -172,6 +206,8 @@ class LoadingDiagram:
         axs[0].plot(b2f_heavy_cg[:, 0], b2f_heavy_weight, label='Back to Front Heavy', color='orange')
         axs[0].scatter(fuel_cg[0], fuel_weight, color='green', label='Fuel CG', zorder=5)
         axs[0].plot([f2b_cg[-1, 0], fuel_cg[0]], [f2b_weight[-1], fuel_weight], color='green', linestyle='--', label='Fuel Loading')
+        axs[0].scatter(fuel_heavy_cg[0], fuel_heavy_weight, color='darkgreen', label='Fuel CG (Heavy)', zorder=5)
+        axs[0].plot([f2b_heavy_cg[-1, 0], fuel_heavy_cg[0]], [f2b_heavy_weight[-1], fuel_heavy_weight], color='darkgreen', linestyle='--', label='Fuel Loading (Heavy)')
         axs[0].axvline(self.X_LEMAC, color='black', linestyle=':', label='X_LEMAC')
         axs[0].set_xlabel('CG X Position (m)')
         axs[0].set_ylabel('Weight (kg)')
@@ -185,6 +221,8 @@ class LoadingDiagram:
         axs[1].plot(b2f_heavy_cg_mac, b2f_heavy_weight, color='orange')
         axs[1].scatter(fuel_cg_mac, fuel_weight, color='green', zorder=5)
         axs[1].plot([f2b_cg_mac[-1], fuel_cg_mac], [f2b_weight[-1], fuel_weight], color='green', linestyle='--')
+        axs[1].scatter(fuel_heavy_cg_mac, fuel_heavy_weight, color='darkgreen', zorder=5)
+        axs[1].plot([f2b_heavy_cg_mac[-1], fuel_heavy_cg_mac], [f2b_heavy_weight[-1], fuel_heavy_weight], color='darkgreen', linestyle='--')
         axs[1].set_xlabel('CG X Position (MAC)')
         axs[1].set_ylabel('Weight (kg)')
         axs[1].set_title('Loading Diagram (MAC Reference Frame)')
@@ -207,5 +245,7 @@ if __name__ == "__main__":
     aircraft_data = Data(file_path)
     loading_diagram = LoadingDiagram(aircraft_data=aircraft_data)
     loading_diagram.plot()
-    min_cg, max_cg = loading_diagram.determine_range()
-    print(f"Minimum CG: {min_cg}, Maximum CG: {max_cg}")
+    # min_cg, max_cg = loading_diagram.determine_range()
+    # print(f"Minimum CG: {min_cg}, Maximum CG: {max_cg}")
+    loading_diagram.X_LEMAC = 40
+    loading_diagram.plot()

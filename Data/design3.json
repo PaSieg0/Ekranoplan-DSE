@@ -199,8 +199,8 @@
             "r_fuselage_equivalent_straight": 3.795,
             "step_depth": 0.464,
             "h_afterbody": 6.836,
-            "l_fuselage": 80.0420222806745,
-            "l_tailcone": 42.37518826623944,
+            "l_fuselage": 54.252,
+            "l_tailcone": 15.252,
             "l_afterbody": 15.0,
             "l_nose": 14.125062755413147,
             "l_fus_straight": 26.0,
@@ -351,7 +351,7 @@
         "cg_range": {
             "most_aft_cg": 34.38178461056167,
             "most_aft_mission": "DESIGN_OEW_PAYLOAD_FUEL",
-            "most_forward_cg": 32.0168089122698,
+            "most_forward_cg": 27.7008,
             "most_forward_mission": "DESIGN_OEW"
         },
         "empennage_design": {
@@ -455,32 +455,32 @@
                 3.0
             ],
             "apu_installed": [
+                54.0,
                 0.0,
-                0.0,
-                0.0
+                8.4
             ],
             "avionics": [
+                4.0,
                 0.0,
-                0.0,
-                0.0
+                8.0
             ],
             "electrical": [
+                10.0,
                 0.0,
-                0.0,
-                0.0
+                4.0
             ],
             "furnishings": [
+                20.0,
                 0.0,
-                0.0,
-                0.0
+                5.0
             ],
             "fuselage": [
+                30.0,
                 0.0,
-                0.0,
-                0.0
+                4.4
             ],
             "handling_gear": [
-                0.0,
+                10.0,
                 0.0,
                 0.0
             ],
@@ -490,12 +490,12 @@
                 8.8
             ],
             "instruments": [
-                0.0,
+                5.0,
                 0.0,
                 0.0
             ],
             "nacelle_group": [
-                0.0,
+                20.0,
                 0.0,
                 0.0
             ],
@@ -510,9 +510,9 @@
                 30.0
             ],
             "wing": [
+                20.0,
                 0.0,
-                0.0,
-                0.0
+                6.0
             ],
             "engine": [
                 30.0,
@@ -520,9 +520,9 @@
                 6.0
             ],
             "engine_controls": [
+                4.0,
                 0.0,
-                0.0,
-                0.0
+                6.0
             ],
             "fuel_system": [
                 0.0,
@@ -530,29 +530,29 @@
                 0.0
             ],
             "flight_control": [
-                0.0,
+                50.0,
                 0.0,
                 0.0
             ],
             "military_cargo_handling_system": [
+                25.0,
                 0.0,
-                0.0,
-                0.0
+                5.0
             ],
             "door": [
+                4.0,
                 0.0,
-                0.0,
-                0.0
+                5.0
             ],
             "anchor": [
+                10.0,
                 0.0,
-                0.0,
-                0.0
+                1.0
             ],
             "floater": [
+                30.0,
                 0.0,
-                0.0,
-                0.0
+                1.0
             ]
         },
         "engine_positions": {
