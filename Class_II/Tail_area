@@ -17,8 +17,11 @@ class Tail_area:
         self.c_tip = aircraft_data.data['outputs']['wing_design']['chord_tip']
         self.most_aft_cg = aircraft_data.data['outputs']['cg_range']['most_aft_cg']
         self.most_fwd_cg = aircraft_data.data['outputs']['cg_range']['most_forward_cg']
+
         self.lemac = aircraft_data.data['outputs']['wing_design']['X_LEMAC']
         self.MAC = self.aircraft_data.data['outputs']['wing_design']['MAC']
+        self.most_aft_cg = 0.945 * self.MAC + self.lemac
+        self.most_fwd_cg = 0.1125 * self.MAC + self.lemac
         self.horizontal_tail_pos = aircraft_data.data['outputs']['component_positions']['horizontal_tail']
 
     def get_downwash(self):
@@ -82,9 +85,9 @@ class Tail_area:
         plt.axvline(x=X_cg_fwd_bar, color='green', linestyle='-.', linewidth=1.5, label='X_cg (min)')
         plt.axvline(x=X_cg_aft_bar, color='purple', linestyle='-.', linewidth=1.5, label='X_cg (max)')
 
-        plt.xlabel('X_cg [m]')
+        plt.xlabel('X_cg')
         plt.ylabel('Sh/S')
-        plt.title('Sh/S vs X_cg for Stability and Controllability')
+        plt.title('Scissor plot')
         plt.grid(True)
         plt.legend()
         plt.tight_layout()
@@ -105,7 +108,7 @@ class Tail_area:
 if __name__ == "__main__":
     file_path = "design3.json"
     aircraft_data = Data(file_path)
-    Xcg_values = np.linspace(0, 1.2, 200)
+    Xcg_values = np.linspace(-0.5, 1.2, 200)
     tail = Tail_area(aircraft_data=aircraft_data)
     plot = tail.plot(Xcg_values)
     tail_area = tail.get_tail_area()
