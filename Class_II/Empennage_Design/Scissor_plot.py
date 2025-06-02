@@ -2,11 +2,11 @@ import os
 import sys
 import numpy as np
 import matplotlib.pyplot as plt
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 from utils import Data
 
 class Tail_area:
-    def __init__(self, aircraft_data: Data):
+    def __init__(self, aircraft_data: Data, fwd_cg, aft_cg):
         self.aircraft_data = aircraft_data
         self.design_id = aircraft_data.data['design_id']
         self.design_file = f"design{self.design_id}.json"
@@ -20,8 +20,8 @@ class Tail_area:
 
         self.lemac = aircraft_data.data['outputs']['wing_design']['X_LEMAC']
         self.MAC = self.aircraft_data.data['outputs']['wing_design']['MAC']
-        self.most_aft_cg = 0.945 * self.MAC + self.lemac
-        self.most_fwd_cg = 0.1125 * self.MAC + self.lemac
+        self.most_aft_cg = aft_cg * self.MAC + self.lemac
+        self.most_fwd_cg = fwd_cg * self.MAC + self.lemac
         self.horizontal_tail_pos = aircraft_data.data['outputs']['component_positions']['horizontal_tail']
 
     def get_downwash(self):
@@ -109,7 +109,9 @@ if __name__ == "__main__":
     file_path = "design3.json"
     aircraft_data = Data(file_path)
     Xcg_values = np.linspace(-0.5, 1.2, 200)
-    tail = Tail_area(aircraft_data=aircraft_data)
+    fwd_cg = 0.1959
+    aft_cg = 0.7804
+    tail = Tail_area(aircraft_data=aircraft_data, fwd_cg=fwd_cg, aft_cg=aft_cg)
     plot = tail.plot(Xcg_values)
     tail_area = tail.get_tail_area()
     print('tail_area:',tail_area)

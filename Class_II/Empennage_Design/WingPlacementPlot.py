@@ -8,7 +8,7 @@ from Class_II.Empennage_Design.LoadingDiagram import LoadingDiagram
 from utils import Data
 
 
-def plot_wing_placement(loading_diagram: LoadingDiagram) -> None:
+def plot_wing_placement(loading_diagram: LoadingDiagram, PLOT: bool=True) -> None:
     mins = []
     maxs = []
     l_fus = loading_diagram.aircraft_data.data["outputs"]["general"]["l_fuselage"]
@@ -18,6 +18,9 @@ def plot_wing_placement(loading_diagram: LoadingDiagram) -> None:
         min_cg, max_cg = loading_diagram.determine_range()
         mins.append(min_cg)
         maxs.append(max_cg)
+
+    if not PLOT:
+        return mins, maxs
     fig, ax = plt.subplots()
     # Only show the horizontal line between the min and max CG for the selected value
     min_line, = ax.plot(mins, placement_points/l_fus, label='Min CG')
@@ -64,13 +67,14 @@ def plot_wing_placement(loading_diagram: LoadingDiagram) -> None:
 
     slider.on_changed(update)
     plt.show()
+    return mins, maxs
 
 if __name__ == "__main__":
     file_path = "design3.json"
     aircraft_data = Data(file_path)
     loading_diagram = LoadingDiagram(aircraft_data=aircraft_data)
     l_fus = loading_diagram.aircraft_data.data["outputs"]["general"]["l_fuselage"]
-    slider_val = 0.55
+    slider_val = 0.446
     X_LEMAC = slider_val * l_fus
     loading_diagram.X_LEMAC = X_LEMAC
     min_cg, max_cg = loading_diagram.determine_range()
