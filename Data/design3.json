@@ -222,7 +222,11 @@
             "cargo_distance_from_nose": 8.0,
             "cargo_length": 18.0,
             "cargo_width": 7.0,
-            "cargo_height": 4.5
+            "cargo_height": 4.5,
+            "max_n_turn": 1.7079999999999242,
+            "max_bank_angle": 54.163086327842564,
+            "min_turn_radius": 460.4124952686556,
+            "min_time_turn": 40.491540940730154
         },
         "design": {
             "MTOW": 2528161.707915953,
