@@ -152,6 +152,7 @@ def output_load_distributions(data, component_masses, nacelle_length=0.0):
     then the load distribution is calculated based on the component's length and mass.
     """
     # FOR NOW ONLY IN THE X DIRECTION, LATER WE CAN ADD Y AND Z
+    MTOW = data.data['outputs']['design']['MTOW']
     x_LEMAC_wing = data.data['outputs']['wing_design']['X_LE']
     MAC_wing = data.data['outputs']['wing_design']['MAC']
     cargo_length = data.data['outputs']['general']['cargo_length']
@@ -167,5 +168,9 @@ def output_load_distributions(data, component_masses, nacelle_length=0.0):
     x_LE_horizontal_tail = data.data['outputs']['empennage_design']['horizontal_tail']['LE_pos']  # Leading edge of the horizontal tail
     x_MAC_horizontal_tail = data.data['outputs']['empennage_design']['horizontal_tail']['MAC']  # Mean Aerodynamic Chord of the horizontal tail
 
-    # Only cargo and 
-calculate_cg(data, component_masses, nacelle_length=0, plot=False)  # Calculate CG to ensure it is correct
+    # Only cargo and fuselage have distributed masses
+
+    fuselage_distributed = MTOW/(fus_afterbody_length+fus_straight_length+fus_tailcone_length+nose_length)
+    cargo_distributed = cargo_mass*9.81/cargo_length
+    
+print(calculate_cg(data, component_masses, nacelle_length=0, plot=False))  # Calculate CG to ensure it is correct
