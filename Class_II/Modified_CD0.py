@@ -15,6 +15,17 @@ class Cd0Estimation:
         self.aircraft_data = aircraft_data
         self.mission_type = mission_type
         self.tail_type = EmpType[aircraft_data.data['inputs']['tail_type']]
+        self.t_c_wing = self.aircraft_data.data['inputs']['airfoils']['wing']
+        self.t_c_htail = self.aircraft_data.data['inputs']['airfoils']['horizontal_tail']
+        self.t_c_vtail = self.aircraft_data.data['inputs']['airfoils']['vertical_tail']
+        self.d_F = self.aircraft_data.data['outputs']['general']['d_fuselage_equivalent_straight']
+        self.l_F = self.aircraft_data.data['outputs']['general']['l_fuselage']
+        self.lambda_F = self.l_F / self.d_F
+        self.l_nacelle = self.aircraft_data.data['inputs']['engine']['engine_length']
+        self.d_nacelle = 0.92  # diameter in meters
+        self.IF_wingtail = 1.05 # https://www.fzt.haw-hamburg.de/pers/Scholz/HOOU/AircraftDesign_13_Drag.pdf
+        self.IF_fus = 1. # https://www.fzt.haw-hamburg.de/pers/Scholz/HOOU/AircraftDesign_13_Drag.pdf
+        self.IF_nacelle = 1.5 # https://www.fzt.haw-hamburg.de/pers/Scholz/HOOU/AircraftDesign_13_Drag.pdf
 
         self.tolerance = 0.0000001
         self.max_iterations = 100
@@ -27,42 +38,64 @@ class Cd0Estimation:
         )
     
     def wing_wet(self) -> float:
-        return 1.07*2*self.iteration.aircraft_data.data['outputs']['max']['S']
-        
-    def fuselage_wet(self) -> float:
-        #very preliminary estimate
-
-        return (2*np.pi*self.aircraft_data.data['outputs']['general']['l_fuselage']*self.aircraft_data.data['outputs']['general']['r_fuselage'] + 2*np.pi*self.aircraft_data.data['outputs']['general']['r_fuselage']**2)*self.aircraft_data.data['inputs']['n_fuselages']
+        term = 1 + 0.25 * self.t_c_wing # assimung same airfoil for all wing sections
+        return 2 * self.iteration.aircraft_data.data['outputs']['max']['S'] * term
 
     def tail_wet(self) -> float:
-        if self.tail_type == EmpType.NONE:
-            return 0
-        
-        if self.tail_type == EmpType.H_TAIL:
-            factor = 2
-        else:
-            factor = 1
-        #very preliminary estimate, implement actual tail area's and such later, horizontal + vertical
-        return 1.05*2*self.iteration.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['S'] + 1.05*2*self.iteration.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['S']*factor
+        term_h = 1 + 0.25 * self.t_c_htail # assimung same airfoil for all wing sections
+        term_v = 1 + 0.25 *self.t_c_vtail # assimung same airfoil for all wing sections
+        return 2 * (self.iteration.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['S'] * term_h +
+                    self.iteration.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['S'] * term_v)
     
-    def get_Cfc(self) -> float:
+    def wingtail_FF(self) -> float:
+        isa = ISA(altitude=self.iteration.aircraft_data.data['inputs']['cruise_altitude'])
+        mach = isa.Mach(self.iteration.aircraft_data.data['requirements']['cruise_speed'])
+        sweep_maxt = self.iteration.aircraft_data.data['outputs']['wing_design']['sweep_c_4']
+        x_c_m = 0.25 # assuming 25% chord for the wing, this is a simplification
+        return (1 + 0.6/x_c_m * self.t_c_wing + 100*self.t_c_wing**4) * (1.34*mach**0.18*np.cos(sweep_maxt)**0.28)
+
+    def fuselage_wet(self) -> float: # Torenbeek 1998
+        term1 = np.pi * self.d_F * self.l_F
+        term2 = (1 - 2 / self.lambda_F) ** (2 / 3)
+        term3 = 1 + 1 / (self.lambda_F ** 2)
+        return term1 * term2 * term3
+
+    def fuselage_FF(self) -> float:
+        f = self.l_F/self.d_F
+        return 1 + 60/f**3 + f/400
+
+    def nacelle_wet(self):
+        correction_factor = 1.1  # Example correction factor, adjust as needed
+
+        S_wet = np.pi * self.d_nacelle * self.l_nacelle * self.aircraft_data.data['inputs']['n_engines'] * correction_factor
+
+        return S_wet
+
+    
+    def nacelle_FF(self) -> float:
+        A_max = np.pi * self.d_nacelle**2 / 4  # Maximum cross-sectional area of the nacelle
+
+        f = self.l_nacelle/np.sqrt(4/np.pi * A_max)
+        return 1 + 0.35/f
+    
+    def additional_drag(self) -> float:
+        A_max = np.pi * self.d_F**2 / 4
+        fuselage_upsweep_drag = 3.83*np.radians(self.aircraft_data.data['inputs']['upsweep'])**2.5*A_max
+        return fuselage_upsweep_drag
+    
+    def get_Cfc(self, l, laminar_ratio, k=1e-5) -> float:
         # Calculate the Reynolds number based on the air density, velocity, and viscosity
         isa = ISA(altitude=self.iteration.aircraft_data.data['inputs']['cruise_altitude'])
-        Re = isa.rho * self.iteration.aircraft_data.data['requirements']['cruise_speed'] * self.iteration.aircraft_data.data['outputs']['wing_design']['MAC'] / self.iteration.aircraft_data.data['viscosity_air']
-        Re2 = (38.21*(self.iteration.aircraft_data.data['outputs']['wing_design']['MAC']/1e-5)**1.053)
+        Re = isa.rho * self.iteration.aircraft_data.data['requirements']['cruise_speed'] * l / self.iteration.aircraft_data.data['viscosity_air']
+        Re2 = (38.21*(l/k)**1.053)
         Re = min(Re, Re2)
         mach = isa.Mach(self.iteration.aircraft_data.data['requirements']['cruise_speed'])
         Cfc_lam = 1.328 / np.sqrt(Re)
         Cfc_turb = 0.455 / (np.log10(Re)**2.58*(1 + 0.144 * mach**2)**0.65)
-        Cfc = 0.1*Cfc_lam + 0.9*Cfc_turb
+        Cfc = laminar_ratio*Cfc_lam + (1-laminar_ratio)*Cfc_turb
         return Cfc
     
     def get_S_ref(self) -> float:
-        # implement actual tail areas later
-        if self.tail_type == EmpType.NONE:
-            horizontal_tail_area = 0
-        else:
-            horizontal_tail_area = self.iteration.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['S']
         return self.iteration.aircraft_data.data['outputs']['max']['S']
     
     def update_attributes(self):
@@ -126,20 +159,21 @@ class Cd0Estimation:
         while True:
             self.iteration_number += 1
 
-            wing_wet = self.wing_wet()
-            tail_wet = self.tail_wet()
-            fuselage_wet = self.fuselage_wet()
             S_ref = self.get_S_ref()
-            coefficient = self.get_Cfc()
-            #print(wing_wet, tail_wet, fuselage_wet, S_ref, coefficient)
+            cfc_wingtail = self.get_Cfc(self.aircraft_data.data['outputs']['wing_design']['MAC'], 0.1, k=6.35e-6) # Datcom smooth paint
+            cfc_fuselage = self.get_Cfc(self.l_F, 0.05, k=6.35e-6) # Datcom smooth paint
+            cfc_nacelle = self.get_Cfc(self.l_nacelle, 0.1, k=6.35e-6) # Datcom smooth paint
 
-            self.Cd0 = coefficient*(wing_wet + tail_wet + fuselage_wet)/S_ref * 1.2
+            wingtail = 1/S_ref * cfc_wingtail * self.wingtail_FF() * self.IF_wingtail * (self.wing_wet() + self.tail_wet())
+            fuselage = 1/S_ref * cfc_fuselage * self.fuselage_FF() * self.IF_fus * self.fuselage_wet()
+            nacelle =  1/S_ref * cfc_nacelle * self.nacelle_FF() * self.IF_nacelle * self.nacelle_wet()
+            additional_drag = self.additional_drag() / S_ref
+
+            self.Cd0 = wingtail + fuselage + nacelle + additional_drag
             self.iteration.aircraft_data.data['inputs']['Cd0'] = self.Cd0
             self.iteration.run_iteration()
 
             self.curr_Cd0 = self.Cd0
-            self.curr_MTOM = self.aircraft_data.data['outputs'][mission_type]['MTOM']
-
 
 
             stop_condition = (abs((self.curr_Cd0 - self.prev_Cd0) / self.prev_Cd0) < self.tolerance and abs(self.curr_MTOM-self.prev_MTOM)/self.prev_MTOM) or self.iteration_number >= self.max_iterations
@@ -149,7 +183,6 @@ class Cd0Estimation:
                 break
 
             self.prev_Cd0 = self.curr_Cd0
-            self.prev_MTOM = self.curr_MTOM
         
 
 if __name__ == '__main__':
