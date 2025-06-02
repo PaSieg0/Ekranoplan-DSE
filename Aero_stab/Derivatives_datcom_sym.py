@@ -64,7 +64,8 @@ class DerivativesDatcom_asym:
         print(f"Cl_alpha: {self.Cl_alpha}, x_cg: {self.x_cg}, x_w: {self.x_w}, MAC: {self.MAC}, x_h: {self.x_h}, Sh: {self.Sh}, S: {self.S}, l_h: {l_h}")
         return Cmalpha
     
-    
+    def Cl_u(self):
+        pass
     
 
 obj = DerivativesDatcom_asym(0, 8, 507, 1.5, 100, 75, 1, 60, 6, 20000, 63.79, 36.431, 9.167, 0.85, 0.4)
@@ -72,3 +73,4 @@ obj = DerivativesDatcom_asym(0, 8, 507, 1.5, 100, 75, 1, 60, 6, 20000, 63.79, 36
 # print(obj.C_x_alpha(1))
 print(obj.Cmalpha())  # Example usage
 
+# AC to CG

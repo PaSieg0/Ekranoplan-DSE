@@ -90,7 +90,7 @@ class DerivativesDatcom_asym:
         cl_alpha_V_tail = 0.16 #p.1600 smthng
         dcyB_Vtail = -K * cl_alpha_V_tail * self.Sv / self.S
         CnB_Vtail = -dcyB_Vtail * (self.lp / self.b)
-        return CnB_wb + CnB_Vtail
+        return CnB_wb + CnB_Vtail, CnB_wb, CnB_Vtail
     
     def Cyp(self, Cl, alpha, h_b):
         """
@@ -235,7 +235,7 @@ class DerivativesDatcom_asym:
 # Clr = DerivativesDatcom(0, 8, 507, 1.5, 100, 75, np.deg2rad(1) ,60, 6, 2000, 63.79, 36.431, 0.16, 0.85, 0.4)
 # print(Clr.Clr(1, np.deg2rad(2)))
 CyBdot = DerivativesDatcom_asym(0, 8, 507, 1.5, 100, 75, np.deg2rad(1), 60, 6, 2000, 63.79, 36.431, 0.16, 0.85, 0.4)
-print(CyBdot.ClBdot(1, np.deg2rad(2)))
+print(CyBdot.CyB(1))
 
 
     
