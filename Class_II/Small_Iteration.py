@@ -19,7 +19,7 @@ def solve_hb(target_A_A):
         
     raise ValueError
 
-def Ainf_Ah(h, b, endplante_height):
+def Ainf_Ah(h, b, endplante_height=0):
     # HB = np.arange(0,1.5,0.001)
     # A_A = 1 - np.exp(-4.74*HB**0.814) - HB**2*np.exp(-3.88*HB**0.758)
     # plt.plot(HB, A_A)
@@ -29,11 +29,16 @@ def Ainf_Ah(h, b, endplante_height):
     # plt.title('Aeinf_Aeh vs h_b')
     # plt.grid()
     # plt.show()
-    h_b = h/b
+    k = 1
 
+    h_b = h/b
     WIG_term = 1 - np.exp(-4.74*h_b**0.814) - h_b**2*np.exp(-3.88*h_b**0.758)
+    k *= WIG_term
+
     endplate_term = 1.0 + 1.9 * endplante_height/b
-    return WIG_term * endplate_term
+    k /= endplate_term
+
+    return k
 
 class SmallIteration:
     def __init__(self, aircraft_data: Data, mission_type: MissionType, class_ii_OEW) -> None:
@@ -81,7 +86,7 @@ class SmallIteration:
             self.h_fus = (self.aircraft_data.data['inputs']['cruise_altitude'] - self.d_fuselage) / self.n_fuselages
         elif self.wing_type == WingType.LOW:
             self.h_fus = (self.aircraft_data.data['inputs']['cruise_altitude']) / self.n_fuselages
-        self.A_ratio_fus = Ainf_Ah(self.h_fus, self.d_fuselage, self.aircraft_data.data['inputs']['endplate_height'])
+        self.A_ratio_fus = Ainf_Ah(self.h_fus, self.d_fuselage)
         self.k_fus = np.sqrt(1 / self.A_ratio_fus)
         self.new_k = self.new_k * self.k_fus
         self.k_tail = 1
@@ -114,7 +119,7 @@ class SmallIteration:
             self.A_ratio = Ainf_Ah(self.aircraft_data.data['inputs']['cruise_altitude'], self.b, self.aircraft_data.data['inputs']['endplate_height'])
             if self.design_number != 4:
                 self.h_tail = (self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['tail_height'] + self.aircraft_data.data['inputs']['cruise_altitude'])
-                self.A_ratio_tail = Ainf_Ah(self.h_tail, self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['b'], self.aircraft_data.data['inputs']['endplate_height'])
+                self.A_ratio_tail = Ainf_Ah(self.h_tail, self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['b'])
                 self.k_tail = np.sqrt(1 / self.A_ratio_tail)
             else:
                 self.k_tail = 1
