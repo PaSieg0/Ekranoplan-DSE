@@ -19,7 +19,7 @@ def solve_hb(target_A_A):
         
     raise ValueError
 
-def Ainf_Ah(h_b):
+def Ainf_Ah(h, b, endplante_height):
     # HB = np.arange(0,1.5,0.001)
     # A_A = 1 - np.exp(-4.74*HB**0.814) - HB**2*np.exp(-3.88*HB**0.758)
     # plt.plot(HB, A_A)
@@ -29,7 +29,11 @@ def Ainf_Ah(h_b):
     # plt.title('Aeinf_Aeh vs h_b')
     # plt.grid()
     # plt.show()
-    return 1 - np.exp(-4.74*h_b**0.814) - h_b**2*np.exp(-3.88*h_b**0.758)
+    h_b = h/b
+
+    WIG_term = 1 - np.exp(-4.74*h_b**0.814) - h_b**2*np.exp(-3.88*h_b**0.758)
+    endplate_term = 1.0 + 1.9 * endplante_height/b
+    return WIG_term * endplate_term
 
 class SmallIteration:
     def __init__(self, aircraft_data: Data, mission_type: MissionType, class_ii_OEW) -> None:
@@ -65,7 +69,7 @@ class SmallIteration:
         else:
             self.b = np.sqrt(self.S * self.class_i.A)
         self.h_b = self.aircraft_data.data['inputs']['cruise_altitude'] / self.b
-        self.A_ratio = Ainf_Ah(self.h_b)
+        self.A_ratio = Ainf_Ah(self.aircraft_data.data['inputs']['cruise_altitude'], self.b, self.aircraft_data.data['inputs']['endplate_height'])
         self.new_k = np.sqrt(1 / self.A_ratio)
         self.new_Cd0 = self.aircraft_data.data['inputs']['Cd0']
         self.d_fuselage = self.aircraft_data.data['outputs']['general']['d_fuselage']
@@ -74,10 +78,10 @@ class SmallIteration:
         self.wing_type = WingType[self.aircraft_data.data['inputs']['wing_type']]
 
         if self.wing_type == WingType.HIGH:
-            self.h_D = (self.aircraft_data.data['inputs']['cruise_altitude'] - self.d_fuselage) / self.d_fuselage / self.n_fuselages
+            self.h_fus = (self.aircraft_data.data['inputs']['cruise_altitude'] - self.d_fuselage) / self.n_fuselages
         elif self.wing_type == WingType.LOW:
-            self.h_D = (self.aircraft_data.data['inputs']['cruise_altitude']) / self.d_fuselage / self.n_fuselages
-        self.A_ratio_fus = Ainf_Ah(self.h_D)
+            self.h_fus = (self.aircraft_data.data['inputs']['cruise_altitude']) / self.n_fuselages
+        self.A_ratio_fus = Ainf_Ah(self.h_fus, self.d_fuselage, self.aircraft_data.data['inputs']['endplate_height'])
         self.k_fus = np.sqrt(1 / self.A_ratio_fus)
         self.new_k = self.new_k * self.k_fus
         self.k_tail = 1
@@ -107,11 +111,10 @@ class SmallIteration:
             self.MTOM_history.append(self.curr_MTOM)
             self.S = self.class_i.MTOW / self.WS
             self.b = np.sqrt(self.S/self.aircraft_data.data['inputs']['n_wings'] * self.class_i.A)
-            self.h_b = self.aircraft_data.data['inputs']['cruise_altitude'] / self.b
-            self.A_ratio = Ainf_Ah(self.h_b)
+            self.A_ratio = Ainf_Ah(self.aircraft_data.data['inputs']['cruise_altitude'], self.b, self.aircraft_data.data['inputs']['endplate_height'])
             if self.design_number != 4:
-                self.h_b_tail = (self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['tail_height'] + self.aircraft_data.data['inputs']['cruise_altitude']) / self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['b']
-                self.A_ratio_tail = Ainf_Ah(self.h_b_tail)
+                self.h_tail = (self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['tail_height'] + self.aircraft_data.data['inputs']['cruise_altitude'])
+                self.A_ratio_tail = Ainf_Ah(self.h_tail, self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['b'], self.aircraft_data.data['inputs']['endplate_height'])
                 self.k_tail = np.sqrt(1 / self.A_ratio_tail)
             else:
                 self.k_tail = 1
