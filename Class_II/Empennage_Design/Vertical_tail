@@ -1,0 +1,45 @@
+import os
+import sys
+import numpy as np
+import matplotlib.pyplot as plt
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
+from utils import Data
+
+class vertical_tail_sizing:
+    def __init__(self, aircraft_data: Data):
+        self.aircraft_data = aircraft_data
+        self.design_id = aircraft_data.data['design_id']
+        self.design_file = f"design{self.design_id}.json"
+        self.tail_type = aircraft_data.data['inputs']['tail_type']
+        self.A = aircraft_data.data['inputs']['aspect_ratio']
+        self.S = aircraft_data.data['outputs']['wing_design']['S']
+        self.b = aircraft_data.data['outputs']['wing_design']['b']
+        self.c_root = aircraft_data.data['outputs']['wing_design']['chord_root']
+        self.c_tip = aircraft_data.data['outputs']['wing_design']['chord_tip']
+        self.most_aft_cg = aircraft_data.data['outputs']['cg_range']['most_aft_cg']
+        self.most_fwd_cg = aircraft_data.data['outputs']['cg_range']['most_forward_cg']
+        self.lv = aircraft_data.data['outputs']['empennage_design']['vertical_tail']['l_v']
+
+        self.lemac = aircraft_data.data['outputs']['wing_design']['X_LEMAC']
+        self.MAC = self.aircraft_data.data['outputs']['wing_design']['MAC']
+
+    def get_vertical_tail_area(self):
+        Cn_beta = 0.016940719873178536
+        Cn_beta_A_h = -0.001983579626566832
+        Cy_beta_v = -0.02735301051550483
+        lv = self.lv
+        S = self.S
+        b = self.b
+        sidewash = 0
+        Vv_V = 1
+        Sv = (Cn_beta-Cn_beta_A_h)*(S*b)/(Cy_beta_v*(1-sidewash)*Vv_V**2*lv) #Sv >
+        return Sv
+
+    
+if __name__ == "__main__":
+    file_path = "design3.json"
+    aircraft_data = Data(file_path)
+    vert_tail = vertical_tail_sizing(aircraft_data=aircraft_data)
+    tail_size = vert_tail.get_vertical_tail_area()
+    print('vertical_tail_area:',tail_size)
+
