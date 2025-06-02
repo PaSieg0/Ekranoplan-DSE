@@ -1,7 +1,7 @@
 import os
 import sys
 import numpy as np
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 from utils import Data
 import matplotlib.pyplot as plt
 from Class_II.weight_distributions import CGCalculation
@@ -28,7 +28,7 @@ class LoadingDiagram:
         self.step_size = np.array([0.1, 0.0, 0.0])
 
         self.MAC = self.aircraft_data.data['outputs']['wing_design']['MAC']
-        self.X_LEMAC = 1*self.aircraft_data.data['outputs']['general']['l_fuselage']
+        self.X_LEMAC = 0.446*self.aircraft_data.data['outputs']['general']['l_fuselage']
 
         # self.fuel_pos = self.X_LEMAC + 0.5*self.MAC
         self.fuel_weight = self.aircraft_data.data['outputs']['max']['total_fuel']
@@ -42,33 +42,6 @@ class LoadingDiagram:
         self._X_LEMAC = value
         self.fuel_pos = self._X_LEMAC + 0.5 * self.MAC
         self.aircraft_data.data['outputs']['wing_design']['X_LEMAC'] = self._X_LEMAC
-
-    # def determine_OEW_cg(self):
-    #     self.component_cgs = {}
-    #     for key, positions in self.component_positions.items():
-    #         if key == 'wing':
-    #             positions = np.asarray(positions)
-    #             positions[0] = self.X_LEMAC + 0.5*self.MAC
-    #             print(f"Positions for {key}: {positions}")
-    #             weight = self.aircraft_data.data['outputs']['component_weights'][key]
-    #             self.component_cgs[key] = positions * weight
-    #         if key == 'engine':
-    #             positions = np.asarray(positions)
-    #             positions[0] = self.X_LEMAC
-    #             weight = self.aircraft_data.data['outputs']['component_weights'][key]
-    #             self.component_cgs[key] = positions * weight
-    #         if key == 'nacelle_group':
-    #             positions = np.asarray(positions)
-    #             positions[0] = self.X_LEMAC
-    #             weight = self.aircraft_data.data['outputs']['component_weights'][key]
-    #             self.component_cgs[key] = positions * weight
-    #         else:
-    #             weight = self.aircraft_data.data['outputs']['component_weights'][key]
-    #             self.component_cgs[key] = np.asarray(positions) * weight
-    #     self.OEW_cg = np.sum(list(self.component_cgs.values()), axis=0) / np.sum(list(self.aircraft_data.data['outputs']['component_weights'].values()))
-    #     self.OEW_cg[0] = self.X_LEMAC + 0.5*self.MAC
-    #     print(f"OEW CG: {self.OEW_cg}")
-    #     return self.OEW_cg
     
     def load_front_to_back_regular(self):
         curr_weight = self.aircraft_data.data['outputs']['component_weights']['total_OEW']
@@ -181,7 +154,6 @@ class LoadingDiagram:
             b2f_heavy_cg_mac.max(),
             fuel_cg_mac
         )
-
         return self.min_cg, self.max_cg
 
     
@@ -189,7 +161,6 @@ class LoadingDiagram:
     def plot(self):
         # OEW_cg = self.determine_OEW_cg()
         OEW_cg = np.asarray([CGCalculation(self.aircraft_data).calculate_cg(0, OEW=True), 0, 0])
-        print(f"OEW CG: {OEW_cg}")
         f2b_cg, f2b_weight = self.load_front_to_back_regular()
         f2b_heavy_cg, f2b_heavy_weight = self.load_front_to_back_heavy()
         b2f_cg, b2f_weight = self.load_back_to_front_regular()
@@ -259,7 +230,7 @@ if __name__ == "__main__":
     aircraft_data = Data(file_path)
     loading_diagram = LoadingDiagram(aircraft_data=aircraft_data)
     loading_diagram.plot()
-    # min_cg, max_cg = loading_diagram.determine_range()
+    min_cg, max_cg = loading_diagram.determine_range()
     # print(f"Minimum CG: {min_cg}, Maximum CG: {max_cg}")
     loading_diagram.X_LEMAC = 40
     loading_diagram.plot()
