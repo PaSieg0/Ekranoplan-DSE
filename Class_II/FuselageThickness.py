@@ -93,32 +93,32 @@ class FuselageThickness:
         return self.sigma_1, self.sigma_2, self.sigma_3, self.sigma_4, self.sigma_5
 
     def calculate_boom_areas(self):
-        for i in range(5):
-            # All boom areas are a function of the skin thickness
-            if i == 0:
-                B1 = (self.fuselage_width / 6) * (2 + (self.sigma_2 / self.sigma_1)) + ((self.fuselage_ratio*self.fuselage_width / 6) * (2+ (self.sigma_3/self.sigma_1)))
-            elif i == 1:
-                B2 = (self.fuselage_width / 6) * (2 + (self.sigma_1 / self.sigma_2)) + ((self.fuselage_ratio*self.fuselage_width / 6) * (2+ (self.sigma_4/self.sigma_2)))
-            elif i == 2:
-                B3 = (self.fuselage_ratio*self.fuselage_width / 6) * (2 + (self.sigma_1 / self.sigma_3)) + ((self.s_dim*self.fuselage_width / 6) * (2+ (self.sigma_5/self.sigma_3)))
-            elif i == 3:
-                B4 = (self.fuselage_ratio*self.fuselage_width / 6) * (2 + (self.sigma_2 / self.sigma_4)) + ((self.s_dim*self.fuselage_width / 6) * (2+ (self.sigma_5/self.sigma_4)))
-            elif i == 4:
-                B5 = (self.s_dim*self.fuselage_width / 6) * (2 + (self.sigma_3 / self.sigma_5)) + ((self.s_dim*self.fuselage_width / 6) * (2 + (self.sigma_4/self.sigma_5)))
+       
+        # All boom areas are a function of the skin thickness
+        w = self.fuselage_width
+        r = self.fuselage_ratio
+        s = self.s_dim
+
+        B1 = (w / 6) * (2 + self.sigma_2 / self.sigma_1) + (r * w / 6) * (2 + self.sigma_3 / self.sigma_1)
+        B2 = (w / 6) * (2 + self.sigma_1 / self.sigma_2) + (r * w / 6) * (2 + self.sigma_4 / self.sigma_2)
+        B3 = (r * w / 6) * (2 + self.sigma_1 / self.sigma_3) + (s * w / 6) * (2 + self.sigma_5 / self.sigma_3)
+        B4 = (r * w / 6) * (2 + self.sigma_2 / self.sigma_4) + (s * w / 6) * (2 + self.sigma_5 / self.sigma_4)
+        B5 = (s * w / 6) * (2 + self.sigma_3 / self.sigma_5) + (s * w / 6) * (2 + self.sigma_4 / self.sigma_5)
+
         return B1, B2, B3, B4, B5
-            
+
 
     def iterate_booms_per_station(
-    self, 
-    M_x, 
-    M_y, 
-    t_fuselage_init=0.005, 
-    I_xx_init=10.0, 
-    I_yy_init=3.0, 
-    tol=1e-4, 
-    max_iter=100, 
-    alpha=0.5
-):
+        self, 
+        M_x, 
+        M_y, 
+        t_fuselage_init=0.005, 
+        I_xx_init=10.0, 
+        I_yy_init=3.0, 
+        tol=1e-4, 
+        max_iter=100, 
+        alpha=0.5
+    ):
         n_stations = len(self.fuselage_width)
 
         boom_areas_all = np.zeros((n_stations, 5))
