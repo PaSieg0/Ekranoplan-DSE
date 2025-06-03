@@ -52,10 +52,11 @@ class RangeCalculator:
         self.fuel_reserve = self.data.data["outputs"]['design']['reserve_fuel']
         self.design_payload = self.data.data["requirements"]['design_payload']
         self.max_payload = 100 * 1_000  # kg This could be made configurable !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        self.maxrange_payload = self.design_payload - (self.fuel_max - self.fuel_reserve - self.fuel_design)/9.81
         self.MTOW = self.data.data["outputs"]['design']['MTOW']
         
         # Calculate fuel fractions without cruise
-        self.class_i = ClassI(aircraft_data=self.data, mission_type=MissionType.DESIGN)
+        self.class_i = ClassI(aircraft_data=self.data, mission_type=self.mission_type)
         self.fuel_fracs_no_cruise = self.class_i.fuel_fractions
         self.Mff_nocruise = 1
         for fraction in self.fuel_fracs_no_cruise.values():
@@ -106,6 +107,28 @@ class RangeCalculator:
             "ferry": Mff_ferry
         }
     
+    def compute_Mff_1way(self, Mff, payload, MTOW):
+        payload = payload * self.g  # Convert payload from tonnes to kg
+        a = 1
+        b = -payload / MTOW
+        c = (payload / MTOW) - Mff
+        
+        discriminant = b**2 - 4 * a * c
+        if discriminant < 0:
+            raise ValueError("No real solution for Mff_1way.")
+        
+        sqrt_discriminant = np.sqrt(discriminant)
+        Mff_1way_1 = (-b + sqrt_discriminant) / (2 * a)
+        Mff_1way_2 = (-b - sqrt_discriminant) / (2 * a)
+
+        # Choose the root between 0 and 1 (physically meaningful fuel fraction)
+        if 0 < Mff_1way_1 <= 1:
+            return Mff_1way_1
+        elif 0 < Mff_1way_2 <= 1:
+            return Mff_1way_2
+        else:
+            raise ValueError("No physically valid Mff_1way in [0, 1].")
+    
     def calculate_weight_ratios(self, mass_fractions):
         """
         Calculate weight ratios based on mass fractions.
@@ -117,10 +140,10 @@ class RangeCalculator:
             dict: Dictionary containing weight ratios
         """
         if self.mission_type == MissionType.DESIGN or self.mission_type == MissionType.ALTITUDE:
-            W4_W5_harmonic = np.sqrt(1 / mass_fractions["harmonic"] * self.Mff_nocruise**2)
-            W4_W5_design = np.sqrt(1 / mass_fractions["design"] * self.Mff_nocruise**2)
-            W4_W5_maxrange = np.sqrt(1 / mass_fractions["maxrange"] * self.Mff_nocruise**2)
-            W4_W5_ferry = np.sqrt(1 / mass_fractions["ferry"] * self.Mff_nocruise**2)
+            W4_W5_harmonic = self.Mff_nocruise/self.compute_Mff_1way(mass_fractions["harmonic"], self.max_payload, self.MTOW)
+            W4_W5_design = self.Mff_nocruise/self.compute_Mff_1way(mass_fractions["design"], self.design_payload, self.MTOW)
+            W4_W5_maxrange = self.Mff_nocruise/self.compute_Mff_1way(mass_fractions["maxrange"], self.maxrange_payload, self.MTOW)
+            W4_W5_ferry = self.Mff_nocruise/self.compute_Mff_1way(mass_fractions["ferry"], 0, self.MTOW - self.design_payload * self.g)
         elif self.mission_type == MissionType.FERRY:
             W4_W5_harmonic = 1 / mass_fractions["harmonic"] * self.Mff_nocruise
             W4_W5_design = 1 / mass_fractions["design"] * self.Mff_nocruise

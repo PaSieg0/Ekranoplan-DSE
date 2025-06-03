@@ -11,8 +11,8 @@
         "jet_consumption": 2.7e-05,
         "prop_consumption": 2.1e-08,
         "prop_efficiency": 0.85,
-        "Cd0": 0.017563392619470024,
-        "oswald_factor": 0.85,
+        "Cd0": 0.019402387230375722,
+        "oswald_factor": 0.5723604690382613,
         "aspect_ratio": 8,
         "aspect_h": 4.5,
         "aspect_v": 1.5,
@@ -24,6 +24,7 @@
         "rho_fuel": 0.82,
         "fuel_fuselage": 0,
         "n_engines": 6.0,
+        "endplate_height": 0,
         "CLmax_clean": 1.6,
         "CLmax_takeoff": 2.08,
         "CLmax_landing": 2.4,
@@ -169,7 +170,7 @@
     },
     "requirements": {
         "design_range": 3704000,
-        "design_payload": 100000,
+        "design_payload": 90000,
         "design_crew": 425,
         "ferry_range": 12038000,
         "reserve_range": 185200,
@@ -349,7 +350,7 @@
         "cg_range": {
             "most_aft_cg": 31.868885105060734,
             "most_aft_mission": "DESIGN_OEW_PAYLOAD_FUEL",
-            "most_forward_cg": 32.0168089122698,
+            "most_forward_cg": 30.031268435106348,
             "most_forward_mission": "DESIGN_OEW"
         },
         "empennage_design": {
