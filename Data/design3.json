@@ -471,6 +471,9 @@
                 9.276704482090796,
                 9.36921632621035
             ]
+        },
+        "aerodynamic_stability_coefficients": {
+            "C_z_alpha": -9.167
         }
     },
     "kinematic_viscosity": 1.006e-06,

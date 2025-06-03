@@ -1,7 +1,10 @@
 import numpy as np
+import json
+import os
+
 
 class DerivativesDatcom_asym:
-    def __init__(self, Delta_c4, A, S, Av, Sh, Sv, dihedral, l_b, d_fusel, V_b, b, lp, Cl_alpha, e, taper, MAC=8.456, x_ac=31.69, x_cg=30, Cd0 = 0.017, c_h=5.107, Cm_alpha=0, x_h=67.6, Cl_alpha_h=np.rad2deg(0.16), x_w=29.355):
+    def __init__(self, Delta_c4, A, S, Av, Sh, Sv, dihedral, l_b, d_fusel, V_b, b, lp, Cl_alpha, e, taper, MAC=8.456, x_ac=31.69, x_cg=30, Cd0 = 0.017, c_h=5.107, Cm_alpha=0, x_h=67.6, Cl_alpha_h=np.rad2deg(0.16), x_w=29.355, M=0.3, theta_0=0, Cl_0=0):
         self.Delta_c4 = Delta_c4 #Quarter chord sweep: 0 
         self.l_b = l_b # length of body: 60 
         self.dihedral = dihedral #1
@@ -26,6 +29,9 @@ class DerivativesDatcom_asym:
         self.Cl_alpha_h = Cl_alpha_h
         self.x_w = x_w
         self.x_cg = x_cg
+        self.M = M
+        self.theta_0 = theta_0
+        self.Cl_0 = Cl_0
 
     def Cmq(self, Cl, alpha):
         """
@@ -57,20 +63,73 @@ class DerivativesDatcom_asym:
     
     def Cmalpha(self):
         # From FD
-        downwash = 2 * self.Cl_alpha / (np.pi * self.A)
+        downwash_gradient = 2 * self.Cl_alpha / (np.pi * self.A)
         l_h = self.x_h - self.x_cg
-        Cmalpha = self.Cl_alpha * (self.x_cg - self.x_w)/self.MAC - self.Cl_alpha_h*(1-downwash)*self.Sh*l_h / (self.S * self.MAC)
-        print(downwash)
+        Cmalpha = self.Cl_alpha * (self.x_cg - self.x_w)/self.MAC - self.Cl_alpha_h*(1-downwash_gradient)*self.Sh*l_h / (self.S * self.MAC)
+        print(downwash_gradient)
         print(f"Cl_alpha: {self.Cl_alpha}, x_cg: {self.x_cg}, x_w: {self.x_w}, MAC: {self.MAC}, x_h: {self.x_h}, Sh: {self.Sh}, S: {self.S}, l_h: {l_h}")
         return Cmalpha
     
-    def Cl_u(self):
-        pass
+    def C_Z_u(self, Cl):
+        return -2 * Cl #From FD and other source, which tells us that rest can be ignored.
+    
+    def C_X_u(self):
+        Cxu = -3 * self.Cd0 - 3 * self.Cl_0 * np.tan(self.theta_0)
+        return Cxu
+
+    def C_m_u(self):
+        print('Ignored, see paper, Pitching moment coefficient science direct')
+        return 0
     
 
-obj = DerivativesDatcom_asym(0, 8, 507, 1.5, 100, 75, 1, 60, 6, 20000, 63.79, 36.431, 9.167, 0.85, 0.4)
+    def C_m_alphadot(self):
+        # K_wb = 0.95 #1047
+        # K_bw = 0.15 #p.1047
+        # X_ac__Cr = ...
+        # S_b = self.d_fusel * self.l_b
+        # Cl_alphadot = 1.5 * X_ac__Cr * Cl_alpha + 3 * Clg
+        # Cm_alphadot_e = Cm_alphadot_dp + (self.x_cg / self.MAC) * Cl_alphadot
+        # Cm_alphadot_B = ...
+        # Cm_alphadot_wb = (K_bw + K_wb) * (self.Sh/self.S)*(self.c_h/self.MAC)**2 * Cm_alphadot_e + Cm_alphadot_B * ((S_b / self.S)*(self.l_b/self.MAC)**2)
+        l_h = self.x_h - self.x_cg
+        downwash_gradient = 2 * self.Cl_alpha / (np.pi * self.A)
+        print(downwash_gradient)
+        Cm_alphadot = -self.Cl_alpha * 1 * downwash_gradient *self.Sh*l_h**2 / (self.S * self.MAC**2)
+        return np.deg2rad(Cm_alphadot)
+
+    
+
+derivatives = DerivativesDatcom_asym(0, 8, 507, 1.5, 100, 75, 1, 60, 6, 20000, 63.79, 36.431, 9.167, 0.85, 0.4)
 # print(obj.Cmq(1, np.deg2rad(2)))  # Example usage
 # print(obj.C_x_alpha(1))
-print(obj.Cmalpha())  # Example usage
+print(derivatives.C_X_u())  # Example usage
 
-# AC to CG
+
+# Run the functions you want to store
+aero_stability_outputs = {
+    'C_z_alpha': derivatives.C_z_alpha(),
+    # Add more functions here if needed
+}
+
+# Define path to JSON
+json_path = os.path.join('Data', 'design3.json')
+
+# Load existing JSON or create new structure
+if os.path.exists(json_path):
+    with open(json_path, 'r') as file:
+        data = json.load(file)
+else:
+    data = {}
+
+# Ensure correct nested structure exists
+if 'outputs' not in data:
+    data['outputs'] = {}
+if 'aerodynamic_stability_coefficients' not in data['outputs']:
+    data['outputs']['aerodynamic_stability_coefficients'] = {}
+
+# Update values
+data['outputs']['aerodynamic_stability_coefficients'].update(aero_stability_outputs)
+
+# Save back to file
+with open(json_path, 'w') as file:
+    json.dump(data, file, indent=4)
