@@ -221,7 +221,9 @@ class FuselageThickness:
             t_fuselage_final[i] = t
 
         return boom_areas_all, I_xx_all, I_yy_all, t_fuselage_final
-
+    
+    def calculate_stress_concentration_factor(self):
+        
 
 
 
