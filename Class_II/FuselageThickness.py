@@ -5,14 +5,15 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import matplotlib.transforms as transforms
 from scipy.integrate import quad
+from weight_distributions import CGCalculation
+from AerodynamicForces import AerodynamicForces
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from utils import Data, Materials, EvaluateType
+from utils import Data, Materials
 
 class FuselageThickness:
-    def __init__(self, aircraft_data: Data, airfoil_data: Data, fuselage_mat: Materials):
+    def __init__(self, aircraft_data: Data, fuselage_mat: Materials):
           
-        self.data = airfoil_data.data
         self.aircraft_data = aircraft_data
 
         self.front_spar = self.aircraft_data.data['inputs']['structures']['wing_box']['front_spar']
@@ -23,10 +24,12 @@ class FuselageThickness:
         self.t_wing = self.aircraft_data.data['inputs']['structures']['wing_box']['t_wing']/1000
 
         self.b = self.aircraft_data.data['outputs']['wing_design']['b']
+        self.b_h = self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['b']
         self.chord_root = self.aircraft_data.data['outputs']['wing_design']['chord_root']
         self.chord_tip = self.aircraft_data.data['outputs']['wing_design']['chord_tip']
 
         self.b_array = np.arange(0, self.b/2, 0.01)
+        self.b_h_array = np.arange(0, self.b_h/2 + 0.01, 0.01)
         # self.chord_array = self.chord_span_function(self.b_array)
 
         self.chord_length = self.chord_root
@@ -48,8 +51,74 @@ class FuselageThickness:
         self.fuselage_width = np.array([self.aircraft_data.data['outputs']['fuselage_dimensions']['w_fuselage'], self.aircraft_data.data['outputs']['fuselage_dimensions']['w_fuselage'], self.aircraft_data.data['outputs']['fuselage_dimensions']['w_fuselage']])
         self.fuselage_height = np.array([self.aircraft_data.data['outputs']['fuselage_dimensions']['h_fuselage_station1'], self.aircraft_data.data['outputs']['fuselage_dimensions']['h_fuselage_station2'], self.aircraft_data.data['outputs']['fuselage_dimensions']['h_fuselage_station3']])
         self.fuselage_ratio =  self.fuselage_height / self.fuselage_width
+        self.l_fuselage = self.aircraft_data.data['outputs']['fuselage_dimensions']['l_fuselage']
+        self.wing_LE_pos = self.aircraft_data.data['outputs']['wing_design']['X_LE']
+        self.chord_root = self.aircraft_data.data['outputs']['wing_design']['chord_root']
+        self.lift_acting_point = self.wing_LE_pos + 1/4* self.chord_root
 
         self.t_fuselage = self.aircraft_data.data['inputs']['t_fuselage']/1000
+
+        self.b_array = np.arange(0, self.b/2 + 0.01, 0.01)
+
+        aerodynamics = Data("AeroForces.txt", "aerodynamics")
+        self.aeroforces = AerodynamicForces(self.aircraft_data, aerodynamics)
+        fuselage_mass = CGCalculation(self.aircraft_data)
+        fuselage_mass.load_diagram()
+        self.distributed_weight = fuselage_mass.loads
+        self.x_points = fuselage_mass.x_points
+        self.dx = np.gradient(self.x_points)
+        self.h_tail_pos = self.x_points[-1]
+
+        self.get_lift_on_fuselage()
+        self.internal_vertical_shear_fuselage()
+        self.internal_bending_moment_fuselage()
+
+    def get_lift_on_fuselage(self):
+        
+        self.lift_function = self.aeroforces.get_lift_function()
+        self.horizontal_tail_lift = self.aeroforces.get_horizontal_tail_lift_distribution()
+        self.lift_function = self.lift_function(self.b_array)
+        self.lift_on_fuselage = 2*np.trapz(self.lift_function, self.b_array)
+
+        self.h_lift_on_fuselage = 2*np.trapz(self.horizontal_tail_lift, self.b_h_array)
+        print(self.h_lift_on_fuselage, self.lift_on_fuselage)
+
+    def internal_vertical_shear_fuselage(self):
+        
+        load = self.distributed_weight
+        Vy_fus = np.cumsum(load * self.dx)
+        self.Vy_fus_internal = -Vy_fus 
+
+        main_idx = np.where(self.x_points >= self.lift_acting_point)[0][0]
+        self.Vy_fus_internal[main_idx:] += self.lift_on_fuselage
+
+        tail_idx = np.where(self.x_points >= self.h_tail_pos)[0][0]
+        self.Vy_fus_internal[tail_idx:] += self.h_lift_on_fuselage
+
+        plt.plot(self.x_points, self.Vy_fus_internal, label='Internal Vertical Shear Force on Fuselage')
+        plt.xlabel('Position along Fuselage (m)')
+        plt.ylabel('Internal Vertical Shear Force (N)')
+        plt.title('Internal Vertical Shear Force Distribution on Fuselage')
+        plt.legend()
+        plt.grid()
+        plt.show()
+        return self.Vy_fus_internal
+        
+    def internal_bending_moment_fuselage(self):
+        load = self.Vy_fus_internal
+        M_fus = np.cumsum(load * self.dx)
+        self.M_fus_internal = M_fus
+
+        plt.plot(self.x_points, self.M_fus_internal, label='Internal Bending Moment on Fuselage')
+        plt.xlabel('Position along Fuselage (m)')
+        plt.ylabel('Internal Bending Moment (Nm)')
+        plt.title('Internal Bending Moment Distribution on Fuselage')
+        plt.legend()
+        plt.grid()
+        plt.show()
+
+        return self.M_fus_internal
+
 
 
     def calculate_fuselage_centroid(self):
@@ -223,17 +292,15 @@ class FuselageThickness:
         return boom_areas_all, I_xx_all, I_yy_all, t_fuselage_final
 
 
-
-
 if __name__ == '__main__':
     aircraft_data = Data("design3.json")
     airfoil_data = Data("AirfoilData/example_airfoil.json")
     fuselage_material = Materials.Al7075  
     
-    fuselage = FuselageThickness(aircraft_data, airfoil_data, fuselage_material)
+    fuselage = FuselageThickness(aircraft_data, fuselage_material)
     
-    M_x = 200e6  # Nm # TODO: Replace with actual bending moment
-    M_y = 100e6  # Nm # TODO: Replace with actual moment
+    M_x = 20e6  # Nm # TODO: Replace with actual bending moment
+    M_y = 0  # Nm # TODO: Replace with actual moment
 
     boom_areas, I_xx_array, I_yy_array, t_fuselage = fuselage.iterate_booms_per_station(M_x, M_y)
 

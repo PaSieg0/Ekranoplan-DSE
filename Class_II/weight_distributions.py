@@ -175,36 +175,38 @@ class CGCalculation:
         fuselage_tailcone_distributed = self.component_masses['fuselage_mass'] * (1-2*fore_and_afterbody_share) / (2 * self.fus_tailcone_length)
         cargo_distributed = self.cargo_mass * 9.81 / self.cargo_length
 
+        print(self.component_masses['fuselage_mass'] + self.cargo_mass * 9.81)
+
         print(f"Fuselage distributed load (nose): {fuselage_distributed_nose:.2f} N/m")
         print(f"Fuselage distributed load (forebody): {fuselage_distributed_forebody:.2f} N/m")
         print(f"Fuselage distributed load (afterbody): {fuselage_distributed_afterbody:.2f} N/m")
         print(f"Fuselage distributed load (tailcone): {fuselage_tailcone_distributed:.2f} N/m")
         print(f"Cargo distributed load: {cargo_distributed:.2f} N/m")
 
-        x_points = np.arange(0, self.total_fuselage_length, 0.05)
-        loads = np.zeros_like(x_points)
+        print(f'total fuselage length: {self.total_fuselage_length} m')
+        self.x_points = np.arange(0, self.total_fuselage_length, 0.05)
+        self.loads = np.zeros_like(self.x_points)
 
         # Add fuselage distributed loads for each section
-        nose_mask = (x_points < self.nose_length)
-        forebody_mask = (x_points >= self.nose_length) & (x_points < self.nose_length + self.fus_straight_length)
-        afterbody_mask = (x_points >= self.nose_length + self.fus_straight_length) & (x_points < self.nose_length + self.fus_straight_length + self.fus_afterbody_length)
-        tailcone_mask = (x_points >= self.nose_length + self.fus_straight_length + self.fus_afterbody_length)
+        nose_mask = (self.x_points < self.nose_length)
+        forebody_mask = (self.x_points >= self.nose_length) & (self.x_points < self.nose_length + self.fus_straight_length)
+        afterbody_mask = (self.x_points >= self.nose_length + self.fus_straight_length) & (self.x_points < self.nose_length + self.fus_straight_length + self.fus_afterbody_length)
+        tailcone_mask = (self.x_points >= self.nose_length + self.fus_straight_length + self.fus_afterbody_length)
         
-        loads[nose_mask] += fuselage_distributed_nose
-        loads[forebody_mask] += fuselage_distributed_forebody
-        loads[afterbody_mask] += fuselage_distributed_afterbody
-        loads[tailcone_mask] += fuselage_tailcone_distributed
+        self.loads[nose_mask] += fuselage_distributed_nose
+        self.loads[forebody_mask] += fuselage_distributed_forebody
+        self.loads[afterbody_mask] += fuselage_distributed_afterbody
+        self.loads[tailcone_mask] += fuselage_tailcone_distributed
         
         # Add cargo distributed load
-        cargo_mask = (x_points >= self.cargo_x_start) & (x_points <= self.cargo_x_start + self.cargo_length)
-        loads[cargo_mask] += cargo_distributed
-
-        self.area_under_curve = np.trapz(loads, x_points)
-        print("Area under curve[N]:", self.area_under_curve)
+        cargo_mask = (self.x_points >= self.cargo_x_start) & (self.x_points <= self.cargo_x_start + self.cargo_length)
+        self.loads[cargo_mask] += cargo_distributed
+        self.area_under_curve = np.trapz(self.loads, self.x_points)
+        print("Area under curve:", self.area_under_curve)
         
         # Create the plot
         plt.figure(figsize=(10, 6))
-        plt.plot(x_points, loads, 'b-', label='Total Load', linewidth=2)
+        plt.plot(self.x_points, self.loads, 'b-', label='Total Load', linewidth=2)
         
         # Add fuselage section lines
         sections = [
