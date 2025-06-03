@@ -27,21 +27,21 @@ class CGCalculation:
         """Initialize aircraft parameters needed for CG calculation"""
         self.x_LEMAC_wing = self.aircraft_data.data['outputs']['wing_design']['X_LEMAC']
         self.MAC_wing = self.aircraft_data.data['outputs']['wing_design']['MAC']
-        self.cargo_length = self.aircraft_data.data['outputs']['general']['cargo_length']
-        self.cargo_width = self.aircraft_data.data['outputs']['general']['cargo_width']
-        self.cargo_height = self.aircraft_data.data['outputs']['general']['cargo_height']
+        self.cargo_length = self.aircraft_data.data['outputs']['fuselage_dimensions']['cargo_length']
+        self.cargo_width = self.aircraft_data.data['outputs']['fuselage_dimensions']['cargo_width']
+        self.cargo_height = self.aircraft_data.data['outputs']['fuselage_dimensions']['cargo_height']
         self.cargo_density = self.aircraft_data.data['requirements']['cargo_density']
-        self.cargo_x_start = (self.aircraft_data.data['outputs']['general']['cargo_distance_from_nose'] + 
-                            self.aircraft_data.data['outputs']['general']['l_nose'])
+        self.cargo_x_start = (self.aircraft_data.data['outputs']['fuselage_dimensions']['cargo_distance_from_nose'] + 
+                            self.aircraft_data.data['outputs']['fuselage_dimensions']['l_nose'])
         self.fuel_mass = self.aircraft_data.data['outputs']['design']['max_fuel']
         self.cargo_mass = self.aircraft_data.data['requirements']['cargo_mass']
 
         
         # Fuselage parameters
-        self.nose_length = self.aircraft_data.data['outputs']['general']['l_nose']
-        self.fus_straight_length = self.aircraft_data.data['outputs']['general']['l_fus_straight']
-        self.fus_afterbody_length = self.aircraft_data.data['outputs']['general']['l_afterbody']
-        self.fus_tailcone_length = self.aircraft_data.data['outputs']['general']['l_tailcone']
+        self.nose_length = self.aircraft_data.data['outputs']['fuselage_dimensions']['l_nose']
+        self.fus_straight_length = self.aircraft_data.data['outputs']['fuselage_dimensions']['l_forebody']
+        self.fus_afterbody_length = self.aircraft_data.data['outputs']['fuselage_dimensions']['l_afterbody']
+        self.fus_tailcone_length = self.aircraft_data.data['outputs']['fuselage_dimensions']['l_tailcone']
         
         # Tail parameters
         self.x_LE_vertical_tail = self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['LE_pos']

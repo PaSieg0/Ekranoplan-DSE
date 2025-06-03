@@ -13,22 +13,19 @@ class LoadingDiagram:
         self.design_file = f"design{self.design_id}.json"
 
 
-        # Precompute and store constants
-        general = self.aircraft_data.data['outputs']['general']
-        requirements = self.aircraft_data.data['requirements']
-        self.cargo_start = general['cargo_distance_from_nose'] + self.aircraft_data.data['outputs']['general']['l_nose']
-        self.cargo_end = self.cargo_start + general['cargo_length']
-        self.cargo_y = general.get('cargo_y', 0.0)
-        self.cargo_z = general.get('cargo_z', 0.0)
-        self.cargo_cross_section = general['cargo_width'] * general['cargo_height']
-        self.cargo_length = general['cargo_length']
-        self.cargo_density = requirements['cargo_density']
+        self.cargo_start = self.aircraft_data.data['outputs']['fuselage_dimensions']['cargo_distance_from_nose'] + self.aircraft_data.data['outputs']['fuselage_dimensions']['l_nose']
+        self.cargo_end = self.cargo_start + self.aircraft_data.data['outputs']['fuselage_dimensions']['cargo_length']
+        self.cargo_y = 0
+        self.cargo_z = 0
+        self.cargo_cross_section = self.aircraft_data.data['outputs']['fuselage_dimensions']['cargo_width'] * self.aircraft_data.data['outputs']['fuselage_dimensions']['cargo_height']
+        self.cargo_length = self.aircraft_data.data['outputs']['fuselage_dimensions']['cargo_length']
+        self.cargo_density = self.aircraft_data.data['requirements']['cargo_density']
         # Heavy case: 100000 kg payload distributed over cargo volume
         self.cargo_density_heavy = 100000 * 9.81 / (self.cargo_cross_section * self.cargo_length)
         self.step_size = np.array([0.1, 0.0, 0.0])
 
         self.MAC = self.aircraft_data.data['outputs']['wing_design']['MAC']
-        self.X_LEMAC = 0.446*self.aircraft_data.data['outputs']['general']['l_fuselage']
+        self.X_LEMAC = 0.335*self.aircraft_data.data['outputs']['fuselage_dimensions']['l_fuselage']
 
         # self.fuel_pos = self.X_LEMAC + 0.5*self.MAC
         self.fuel_weight = self.aircraft_data.data['outputs']['max']['total_fuel']
@@ -184,7 +181,7 @@ class LoadingDiagram:
 
         fig, axs = plt.subplots(1, 2, figsize=(16, 6))
 
-        # General reference frame (x in meters)
+        # self.aircraft_data.data['outputs']['fuselage_dimensions'] reference frame (x in meters)
         axs[0].plot(f2b_cg[:, 0], f2b_weight, label='Front to Back Regular', color='blue')
         axs[0].plot(b2f_cg[:, 0], b2f_weight, label='Back to Front Regular', color='cyan')
         axs[0].plot(f2b_heavy_cg[:, 0], f2b_heavy_weight, label='Front to Back Heavy', color='red')
@@ -196,7 +193,7 @@ class LoadingDiagram:
         axs[0].axvline(self.X_LEMAC, color='black', linestyle=':', label='X_LEMAC')
         axs[0].set_xlabel('CG X Position (m)')
         axs[0].set_ylabel('Weight (kg)')
-        axs[0].set_title('Loading Diagram (General Reference Frame)')
+        axs[0].set_title('Loading Diagram Fuselage Reference Frame')
         axs[0].grid(True)
 
         # MAC reference frame (x in MAC)
