@@ -120,23 +120,6 @@ class OptimumTurns(AltitudeVelocity):
             return  np.pi /2 * (180 / np.pi)  # 90 degrees if the altitude is greater than half the span	
         else:
             return (np.arcsin(h / half_span) + dihedral_rad) * (180 / np.pi)
-        
-    def update_json(self, file_path):
-        """
-        Update the JSON file with the calculated values.
-
-        Parameters:
-        file_path (str): Path to the JSON file.
-        """
-        data = self.data.data
-        zero_points = optimum_turns.max_n_turn_points(h=h)
-
-        data['outputs']['general']['max_n_turn'] = float(np.max(zero_points[:, 1]))
-        data['outputs']['general']['max_bank_angle'] = float(np.max(self.max_bank_angle_points(zero_points)[:, 1]))
-        data['outputs']['general']['min_turn_radius'] = float(np.min(self.min_turn_radius_points(zero_points)[:, 1]))
-        data['outputs']['general']['min_time_turn'] = float(np.min(self.min_time_turn_points(zero_points)[:, 1]))
-        
-        self.data.save_design(file_path)
     
 if __name__ == "__main__":
     file_path = "design3.json"
@@ -144,12 +127,17 @@ if __name__ == "__main__":
     mission_type = MissionType.DESIGN
     optimum_turns = OptimumTurns(aircraft_data, mission_type)
     h = aircraft_data.data['inputs']['cruise_altitude']
+    
+    # Example usage of steepest_turn method
 
-    optimum_turns.update_json(file_path)
-
+    sea_limit_bank_angle = optimum_turns.sea_bank_limit(h=h)  # degrees
+    print(f"Maximum bank angle: {sea_limit_bank_angle:.2f} degrees")
+    max_n = 1/np.cos(sea_limit_bank_angle * (np.pi / 180))
+    
     zero_points = optimum_turns.max_n_turn_points(h=h)
+    # Limit n to max_n in zero_points if n > max_n
     zero_points_limited = zero_points.copy()
-    # zero_points_limited[zero_points_limited[:, 1] > max_n, 1] = max_n
+    zero_points_limited[zero_points_limited[:, 1] > max_n, 1] = max_n
 
     turn_radii = optimum_turns.min_turn_radius_points(zero_points_limited)
     max_bank_angles = optimum_turns.max_bank_angle_points(zero_points_limited)
