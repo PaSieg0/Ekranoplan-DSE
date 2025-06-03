@@ -21,6 +21,7 @@ class ElevatorRudder:
 
         self.lift_curve = lift_curve()
         self.airfoil_cl_alpha = self.lift_curve.dcl_dalpha()
+        print(f"Airfoil CL alpha: {self.airfoil_cl_alpha}")
         self.tail_lift_slope = self.lift_curve.dcl_dalpha()
 
         self.rudder_chord_ratio = self.aircraft_data.data['inputs']['control_surfaces']['rudder_chord']
@@ -101,7 +102,7 @@ class ElevatorRudder:
         for b in self.b_test:
             integral_test, _ = quad(self.chord_v,self.rudder_start, b)
             cndr_test = integral_test * -(self.airfoil_cl_alpha * self.control_surface_effectiveness(self.rudder_chord_ratio)*self.l_v) / (self.S * self.b)
-            # print(cndr_test, CNe_dr)
+            print(cndr_test, CNe_dr)
             if 0 < abs(cndr_test - CNe_dr) <= tolerance:
                 self.rudder_end = b
                 self.cndr = cndr_test
@@ -174,16 +175,16 @@ class ElevatorRudder:
 
     def update_attributes(self):
 
-        self.aircraft_data.data['outputs']['control_surfaces']['rudder']['end'] = self.rudder_end
-        self.aircraft_data.data['outputs']['control_surfaces']['rudder']['start'] = self.rudder_start
+        self.aircraft_data.data['outputs']['control_surfaces']['rudder']['b2'] = self.rudder_end
+        self.aircraft_data.data['outputs']['control_surfaces']['rudder']['b1'] = self.rudder_start
         self.aircraft_data.data['outputs']['control_surfaces']['rudder']['chord_ratio'] = self.rudder_chord_ratio
         self.aircraft_data.data['outputs']['control_surfaces']['rudder']['deflection'] = self.rudder_deflection
         self.aircraft_data.data['outputs']['control_surfaces']['rudder']['area'] = self.rudder_area
         self.aircraft_data.data['outputs']['control_surfaces']['rudder']['Sr'] = self.Sr
-        self.aircraft_data.data['outputs']['control_surfaces']['elevator']['end'] = self.elevator_end
+        self.aircraft_data.data['outputs']['control_surfaces']['elevator']['b2'] = self.elevator_end
         self.aircraft_data.data['outputs']['control_surfaces']['elevator']['Se'] = self.Se
         self.aircraft_data.data['outputs']['control_surfaces']['elevator']['area'] = self.elevator_area
-        self.aircraft_data.data['outputs']['control_surfaces']['elevator']['start'] = self.elevator_start
+        self.aircraft_data.data['outputs']['control_surfaces']['elevator']['b1'] = self.elevator_start
         self.aircraft_data.data['outputs']['control_surfaces']['elevator']['chord_ratio'] = self.elevator_chord_ratio
         self.aircraft_data.data['outputs']['control_surfaces']['elevator']['deflection'] = self.elevator_deflection
         self.aircraft_data.data['outputs']['control_surfaces']['elevator']['pitch_rate'] = np.rad2deg(self.pitch_rate)

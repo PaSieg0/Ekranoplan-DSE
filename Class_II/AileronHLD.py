@@ -31,8 +31,8 @@ class AileronHLD:
 
         self.turn_radius = self.aircraft_data.data['outputs']['general']['min_turn_radius']
         self.bank_angle = np.deg2rad(self.aircraft_data.data['outputs']['general']['max_bank_angle'])
-        self.V = np.sqrt(self.turn_radius*9.81*np.tan(self.bank_angle))
-        self.object_distance = self.turn_radius*1.6
+        self.V = self.aircraft_data.data['requirements']['cruise_speed']
+        self.object_distance = self.turn_radius*2
 
         self.aileron_end = self.aircraft_data.data['inputs']['control_surfaces']['aileron_end']*self.b/2
 
@@ -51,7 +51,7 @@ class AileronHLD:
 
         self.airfoil_Cd0 = self.aircraft_data.data['inputs']['airfoils']['cd0_wing']
         self.lift_curve = lift_curve()
-        self.airfoil_Cl_alpha = self.lift_curve.dcl_dalpha()*180/np.pi
+        self.airfoil_Cl_alpha = self.lift_curve.dcl_dalpha()
 
         self.CLMax_landing = self.aircraft_data.data['inputs']['CLmax_landing']
         self.CLMax_clean = self.aircraft_data.data['inputs']['CLmax_clean']
@@ -64,6 +64,7 @@ class AileronHLD:
         return self.root_chord/2 - np.deg2rad(self.sweep)*y
     
     def chord_span_function(self,y):
+
         return self.root_chord + (self.tip_chord - self.root_chord)/(self.b/2) * y
     
     def Swa(self, y):
@@ -90,30 +91,31 @@ class AileronHLD:
     
     def Clda_Clp_ratio(self,b):
         integral,_ = quad(self.c, b, self.aileron_end)
-        return 2*self.airfoil_Cl_alpha*self.tau*self.b/(-4*(self.airfoil_Cl_alpha+self.airfoil_Cd0))*integral/self.calculate_Clp_integral()
-    
+        return -1/2*self.airfoil_Cl_alpha*self.tau*integral*self.b/(self.airfoil_Cl_alpha+self.airfoil_Cd0)/self.calculate_Clp_integral()
+        
     def calculate_aileron_position(self):
         self.b_test = np.arange(0, self.b/2+0.001, 0.001)
         tolerance = 0.0001
         for b in self.b_test:
             ratio = self.Clda_Clp_ratio(b)
-            #print(ratio, self.required_Cla_Clp)
+            # print(ratio, self.required_Cla_Clp)
             if abs(ratio - self.required_Cla_Clp) < tolerance:
                 self.aileron_start = b
                 break
-        
+        print(ratio)
         aileron_integral = quad(self.c, self.aileron_start, self.aileron_end)[0]
         self.Clda = 2*self.airfoil_Cl_alpha*self.tau/self.S/self.b*aileron_integral
+        Clp = -4*(self.airfoil_Cl_alpha+self.airfoil_Cd0)/self.S/self.b**2*self.calculate_Clp_integral()
+        print(self.Clda/Clp)
         L = self.Clda*self.max_aileron_deflection*0.5*self.rho*self.V**2*self.S*self.b
         mid_point = (self.aileron_start + self.aileron_end)/2
-
+        print(self.roll_rate*180/np.pi)
         self.aileron_lift = L/mid_point/2
         self.aileroned_area = quad(self.Swa, self.aileron_start, self.aileron_end)[0]
         print(f"Aileron lift: {self.aileron_lift}")
 
     def calculate_aileron_size(self):
         self.required_roll_rate = self.calculate_roll_rate()
-        print(self.required_roll_rate)
         self.required_Cla_Clp = -self.required_roll_rate/(self.max_aileron_deflection*(2*self.V/self.b))
         self.calculate_aileron_position()
         self.aileron_area = self.chord_span_function((self.aileron_end - self.aileron_start)/2)*self.aileron_chord_ratio*(self.aileron_end - self.aileron_start)
