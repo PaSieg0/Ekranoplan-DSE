@@ -32,7 +32,7 @@ class vertical_tail_sizing:
         self.S = self.S
         self.b = self.b
         self.sidewash = 0
-        self.Vv_V = 1
+        self.Vv_V = 0.9
         self.nv = self.Vv_V**2
         self.Ye = max(aircraft_data.data['outputs']['engine_positions']['y_engines'])
 
@@ -67,12 +67,12 @@ class vertical_tail_sizing:
     def get_vertical_tail_size_one_engine_inoperative(self):
         nv = self.nv
         Cl_alpha_v = 0.124  # deg
-        Cl_alpha_v_rad = np.deg2rad(Cl_alpha_v)
+        Cl_alpha_v_rad = np.rad2deg(Cl_alpha_v)
         Cy_v_alpha = Cl_alpha_v_rad
         S = self.S
         CL = self.getCL()
         Ye = self.Ye
-        lv = 8
+        lv = self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['l_v']
         deltaTe = self.P_engine / self.V_stall
         W = self.MTOW
         beta = 0
@@ -85,7 +85,10 @@ class vertical_tail_sizing:
         Sv = S * (CL * (Ye / lv) * (deltaTe / W) + beta * Cn_beta_A_h * (b / lv)) / (
             (tau_v * del_r - (beta - sigma_v)) * nv * Cy_v_alpha
         )
-        X_axis = deltaTe * Ye * CL / (W * lv)
+        self.X_axis = deltaTe * Ye * CL / (W * lv)
+
+        self.y_axis_thingy = 0.1
+        self.S_v = self.y_axis_thingy * S / (nv * Cy_v_alpha)
 
         # Clustered print statements
         print("nv:", nv)
@@ -105,9 +108,9 @@ class vertical_tail_sizing:
         print("del_r (rudder deflection):", del_r)
         print("sigma_v (sidewash angle):", sigma_v)
         print("Sv (vertical tail area):", Sv)
-        print("X_axis (non-dimensional factor):", X_axis)
+        print("X_axis (non-dimensional factor):", self.X_axis)
 
-        return X_axis
+        return self.S_v
 
 
     
@@ -116,7 +119,8 @@ if __name__ == "__main__":
     aircraft_data = Data(file_path)
     vert_tail = vertical_tail_sizing(aircraft_data=aircraft_data)
     tail_size = vert_tail.get_vertical_tail_size_static_stab()
-    X_axis_thing = vert_tail.get_vertical_tail_size_one_engine_inoperative()
+    vert_tail.get_vertical_tail_size_one_engine_inoperative()
     print('vertical_tail_area:',tail_size)
-    print('thingy', X_axis_thing)
-
+    print('S_v:', vert_tail.S_v)
+    print('X:', vert_tail.X_axis)
+    print('y:', vert_tail.y_axis_thingy)

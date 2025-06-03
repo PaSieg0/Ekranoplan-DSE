@@ -74,7 +74,7 @@ if __name__ == "__main__":
     aircraft_data = Data(file_path)
     loading_diagram = LoadingDiagram(aircraft_data=aircraft_data)
     l_fus = loading_diagram.aircraft_data.data["outputs"]["fuselage_dimensions"]["l_fuselage"]
-    slider_val = 0.3346999999999851
+    slider_val = 0.34109999999998447
     X_LEMAC = slider_val * l_fus
     loading_diagram.X_LEMAC = X_LEMAC
     min_cg, max_cg = loading_diagram.determine_range()

@@ -25,7 +25,7 @@ class LoadingDiagram:
         self.step_size = np.array([0.1, 0.0, 0.0])
 
         self.MAC = self.aircraft_data.data['outputs']['wing_design']['MAC']
-        self.X_LEMAC = 0.335*self.aircraft_data.data['outputs']['fuselage_dimensions']['l_fuselage']
+        self.X_LEMAC = 0.3305999999999856*self.aircraft_data.data['outputs']['fuselage_dimensions']['l_fuselage']
 
         # self.fuel_pos = self.X_LEMAC + 0.5*self.MAC
         self.fuel_weight = self.aircraft_data.data['outputs']['max']['total_fuel']
@@ -228,6 +228,3 @@ if __name__ == "__main__":
     loading_diagram = LoadingDiagram(aircraft_data=aircraft_data)
     loading_diagram.plot()
     min_cg, max_cg = loading_diagram.determine_range()
-    # print(f"Minimum CG: {min_cg}, Maximum CG: {max_cg}")
-    loading_diagram.X_LEMAC = 40
-    loading_diagram.plot()
