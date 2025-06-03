@@ -295,11 +295,10 @@
             "h_fuselage_station3": 4.5,
             "step_depth": 0.4,
             "h_afterbody": 4.5,
-            "l_fuselage": 48.625,
-            "l_tailcone": 5.5,
+            "l_tailcone": 15.0,
             "l_afterbody": 14.805,
             "l_nose": 5.5,
-            "l_forebody": 13.12
+            "l_forebody": 20.3
         },
         "ferry": {
             "MTOW": 1049281.983533873,
@@ -582,8 +581,8 @@
             ]
         },
         "cg_positions": {
-            "OEW_CG": 33.324447128706844,
-            "MTOW_CG": 33.04991403041844
+            "OEW_CG": 29.72381464486552,
+            "MTOW_CG": 29.84974107250118
         }
     },
     "kinematic_viscosity": 1.006e-06,
