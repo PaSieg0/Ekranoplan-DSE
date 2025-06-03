@@ -70,7 +70,7 @@ class vertical_tail_sizing:
         Cl_alpha_v_rad = np.rad2deg(Cl_alpha_v)
         Cy_v_alpha = Cl_alpha_v_rad
         S = self.S
-        CL = self.getCL()
+        CL = self.aircraft_data.data['inputs']['CLmax_landing'] # self.getCL()
         Ye = self.Ye
         lv = self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['l_v']
         deltaTe = self.P_engine / self.V_stall
@@ -87,7 +87,7 @@ class vertical_tail_sizing:
         )
         self.X_axis = deltaTe * Ye * CL / (W * lv)
 
-        self.y_axis_thingy = 0.1
+        self.y_axis_thingy = 0.5
         self.S_v = self.y_axis_thingy * S / (nv * Cy_v_alpha)
 
         # Clustered print statements

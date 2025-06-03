@@ -14,18 +14,16 @@ class EmpennageOptimizer:
     def __init__(self, aircraft_data):
         self.aircraft_data = aircraft_data
         self.l_fus = aircraft_data.data["outputs"]['fuselage_dimensions']["l_fuselage"]
-        self.placements = np.arange(0.2, 0.5, 0.0001)
+        self.placements = np.arange(0.2, 0.5, 0.001)
         self.diffs = []
         self.area = []
         self.best_placement = None
 
     def run(self):
         from tqdm import tqdm
-        loading_diagram = LoadingDiagram(aircraft_data=self.aircraft_data)
         # Use tqdm for a progress bar
         for wing_placement in tqdm(self.placements, desc="Wing Placement Sweep", unit="placement"):
-            wing_placement_m = wing_placement * self.l_fus
-            loading_diagram.X_LEMAC = wing_placement_m
+            loading_diagram = LoadingDiagram(aircraft_data=self.aircraft_data, wing_placement=wing_placement)
             mins, maxs = loading_diagram.determine_range()
             tail_area = Tail_area(aircraft_data=self.aircraft_data, fwd_cg=mins, aft_cg=maxs)
             tail_stab, tail_cont = tail_area.get_tail_area()
@@ -52,16 +50,20 @@ class EmpennageOptimizer:
         if self.best_placement is not None:
             self.aircraft_data.data['outputs']['wing_design']['X_LEMAC'] = self.best_placement * self.l_fus
             self.aircraft_data.data['outputs']['wing_design']['X_LE'] = self.aircraft_data.data['outputs']['wing_design']['X_LEMAC'] - self.aircraft_data.data['outputs']['wing_design']['y_MAC']*np.tan(np.deg2rad(self.aircraft_data.data['outputs']['wing_design']['sweep_x_c']))
-            self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['S'] = self.S_h
             self.aircraft_data.data['outputs']['cg_range']['most_aft_cg_mac'] = self.most_aft_cg
             self.aircraft_data.data['outputs']['cg_range']['most_forward_cg_mac'] = self.most_forward_cg
             self.aircraft_data.data['outputs']['cg_range']['most_aft_cg'] = self.most_aft_cg * self.aircraft_data.data['outputs']['wing_design']['MAC'] + self.aircraft_data.data['outputs']['wing_design']['X_LEMAC']
             self.aircraft_data.data['outputs']['cg_range']['most_forward_cg'] = self.most_forward_cg * self.aircraft_data.data['outputs']['wing_design']['MAC'] + self.aircraft_data.data['outputs']['wing_design']['X_LEMAC']
             self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['LE_pos'] = 0.9*self.aircraft_data.data['outputs']['fuselage_dimensions']['l_fuselage'] - 0.25* self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['MAC']
             self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['l_v'] = self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['LE_pos'] - self.aircraft_data.data['outputs']['cg_range']['most_aft_cg']
+            self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['S'] = self.S_h
             self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['l_h'] = self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['l_v']
             self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['LE_pos'] = self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['l_h'] + self.aircraft_data.data['outputs']['cg_range']['most_aft_cg']
             self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['tail_height'] = self.aircraft_data.data['outputs']['fuselage_dimensions']['h_fuselage'] + self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['b'] 
+            self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['b'] = np.sqrt(self.S_h * self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['aspect_ratio'])
+            self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['chord_root'] = 2 * self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['S'] / (self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['b'] * (1 + self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['taper']))
+            self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['chord_tip'] = self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['chord_root'] * self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['taper']
+            self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['MAC'] = (2 / 3) * self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['chord_root'] * ((1 + self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['taper'] + self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['taper']**2) / (1 + self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['taper']))
 
 
     def save_design(self):

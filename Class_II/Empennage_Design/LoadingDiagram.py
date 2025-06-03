@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 from Class_II.weight_distributions import CGCalculation
 
 class LoadingDiagram:
-    def __init__(self, aircraft_data: Data):
+    def __init__(self, aircraft_data: Data, wing_placement):
         self.aircraft_data = aircraft_data
         self.design_id = aircraft_data.data['design_id']
         self.design_file = f"design{self.design_id}.json"
@@ -25,7 +25,7 @@ class LoadingDiagram:
         self.step_size = np.array([0.1, 0.0, 0.0])
 
         self.MAC = self.aircraft_data.data['outputs']['wing_design']['MAC']
-        self.X_LEMAC = 0.3305999999999856*self.aircraft_data.data['outputs']['fuselage_dimensions']['l_fuselage']
+        self.X_LEMAC = wing_placement*self.aircraft_data.data['outputs']['fuselage_dimensions']['l_fuselage']
 
         # self.fuel_pos = self.X_LEMAC + 0.5*self.MAC
         self.fuel_weight = self.aircraft_data.data['outputs']['max']['total_fuel']
@@ -225,6 +225,7 @@ class LoadingDiagram:
 if __name__ == "__main__":
     file_path = "design3.json"
     aircraft_data = Data(file_path)
-    loading_diagram = LoadingDiagram(aircraft_data=aircraft_data)
+    wing_placement = 0.342
+    loading_diagram = LoadingDiagram(aircraft_data=aircraft_data, wing_placement=wing_placement)
     loading_diagram.plot()
     min_cg, max_cg = loading_diagram.determine_range()
