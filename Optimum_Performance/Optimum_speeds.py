@@ -106,17 +106,3 @@ if __name__ == "__main__":
     print(f"Maximum angle of climb speed: {v_max_aod:.2f} m/s")
     print(f"Minimum rate of descent speed: {v_min_rod:.2f} m/s")
     print(f"Minimum angle of descent speed: {v_min_aod:.2f} m/s")
-
-    v_range = optimum_speeds.v_range(h)
-    print(f"L/D at weight: {optimum_speeds._current_weight:.0f} N: {optimum_speeds.L_over_D(0, v_range):.2f}")
-    optimum_speeds.plot_force_curve([0], show=False)
-    optimum_speeds._current_weight = optimum_speeds._oew
-    v_range = optimum_speeds.v_range(h)
-    print(f"L/D at weight: {optimum_speeds._current_weight:.0f} N: {optimum_speeds.L_over_D(0, v_range):.2f}")
-    optimum_speeds.plot_force_curve([0])
- 
-    # for i in np.arange(0, 3704000, optimum_speeds.ddist):
-    #     v_range = optimum_speeds.v_range(0)  # Example altitude
-    #     # Call methods as needed
-    #     print(optimum_speeds.L_over_D(0, v_range), optimum_speeds.calculate_drag(v_range, 0))  # Example altitude and velocity
-    #     optimum_speeds.step_weight()
