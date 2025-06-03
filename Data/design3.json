@@ -52,9 +52,9 @@
             "LE_flap_chord": 0.1,
             "flap_chord": 0.3,
             "flap_type": "DOUBLE_SLOT",
-            "aileron_deflection": 15,
-            "aileron_chord": 0.2,
-            "rudder_chord": 0.28,
+            "aileron_deflection": 25,
+            "aileron_chord": 0.3,
+            "rudder_chord": 0.35,
             "rudder_deflection": 35,
             "rudder_start": 0.1,
             "elevator_start": 0.1,
@@ -439,15 +439,15 @@
         },
         "control_surfaces": {
             "aileron": {
-                "b1": 23.065,
-                "b2": 32.72115627906591,
-                "area_single": 20.914269654101652,
-                "roll_rate": 12.790017039764914,
-                "bank_angle": 54.163086327842564,
+                "b1": 24.211000000000002,
+                "b2": 32.66068413550171,
+                "area_single": 27.723850967339768,
+                "roll_rate": 23.306153043716282,
+                "bank_angle": 69.08772855786145,
                 "turn_radius": 460.4124952686556,
                 "object_distance": 920.8249905373112,
-                "Swa": 56.84579586122501,
-                "aileron_lift": 5711.775769097185
+                "Swa": 48.57527171394953,
+                "aileron_lift": 10280.264331402415
             },
             "rudder": {
                 "chord_ratio": 0.28,
@@ -473,13 +473,13 @@
             }
         },
         "HLD": {
-            "b1": 4.215,
-            "b2": 20.302852304224576,
+            "b1": 5.708354251804383,
+            "b2": 22.478831465131353,
             "flapped_area_single": 170.34351328250182,
-            "flap_area": 48.94112951869809,
-            "Swf_single": 148.6063203680232,
-            "LE_flap_area": 21.677711234482032,
-            "Swf_LE_single": 195.9273373804984
+            "flap_area": 50.53947143083223,
+            "Swf_single": 147.9509422896943,
+            "LE_flap_area": 0.19526103734912648,
+            "Swf_LE_single": 1.7506165653838002
         },
         "wing_stress": {
             "Yield_Stress_max_margin": 1.113260484153464,

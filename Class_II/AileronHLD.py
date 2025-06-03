@@ -35,7 +35,7 @@ class AileronHLD:
         self.turn_radius = self.aircraft_data.data['outputs']['general']['min_turn_radius']
         self.bank_angle = np.deg2rad(self.aircraft_data.data['outputs']['general']['max_bank_angle'])
         self.V = self.aircraft_data.data['requirements']['cruise_speed']
-        self.object_distance = self.turn_radius*2
+        self.object_distance = self.turn_radius*1.7
 
         self.aileron_end = self.aircraft_data.data['inputs']['control_surfaces']['aileron_end']*self.b/2
 
@@ -57,6 +57,8 @@ class AileronHLD:
         self.lift_curve = lift_curve()
         self.airfoil_Cl_alpha = self.lift_curve.dcl_dalpha()
 
+        self.rho = self.aircraft_data.data['rho_air']
+
         self.CLMax_landing = self.aircraft_data.data['inputs']['CLmax_landing']
         self.CLMax_clean = self.aircraft_data.data['inputs']['CLmax_clean']
         self.required_CLmax_increase = self.CLMax_landing - self.CLMax_clean
@@ -70,6 +72,9 @@ class AileronHLD:
     def chord_span_function(self,y):
 
         return self.root_chord + (self.tip_chord - self.root_chord)/(self.b/2) * y
+    
+    def Swa(self, y):
+        return self.chord_span_function(y)
     
     def c(self, y):
         return self.chord_span_function(y)*y
@@ -257,6 +262,8 @@ class AileronHLD:
 
         self.aircraft_data.data['outputs']['control_surfaces']['aileron']['b1'] = self.aileron_start
         self.aircraft_data.data['outputs']['control_surfaces']['aileron']['b2'] = self.aileron_end
+        self.aircraft_data.data['outputs']['control_surfaces']['aileron']['Swa'] = self.aileroned_area
+        self.aircraft_data.data['outputs']['control_surfaces']['aileron']['aileron_lift'] = self.aileron_lift
         self.aircraft_data.data['outputs']['control_surfaces']['aileron']['area_single'] = self.aileron_area
         self.aircraft_data.data['outputs']['control_surfaces']['aileron']['roll_rate'] = np.rad2deg(self.roll_rate)
         self.aircraft_data.data['outputs']['control_surfaces']['aileron']['bank_angle'] = np.rad2deg(self.bank_angle)
