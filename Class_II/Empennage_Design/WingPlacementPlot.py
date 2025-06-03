@@ -11,7 +11,7 @@ from utils import Data
 def plot_wing_placement(loading_diagram: LoadingDiagram, PLOT: bool=True) -> None:
     mins = []
     maxs = []
-    l_fus = loading_diagram.aircraft_data.data["outputs"]["general"]["l_fuselage"]
+    l_fus = loading_diagram.aircraft_data.data["outputs"]["fuselage_dimensions"]["l_fuselage"]
     placement_points = np.asarray(range(0, int(l_fus), 1))
     for place in placement_points:
         loading_diagram.X_LEMAC = place
@@ -73,8 +73,8 @@ if __name__ == "__main__":
     file_path = "design3.json"
     aircraft_data = Data(file_path)
     loading_diagram = LoadingDiagram(aircraft_data=aircraft_data)
-    l_fus = loading_diagram.aircraft_data.data["outputs"]["general"]["l_fuselage"]
-    slider_val = 0.446
+    l_fus = loading_diagram.aircraft_data.data["outputs"]["fuselage_dimensions"]["l_fuselage"]
+    slider_val = 0.3346999999999851
     X_LEMAC = slider_val * l_fus
     loading_diagram.X_LEMAC = X_LEMAC
     min_cg, max_cg = loading_diagram.determine_range()

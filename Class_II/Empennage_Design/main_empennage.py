@@ -10,28 +10,58 @@ from Class_II.Empennage_Design.Scissor_plot import Tail_area
 from Class_II.Empennage_Design.WingPlacementPlot import plot_wing_placement
 from utils import Data
 
-def plot(aircraft_data: Data) -> float:
-    diffs = []
-    l_fus = aircraft_data.data["outputs"]["general"]["l_fuselage"]
-    placements = np.arange(0.2, 0.5, 0.0001)
-    loading_diagram = LoadingDiagram(aircraft_data=aircraft_data)
-    # Use tqdm for a progress bar
-    for wing_placement in tqdm(placements, desc="Wing Placement Sweep", unit="placement"):
-        wing_placement = wing_placement * l_fus
-        loading_diagram.X_LEMAC = wing_placement
-        mins, maxs = loading_diagram.determine_range()
-        tail_area = Tail_area(aircraft_data=aircraft_data, fwd_cg=mins, aft_cg=maxs)
-        tail_stab, tail_cont = tail_area.get_tail_area()
-        diffs.append((wing_placement/l_fus, abs(tail_stab - tail_cont))) if tail_stab > 0 and tail_cont > 0 else diffs.append((wing_placement/l_fus, 10000))
+class EmpennageOptimizer:
+    def __init__(self, aircraft_data):
+        self.aircraft_data = aircraft_data
+        self.l_fus = aircraft_data.data["outputs"]['fuselage_dimensions']["l_fuselage"]
+        self.placements = np.arange(0.2, 0.5, 0.0001)
+        self.diffs = []
+        self.area = []
+        self.best_placement = None
 
+    def run(self):
+        from tqdm import tqdm
+        loading_diagram = LoadingDiagram(aircraft_data=self.aircraft_data)
+        # Use tqdm for a progress bar
+        for wing_placement in tqdm(self.placements, desc="Wing Placement Sweep", unit="placement"):
+            wing_placement_m = wing_placement * self.l_fus
+            loading_diagram.X_LEMAC = wing_placement_m
+            mins, maxs = loading_diagram.determine_range()
+            tail_area = Tail_area(aircraft_data=self.aircraft_data, fwd_cg=mins, aft_cg=maxs)
+            tail_stab, tail_cont = tail_area.get_tail_area()
+            S_h = max(tail_stab, tail_cont)
+            self.area.append(S_h)
+            if tail_stab > 0 and tail_cont > 0:
+                self.diffs.append((wing_placement, abs(tail_stab - tail_cont), S_h))
+            else:
+                self.diffs.append((wing_placement, 10000))
+        self.select_best_placement()
+        self.update_parameters()
+        self.save_design()
+        return self.best_placement
 
-    idx = np.argmin([d[1] if isinstance(d, tuple) else d for d in diffs])
-    best_placement, _ = diffs[idx] if isinstance(diffs[idx], tuple) else (None, diffs[idx])
-    print(best_placement)
-    return best_placement
+    def select_best_placement(self):
+        filtered_diffs = [d for d in self.diffs if d[1] != 10000]
+        if not filtered_diffs:
+            self.best_placement = None
+            return
+        idx = np.argmin([d[1] for d in filtered_diffs])
+        self.best_placement, _, self.S_h = filtered_diffs[idx]
+        print(f"Best placement: {self.best_placement}")
+
+    def update_parameters(self):
+        if self.best_placement is not None:
+            self.aircraft_data.data['outputs']['wing_design']['X_LEMAC'] = self.best_placement * self.l_fus
+            self.aircraft_data.data['outputs']['wing_design']['X_LE'] = self.aircraft_data.data['outputs']['wing_design']['X_LEMAC'] - self.aircraft_data.data['outputs']['wing_design']['y_MAC']*np.tan(np.deg2rad(self.aircraft_data.data['outputs']['wing_design']['sweep_x_c']))
+            self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['S'] = self.S_h
+
+    def save_design(self):
+        self.aircraft_data.save_design(design_file=f"design{self.aircraft_data.data['design_id']}.json")
+
 
 if __name__ == "__main__":
     design_file = "design3.json"
     aircraft_data = Data(design_file)
-    best_placement = plot(aircraft_data=aircraft_data)
+    optimizer = EmpennageOptimizer(aircraft_data)
+    best_placement = optimizer.run()
     print(f"Best wing placement for tail area: {best_placement}")
