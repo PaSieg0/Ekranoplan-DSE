@@ -151,10 +151,10 @@ class ModifiedClassI:
         self.Mff = 1 # stating value for iteration
         tol = 1e-6
         max_iter = 100
-        self.MTOW = (payload*9.81 + crew_weight + self.class_ii_OEW*9.81) / (1 - (1-self.Mff) - self.tfo)
+        self.MTOW = (payload*9.81 + crew_weight + self.class_ii_OEW) / (1 - (1-self.Mff) - self.tfo)
         for _ in range(max_iter):
             self.calculate_Mff()
-            mtow_new = (payload*9.81 + crew_weight + self.class_ii_OEW*9.81) / (1 - (1-self.Mff) - self.tfo)
+            mtow_new = (payload*9.81 + crew_weight + self.class_ii_OEW) / (1 - (1-self.Mff) - self.tfo)
             if abs(mtow_new - self.MTOW) < tol:
                 self.MTOW = mtow_new
                 break
