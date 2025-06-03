@@ -99,11 +99,11 @@ class FuselageThickness:
         r = self.fuselage_ratio
         s = self.s_dim
 
-        B1 = (w / 6) * (2 + self.sigma_2 / self.sigma_1) + (r * w / 6) * (2 + self.sigma_3 / self.sigma_1)
-        B2 = (w / 6) * (2 + self.sigma_1 / self.sigma_2) + (r * w / 6) * (2 + self.sigma_4 / self.sigma_2)
-        B3 = (r * w / 6) * (2 + self.sigma_1 / self.sigma_3) + (s * w / 6) * (2 + self.sigma_5 / self.sigma_3)
-        B4 = (r * w / 6) * (2 + self.sigma_2 / self.sigma_4) + (s * w / 6) * (2 + self.sigma_5 / self.sigma_4)
-        B5 = (s * w / 6) * (2 + self.sigma_3 / self.sigma_5) + (s * w / 6) * (2 + self.sigma_4 / self.sigma_5)
+        B1 = (w / 6) * (2 + self.sigma_2 / self.sigma_1) + (r * w / 6) * (2 + self.sigma_3 / self.sigma_1) # * t_fuselage
+        B2 = (w / 6) * (2 + self.sigma_1 / self.sigma_2) + (r * w / 6) * (2 + self.sigma_4 / self.sigma_2) # * t_fuselage
+        B3 = (r * w / 6) * (2 + self.sigma_1 / self.sigma_3) + (s * w / 6) * (2 + self.sigma_5 / self.sigma_3) # * t_fuselage
+        B4 = (r * w / 6) * (2 + self.sigma_2 / self.sigma_4) + (s * w / 6) * (2 + self.sigma_5 / self.sigma_4) # * t_fuselage
+        B5 = (s * w / 6) * (2 + self.sigma_3 / self.sigma_5) + (s * w / 6) * (2 + self.sigma_4 / self.sigma_5) # * t_fuselage
 
         return B1, B2, B3, B4, B5
 
@@ -112,9 +112,9 @@ class FuselageThickness:
         self, 
         M_x, 
         M_y, 
-        t_fuselage_init=0.005, 
-        I_xx_init=0.001, 
-        I_yy_init=0.001, 
+        t_fuselage_init=0.001, 
+        I_xx_init=0.01, 
+        I_yy_init=0.01, 
         tol=1e-5, 
         max_iter=1000, 
         alpha=0.5
@@ -132,14 +132,14 @@ class FuselageThickness:
             h = self.fuselage_height[i]
             fr = h / w
 
-            # Initial skin thickness (scalar or array)
+            # Initial fuselage thickness 
             t = t_fuselage_init if np.isscalar(t_fuselage_init) else t_fuselage_init[i]
 
-            # Initial MOI (scalar or array)
+            # Initial moments of inertia
             I_xx_old = I_xx_init if np.isscalar(I_xx_init) else I_xx_init[i]
             I_yy_old = I_yy_init if np.isscalar(I_yy_init) else I_yy_init[i]
 
-            # Geometry setup
+            
             a_dim = 0.5 / np.tan(np.radians(65))
             s_dim = 0.5 / np.sin(np.radians(65))
             o_dim = s_dim / 2 * np.sin(np.radians(25))
@@ -165,12 +165,12 @@ class FuselageThickness:
             B_old = np.ones(5) * 0.01
 
             for iteration in range(max_iter):
-                # --- Stress calculation using current MOIs ---
+                # Stress calculation
                 sigma = np.zeros(5)
                 for j in range(5):
                     sigma[j] = (M_x * I_yy_old * y_coords[j] + M_y * I_xx_old * x_coords[j]) / (I_xx_old * I_yy_old)
 
-                # --- Boom area update ---
+                # New boom areas
                 B1 = (w / 6) * (2 + sigma[1] / sigma[0]) + (fr * w / 6) * (2 + sigma[2] / sigma[0])
                 B2 = (w / 6) * (2 + sigma[0] / sigma[1]) + (fr * w / 6) * (2 + sigma[3] / sigma[1])
                 B3 = (fr * w / 6) * (2 + sigma[0] / sigma[2]) + (s_dim * w / 6) * (2 + sigma[4] / sigma[2])
@@ -181,7 +181,7 @@ class FuselageThickness:
                 # Under-relaxation: boom areas
                 B_i = alpha * B_new + (1 - alpha) * B_old
 
-                # --- Update MOIs from updated boom areas ---
+                # New moments of inertia based on updated boom areas
                 I_xx_new = np.sum((y_coords ** 2) * B_i)
                 I_yy_new = np.sum((x_coords ** 2) * B_i)
 
@@ -189,12 +189,12 @@ class FuselageThickness:
                 I_xx_relaxed = alpha * I_xx_new + (1 - alpha) * I_xx_old
                 I_yy_relaxed = alpha * I_yy_new + (1 - alpha) * I_yy_old
 
-                # --- Optional thickness update based on stress ratio ---
+                # Thickness update
                 sigma_max = np.max(np.abs(sigma))
                 t_new = t * (sigma_max / self.sigma_y)
                 t = alpha * t_new + (1 - alpha) * t
 
-                # --- Convergence check ---
+                # Check for convergence
                 if (
                     np.all(np.abs(B_i - B_old) < tol) and
                     abs(I_xx_relaxed - I_xx_old) < tol and
@@ -228,7 +228,7 @@ class FuselageThickness:
 if __name__ == '__main__':
     aircraft_data = Data("design3.json")
     airfoil_data = Data("AirfoilData/example_airfoil.json")
-    fuselage_material = Materials.Al5052  
+    fuselage_material = Materials.Al7075  
     
     fuselage = FuselageThickness(aircraft_data, airfoil_data, fuselage_material)
     
@@ -237,7 +237,7 @@ if __name__ == '__main__':
 
     boom_areas, I_xx_array, I_yy_array, t_fuselage = fuselage.iterate_booms_per_station(M_x, M_y)
 
-    print("Boom Areas per Station(must still be multiplied by t_fuselage):\n", boom_areas)
-    print("I_xx per Station(must still be multiplied by t_fuselage):\n", I_xx_array)
-    print("I_yy per Station(must still be multiplied by t_fuselage):\n", I_yy_array)
-    print("Fuselage Thickness per Station:\n", t_fuselage)
+    print("Boom Areas per Station(must still be multiplied by t_fuselage in m):\n", boom_areas)
+    print("I_xx per Station(must still be multiplied by t_fuselage in m):\n", I_xx_array)
+    print("I_yy per Station(must still be multiplied by t_fuselagein m):\n", I_yy_array)
+    print("Fuselage Thickness per Station:\n", t_fuselage*(1000))  #mm
