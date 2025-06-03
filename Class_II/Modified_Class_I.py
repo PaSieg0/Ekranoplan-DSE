@@ -90,12 +90,17 @@ class ModifiedClassI:
     def calculate_Mff(self) -> None:
         self.update_fuel_fractions_prop()
 
-        self.Mff = 1
+        self.Mff_1way = 1
         for fraction in self.fuel_fractions.values():
-            self.Mff *= fraction
+            self.Mff_1way *= fraction
 
         if self.mission_type == MissionType.DESIGN or self.mission_type == MissionType.ALTITUDE:
-            self.Mff **= 2
+            mfuel1 = (1-self.Mff_1way)*self.MTOW
+            mass_at_destination = self.Mff_1way*self.MTOW
+            mfuel2 = (1-self.Mff_1way)*(mass_at_destination-self.aircraft_data.data['requirements']['design_payload']*9.81)
+            self.Mff = 1-(mfuel1+mfuel2)/self.MTOW
+        else:
+            self.Mff = self.Mff_1way
 
     def calculate_fuel_mission(self) -> float:
         if self.mission_type == MissionType.DESIGN:
@@ -107,7 +112,6 @@ class ModifiedClassI:
             mission_range_WIG = self.aircraft_data.data['requirements']['altitude_range_WIG']
 
         self.LD = self.calculate_LD()
-
 
         if self.mission_type == MissionType.DESIGN:
             range_fraction = np.exp(-mission_range*self.prop_consumption*9.81/self.prop_efficiency * (self.k*self.LD)**-1)
@@ -121,48 +125,43 @@ class ModifiedClassI:
         for fraction in [0.97, 0.985, 0.995]:
             range_fraction *= fraction
 
-
         if self.mission_type == MissionType.DESIGN or self.mission_type == MissionType.ALTITUDE:
-            range_fraction **= 2
+            mfuel1 = (1-range_fraction)*self.MTOW
+            mass_at_destination = range_fraction*self.MTOW
+            mfuel2 = (1-range_fraction)*(mass_at_destination-self.aircraft_data.data['requirements']['design_payload']*9.81)
+            fuel_mission = mfuel1 + mfuel2
+        else:
+            fuel_mission = (1-range_fraction) * self.MTOW
 
-        self.range_fraction = range_fraction
-        
-        fuel_mission = (1-range_fraction) * self.MTOW
         return fuel_mission
 
 
     def main(self):
-        self.calculate_Mff()
-        if self.mission_type == MissionType.DESIGN:
-            self.MTOW = (self.design_payload*9.81 + self.design_crew*9.81 + self.class_ii_OEW*9.81) / (1 - (1-self.Mff) - self.tfo)
-            self.OEW = self.class_ii_OEW
-            self.EW = self.OEW - self.design_crew*9.81
-            self.total_fuel = self.MTOW * (1-self.Mff)
-            self.mission_fuel = self.calculate_fuel_mission()
-            self.reserve_fuel = self.total_fuel - self.mission_fuel
-            self.ZFW = self.MTOW - self.total_fuel
-            self.MTOM = self.MTOW/9.81
-            self.fuel_max = 1.1 * self.total_fuel
-        elif self.mission_type == MissionType.FERRY:
-            self.MTOW = (self.design_payload*9.81 + self.design_crew*9.81 + self.class_ii_OEW) / (1 - (1-self.Mff) - self.tfo)
-            self.OEW = self.class_ii_OEW
-            self.EW = self.OEW - self.ferry_crew*9.81
-            self.total_fuel = self.MTOW * (1-self.Mff)
-            self.mission_fuel = self.calculate_fuel_mission()
-            self.reserve_fuel = self.total_fuel - self.mission_fuel
-            self.ZFW = self.MTOW - self.total_fuel
-            self.MTOM = self.MTOW/9.81
-            self.fuel_max = 1.1 * self.total_fuel
-        elif self.mission_type == MissionType.ALTITUDE:
-            self.MTOW = (self.design_payload*9.81 + self.design_crew*9.81 + self.class_ii_OEW) / (1 - (1-self.Mff) - self.tfo)
-            self.OEW = self.class_ii_OEW
-            self.EW = self.OEW - self.altitude_crew*9.81
-            self.total_fuel = self.MTOW * (1-self.Mff)
-            self.mission_fuel = self.calculate_fuel_mission()
-            self.reserve_fuel = self.total_fuel - self.mission_fuel
-            self.ZFW = self.MTOW - self.total_fuel
-            self.MTOM = self.MTOW/9.81
-            self.fuel_max = 1.1 * self.total_fuel
+        crew_weight = self.design_crew*9.81 if self.mission_type == MissionType.DESIGN else \
+                       self.ferry_crew*9.81 if self.mission_type == MissionType.FERRY  else \
+                    self.altitude_crew*9.81 if self.mission_type == MissionType.ALTITUDE else None
+        
+        # Iteratively solve for MTOW and Mff since they depend on each other
+        self.Mff = 1 # stating value for iteration
+        tol = 1e-6
+        max_iter = 100
+        self.MTOW = (self.design_payload*9.81 + crew_weight + self.class_ii_OEW*9.81) / (1 - (1-self.Mff) - self.tfo)
+        for _ in range(max_iter):
+            self.calculate_Mff()
+            mtow_new = (self.design_payload*9.81 + crew_weight + self.class_ii_OEW*9.81) / (1 - (1-self.Mff) - self.tfo)
+            if abs(mtow_new - self.MTOW) < tol:
+                self.MTOW = mtow_new
+                break
+            self.MTOW = mtow_new
+
+        self.OEW = self.class_ii_OEW
+        self.EW = self.OEW - crew_weight
+        self.total_fuel = self.MTOW * (1-self.Mff)
+        self.mission_fuel = self.calculate_fuel_mission()
+        self.reserve_fuel = self.total_fuel - self.mission_fuel
+        self.ZFW = self.MTOW - self.total_fuel
+        self.MTOM = self.MTOW/9.81
+        self.fuel_max = 1.1 * self.total_fuel
 
         self.update_attributes()
         # self.aircraft_data.save_design(self.design_file)
