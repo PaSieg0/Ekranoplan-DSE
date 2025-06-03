@@ -7,6 +7,7 @@ import numpy as np
 from scipy.integrate import quad
 from utils import ISA
 import matplotlib.pyplot as plt
+from aero.lift_curve import lift_curve
 
 class ElevatorRudder:
 

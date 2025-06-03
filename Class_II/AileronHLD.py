@@ -5,6 +5,7 @@ import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from utils import Data, FlapType
 from scipy.integrate import quad
+from aero.lift_curve import lift_curve
 
 
 
