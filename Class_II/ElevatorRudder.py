@@ -110,7 +110,7 @@ class ElevatorRudder:
             raise ValueError("Aint gonna work cuh")
         
         integral, _ = quad(self.chord_v, self.rudder_start, self.rudder_end)
-        self.Sr = integral_test
+        self.Sr = integral
         self.rudder_area = self.rudder_chord_ratio * self.Sr
         self.rudder_normal_force = self.cndr*np.deg2rad(self.rudder_deflection)*0.5*self.rho*self.V**2*self.S*self.b/self.l_v
 
