@@ -140,11 +140,14 @@ class lift_curve():
 
         #makes spanwise lift distr
         self.L_lst=0.5*rho*V**2*chord_lst*cl
+    
 
-    def dcl_dalpha(self):
-        slope, intercept = np.polyfit(self.alpha[:np.argmin(abs(np.array(self.alpha)-5))], self.cl_lst[:np.argmin(abs(np.array(self.alpha)-5))], 1) 
 
-        return slope
+
+
+            
+
+
 
 
 
@@ -157,7 +160,6 @@ if __name__ == "__main__":  #if run seperately
     #getting alpha data from instnace
     alphalst=curves.alpha
     ind_lst=[]
-    curves.dcl_dalpha()
 
     #iteration over all alpha
     for i in range(len(alphalst)):
