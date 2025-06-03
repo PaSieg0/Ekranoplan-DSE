@@ -7,7 +7,6 @@ import numpy as np
 from scipy.integrate import quad
 from utils import ISA
 import matplotlib.pyplot as plt
-from aero.lift_curve import lift_curve
 
 class ElevatorRudder:
 
@@ -52,18 +51,20 @@ class ElevatorRudder:
         self.sweep_h = self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['sweep']
 
         self.vertical_tail_thickness = self.aircraft_data.data['inputs']['airfoils']['vertical_tail']*self.chord_root_v/2
+        print(f"Vertical tail thickness: {self.vertical_tail_thickness}")
         self.elevator_start = self.vertical_tail_thickness + self.elevator_start
 
         self.MAC = self.aircraft_data.data['outputs']['wing_design']['MAC']
 
-        self.nmax = self.aircraft_data.data['outputs']['general']['nmax']
+        self.nmax = 2.5 #TODO ask jaime which value and speed
+        #self.aircraft_data.data['outputs']['general']['nmax']
         self.climb_rate = self.aircraft_data.data['requirements']['climb_rate']
 
         self.engine_thrust = 0.75*self.engine_power * self.prop_efficiency / self.V
 
-        self.prop_diameter = self.aircraft_data.data['inputs']['engine']['prop_diameter'] 
+        self.prop_diameter = 5.2 # TODO link to json
         high_altitude = self.aircraft_data.data['requirements']['high_altitude']
-        self.rho = self.aircraft_data.data['rho_air'] 
+        self.rho = self.aircraft_data.data['rho_air'] #TODO adapt to mission profiles
         self.isa = ISA(altitude=high_altitude)
         self.rho_high = self.isa.rho
 
@@ -90,7 +91,7 @@ class ElevatorRudder:
             i -= 1/4*self.prop_diameter
             left_yaw_moment += self.engine_thrust * i
         
-        self.CN_OEI = (right_yaw_moment - left_yaw_moment) / (self.S*self.b*0.5*self.rho*self.V**2)
+        self.CN_OEI = (right_yaw_moment - left_yaw_moment) / (self.S*self.b*0.5*self.rho_high*self.V**2)
         return self.CN_OEI
     
     def calculate_required_rudder_surface(self):
@@ -98,26 +99,21 @@ class ElevatorRudder:
         CNe = self.calculate_engine_OEI_yaw()
         CNe_dr = -CNe/np.deg2rad(self.rudder_deflection)
         self.b_test = np.arange(self.rudder_start, self.b_v+0.001, 0.001)
-        tolerance = 0.000001
+        tolerance = 0.0001
         for b in self.b_test:
             integral_test, _ = quad(self.chord_v,self.rudder_start, b)
             cndr_test = integral_test * -(self.airfoil_cl_alpha * self.control_surface_effectiveness(self.rudder_chord_ratio)*self.l_v) / (self.S * self.b)
             print(cndr_test, CNe_dr)
             if 0 < abs(cndr_test - CNe_dr) <= tolerance:
                 self.rudder_end = b
-                self.cndr = cndr_test
                 break
         if not hasattr(self, 'rudder_end'):
             raise ValueError("Aint gonna work cuh")
         
-        integral, _ = quad(self.chord_v, self.rudder_start, self.rudder_end)
-        self.Sr = integral_test
-        self.rudder_area = self.rudder_chord_ratio * self.Sr
-        self.rudder_normal_force = self.cndr*np.deg2rad(self.rudder_deflection)*0.5*self.rho*self.V**2*self.S*self.b/self.l_v
+        self.rudder_area = self.rudder_chord_ratio * self.chord_v((self.rudder_end-self.rudder_start)/2) * (self.rudder_end - self.rudder_start)
 
     def calculate_pitch_rate(self):
-
-        pitch_rate = (self.nmax-1)*9.81/self.V*0.5
+        pitch_rate = (self.nmax-1)*9.81/(self.V*np.sqrt(1-(self.climb_rate/self.V)**2))*0.7
         return pitch_rate
     
     def calculate_Cmde_Cmq(self,b):
@@ -137,7 +133,7 @@ class ElevatorRudder:
         tolerance = 0.001
         for b in self.b_test:
             ratio = self.calculate_Cmde_Cmq(b)
-            # print(ratio, self.required_Cmde_Cmq)
+            #print(ratio, self.required_Cmde_Cmq)
             if abs(ratio - self.required_Cmde_Cmq) < tolerance:
                 self.elevator_end = b
                 break
@@ -145,18 +141,7 @@ class ElevatorRudder:
         if not hasattr(self, 'elevator_end'):
             raise ValueError("Aint gonna work cuh")
         
-        integral, _ = quad(self.chord_h, self.elevator_start, self.elevator_end)
-        self.elevator_area = self.elevator_chord_ratio * integral
-
-    def calculate_elevator_normal_force(self):
-        area_elevator, _ = quad(self.chord_h, self.elevator_start, self.elevator_end)
-        self.Se = area_elevator
-
-        elevator_effectiveness = self.control_surface_effectiveness(self.elevator_chord_ratio)
-        self.CMde = -self.airfoil_cl_alpha * elevator_effectiveness * self.l_h/(self.S * self.MAC)*self.Se
-
-        N = self.CMde * np.deg2rad(self.elevator_deflection) * 0.5 * self.rho_high * self.V**2 * self.S * self.MAC/self.l_h
-        return N
+        self.elevator_area = self.elevator_chord_ratio * self.chord_h((self.elevator_end-self.elevator_start)/2) * (self.elevator_end - self.elevator_start)
 
     def main(self):
         self.calculate_required_rudder_surface()
@@ -167,9 +152,6 @@ class ElevatorRudder:
         if self.plot:
             self.plot_horizontal_tail()
         
-        self.elevator_lift = self.calculate_elevator_normal_force()
-        print(f"Elevator lift: {self.elevator_lift}")
-        print(f"Rudder lift: {self.rudder_normal_force}")
         self.update_attributes()
         self.aircraft_data.save_design(self.design_file)
 
@@ -189,10 +171,6 @@ class ElevatorRudder:
         self.aircraft_data.data['outputs']['control_surfaces']['elevator']['deflection'] = self.elevator_deflection
         self.aircraft_data.data['outputs']['control_surfaces']['elevator']['pitch_rate'] = np.rad2deg(self.pitch_rate)
         self.aircraft_data.data['outputs']['control_surfaces']['rudder']['CN_OEI'] = self.CN_OEI
-        self.aircraft_data.data['outputs']['control_surfaces']['rudder']['cndr'] = self.cndr
-        self.aircraft_data.data['outputs']['control_surfaces']['elevator']['CMde'] = 2*self.CMde
-        self.aircraft_data.data['outputs']['control_surfaces']['elevator']['elevator_lift'] = self.elevator_lift
-        self.aircraft_data.data['outputs']['control_surfaces']['rudder']['rudder_lift'] = self.rudder_normal_force
 
 
     def plot_horizontal_tail(self):
