@@ -45,8 +45,8 @@ class FuselageThickness:
 
         self.rho_fuselage = self.material['rho']
 
-        self.fuselage_width = np.array([5.7, 5.7, 5.7])
-        self.fuselage_height = np.array([4.5, 6, 4.5])
+        self.fuselage_width = np.array([self.aircraft_data.data['outputs']['fuselage_dimensions']['w_fuselage'], self.aircraft_data.data['outputs']['fuselage_dimensions']['w_fuselage'], self.aircraft_data.data['outputs']['fuselage_dimensions']['w_fuselage']])
+        self.fuselage_height = np.array([self.aircraft_data.data['outputs']['fuselage_dimensions']['h_fuselage_station1'], self.aircraft_data.data['outputs']['fuselage_dimensions']['h_fuselage_station2'], self.aircraft_data.data['outputs']['fuselage_dimensions']['h_fuselage_station3']])
         self.fuselage_ratio =  self.fuselage_height / self.fuselage_width
 
         self.t_fuselage = self.aircraft_data.data['inputs']['t_fuselage']/1000
