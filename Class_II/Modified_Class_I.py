@@ -137,18 +137,24 @@ class ModifiedClassI:
 
 
     def main(self):
-        crew_weight = self.design_crew*9.81 if self.mission_type == MissionType.DESIGN else \
-                       self.ferry_crew*9.81 if self.mission_type == MissionType.FERRY  else \
-                    self.altitude_crew*9.81 if self.mission_type == MissionType.ALTITUDE else None
+        if self.mission_type == MissionType.DESIGN:
+            crew_weight = self.design_crew*9.81
+            payload = self.design_payload
+        elif self.mission_type == MissionType.FERRY:
+            crew_weight = self.ferry_crew*9.81
+            payload = self.ferry_payload
+        elif self.mission_type == MissionType.ALTITUDE:
+            crew_weight = self.altitude_crew*9.81
+            payload = self.altitude_payload
         
         # Iteratively solve for MTOW and Mff since they depend on each other
         self.Mff = 1 # stating value for iteration
         tol = 1e-6
         max_iter = 100
-        self.MTOW = (self.design_payload*9.81 + crew_weight + self.class_ii_OEW*9.81) / (1 - (1-self.Mff) - self.tfo)
+        self.MTOW = (payload*9.81 + crew_weight + self.class_ii_OEW*9.81) / (1 - (1-self.Mff) - self.tfo)
         for _ in range(max_iter):
             self.calculate_Mff()
-            mtow_new = (self.design_payload*9.81 + crew_weight + self.class_ii_OEW*9.81) / (1 - (1-self.Mff) - self.tfo)
+            mtow_new = (payload*9.81 + crew_weight + self.class_ii_OEW*9.81) / (1 - (1-self.Mff) - self.tfo)
             if abs(mtow_new - self.MTOW) < tol:
                 self.MTOW = mtow_new
                 break
