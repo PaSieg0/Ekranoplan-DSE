@@ -222,9 +222,6 @@ class FuselageThickness:
 
         return boom_areas_all, I_xx_all, I_yy_all, t_fuselage_final
     
-    def calculate_stress_concentration_factor(self):
-        
-
 
 
 if __name__ == '__main__':
@@ -243,3 +240,4 @@ if __name__ == '__main__':
     print("I_xx per Station(must still be multiplied by t_fuselage in m):\n", I_xx_array)
     print("I_yy per Station(must still be multiplied by t_fuselagein m):\n", I_yy_array)
     print("Fuselage Thickness per Station:\n", t_fuselage*(1000))  #mm
+    print(f"Kt for cargo door: {fuselage.calculate_stress_concentration_factor()}")
