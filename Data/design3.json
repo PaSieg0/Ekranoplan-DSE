@@ -164,7 +164,7 @@
             "engine_weight": 1900,
             "engine_power": 8202000,
             "engine_efficiency": 0.85,
-            "n_engines": 7.0
+            "n_engines": 6.0
         }
     },
     "requirements": {
@@ -195,12 +195,7 @@
         "general": {
             "Re": 4837280592.753655,
             "Cd": 0.0012700434697589557,
-            "hull_depth": 2.713,
-            "hull_surface": 420.472,
-            "hull_nose_surface": 78.58,
-            "hull_tail_surface": 139.684,
-            "hull_straight_surface": 202.208,
-            "take_off_power": 46205736.735140644,
+            "take_off_power": 48131578.42285479,
             "take_off_thrust": null,
             "V_lof": 64.8165,
             "LD_g": 17.84263025035381,
