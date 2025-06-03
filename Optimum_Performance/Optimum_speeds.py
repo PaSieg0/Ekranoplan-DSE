@@ -24,7 +24,7 @@ class OptimumSpeeds(AltitudeVelocity):
 
         self._current_weight = self._mtow
 
-        self.ddist = 100000.0  # distance step in meters
+        self.ddist = 100_000.0  # distance step in meters
     
     def step_weight(self) -> None:
         """
@@ -60,8 +60,8 @@ class OptimumSpeeds(AltitudeVelocity):
         Pr = np.array([self.calculate_power_required(v, h) for v in velocity_range])
 
         # Find velocity at which drag is minimized
-        min_drag_index = np.argmin(Pr)
-        v_max_endurance = velocity_range[min_drag_index]
+        min_pr_index = np.argmin(Pr)
+        v_max_endurance = velocity_range[min_pr_index]
 
         return v_max_endurance
     
@@ -106,7 +106,15 @@ if __name__ == "__main__":
     print(f"Maximum angle of climb speed: {v_max_aod:.2f} m/s")
     print(f"Minimum rate of descent speed: {v_min_rod:.2f} m/s")
     print(f"Minimum angle of descent speed: {v_min_aod:.2f} m/s")
-    
+
+    v_range = optimum_speeds.v_range(h)
+    print(f"L/D at weight: {optimum_speeds._current_weight:.0f} N: {optimum_speeds.L_over_D(0, v_range):.2f}")
+    optimum_speeds.plot_force_curve([0], show=False)
+    optimum_speeds._current_weight = optimum_speeds._oew
+    v_range = optimum_speeds.v_range(h)
+    print(f"L/D at weight: {optimum_speeds._current_weight:.0f} N: {optimum_speeds.L_over_D(0, v_range):.2f}")
+    optimum_speeds.plot_force_curve([0])
+ 
     # for i in np.arange(0, 3704000, optimum_speeds.ddist):
     #     v_range = optimum_speeds.v_range(0)  # Example altitude
     #     # Call methods as needed

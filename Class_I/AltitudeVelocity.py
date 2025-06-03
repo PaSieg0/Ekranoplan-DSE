@@ -79,7 +79,6 @@ class AltitudeVelocity:
     def calculate_thust(self, V: float, h: float) -> float:
         return self.calculate_power_available(h)/V
     
-    @lru_cache(maxsize=128)
     def calculate_stall_speed(self, h: float) -> float:
         """
         Calculate stall speed depending on altitude
@@ -112,15 +111,16 @@ class AltitudeVelocity:
         plt.grid()
         plt.show()
 
-    def plot_force_curve(self, h_list: np.array, n_list: float = [1]) -> None:
+    def plot_force_curve(self, h_list: np.array, n_list: float = [1], show=True) -> None:
         """
         Plot the drag and thrust available curves for different load factors.
         """
         plt.figure(figsize=(10, 6))
         color_list = ['b', 'g', 'r', 'c', 'm', 'y', 'k']
+        initial_weight = self._current_weight  # Store initial weight
 
         for n_idx, n in enumerate(n_list):
-            self._current_weight = self._mtow * n  # Adjust weight based on load factor
+            self._current_weight = initial_weight * n  # Adjust weight based on load factor
 
             for i, h in enumerate(h_list):
                 V_stall = self.calculate_stall_speed(h)
@@ -136,14 +136,15 @@ class AltitudeVelocity:
                 plt.plot(velocity_range, drag, label=label_drag, color=color, linestyle='-')
                 plt.plot(velocity_range, thrust, label=label_thrust, color=color, linestyle='--')
 
-        self._current_weight = self._mtow  # Reset weight to original value
+        self._current_weight = initial_weight  # Reset weight to original value
 
         plt.title('Thrust and Drag vs Velocity')
         plt.xlabel('Velocity (m/s)')
         plt.ylabel('Force (N)')
         plt.legend()
         plt.grid()
-        plt.show()
+        if show:
+            plt.show()
 
     def calculate_RoC(self, V: float, h: float, minus_power: float=0) -> float:
         """Calculate Rate of Climb at a given velocity and altitude."""
