@@ -61,6 +61,7 @@ class EmpennageOptimizer:
             self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['l_v'] = self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['LE_pos'] - self.aircraft_data.data['outputs']['cg_range']['most_aft_cg']
             self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['l_h'] = self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['l_v']
             self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['LE_pos'] = self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['l_h'] + self.aircraft_data.data['outputs']['cg_range']['most_aft_cg']
+            self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['tail_height'] = self.aircraft_data.data['outputs']['fuselage_dimensions']['h_fuselage'] + self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['b'] 
 
 
     def save_design(self):
