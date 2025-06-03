@@ -27,21 +27,21 @@ class CGCalculation:
         """Initialize aircraft parameters needed for CG calculation"""
         self.x_LEMAC_wing = self.aircraft_data.data['outputs']['wing_design']['X_LE']
         self.MAC_wing = self.aircraft_data.data['outputs']['wing_design']['MAC']
-        self.cargo_length = self.aircraft_data.data['outputs']['general']['cargo_length']
-        self.cargo_width = self.aircraft_data.data['outputs']['general']['cargo_width']
-        self.cargo_height = self.aircraft_data.data['outputs']['general']['cargo_height']
+        self.cargo_length = self.aircraft_data.data['outputs']['fuselage_dimensions']['cargo_length']
+        self.cargo_width = self.aircraft_data.data['outputs']['fuselage_dimensions']['cargo_width']
+        self.cargo_height = self.aircraft_data.data['outputs']['fuselage_dimensions']['cargo_height']
         self.cargo_density = self.aircraft_data.data['requirements']['cargo_density']
-        self.cargo_x_start = (self.aircraft_data.data['outputs']['general']['cargo_distance_from_nose'] + 
-                            self.aircraft_data.data['outputs']['general']['l_nose'])
+        self.cargo_x_start = (self.aircraft_data.data['outputs']['fuselage_dimensions']['cargo_distance_from_nose'] + 
+                            self.aircraft_data.data['outputs']['fuselage_dimensions']['l_nose'])
         self.fuel_mass = self.aircraft_data.data['outputs']['design']['max_fuel']
         self.cargo_mass = self.aircraft_data.data['requirements']['cargo_mass']
 
         
         # Fuselage parameters
-        self.nose_length = self.aircraft_data.data['outputs']['general']['l_nose']
-        self.fus_straight_length = self.aircraft_data.data['outputs']['general']['l_fus_straight']
-        self.fus_afterbody_length = self.aircraft_data.data['outputs']['general']['l_afterbody']
-        self.fus_tailcone_length = self.aircraft_data.data['outputs']['general']['l_tailcone']
+        self.nose_length = self.aircraft_data.data['outputs']['fuselage_dimensions']['l_nose']
+        self.fus_straight_length = self.aircraft_data.data['outputs']['fuselage_dimensions']['l_forebody']
+        self.fus_afterbody_length = self.aircraft_data.data['outputs']['fuselage_dimensions']['l_afterbody']
+        self.fus_tailcone_length = self.aircraft_data.data['outputs']['fuselage_dimensions']['l_tailcone']
         
         # Tail parameters
         self.x_LE_vertical_tail = self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['LE_pos']
@@ -183,7 +183,7 @@ class CGCalculation:
 
         x_points = np.arange(0, self.total_fuselage_length, 0.05)
         loads = np.zeros_like(x_points)
-        
+
         # Add fuselage distributed loads for each section
         nose_mask = (x_points < self.nose_length)
         forebody_mask = (x_points >= self.nose_length) & (x_points < self.nose_length + self.fus_straight_length)
@@ -198,6 +198,9 @@ class CGCalculation:
         # Add cargo distributed load
         cargo_mask = (x_points >= self.cargo_x_start) & (x_points <= self.cargo_x_start + self.cargo_length)
         loads[cargo_mask] += cargo_distributed
+
+        self.area_under_curve = np.trapz(loads, x_points)
+        print("Area under curve[N]:", self.area_under_curve)
         
         # Create the plot
         plt.figure(figsize=(10, 6))
