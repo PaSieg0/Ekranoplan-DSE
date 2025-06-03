@@ -80,7 +80,7 @@ class DerivativesDatcom_asym:
     def C_m_u(self):
         print('Ignored, see paper, Pitching moment coefficient science direct')
         return 0
-    
+
 
     def C_m_alphadot(self):
         # K_wb = 0.95 #1047
@@ -100,14 +100,22 @@ class DerivativesDatcom_asym:
     
 
 derivatives = DerivativesDatcom_asym(0, 8, 507, 1.5, 100, 75, 1, 60, 6, 20000, 63.79, 36.431, 9.167, 0.85, 0.4)
-# print(obj.Cmq(1, np.deg2rad(2)))  # Example usage
+print(derivatives.Cmq(1, np.deg2rad(2)))  # Example usage
 # print(obj.C_x_alpha(1))
-print(derivatives.C_X_u())  # Example usage
+print(f'cmq:{derivatives.Cmq(1, np.deg2rad(2))}')  # Example usage
 
 
 # Run the functions you want to store
 aero_stability_outputs = {
+    'C_m_q': derivatives.Cmq(1, np.deg2rad(2)), #Cl=1, alpha=2 degrees
     'C_z_alpha': derivatives.C_z_alpha(),
+    'C_x_alpha': derivatives.C_x_alpha(1),  # Cl=1
+    'C_m_alpha': derivatives.Cmalpha(),
+    'C_Z_u': derivatives.C_Z_u(1),  # Cl=1
+    'C_X_u': derivatives.C_X_u(),
+    'C_m_u': derivatives.C_m_u(),
+    'C_m_alphadot': derivatives.C_m_alphadot()
+
     # Add more functions here if needed
 }
 
@@ -124,11 +132,11 @@ else:
 # Ensure correct nested structure exists
 if 'outputs' not in data:
     data['outputs'] = {}
-if 'aerodynamic_stability_coefficients' not in data['outputs']:
-    data['outputs']['aerodynamic_stability_coefficients'] = {}
+if 'aerodynamic_stability_coefficients_sym' not in data['outputs']:
+    data['outputs']['aerodynamic_stability_coefficients_sym'] = {}
 
 # Update values
-data['outputs']['aerodynamic_stability_coefficients'].update(aero_stability_outputs)
+data['outputs']['aerodynamic_stability_coefficients_sym'].update(aero_stability_outputs)
 
 # Save back to file
 with open(json_path, 'w') as file:

@@ -1,4 +1,6 @@
 import numpy as np
+import json
+import os
 
 class DerivativesDatcom_asym:
     def __init__(self, Delta_c4, A, S, Av, Sh, Sv, dihedral, l_b, d_fusel, V_b, b, lp, Cl_alpha, e, taper, MAC=8.456, x_ac=31.69, x_cg=32.73, Cd0 = 0.017, c_h=5.107):
@@ -147,6 +149,7 @@ class DerivativesDatcom_asym:
     
     def Cyr(self):
         print('Cyr is very very vry very very very very small, Sam said so, therby it is true')
+        return 0
 
     def Clr(self, Cl, alpha):
         """
@@ -212,12 +215,6 @@ class DerivativesDatcom_asym:
         zp = 7
         ClB_dot = self.CyBdot(Cl,alpha_f) * (zp * np.cos(alpha_f) - self.lp * np.sin(alpha_f)) / self.b
         return ClB_dot
-    
-    
-    
-    
-
-    
 
 
 
@@ -234,8 +231,49 @@ class DerivativesDatcom_asym:
 # print(Cnr.Cnr(1, np.deg2rad(2)))
 # Clr = DerivativesDatcom(0, 8, 507, 1.5, 100, 75, np.deg2rad(1) ,60, 6, 2000, 63.79, 36.431, 0.16, 0.85, 0.4)
 # print(Clr.Clr(1, np.deg2rad(2)))
-CyBdot = DerivativesDatcom_asym(0, 8, 507, 1.5, 100, 75, np.deg2rad(1), 60, 6, 2000, 63.79, 36.431, 0.16, 0.85, 0.4)
-print(CyBdot.CyB(1))
+derivatives = DerivativesDatcom_asym(0, 8, 507, 1.5, 100, 75, np.deg2rad(1), 60, 6, 2000, 63.79, 36.431, 0.16, 0.85, 0.4)
+# print(CyBdot.CyB(1))
 
 
+
+# Run the functions you want to store
+# Note, sometimes the [0] entry is used. THis is due to some function outputs being used in other functions. The main coefficient is always the first one
+aero_stability_outputs = {
+    'CyB': derivatives.CyB(0.5)[0],  # Example usage with Cl = 0.5
+    'ClB': derivatives.ClB(0.5, np.deg2rad(5)),  # Example usage with Cl = 0.5 and alpha = 5 degrees
+    'CnB': derivatives.CnB()[0],  # Example usage
+    'Cyp': derivatives.Cyp(0.5, np.deg2rad(5), 0.05)[0],  # Example usage with Cl = 0.5, alpha = 5 degrees, h_b = 0.05
+    'Clp': derivatives.Clp(),  # Example usage
+    'Cnp': derivatives.Cnp(0.5, np.deg2rad(5))[0],  # Example usage with Cl = 0.5, alpha = 5 degrees
+    'Cyr': derivatives.Cyr(),  # Example usage with Cl = 0.5, alpha = 5 degrees
+    'Clr': derivatives.Clr(0.5, np.deg2rad(5)),  # Example usage with Cl = 0.5, alpha = 5 degrees
+    'Cnr': derivatives.Cnr(0.5, np.deg2rad(5)),  # Example usage with Cl = 0.5, alpha = 5 degrees
+    'CyBdot': derivatives.CyBdot(0.5, np.deg2rad(5)),  # Example usage with Cl = 0.5, alpha = 5 degrees
+    'ClBdot': derivatives.ClBdot(0.5, np.deg2rad(5)),  # Example usage with Cl = 0.5, alpha = 5 degrees
+
+    # Add more functions here if needed
+}
+
+# Define path to JSON
+json_path = os.path.join('Data', 'design3.json')
+
+# Load existing JSON or create new structure
+if os.path.exists(json_path):
+    with open(json_path, 'r') as file:
+        data = json.load(file)
+else:
+    data = {}
+
+# Ensure correct nested structure exists
+if 'outputs' not in data:
+    data['outputs'] = {}
+if 'aerodynamic_stability_coefficients_asym' not in data['outputs']:
+    data['outputs']['aerodynamic_stability_coefficients_asym'] = {}
+
+# Update values
+data['outputs']['aerodynamic_stability_coefficients_asym'].update(aero_stability_outputs)
+
+# Save back to file
+with open(json_path, 'w') as file:
+    json.dump(data, file, indent=4)
     
