@@ -23,15 +23,12 @@ class OptimumSpeeds(AltitudeVelocity):
         self.fuel_weight_per_metre = (self._mtow - self._zfw) / self.data.data['requirements']['design_range']  # kg/m
 
         self._current_weight = self._mtow
-
-        self.ddist = 100_000.0  # distance step in meters
     
-    def step_weight(self) -> None:
+    def step_weight(self, dw) -> None:
         """
         Update the current weight of the aircraft.
         """
-        dfuel_weight = -self.fuel_weight_per_metre*self.ddist
-        self._current_weight += dfuel_weight
+        self._current_weight += dw
 
     def v_range(self, h: float) -> float:
         """
@@ -92,6 +89,11 @@ if __name__ == "__main__":
     optimum_speeds = OptimumSpeeds(aircraft_data, mission_type)
 
     h = h_WIG = 10  # Example altitude in meters
+
+    optimum_speeds._current_weight = 1839082
+    v = optimum_speeds.v_range(h)
+    ld = optimum_speeds.L_over_D(h, v)
+    print(f"{v:.2f}\t\t{optimum_speeds._current_weight:.2f}\t\t{ld:.2f}")
 
     v_range = optimum_speeds.v_range(h)
     v_endurance = optimum_speeds.v_endurance(h)

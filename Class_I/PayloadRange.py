@@ -80,6 +80,7 @@ class RangeCalculator:
 
         if self.aircraft_type == "PROP":
             R = (self.eta_p * self.L_D * np.log(W4_W5)) / (self.g * self.cp)
+            print(self.L_D, np.log(W4_W5))
         elif self.aircraft_type == "JET":
             R = (self.V_cruise * self.L_D * np.log(W4_W5)) / (self.g * self.cj)
         else:

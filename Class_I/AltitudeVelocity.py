@@ -26,6 +26,7 @@ class AltitudeVelocity:
         self._e = self.data.data['inputs']['oswald_factor']
         self._CLmax = self.data.data['inputs']['CLmax_clean']
         self._engine_power = self.data.data['inputs']['engine_power']
+        self._prop_efficiency = self.data.data['inputs']['prop_efficiency']
         self._sea_level_density = ISA(0).rho
         self._k = 1 / (np.pi * self._AR * self._e)  # Induced drag factor
         self.velocity_steps = 2000  # Number of velocity steps for calculations
@@ -71,7 +72,7 @@ class AltitudeVelocity:
         Calculate the power available for the aircraft at different velocities.
         Assume power available is constant for propeller engines.
         """
-        return self._engine_power * (self._get_density(h) / self._sea_level_density)**0.70 * 4
+        return self._engine_power * (self._get_density(h) / self._sea_level_density)**0.70 * 4 * self._prop_efficiency
     
     def calculate_drag(self, V: float, h: float) -> float:
         return self.calculate_power_required(V, h)/V
