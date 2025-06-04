@@ -207,7 +207,7 @@ class ClassII:
         return 3100 *9.81    # https://aviator.aero/press/stelia-aerospace-delivers-the-first-belugaxl-cargo-door/
     
     def anchor(self):
-        return 250*9.81
+        return 400*9.81
     
     def hull(self):
         W_hull_lbs = 0.12*self.W_dg   # https://www.icas.org/icas_archive/ICAS2012/PAPERS/198.PDF

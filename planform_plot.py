@@ -5,7 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 import matplotlib.pyplot as plt
-from utils import Data
+from utils import Data, MissionType
 
 
 
@@ -32,6 +32,13 @@ class PlanformPlot:
         self.h_taper = aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['taper']
         self.h_c_root = aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['chord_root']
         self.h_c_tip = aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['chord_tip']
+
+        self.v_LE = aircraft_data.data['outputs']['empennage_design']['vertical_tail']['LE_pos']
+        self.b_v = aircraft_data.data['outputs']['empennage_design']['vertical_tail']['b']
+        self.v_sweep_LE = aircraft_data.data['outputs']['empennage_design']['vertical_tail']['sweep']
+        self.v_quarter_tip = aircraft_data.data['outputs']['empennage_design']['vertical_tail']['quarter_tip']
+        self.v_cr = aircraft_data.data['outputs']['empennage_design']['vertical_tail']['chord_root']
+        self.v_ct = aircraft_data.data['outputs']['empennage_design']['vertical_tail']['chord_tip']
 
 
         self.l_fuselage = aircraft_data.data['outputs']['fuselage_dimensions']['l_fuselage']
@@ -76,6 +83,7 @@ class PlanformPlot:
              ((1 - self.h_taper) / (1 + self.h_taper)))
         ))
         sweep_offset_h = (self.b_h/2) * np.tan(np.deg2rad(self.h_sweep_LE))
+        sweep_offset_v = (self.b_v) * np.tan(np.deg2rad(self.v_sweep_LE))
 
         self.ax.plot([0, self.b_h/2], [self.h_LE, self.h_LE + sweep_offset_h], 'k-', lw=2)
         self.ax.plot([self.b_h/2, self.b_h/2], [self.h_LE + sweep_offset_h, self.h_LE + sweep_offset_h + self.h_c_tip], 'k-', lw=2)
@@ -84,6 +92,12 @@ class PlanformPlot:
         self.ax.plot([0, -self.b_h/2], [self.h_LE, self.h_LE + sweep_offset_h], 'k-', lw=2)
         self.ax.plot([-self.b_h/2, -self.b_h/2], [self.h_LE + sweep_offset_h, self.h_LE + sweep_offset_h + self.h_c_tip], 'k-', lw=2)
         self.ax.plot([-self.b_h/2, 0], [self.h_LE + sweep_offset_h + self.h_c_tip, self.h_LE + self.h_c_root], 'k-', lw=2)
+
+        self.ax.plot([self.w_fuselage/2, -self.w_fuselage/2], [self.v_LE, self.v_LE], 'k-', lw=2, label='Vertical Tail Root LE')
+        self.ax.plot([self.w_fuselage/2, -self.w_fuselage/2], [self.v_LE + self.v_cr, self.v_LE + self.v_cr], 'k-', lw=2, label='Vertical Tail Root TE')
+
+        self.ax.plot([self.w_fuselage/2, -self.w_fuselage/2], [self.v_LE + sweep_offset_v, self.v_LE + sweep_offset_v], 'r-', lw=2, label='Vertical Tail Root LE')
+        self.ax.plot([self.w_fuselage/2, -self.w_fuselage/2], [self.v_LE + sweep_offset_v + self.v_ct, self.v_LE + sweep_offset_v + self.v_ct], 'r-', lw=2, label='Vertical Tail Tip TE')
 
     def plot_cg(self) -> None:
         self.ax.scatter([0, 0], [self.most_aft_cg, self.most_forward_cg], color='red', label='CG Range', zorder=5)

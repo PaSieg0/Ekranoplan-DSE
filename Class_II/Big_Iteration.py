@@ -8,7 +8,8 @@ from Class_I.Fuselage import Fuselage
 from Class_I.PrelimWingPlanformDesign import WingPlanform
 from Class_II.Modified_CD0 import Cd0Estimation
 from Class_I.cgRange import CGRange
-from Class_I.empennage import Empennage
+from Class_II.Empennage_Design.Vertical_tail import vertical_tail_sizing
+from Class_II.Empennage_Design.main_empennage import EmpennageOptimizer
 
 class BigIteration:
     def __init__(self, aircraft_data: Data, mission_type: MissionType) -> None:
@@ -54,8 +55,6 @@ class BigIteration:
             cg_range = CGRange(aircraft_data=self.aircraft_data)
             cg_range.calculate_cg_range()
 
-            # emp = Empennage(aircraft_data=self.aircraft_data)
-            # emp.run_iteration()
 
             Cd0_est = Cd0Estimation(
                 aircraft_data=self.aircraft_data,
@@ -63,6 +62,7 @@ class BigIteration:
                 class_ii_OEW=self.class_ii.OEW
             )
             Cd0_est.mainloop()
+
 
             S = self.aircraft_data.data['outputs']['wing_design']['S']
             MTOM = self.aircraft_data.data['outputs'][mission_type.name.lower()]['MTOM']
@@ -101,3 +101,8 @@ if __name__ == "__main__":
             print(f"Convergence achieved with MTOM: {MTOM:,.0f} kg")
             break
         prev_MTOM = MTOM
+    vert_tail = vertical_tail_sizing(aircraft_data=iteration.aircraft_data)
+    vert_tail.get_vertical_tail_size()
+
+    emp_optimizer = EmpennageOptimizer(aircraft_data=iteration.aircraft_data)
+    emp_optimizer.run()

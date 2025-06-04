@@ -9,7 +9,8 @@ from utils import Data
 from Class_II.Empennage_Design.main_empennage import EmpennageOptimizer
 
 def main():
-    forebody_lengths = np.arange(19.5, 21.13, 0.1)
+
+    forebody_lengths = np.arange(20.5, 23.13, 0.1)
     diffs = []
     aft_cgs = []
     step_dists = []
