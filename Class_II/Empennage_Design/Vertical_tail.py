@@ -120,8 +120,10 @@ class vertical_tail_sizing:
     def get_vertical_tail_size(self):
         static_stability = self.get_vertical_tail_size_static_stab()
         one_engine_inoperative = self.get_vertical_tail_size_one_engine_inoperative()
-        fig_23 = self.get_Sv_from_fig_9_23(y_axis=0.15)
+        fig_23 = self.get_Sv_from_fig_9_23(y_axis=0.18)
         tail_volume = self.check_tail_volume()
+
+        print(f"Static Stability: {static_stability}, One Engine Inoperative: {one_engine_inoperative}, Fig 9.23: {fig_23}, Tail Volume: {tail_volume}")
 
 
         tail_size = max(static_stability, one_engine_inoperative, fig_23, tail_volume)
@@ -181,8 +183,10 @@ class vertical_tail_sizing:
         C_n_beta_p = self.calculate_C_n_beta_p()
         l_v = self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['l_v']
 
+        print("sum of C_n_beta:", C_n_beta_f + C_n_beta_i + C_n_beta_p)
 
-        volume = 0.055
+
+        volume = 0.05
 
         min_Sv = volume * self.S * self.b / l_v
         return min_Sv
@@ -193,4 +197,5 @@ if __name__ == "__main__":
     vert_tail = vertical_tail_sizing(aircraft_data=aircraft_data)
 
     tail_size = vert_tail.get_vertical_tail_size()
+    vert_tail.get_x_axis_fig_9_23()
     print('Vertical Tail Area:', tail_size)

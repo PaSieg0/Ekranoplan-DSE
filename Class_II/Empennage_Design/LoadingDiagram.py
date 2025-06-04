@@ -225,7 +225,7 @@ class LoadingDiagram:
 if __name__ == "__main__":
     file_path = "design3.json"
     aircraft_data = Data(file_path)
-    wing_placement = 0.342
+    wing_placement = 0.331
     loading_diagram = LoadingDiagram(aircraft_data=aircraft_data, wing_placement=wing_placement)
     loading_diagram.plot()
     min_cg, max_cg = loading_diagram.determine_range()

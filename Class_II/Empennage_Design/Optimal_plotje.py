@@ -10,7 +10,7 @@ from Class_II.Empennage_Design.main_empennage import EmpennageOptimizer
 
 def main():
 
-    forebody_lengths = np.arange(20.5, 23.13, 0.1)
+    forebody_lengths = np.arange(17.5, 23.13, 0.1)
     diffs = []
     aft_cgs = []
     step_dists = []
@@ -24,6 +24,7 @@ def main():
         best_placement = optimizer.run()
         aft_cg = aircraft_data.data['outputs']['cg_range']['most_aft_cg']
         step_dist = aircraft_data.data['outputs']['fuselage_dimensions']['l_nose'] + aircraft_data.data['outputs']['fuselage_dimensions']['l_forebody']
+        aircraft_data.data['outputs']['fuselage_dimensions']['x_step'] = step_dist
         diff = aft_cg - step_dist
         diffs.append(diff)
         aft_cgs.append(aft_cg)
