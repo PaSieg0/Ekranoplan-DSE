@@ -372,7 +372,7 @@ class CGCalculation:
         # Calculate bending moment through integration of shear
         self.moment = np.zeros_like(self.x_points)
         for i in range(1, len(self.x_points)):
-            self.moment[i] = np.trapezoid(-shear[:i], self.x_points[:i])  # Negative shear to match sign convention
+            self.moment[i] = np.trapezoid(-self.shear[:i], self.x_points[:i])  # Negative shear to match sign convention
         
         # Add wing root moment to all points after the wing root
         wing_root_center = self.wing_x_LE + self.wing_root_chord/2
