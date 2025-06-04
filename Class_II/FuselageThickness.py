@@ -100,16 +100,16 @@ class FuselageThickness:
         return self.I_xx_fuselage, self.I_yy_fuselage, self.I_xy_fuselage
         
     
-    def calculate_stresses(self):
+    # def calculate_stresses(self):
 
-        self.sigma_1 = (((M_x * self.I_yy_fuselage)*((self.a_dim+(self.fuselage_ratio*self.fuselage_width)-self.z_bar_fuselage))) + (M_y*self.I_xx_fuselage)*(-0.5*self.fuselage_width)) / (self.I_xx_fuselage*self.I_yy_fuselage)
-        self.sigma_2 = (((M_x * self.I_yy_fuselage)*((self.a_dim+(self.fuselage_ratio*self.fuselage_width)-self.z_bar_fuselage))) + (M_y*self.I_xx_fuselage)*(0.5*self.fuselage_width)) / (self.I_xx_fuselage*self.I_yy_fuselage)
+    #     self.sigma_1 = (((M_x * self.I_yy_fuselage)*((self.a_dim+(self.fuselage_ratio*self.fuselage_width)-self.z_bar_fuselage))) + (M_y*self.I_xx_fuselage)*(-0.5*self.fuselage_width)) / (self.I_xx_fuselage*self.I_yy_fuselage)
+    #     self.sigma_2 = (((M_x * self.I_yy_fuselage)*((self.a_dim+(self.fuselage_ratio*self.fuselage_width)-self.z_bar_fuselage))) + (M_y*self.I_xx_fuselage)*(0.5*self.fuselage_width)) / (self.I_xx_fuselage*self.I_yy_fuselage)
 
-        self.sigma_3 = ((M_x * self.I_yy_fuselage) * -(self.z_bar_fuselage-self.a_dim) + (M_y *self.I_xx_fuselage)*(-0.5*self.fuselage_width)) / (self.I_xx_fuselage*self.I_yy_fuselage)
-        self.sigma_4 = ((M_x * self.I_yy_fuselage) * -(self.z_bar_fuselage-self.a_dim) + (M_y *self.I_xx_fuselage)*(0.5*self.fuselage_width)) / (self.I_xx_fuselage*self.I_yy_fuselage)
+    #     self.sigma_3 = ((M_x * self.I_yy_fuselage) * -(self.z_bar_fuselage-self.a_dim) + (M_y *self.I_xx_fuselage)*(-0.5*self.fuselage_width)) / (self.I_xx_fuselage*self.I_yy_fuselage)
+    #     self.sigma_4 = ((M_x * self.I_yy_fuselage) * -(self.z_bar_fuselage-self.a_dim) + (M_y *self.I_xx_fuselage)*(0.5*self.fuselage_width)) / (self.I_xx_fuselage*self.I_yy_fuselage)
 
-        self.sigma_5 = ((M_x * self.I_yy_fuselage)*(-self.z_bar_fuselage)) / (self.I_xx_fuselage*self.I_yy_fuselage)
-        return self.sigma_1, self.sigma_2, self.sigma_3, self.sigma_4, self.sigma_5
+    #     self.sigma_5 = ((M_x * self.I_yy_fuselage)*(-self.z_bar_fuselage)) / (self.I_xx_fuselage*self.I_yy_fuselage)
+    #     return self.sigma_1, self.sigma_2, self.sigma_3, self.sigma_4, self.sigma_5
 
     def calculate_boom_areas(self):
        
@@ -242,17 +242,20 @@ class FuselageThickness:
             self.boom_areas_all[i, :] *= t 
             self.I_xx_all[i] *= t 
             self.I_yy_all[i] *= t
-
         return self.boom_areas_all
     
     def calculate_shear_flow_distribution(self):
         
-        base_shear_flow = 0
+        for station in self.boom_areas_all:
+            B1, B2, B3, B4, B5 = station
+
+            
 
 
 
     def main(self):
-
+        M_x = 20e6  # Nm # TODO: Replace with actual bending moment
+        M_y = 0  # Nm # TODO: Replace with actual moment
         self.iterate_booms_per_station(M_x, M_y)
 
         self.calculate_shear_flow_distribution()
@@ -264,17 +267,14 @@ if __name__ == '__main__':
     fuselage_material = Materials.Al7075  
     
     fuselage = FuselageThickness(aircraft_data, fuselage_material)
-    
-    M_x = 20e6  # Nm # TODO: Replace with actual bending moment
-    M_y = 0  # Nm # TODO: Replace with actual moment
 
-    boom_areas, I_xx_array, I_yy_array, t_fuselage = fuselage.iterate_booms_per_station(M_x, M_y)
+    fuselage.main()
 
-    print("Boom Areas per Station(must still be multiplied by t_fuselage in m):\n", boom_areas)
-    print("I_xx per Station(must still be multiplied by t_fuselage in m):\n", I_xx_array)
-    print("I_yy per Station(must still be multiplied by t_fuselagein m):\n", I_yy_array)
-    print("Fuselage Thickness per Station:\n", t_fuselage*(1000))  #mm
-    print(f"Kt for cargo door: {fuselage.calculate_stress_concentration_factor()}")
+    # print("Boom Areas per Station(must still be multiplied by t_fuselage in m):\n", boom_areas)
+    # print("I_xx per Station(must still be multiplied by t_fuselage in m):\n", I_xx_array)
+    # print("I_yy per Station(must still be multiplied by t_fuselagein m):\n", I_yy_array)
+    # print("Fuselage Thickness per Station:\n", t_fuselage*(1000))  #mm
+    # print(f"Kt for cargo door: {fuselage.calculate_stress_concentration_factor()}")
 
     # def get_lift_on_fuselage(self):
         
