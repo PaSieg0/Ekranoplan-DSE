@@ -35,7 +35,7 @@ class OptimumSpeeds(AltitudeVelocity):
         Calculate the maximum range velocity at a given altitude.
         """
         V_stall = self.calculate_stall_speed(h)
-        velocity_range = np.linspace(V_stall, self.dive_speed, self.velocity_steps)
+        velocity_range = np.linspace(V_stall, self.dive_speed, self.velocity_steps*5)
 
         # Compute drag for each velocity
         drag = np.array([self.calculate_drag(v, h) for v in velocity_range])
@@ -51,7 +51,7 @@ class OptimumSpeeds(AltitudeVelocity):
         Calculate the maximum endurance velocity at a given altitude.
         """
         V_stall = self.calculate_stall_speed(h)
-        velocity_range = np.linspace(V_stall, self.dive_speed, self.velocity_steps)
+        velocity_range = np.linspace(V_stall, self.dive_speed, self.velocity_steps*5)
 
         # Compute drag for each velocity
         Pr = np.array([self.calculate_power_required(v, h) for v in velocity_range])

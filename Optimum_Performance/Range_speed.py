@@ -195,59 +195,62 @@ class RangeAnalyzer:
             print("  - Verifying analytical assumptions")
             return False
     
-    def plot_speed_vs_weight(self, W4: float, W5: float, velocity_func=None, h: float = 10, dW: float = 100):
+    def plot_speed_vs_weight(
+        self,
+        W4: float,
+        W5: float,
+        velocity_func_list=None,
+        labels=None,
+        h: float = 10,
+        dW: float = 100
+    ):
         """
-        Plot speed versus weight for the cruise segment.
-        
+        Plot speed versus weight for the cruise segment for multiple strategies.
+
         Args:
             W4: Weight at start of cruise (N)
             W5: Weight at end of cruise (N)
-            velocity_func: Function to calculate velocity at each weight.
-                          Should take (optimizer, altitude) as arguments and return velocity.
-                          If None, uses default v_range (optimal range speed).
+            velocity_func_list: List of functions to calculate velocity at each weight.
+                                Each should take (optimizer, altitude) and return velocity.
+                                If None, uses default v_range (optimal range speed).
+            labels: List of labels for each strategy.
             h: Altitude (m)
             dW: Weight step (N)
         """
-        weights = []
-        speeds = []
-        
-        W_array = np.arange(W4, W5, -dW)
-        
-        for weight in W_array:
-            self.opt._current_weight = weight
-            
-            # Calculate velocity using provided function or default
-            if velocity_func is not None:
-                V = velocity_func(self.opt, h)
-            else:
-                V = self.opt.v_range(h)  # Default: optimal range speed
-            
-            # Check if flight is possible at this speed/weight
-            if self.opt.calculate_AoC(V, h) >= 0:
-                weights.append(weight / 9.81)  # Convert to kg
-                speeds.append(V)
-        
-        if not weights:
-            print("No valid flight points found for plotting")
-            return
-        
+        if velocity_func_list is None:
+            velocity_func_list = [None]
+        if labels is None:
+            labels = [f"Strategy {i+1}" for i in range(len(velocity_func_list))]
+
         plt.figure(figsize=(10, 6))
-        plt.plot(weights, speeds, 'b-', linewidth=2, marker='o', markersize=4)
+
+        for idx, velocity_func in enumerate(velocity_func_list):
+            weights = []
+            speeds = []
+            W_array = np.arange(W4, W5, -dW)
+            for weight in W_array:
+                self.opt._current_weight = weight
+                # Calculate velocity using provided function or default
+                if velocity_func is not None:
+                    V = velocity_func(self.opt, h)
+                else:
+                    V = self.opt.v_range(h)
+                # Check if flight is possible at this speed/weight
+                if self.opt.calculate_AoC(V, h) >= 0:
+                    weights.append(weight / 9.81)  # Convert to kg
+                    speeds.append(V)
+            if weights:
+                plt.plot(weights, speeds, linewidth=2, marker='o', markersize=4, label=labels[idx])
+            else:
+                print(f"No valid flight points found for plotting: {labels[idx]}")
+
         plt.xlabel('Weight (kg)')
         plt.ylabel('Speed (m/s)')
-        
-        # Set title based on velocity function used
-        if velocity_func is not None:
-            plt.title('Speed vs Weight During Cruise (Custom Speed Function)')
-        else:
-            plt.title('Optimal Range Speed vs Weight During Cruise')
-            
+        plt.title('Speed vs Weight During Cruise')
         plt.grid(True, alpha=0.3)
+        plt.legend()
         plt.tight_layout()
         plt.show()
-        
-        print(f"Speed range: {min(speeds):.2f} - {max(speeds):.2f} m/s")
-        print(f"Weight range: {min(weights):.0f} - {max(weights):.0f} kg")
 
 
 def check():
@@ -257,7 +260,7 @@ def check():
         file_path = "design3.json"
         mission_type = MissionType.DESIGN
         altitude = 10  # meters
-        weight_step = 100  # N
+        weight_step = 1000  # N
         
         # Create analyzer
         analyzer = RangeAnalyzer(file_path, mission_type)
@@ -306,7 +309,15 @@ def check():
 
             print(f"{name:<18}{rng/1852:>15.1f}{t/3600:>15.2f}{speed_range:>22}")
 
-                
+        # Plot all strategies on the same axis set
+        analyzer.plot_speed_vs_weight(
+            W4, W5,
+            velocity_func_list=[v_max_range, v_max_endurance, v_test],
+            labels=["Range speed", "Endurance speed", "Test speed"],
+            h=altitude,
+            dW=weight_step
+        )
+
     except Exception as e:
         print(f"Error during analysis: {str(e)}")
         raise
