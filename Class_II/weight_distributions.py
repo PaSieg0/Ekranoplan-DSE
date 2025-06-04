@@ -3,7 +3,8 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from utils import Data
+from utils import Data, EvaluateType
+from AerodynamicForces import AerodynamicForces
 
 class CGCalculation:
     def __init__(self, aircraft_data: Data) -> None:
@@ -451,6 +452,18 @@ class CGCalculation:
 
         self.update_json()
 
+    def torsional_loading_fuselage(self):
+        """Calculate torsional loading on the fuselage from vertical tail lift"""
+        # Create AerodynamicForces instance to get vertical tail lift
+        aerodynamics_data = Data("AeroForces.txt", "aerodynamics")
+        aeroforces = AerodynamicForces(self.aircraft_data, evaluate=EvaluateType.WING)
+        
+        # Get vertical tail lift distribution
+        vertical_tail_lift = aeroforces.get_vertical_tail_lift_distribution()
+        
+        print(f"Vertical tail lift distribution: {vertical_tail_lift}")
+        
+
 
 def main():
     data = Data("design3.json")
@@ -464,6 +477,9 @@ def main():
     
     # Generate and plot the load diagram
     cg_calculator.load_diagram(show_verification=False)
+    
+    # Calculate and plot torsional loading
+    cg_calculator.torsional_loading_fuselage()
     
     # Update JSON with CG positions
     cg_calculator.update_json()
