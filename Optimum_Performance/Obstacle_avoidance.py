@@ -24,16 +24,16 @@ def turn_radius(n: float, V: float) -> float:
     """
     return V**2 / (9.81 * np.sqrt(n**2-1))  # n is the load factor, V in m/s, turn radius in meters
 
-def plot_pullup_trajectory(aircraft_data):
+def plot_pullup_trajectory(aircraft_data, reaction_time=1.0):
     max_n_pullup = aircraft_data.data['outputs']['general']['nmax']
     v_start = aircraft_data.data['requirements']['cruise_speed']
     v_end = aircraft_data.data['requirements']['stall_speed_clean']
 
     # Example obstacles: list of (distance, height)
     obstacles = [
-        (100, 5),
-        (220, 30),
-        (300, 50)
+        (150, 5),
+        (280, 30),
+        (350, 50)
     ]
 
     # Initial conditions
@@ -44,6 +44,15 @@ def plot_pullup_trajectory(aircraft_data):
     V = v_start
     h = 0
     energy_h = energy_height(v_start, h)  # Initial energy height
+
+    # Add straight segment for pilot reaction time
+    straight_distance = reaction_time * V
+    num_steps = int(straight_distance // (V * dt))
+    for _ in range(num_steps):
+        dx = V * dt
+        dy = 0
+        x_traj.append(x_traj[-1] + dx)
+        y_traj.append(y_traj[-1] + dy)
 
     # Stop when height exceeds a target (e.g., clear the highest obstacle + margin)
     target_height = max([h for _, h in obstacles]) + 10  # 10 m margin above highest obstacle
@@ -70,10 +79,12 @@ def plot_pullup_trajectory(aircraft_data):
     plt.figure(figsize=(10, 6))
     plt.plot(x_traj, y_traj, label="Pull-up Trajectory")
 
-    # Plot obstacles as vertical lines
+    # Plot obstacles as vertical lines and annotate them
     for idx, (dist, height) in enumerate(obstacles):
         plt.vlines(dist, 0, height, colors='r', linestyles='dashed', label='Obstacle' if idx == 0 else None)
         plt.scatter(dist, height, color='r')
+        plt.annotate(f"Obstacle {idx+1}\n({dist} m away, {height} m high)", (dist, height),
+                     textcoords="offset points", xytext=(5, 10), ha='left', color='r', fontsize=9)
 
     plt.xlabel("Distance to Obstacle [m]")
     plt.ylabel("Height [m]")
@@ -82,7 +93,7 @@ def plot_pullup_trajectory(aircraft_data):
     plt.legend()
     plt.show()
 
-def plot_turn_trajectory(aircraft_data):
+def plot_turn_trajectory(aircraft_data, reaction_time=1.0):
     max_n_turn = aircraft_data.data['outputs']['general']['max_n_turn']
     v_start = aircraft_data.data['requirements']['cruise_speed']
     v_end = aircraft_data.data['requirements']['stall_speed_clean']
@@ -90,9 +101,9 @@ def plot_turn_trajectory(aircraft_data):
     # Example obstacles: list of (x, y) positions in meters (from above)
     # Make obstacles symmetric about x=0
     base_obstacles = [
-        (5, 150),
-        (15, 200),
-        (40, 300)
+        (5, 200),
+        (15, 260),
+        (40, 350)
     ]
     obstacles = []
     for x, y in base_obstacles:
@@ -105,6 +116,15 @@ def plot_turn_trajectory(aircraft_data):
     y_traj = [0]
     theta = np.pi / 2  # initial heading angle: up (90 degrees)
     V = v_start
+
+    # Add straight segment for pilot reaction time
+    straight_distance = reaction_time * V
+    num_steps = int(straight_distance // (V * dt))
+    for _ in range(num_steps):
+        dx = V * np.cos(theta) * dt
+        dy = V * np.sin(theta) * dt
+        x_traj.append(x_traj[-1] + dx)
+        y_traj.append(y_traj[-1] + dy)
 
     # Stop when y exceeds the last obstacle's y + margin
     target_y = max([y for _, y in obstacles]) + 50  # 50 m margin after last obstacle
@@ -121,10 +141,11 @@ def plot_turn_trajectory(aircraft_data):
     plt.figure(figsize=(10, 6))
     plt.plot(x_traj, y_traj, label="Turn Trajectory")
 
-    # Plot obstacles and join symmetric pairs with a dotted line
+    # Plot obstacles and join symmetric pairs with a dotted line, annotate them
     for idx, (x, y) in enumerate(base_obstacles):
         plt.scatter([x, -x], [y, y], color='r', label='Obstacle' if idx == 0 else None)
         plt.plot([x, -x], [y, y], 'r:', linewidth=1)
+        plt.annotate(f"Obs {idx+1}\n({x*2} m wide, {y} m away)", (x, y), textcoords="offset points", xytext=(5, 10), ha='left', color='r', fontsize=9)
 
     plt.xlabel("X Position [m]")
     plt.ylabel("Y Position [m]")
@@ -138,5 +159,5 @@ if __name__ == "__main__":
     file_path = "design3.json"
     aircraft_data = Data(file_path)
 
-    plot_pullup_trajectory(aircraft_data)
-    plot_turn_trajectory(aircraft_data)
+    plot_pullup_trajectory(aircraft_data, reaction_time=0.6)
+    plot_turn_trajectory(aircraft_data, reaction_time=0.6)
