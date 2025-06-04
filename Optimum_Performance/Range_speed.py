@@ -28,7 +28,7 @@ class RangeAnalyzer:
         self.METERS_TO_NMI = 1852
         self.TOLERANCE_PERCENT = 1.0  # Acceptable difference percentage for sanity check
         
-    def calculate_cruise_weights(self) -> Tuple[float, float]:
+    def calculate_cruise_weights_leg1(self) -> Tuple[float, float]:
         """Calculate weights at start and end of cruise segment."""
         mass_fractions = self.rng.calculate_mass_fractions()
         W4_W5 = self.rng.calculate_weight_ratios(mass_fractions)
@@ -37,6 +37,24 @@ class RangeAnalyzer:
         W5 = W4 / W4_W5['design']                     # Weight at end of cruise
         
         return W4, W5
+    
+    def calculate_cruise_weights_leg2(self) -> Tuple[float, float]:
+        """Calculate weights at start and end of cruise segment."""
+        mass_fractions = self.rng.calculate_mass_fractions()
+        W4_W5 = self.rng.calculate_weight_ratios(mass_fractions)
+        
+        W4_leg1 = self.opt._mtow * self.rng.Mff_nocruise  # Weight at start of cruise
+        W5_leg1 = W4_leg1 / W4_W5['design']                     # Weight at end of 
+        
+        W4_leg2 = (W5_leg1-self.aircraft_data.data['requirements']['design_payload']*9.81) * self.rng.Mff_nocruise  # Weight at start of cruise for leg 2
+        W5_leg2 = W4_leg2 / W4_W5['design']  # Weight at end of cruise for leg 2
+
+        # Check if W5_leg2 is close to zero fuel weight (ZFW)
+        oew = self.opt._oew
+        if not np.isclose(W5_leg2, oew, rtol=0.01):
+            warnings.warn(f"W5_leg2 ({W5_leg2:.2f} N) is not close to OEW ({oew:.2f} N)")
+
+        return W4_leg2, W5_leg2
     
     def validate_flight_capability(self, V: float, weight: float, h: float) -> bool:
         """Check if the aircraft can fly at given speed and weight."""
@@ -245,7 +263,7 @@ def check():
         analyzer = RangeAnalyzer(file_path, mission_type)
         
         # Calculate cruise weights
-        W4, W5 = analyzer.calculate_cruise_weights()
+        W4, W5 = analyzer.calculate_cruise_weights_leg1()
         
         # Example velocity functions for different strategies
         def v_max_range(opt, h):
@@ -260,8 +278,6 @@ def check():
             """Example"""
             return opt.v_range(h)*1.25
         
-        # Calculate ranges with different speed strategies
-        print("=== RANGE ANALYSIS WITH DIFFERENT SPEED STRATEGIES ===")
         # Analytical range calculation
         R_analytical = analyzer.calculate_analytical_range(W4, W5, altitude)
 
