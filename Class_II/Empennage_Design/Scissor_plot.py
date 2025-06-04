@@ -33,6 +33,7 @@ class Tail_area:
             return downwash
         
     def get_aerodynamic_center(self):
+        # TODO: link to json
         X_ac = 0.277360658914395 #hard coded for now, change later to link to aero
         return X_ac
     
@@ -44,6 +45,7 @@ class Tail_area:
         return X_cg
             
     def Sh_S_stability(self,X_cg):
+        # TODO: link to json
         CL_alpha_h = 0.132 #need to account for the tail
         CL_alpha_A_h = 0.132
         lh = self.horizontal_tail_pos[0]-self.most_aft_cg
@@ -60,6 +62,7 @@ class Tail_area:
 
     def Sh_S_controllability(self,X_cg):
         X_ac = self.get_aerodynamic_center()
+        # TODO: link to json
         C_m_ac = -0.26 #outta Martin's ass, change later 
         CL_A_h = 1.36 #5def AOA
         CL_h = 0.665
