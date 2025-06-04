@@ -175,6 +175,8 @@ class CGCalculation:
             'OEW_CG': oew_cg,
             'MTOW_CG': mtow_cg
         })
+
+        self.aircraft_data.data['outputs']['fuselage_dimensions']['l_fuselage'] = self.l_fuselage
           # Save updated data to JSON file
         self.aircraft_data.save_design(self.design_file)
 
@@ -337,6 +339,8 @@ class CGCalculation:
         plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15))
         plt.tight_layout()
         plt.show()
+
+        self.update_json()
 
 
 def main():

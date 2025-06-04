@@ -69,56 +69,6 @@ class FuselageThickness:
         self.dx = np.gradient(self.x_points)
         self.h_tail_pos = self.x_points[-1]
 
-        self.get_lift_on_fuselage()
-        self.internal_vertical_shear_fuselage()
-        self.internal_bending_moment_fuselage()
-
-    def get_lift_on_fuselage(self):
-        
-        self.lift_function = self.aeroforces.get_lift_function()
-        self.horizontal_tail_lift = self.aeroforces.get_horizontal_tail_lift_distribution()
-        self.lift_function = self.lift_function(self.b_array)
-        self.lift_on_fuselage = 2*np.trapz(self.lift_function, self.b_array)
-
-        self.h_lift_on_fuselage = 2*np.trapz(self.horizontal_tail_lift, self.b_h_array)
-        print(self.h_lift_on_fuselage, self.lift_on_fuselage)
-
-    def internal_vertical_shear_fuselage(self):
-        
-        load = self.distributed_weight
-        Vy_fus = np.cumsum(load * self.dx)
-        self.Vy_fus_internal = -Vy_fus 
-
-        main_idx = np.where(self.x_points >= self.lift_acting_point)[0][0]
-        self.Vy_fus_internal[main_idx:] += self.lift_on_fuselage
-
-        tail_idx = np.where(self.x_points >= self.h_tail_pos)[0][0]
-        self.Vy_fus_internal[tail_idx:] += self.h_lift_on_fuselage
-
-        plt.plot(self.x_points, self.Vy_fus_internal, label='Internal Vertical Shear Force on Fuselage')
-        plt.xlabel('Position along Fuselage (m)')
-        plt.ylabel('Internal Vertical Shear Force (N)')
-        plt.title('Internal Vertical Shear Force Distribution on Fuselage')
-        plt.legend()
-        plt.grid()
-        plt.show()
-        return self.Vy_fus_internal
-        
-    def internal_bending_moment_fuselage(self):
-        load = self.Vy_fus_internal
-        M_fus = np.cumsum(load * self.dx)
-        self.M_fus_internal = M_fus
-
-        plt.plot(self.x_points, self.M_fus_internal, label='Internal Bending Moment on Fuselage')
-        plt.xlabel('Position along Fuselage (m)')
-        plt.ylabel('Internal Bending Moment (Nm)')
-        plt.title('Internal Bending Moment Distribution on Fuselage')
-        plt.legend()
-        plt.grid()
-        plt.show()
-
-        return self.M_fus_internal
-
 
 
     def calculate_fuselage_centroid(self):
@@ -128,11 +78,11 @@ class FuselageThickness:
         self.o_dim = self.s_dim/2 * np.sin(np.radians(25))
 
         #Unit is meters
-        self.y_bar_fuselage = (2*(self.fuselage_ratio*((self.a_dim + 0.4)*self.fuselage_width)) + 2*(self.s_dim * (self.o_dim * self.fuselage_width)) + ((self.a_dim + self.fuselage_ratio) * self.fuselage_width)) / (2*self.s_dim + 2*self.fuselage_ratio + 1)
+        self.z_bar_fuselage = (2*(self.fuselage_ratio*((self.a_dim + 0.4)*self.fuselage_width)) + 2*(self.s_dim * (self.o_dim * self.fuselage_width)) + ((self.a_dim + self.fuselage_ratio) * self.fuselage_width)) / (2*self.s_dim + 2*self.fuselage_ratio + 1)
         
         self.x_bar_fuselage = (self.s_dim * 0.25 * self.fuselage_width + (self.s_dim * 0.75 * self.fuselage_width) + (0.5*self.fuselage_width) + (self.fuselage_ratio*self.fuselage_width)) / (2*self.s_dim + 2*self.fuselage_ratio + 1)
 
-        return self.x_bar_fuselage, self.y_bar_fuselage
+        return self.x_bar_fuselage, self.z_bar_fuselage
         
     
     def calculate_fuselage_moi(self):
@@ -143,7 +93,7 @@ class FuselageThickness:
 
         self.I_xy_fuselage = 0 # * t_fuselage
 
-        self.I_xx_fuselage = self.fuselage_width*(((self.fuselage_ratio + self.a_dim)*self.fuselage_width - self.y_bar_fuselage)**2) + 2*(((self.fuselage_ratio*self.fuselage_width)**3)/12 + self.fuselage_ratio*self.fuselage_width*((self.a_dim + self.fuselage_ratio/2)*self.fuselage_width - self.y_bar_fuselage)**2) + 2*(((self.s_dim**3 * (np.sin(np.radians(25)))**2)/12) + self.s_dim*(self.o_dim -self.y_bar_fuselage)**2) # * t_fuselage
+        self.I_xx_fuselage = self.fuselage_width*(((self.fuselage_ratio + self.a_dim)*self.fuselage_width - self.z_bar_fuselage)**2) + 2*(((self.fuselage_ratio*self.fuselage_width)**3)/12 + self.fuselage_ratio*self.fuselage_width*((self.a_dim + self.fuselage_ratio/2)*self.fuselage_width - self.z_bar_fuselage)**2) + 2*(((self.s_dim**3 * (np.sin(np.radians(25)))**2)/12) + self.s_dim*(self.o_dim -self.z_bar_fuselage)**2) # * t_fuselage
 
         self.I_yy_fuselage = (self.fuselage_width**3) / 12 + 2*(self.fuselage_ratio*self.fuselage_width*(self.fuselage_width/2)**2) + 2*(self.s_dim*(0.25*self.fuselage_width)**2) # * self.t_fuselage
 
@@ -152,13 +102,13 @@ class FuselageThickness:
     
     def calculate_stresses(self):
 
-        self.sigma_1 = (((M_x * self.I_yy_fuselage)*((self.a_dim+(self.fuselage_ratio*self.fuselage_width)-self.y_bar_fuselage))) + (M_y*self.I_xx_fuselage)*(-0.5*self.fuselage_width)) / (self.I_xx_fuselage*self.I_yy_fuselage)
-        self.sigma_2 = (((M_x * self.I_yy_fuselage)*((self.a_dim+(self.fuselage_ratio*self.fuselage_width)-self.y_bar_fuselage))) + (M_y*self.I_xx_fuselage)*(0.5*self.fuselage_width)) / (self.I_xx_fuselage*self.I_yy_fuselage)
+        self.sigma_1 = (((M_x * self.I_yy_fuselage)*((self.a_dim+(self.fuselage_ratio*self.fuselage_width)-self.z_bar_fuselage))) + (M_y*self.I_xx_fuselage)*(-0.5*self.fuselage_width)) / (self.I_xx_fuselage*self.I_yy_fuselage)
+        self.sigma_2 = (((M_x * self.I_yy_fuselage)*((self.a_dim+(self.fuselage_ratio*self.fuselage_width)-self.z_bar_fuselage))) + (M_y*self.I_xx_fuselage)*(0.5*self.fuselage_width)) / (self.I_xx_fuselage*self.I_yy_fuselage)
 
-        self.sigma_3 = ((M_x * self.I_yy_fuselage) * -(self.y_bar_fuselage-self.a_dim) + (M_y *self.I_xx_fuselage)*(-0.5*self.fuselage_width)) / (self.I_xx_fuselage*self.I_yy_fuselage)
-        self.sigma_4 = ((M_x * self.I_yy_fuselage) * -(self.y_bar_fuselage-self.a_dim) + (M_y *self.I_xx_fuselage)*(0.5*self.fuselage_width)) / (self.I_xx_fuselage*self.I_yy_fuselage)
+        self.sigma_3 = ((M_x * self.I_yy_fuselage) * -(self.z_bar_fuselage-self.a_dim) + (M_y *self.I_xx_fuselage)*(-0.5*self.fuselage_width)) / (self.I_xx_fuselage*self.I_yy_fuselage)
+        self.sigma_4 = ((M_x * self.I_yy_fuselage) * -(self.z_bar_fuselage-self.a_dim) + (M_y *self.I_xx_fuselage)*(0.5*self.fuselage_width)) / (self.I_xx_fuselage*self.I_yy_fuselage)
 
-        self.sigma_5 = ((M_x * self.I_yy_fuselage)*(-self.y_bar_fuselage)) / (self.I_xx_fuselage*self.I_yy_fuselage)
+        self.sigma_5 = ((M_x * self.I_yy_fuselage)*(-self.z_bar_fuselage)) / (self.I_xx_fuselage*self.I_yy_fuselage)
         return self.sigma_1, self.sigma_2, self.sigma_3, self.sigma_4, self.sigma_5
 
     def calculate_boom_areas(self):
@@ -190,10 +140,10 @@ class FuselageThickness:
     ):
         n_stations = len(self.fuselage_width)
 
-        boom_areas_all = np.zeros((n_stations, 5))
-        I_xx_all = np.zeros(n_stations)
-        I_yy_all = np.zeros(n_stations)
-        t_fuselage_final = np.zeros(n_stations)
+        self.boom_areas_all = np.zeros((n_stations, 5))
+        self.I_xx_all = np.zeros(n_stations)
+        self.I_yy_all = np.zeros(n_stations)
+        self.t_fuselage_final = np.zeros(n_stations)
         iterations_to_converge = np.zeros(n_stations, dtype=int)
 
         for i in range(n_stations):
@@ -213,16 +163,16 @@ class FuselageThickness:
             s_dim = 0.5 / np.sin(np.radians(65))
             o_dim = s_dim / 2 * np.sin(np.radians(25))
 
-            y_bar = (2 * (fr * ((a_dim + 0.4) * w)) + 2 * (s_dim * (o_dim * w)) + ((a_dim + fr) * w)) / (2 * s_dim + 2 * fr + 1)
+            z_bar = (2 * (fr * ((a_dim + 0.4) * w)) + 2 * (s_dim * (o_dim * w)) + ((a_dim + fr) * w)) / (2 * s_dim + 2 * fr + 1)
 
-            y_coords = np.array([
-                (a_dim + fr * w - y_bar),
-                (a_dim + fr * w - y_bar),
-                (y_bar - a_dim),
-                (y_bar - a_dim),
-                -y_bar
+            self.z_coords = np.array([
+                (a_dim + fr * w - z_bar),
+                (a_dim + fr * w - z_bar),
+                (z_bar - a_dim),
+                (z_bar - a_dim),
+                -z_bar
             ])
-            x_coords = np.array([
+            self.x_coords = np.array([
                 -0.5 * w,
                 0.5 * w,
                 -0.5 * w,
@@ -237,7 +187,7 @@ class FuselageThickness:
                 # Stress calculation
                 sigma = np.zeros(5)
                 for j in range(5):
-                    sigma[j] = (M_x * I_yy_old * y_coords[j] + M_y * I_xx_old * x_coords[j]) / (I_xx_old * I_yy_old)
+                    sigma[j] = (M_x * I_yy_old * self.z_coords[j] + M_y * I_xx_old * self.x_coords[j]) / (I_xx_old * I_yy_old)
 
                 # New boom areas
                 B1 = (w / 6) * (2 + sigma[1] / sigma[0]) + (fr * w / 6) * (2 + sigma[2] / sigma[0])
@@ -251,8 +201,8 @@ class FuselageThickness:
                 B_i = alpha * B_new + (1 - alpha) * B_old
 
                 # New moments of inertia based on updated boom areas
-                I_xx_new = np.sum((y_coords ** 2) * B_i)
-                I_yy_new = np.sum((x_coords ** 2) * B_i)
+                I_xx_new = np.sum((self.z_coords ** 2) * B_i)
+                I_yy_new = np.sum((self.x_coords ** 2) * B_i)
 
                 # Under-relaxation: moments of inertia
                 I_xx_relaxed = alpha * I_xx_new + (1 - alpha) * I_xx_old
@@ -284,12 +234,28 @@ class FuselageThickness:
                 print(f"Warning: Station {i} did not converge after {max_iter} iterations.")
 
             # Save final results
-            boom_areas_all[i, :] = B_i
-            I_xx_all[i] = I_xx_relaxed
-            I_yy_all[i] = I_yy_relaxed
-            t_fuselage_final[i] = t
+            self.boom_areas_all[i, :] = B_i
+            self.I_xx_all[i] = I_xx_relaxed
+            self.I_yy_all[i] = I_yy_relaxed
+            self.t_fuselage_final[i] = t
 
-        return boom_areas_all, I_xx_all, I_yy_all, t_fuselage_final
+            self.boom_areas_all[i, :] *= t 
+            self.I_xx_all[i] *= t 
+            self.I_yy_all[i] *= t
+
+        return self.boom_areas_all
+    
+    def calculate_shear_flow_distribution(self):
+        
+        base_shear_flow = 0
+
+
+
+    def main(self):
+
+        self.iterate_booms_per_station(M_x, M_y)
+
+        self.calculate_shear_flow_distribution()
 
 
 if __name__ == '__main__':
@@ -309,3 +275,49 @@ if __name__ == '__main__':
     print("I_yy per Station(must still be multiplied by t_fuselagein m):\n", I_yy_array)
     print("Fuselage Thickness per Station:\n", t_fuselage*(1000))  #mm
     print(f"Kt for cargo door: {fuselage.calculate_stress_concentration_factor()}")
+
+    # def get_lift_on_fuselage(self):
+        
+    #     self.lift_function = self.aeroforces.get_lift_function()
+    #     self.horizontal_tail_lift = self.aeroforces.get_horizontal_tail_lift_distribution()
+    #     self.lift_function = self.lift_function(self.b_array)
+    #     self.lift_on_fuselage = 2*np.trapz(self.lift_function, self.b_array)
+
+    #     self.h_lift_on_fuselage = 2*np.trapz(self.horizontal_tail_lift, self.b_h_array)
+    #     print(self.h_lift_on_fuselage, self.lift_on_fuselage)
+
+    # def internal_vertical_shear_fuselage(self):
+        
+    #     load = self.distributed_weight
+    #     Vy_fus = np.cumsum(load * self.dx)
+    #     self.Vy_fus_internal = -Vy_fus 
+
+    #     main_idx = np.where(self.x_points >= self.lift_acting_point)[0][0]
+    #     self.Vy_fus_internal[main_idx:] += self.lift_on_fuselage
+
+    #     tail_idx = np.where(self.x_points >= self.h_tail_pos)[0][0]
+    #     self.Vy_fus_internal[tail_idx:] += self.h_lift_on_fuselage
+
+    #     plt.plot(self.x_points, self.Vy_fus_internal, label='Internal Vertical Shear Force on Fuselage')
+    #     plt.xlabel('Position along Fuselage (m)')
+    #     plt.ylabel('Internal Vertical Shear Force (N)')
+    #     plt.title('Internal Vertical Shear Force Distribution on Fuselage')
+    #     plt.legend()
+    #     plt.grid()
+    #     plt.show()
+    #     return self.Vy_fus_internal
+        
+    # def internal_bending_moment_fuselage(self):
+    #     load = self.Vy_fus_internal
+    #     M_fus = np.cumsum(load * self.dx)
+    #     self.M_fus_internal = M_fus
+
+    #     plt.plot(self.x_points, self.M_fus_internal, label='Internal Bending Moment on Fuselage')
+    #     plt.xlabel('Position along Fuselage (m)')
+    #     plt.ylabel('Internal Bending Moment (Nm)')
+    #     plt.title('Internal Bending Moment Distribution on Fuselage')
+    #     plt.legend()
+    #     plt.grid()
+    #     plt.show()
+
+    #     return self.M_fus_internal
