@@ -188,33 +188,10 @@ class CGCalculation:
 
         print(self.component_masses['fuselage_mass'] + self.cargo_mass * 9.81)
 
-        print(f"Fuselage distributed load (nose): {fuselage_distributed_nose:.2f} N/m")
-        print(f"Fuselage distributed load (forebody): {fuselage_distributed_forebody:.2f} N/m")
-        print(f"Fuselage distributed load (afterbody): {fuselage_distributed_afterbody:.2f} N/m")
-        print(f"Fuselage distributed load (tailcone): {fuselage_tailcone_distributed:.2f} N/m")
-        print(f"Cargo distributed load: {cargo_distributed:.2f} N/m")
 
-        print(f'total fuselage length: {self.total_fuselage_length} m')
-        self.x_points = np.arange(0, self.total_fuselage_length, 0.05)
+        self.x_points = np.arange(0, self.l_fuselage, 0.05)
         self.loads = np.zeros_like(self.x_points)
 
-        # Add fuselage distributed loads for each section
-        nose_mask = (self.x_points < self.nose_length)
-        forebody_mask = (self.x_points >= self.nose_length) & (self.x_points < self.nose_length + self.fus_straight_length)
-        afterbody_mask = (self.x_points >= self.nose_length + self.fus_straight_length) & (self.x_points < self.nose_length + self.fus_straight_length + self.fus_afterbody_length)
-        tailcone_mask = (self.x_points >= self.nose_length + self.fus_straight_length + self.fus_afterbody_length)
-        
-        self.loads[nose_mask] += fuselage_distributed_nose
-        self.loads[forebody_mask] += fuselage_distributed_forebody
-        self.loads[afterbody_mask] += fuselage_distributed_afterbody
-        self.loads[tailcone_mask] += fuselage_tailcone_distributed
-        
-        # Add cargo distributed load
-        cargo_mask = (self.x_points >= self.cargo_x_start) & (self.x_points <= self.cargo_x_start + self.cargo_length)
-        self.loads[cargo_mask] += cargo_distributed
-        self.area_under_curve = np.trapz(self.loads, self.x_points)
-        print("Area under curve:", self.area_under_curve)
-        
         # Create the plot
         plt.figure(figsize=(10, 6))
         plt.plot(self.x_points, self.loads, 'b-', label='Total Load', linewidth=2)
