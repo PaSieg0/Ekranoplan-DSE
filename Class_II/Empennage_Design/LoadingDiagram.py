@@ -139,16 +139,16 @@ class LoadingDiagram:
 
         self.min_cg = min(
             f2b_cg_mac.min(),
-            b2f_cg_mac.min(),
+            # b2f_cg_mac.min(),
             f2b_heavy_cg_mac.min(),
-            b2f_heavy_cg_mac.min(),
+            # b2f_heavy_cg_mac.min(),
             fuel_cg_mac
         )
         self.max_cg = max(
             f2b_cg_mac.max(),
-            b2f_cg_mac.max(),
+            # b2f_cg_mac.max(),
             f2b_heavy_cg_mac.max(),
-            b2f_heavy_cg_mac.max(),
+            # b2f_heavy_cg_mac.max(),
             fuel_cg_mac
         )
         return self.min_cg, self.max_cg
@@ -183,9 +183,9 @@ class LoadingDiagram:
 
         # self.aircraft_data.data['outputs']['fuselage_dimensions'] reference frame (x in meters)
         axs[0].plot(f2b_cg[:, 0], f2b_weight, label='Front to Back Regular', color='blue')
-        axs[0].plot(b2f_cg[:, 0], b2f_weight, label='Back to Front Regular', color='cyan')
+        # axs[0].plot(b2f_cg[:, 0], b2f_weight, label='Back to Front Regular', color='cyan')
         axs[0].plot(f2b_heavy_cg[:, 0], f2b_heavy_weight, label='Front to Back Heavy', color='red')
-        axs[0].plot(b2f_heavy_cg[:, 0], b2f_heavy_weight, label='Back to Front Heavy', color='orange')
+        # axs[0].plot(b2f_heavy_cg[:, 0], b2f_heavy_weight, label='Back to Front Heavy', color='orange')
         axs[0].scatter(fuel_cg[0], fuel_weight, color='green', label='Fuel CG', zorder=5)
         axs[0].plot([f2b_cg[-1, 0], fuel_cg[0]], [f2b_weight[-1], fuel_weight], color='green', linestyle='--', label='Fuel Loading')
         axs[0].scatter(fuel_heavy_cg[0], fuel_heavy_weight, color='darkgreen', label='Fuel CG (Heavy)', zorder=5)
@@ -198,9 +198,9 @@ class LoadingDiagram:
 
         # MAC reference frame (x in MAC)
         axs[1].plot(f2b_cg_mac, f2b_weight, color='blue')
-        axs[1].plot(b2f_cg_mac, b2f_weight, color='cyan')
+        # axs[1].plot(b2f_cg_mac, b2f_weight, color='cyan')
         axs[1].plot(f2b_heavy_cg_mac, f2b_heavy_weight, color='red')
-        axs[1].plot(b2f_heavy_cg_mac, b2f_heavy_weight, color='orange')
+        # axs[1].plot(b2f_heavy_cg_mac, b2f_heavy_weight, color='orange')
         axs[1].scatter(fuel_cg_mac, fuel_weight, color='green', zorder=5)
         axs[1].plot([f2b_cg_mac[-1], fuel_cg_mac], [f2b_weight[-1], fuel_weight], color='green', linestyle='--')
         axs[1].scatter(fuel_heavy_cg_mac, fuel_heavy_weight, color='darkgreen', zorder=5)
@@ -229,3 +229,4 @@ if __name__ == "__main__":
     loading_diagram = LoadingDiagram(aircraft_data=aircraft_data, wing_placement=wing_placement)
     loading_diagram.plot()
     min_cg, max_cg = loading_diagram.determine_range()
+    print(f"Min CG (MAC): {min_cg:.3f}, Max CG (MAC): {max_cg:.3f}")

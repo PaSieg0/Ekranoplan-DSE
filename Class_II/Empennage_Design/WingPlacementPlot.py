@@ -72,7 +72,7 @@ def plot_wing_placement(loading_diagram: LoadingDiagram, PLOT: bool=True) -> Non
 if __name__ == "__main__":
     file_path = "design3.json"
     aircraft_data = Data(file_path)
-    slider_val = 0.352
+    slider_val = 0.325
     loading_diagram = LoadingDiagram(aircraft_data=aircraft_data, wing_placement=slider_val)
     l_fus = loading_diagram.aircraft_data.data["outputs"]["fuselage_dimensions"]["l_fuselage"]
     X_LEMAC = slider_val * l_fus

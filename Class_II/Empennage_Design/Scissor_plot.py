@@ -112,8 +112,8 @@ if __name__ == "__main__":
     file_path = "design3.json"
     aircraft_data = Data(file_path)
     Xcg_values = np.linspace(-0.5, 1.2, 200)
-    fwd_cg = 0.2555
-    aft_cg = 0.6633
+    fwd_cg = 0.2676
+    aft_cg = 0.6357
     tail = Tail_area(aircraft_data=aircraft_data, fwd_cg=fwd_cg, aft_cg=aft_cg)
     plot = tail.plot(Xcg_values)
     tail_area = tail.get_tail_area()

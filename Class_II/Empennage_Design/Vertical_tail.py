@@ -132,6 +132,7 @@ class vertical_tail_sizing:
         return tail_size
     
     def update_vertical_tail_dimensions(self, tail_size):
+        tail_size /= 2
         self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['S'] = tail_size
         self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['b'] = np.sqrt(tail_size * self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['aspect_ratio'])
         self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['chord_root'] = 2 * tail_size / (self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['b'] * (1 + self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['taper']))

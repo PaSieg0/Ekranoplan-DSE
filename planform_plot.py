@@ -121,8 +121,9 @@ class PlanformPlot:
         self.ax.plot([self.w_fuselage/2, self.w_fuselage/2], [self.l_nose + self.l_forebody, self.l_nose + self.l_forebody + self.l_afterbody], 'k-', lw=2)
         self.ax.plot([-self.w_fuselage/2, -self.w_fuselage/2], [self.l_nose + self.l_forebody, self.l_nose + self.l_forebody + self.l_afterbody], 'k-', lw=2)
         # Afterbody
-        self.ax.plot([self.w_fuselage/2, 0], [self.l_nose + self.l_forebody + self.l_afterbody, self.l_nose + self.l_forebody + self.l_tailcone + self.l_afterbody], 'k-', lw=2)
-        self.ax.plot([-self.w_fuselage/2, 0], [self.l_nose + self.l_forebody + self.l_afterbody, self.l_nose + self.l_forebody + self.l_tailcone + self.l_afterbody], 'k-', lw=2)
+        self.ax.plot([self.w_fuselage/2, self.w_fuselage/2], [self.l_nose + self.l_forebody + self.l_afterbody, self.l_nose + self.l_forebody + self.l_tailcone + self.l_afterbody], 'k-', lw=2)
+        self.ax.plot([-self.w_fuselage/2, -self.w_fuselage/2], [self.l_nose + self.l_forebody + self.l_afterbody, self.l_nose + self.l_forebody + self.l_tailcone + self.l_afterbody], 'k-', lw=2)
+        self.ax.plot([self.w_fuselage/2, -self.w_fuselage/2], [self.l_nose + self.l_forebody + self.l_tailcone + self.l_afterbody, self.l_nose + self.l_forebody + self.l_tailcone + self.l_afterbody], 'k-', lw=2)
 
     def plot_MAC(self) -> None:
         self.ax.plot([self.wing_y_mac, self.wing_y_mac], [self.wing_X_LEMAC, self.wing_X_LEMAC + self.wing_MAC], 'b--', lw=2, label='MAC')
