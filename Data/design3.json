@@ -472,8 +472,28 @@
                 9.36921632621035
             ]
         },
-        "aerodynamic_stability_coefficients": {
-            "C_z_alpha": -9.167
+        "aerodynamic_stability_coefficients_sym": {
+            "C_m_q": -51.18328807937694,
+            "C_z_alpha": -9.167,
+            "C_x_alpha": 0.1417803745156444,
+            "C_m_alpha": -1.4757013903334852,
+            "C_Z_u": -2,
+            "C_X_u": -0.051000000000000004,
+            "C_m_u": 0,
+            "C_m_alphadot": -0.45515545092394544
+        },
+        "aerodynamic_stability_coefficients_asym": {
+            "CyB": -0.027353530462980932,
+            "ClB": -0.0018237369808266643,
+            "CnB": 0.016940719873178536,
+            "Cyp": -0.42509983997812495,
+            "Clp": -0.46,
+            "Cnp": -1.1383571209406638,
+            "Cyr": 0,
+            "Clr": 0.5095479030283778,
+            "Cnr": -0.027157984765004122,
+            "CyBdot": 0.15805962101968002,
+            "ClBdot": 0.009411205387247048
         }
     },
     "kinematic_viscosity": 1.006e-06,

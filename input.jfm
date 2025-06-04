@@ -1,0 +1,9 @@
+READ glenn_21.dat
+OPER
+RE 1000000.0
+MACH 0.1
+ITER 250
+ALFA 5
+CPWR glenn_21_cp.txt
+PWRT glenn_21_polar.txt
+QUIT
