@@ -28,7 +28,7 @@ class ElevatorRudder:
         self.rudder_deflection = self.aircraft_data.data['inputs']['control_surfaces']['rudder_deflection']
         self.elevator_deflection = self.aircraft_data.data['inputs']['control_surfaces']['elevator_deflection']
 
-        self.engine_power = self.aircraft_data.data['inputs']['engine_power']
+        self.engine_power = self.aircraft_data.data['inputs']['engine']['engine_power']
         self.prop_efficiency = self.aircraft_data.data['inputs']['prop_efficiency']
         self.V = self.aircraft_data.data['requirements']['cruise_speed']
         self.S = self.aircraft_data.data['outputs']['wing_design']['S']
@@ -59,7 +59,7 @@ class ElevatorRudder:
         #self.aircraft_data.data['outputs']['general']['nmax']
         self.climb_rate = self.aircraft_data.data['requirements']['climb_rate']
 
-        self.engine_thrust = 0.75*self.engine_power * self.prop_efficiency / self.V
+        self.engine_thrust = 0.3*self.engine_power * self.prop_efficiency / self.V
 
         self.prop_diameter = 5.2 # TODO link to json
         high_altitude = self.aircraft_data.data['requirements']['high_altitude']

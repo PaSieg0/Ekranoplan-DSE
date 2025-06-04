@@ -32,7 +32,7 @@ class Cd0Estimation:
     def fuselage_wet(self) -> float:
         #very preliminary estimate
 
-        return (2*np.pi*self.aircraft_data.data['outputs']['general']['l_fuselage']*self.aircraft_data.data['outputs']['general']['r_fuselage'] + 2*np.pi*self.aircraft_data.data['outputs']['general']['r_fuselage']**2)*self.aircraft_data.data['inputs']['n_fuselages']
+        return (2*np.pi*self.aircraft_data.data['outputs']['fuselage_dimensions']['l_fuselage']*self.aircraft_data.data['outputs']['fuselage_dimensions']['d_fuselage_equivalent_station2']/2 + 2*np.pi*(self.aircraft_data.data['outputs']['fuselage_dimensions']['d_fuselage_equivalent_station2']/2)**2)*self.aircraft_data.data['inputs']['n_fuselages']
 
     def tail_wet(self) -> float:
         if self.tail_type == EmpType.NONE:
@@ -156,7 +156,8 @@ if __name__ == '__main__':
     data = Data('design3.json')
     est = Cd0Estimation(
         aircraft_data=data,
-        mission_type=MissionType.DESIGN
+        mission_type=MissionType.DESIGN,
+        class_ii_OEW=data.data['outputs']['design']['OEW']/9.81
     )
 
     est.mainloop()

@@ -28,8 +28,8 @@ class BigIteration:
             file_path = f"design{i}.json"
             self.aircraft_data = Data(file_path)
             
-            fuselage = Fuselage(aircraft_data=self.aircraft_data)
-            fuselage.CalcFuseLen()
+            # fuselage = Fuselage(aircraft_data=self.aircraft_data)
+            # fuselage.CalcFuseLen()
 
             for mission in MissionType:
                 self.iteration_number = 0
@@ -54,8 +54,8 @@ class BigIteration:
             cg_range = CGRange(aircraft_data=self.aircraft_data)
             cg_range.calculate_cg_range()
 
-            emp = Empennage(aircraft_data=self.aircraft_data)
-            emp.run_iteration()
+            # emp = Empennage(aircraft_data=self.aircraft_data)
+            # emp.run_iteration()
 
             Cd0_est = Cd0Estimation(
                 aircraft_data=self.aircraft_data,

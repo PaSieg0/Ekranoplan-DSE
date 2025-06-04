@@ -214,7 +214,7 @@ class ClassII:
         return lbs2kg(W_hull_lbs)*9.81
     
     def floater(self):
-        W_floater_lbs = (0.0365*self.W_dg + 43.5)/5     # https://www.icas.org/icas_archive/ICAS2012/PAPERS/198.PDF
+        W_floater_lbs = (0.0365*self.W_dg + 43.5)   # https://www.icas.org/icas_archive/ICAS2012/PAPERS/198.PDF
         return lbs2kg(W_floater_lbs)*9.81
     
     def main(self):

@@ -365,6 +365,18 @@ def lbsftsq2kgmsq(lbsft2):
     """
     return lbsft2 / 0.204816
 
+def W2hp(W):
+    """
+    Convert Watts to horsepower
+    """
+    return W * 0.00134102
+
+def hp2W(hp):
+    """
+    Convert horsepower to Watts
+    """
+    return hp / 0.00134102
+
 def apply_number_format(cell, value):
     if isinstance(value, (int, float)):
         if abs(value) >= 0.001:

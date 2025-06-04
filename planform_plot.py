@@ -44,13 +44,19 @@ class PlanformPlot:
         self.most_aft_cg = aircraft_data.data['outputs']['cg_range']['most_aft_cg']
         self.most_forward_cg = aircraft_data.data['outputs']['cg_range']['most_forward_cg']
 
+        self.cargo_start = aircraft_data.data['outputs']['fuselage_dimensions']['l_nose'] + aircraft_data.data['outputs']['fuselage_dimensions']['cargo_distance_from_nose']
+        self.cargo_length = aircraft_data.data['outputs']['fuselage_dimensions']['cargo_length']
+        self.cargo_end = self.cargo_start + self.cargo_length
+        self.cargo_height = aircraft_data.data['outputs']['fuselage_dimensions']['cargo_height']
+        self.cargo_width = aircraft_data.data['outputs']['fuselage_dimensions']['cargo_width']
+
 
     def plot_init(self) -> None:
         self.fig, self.ax = plt.subplots(figsize=(12, 8))
         # self.ax.set_xlim(-self.l_fuselage - 10, self.l_fuselage + 10)
         # self.ax.set_ylim(-self.h_fuselage - 5, self.h_fuselage + 5)
-        self.ax.set_xlabel('Longitudinal [m]')
-        self.ax.set_ylabel('Lateral [m]')
+        self.ax.set_xlabel('Lateral [m]')
+        self.ax.set_ylabel('Longitudinal [m]')
         self.ax.set_title('Aircraft Planform')
 
     def plot_wing(self) -> None:
@@ -108,6 +114,21 @@ class PlanformPlot:
         self.ax.plot([self.wing_y_mac, self.wing_y_mac], [self.wing_X_LEMAC, self.wing_X_LEMAC + self.wing_MAC], 'b--', lw=2, label='MAC')
         self.ax.scatter([self.wing_y_mac], [self.wing_X_LEMAC + self.wing_MAC*0.277], color='b', label='MAC AC Center', zorder=5)
 
+    def plot_cargo(self) -> None:
+        self.ax.plot([self.cargo_width/2, self.cargo_width/2], [self.cargo_start, self.cargo_end], 'g-', lw=2)
+        self.ax.plot([-self.cargo_width/2, -self.cargo_width/2], [self.cargo_start, self.cargo_end], 'g-', lw=2)
+        self.ax.plot([self.cargo_width/2, -self.cargo_width/2], [self.cargo_start, self.cargo_start], 'g-', lw=2)
+        self.ax.plot([self.cargo_width/2, -self.cargo_width/2], [self.cargo_end, self.cargo_end], 'g-', lw=2)
+        self.ax.fill_betweenx(
+            [self.cargo_start, self.cargo_end],
+            -self.cargo_width/2,
+            self.cargo_width/2,
+            color='lightgreen',
+            alpha=0.5,
+            label='Cargo Area Fill'
+        )
+        # self.ax.plot
+
 
     def show_plot(self) -> None:
         self.ax.grid()
@@ -126,4 +147,5 @@ if __name__ == "__main__":
     planform_plot.plot_empennage()
     planform_plot.plot_fuselage()
     planform_plot.plot_MAC()
+    planform_plot.plot_cargo()
     planform_plot.show_plot()

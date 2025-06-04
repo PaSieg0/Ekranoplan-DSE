@@ -17,7 +17,7 @@ class CGRange:
         self.most_forward_cg = float('inf')
         self.most_forward_mission = None
 
-        self.l_fuselage = aircraft_data.data["outputs"]["general"]["l_fuselage"]
+        self.l_fuselage = aircraft_data.data["outputs"]["fuselage_dimensions"]["l_fuselage"]
 
         self.plot = plot
 
@@ -31,7 +31,7 @@ class CGRange:
                 self.xcg_components = {
                     "OEW": self.aircraft_data.data["inputs"]["xcg_OEW"],
                     "Payload": self.aircraft_data.data['outputs']['general']["xcg_payload"],
-                    "Fuel": (self.aircraft_data.data["outputs"]["wing_design"]["X_LEMAC"] + 0.5*self.aircraft_data.data["outputs"]["wing_design"]["MAC"]) / self.aircraft_data.data["outputs"]["general"]["l_fuselage"]
+                    "Fuel": (self.aircraft_data.data["outputs"]["wing_design"]["X_LEMAC"] + 0.5*self.aircraft_data.data["outputs"]["wing_design"]["MAC"]) / self.aircraft_data.data["outputs"]["fuselage_dimensions"]["l_fuselage"]
                 }
 
                 self.mass_components = {}
@@ -57,7 +57,7 @@ class CGRange:
                 self.x_cg = sum(
                     self.xcg_components[comp] * self.mass_components[comp] / total_weight
                     for comp in self.xcg_components
-                ) * self.aircraft_data.data["outputs"]["general"]["l_fuselage"]
+                ) * self.aircraft_data.data["outputs"]["fuselage_dimensions"]["l_fuselage"]
 
                 label = f"{mission.name}_{load_case.name}"
                 cg_points.append((label, self.x_cg, total_weight * g)) 
@@ -102,7 +102,7 @@ if __name__ == "__main__":
 
 
 
-    for i in range(1, 4):
+    for i in range(3, 4):
         data = Data(f"design{i}.json")
         cg_range = CGRange(data,plot=True)
         cg_range.calculate_cg_range(ax=ax,idx=i-1)

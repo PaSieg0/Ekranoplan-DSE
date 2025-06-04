@@ -3,7 +3,7 @@ import sys
 import numpy as np
 import matplotlib.pyplot as plt
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
-from utils import Data
+from utils import Data, W2hp
 
 class vertical_tail_sizing:
     def __init__(self, aircraft_data: Data):
@@ -78,16 +78,16 @@ class vertical_tail_sizing:
         beta = 0
         Cn_beta_A_h = self.Cn_beta_A_h
         b = self.b
-        tau_v = 0
-        del_r = 0
-        sigma_v = 0
+        tau_v = -0.7061
+        del_r = self.aircraft_data.data['inputs']['control_surfaces']['rudder_deflection']
+        sigma_v = np.deg2rad(5)
 
         Sv = S * (CL * (Ye / lv) * (deltaTe / W) + beta * Cn_beta_A_h * (b / lv)) / (
             (tau_v * del_r - (beta - sigma_v)) * nv * Cy_v_alpha
         )
         self.X_axis = deltaTe * Ye * CL / (W * lv)
 
-        self.y_axis_thingy = 0.5
+        self.y_axis_thingy = 0.4
         self.S_v = self.y_axis_thingy * S / (nv * Cy_v_alpha)
 
         # Clustered print statements
@@ -111,16 +111,68 @@ class vertical_tail_sizing:
         print("X_axis (non-dimensional factor):", self.X_axis)
 
         return self.S_v
+    
+    def get_x_axis_fig_9_23(self):
+        ye = self.Ye
+        lv = self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['l_v']
+        Peq = W2hp(self.P_engine)
+        CLmax_TO = self.aircraft_data.data['inputs']['CLmax_takeoff']
+        W = self.aircraft_data.data['outputs']['max']['MTOM']
+        W_pmax = 100000
+
+        X_axis = ye/lv * (Peq*CLmax_TO)/(W - W_pmax)
+        print("X_axis (fig 9.23):", X_axis)
 
 
+    def get_Sv_from_fig_9_23(self, y_axis):
+        S = self.S
+        k_delta_r = 1.1
+        k_v = 1.1
+        S_r = self.aircraft_data.data['outputs']['control_surfaces']['rudder']['area']
+        A_v = self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['aspect_ratio']
+        chord_ratio = self.aircraft_data.data['inputs']['control_surfaces']['rudder_chord']
+        b_v = self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['b']
+        v_sweep = np.deg2rad(self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['sweep_c_4'])
+        ct_v = self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['chord_tip']
+        cr_v = self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['chord_root']
+
+        tip_c_v_offset = b_v*np.tan(v_sweep)
+        tip_start_r = tip_c_v_offset + (1-chord_ratio-0.25)*ct_v
+
+        root_start_r = (1-chord_ratio-0.25)*cr_v
+        
+        sweep_r = np.arctan((tip_start_r- root_start_r) / (b_v))
+
+        S_v = ((y_axis*S)/(k_delta_r * k_v * S_r**(1/3) * A_v**(1/3) * np.cos(sweep_r)**(1/3) ))**(3/2)
+        print(f"Calculated vertical tail area S_v from fig 9.23: {S_v}")
+        return S_v
+    
+    def get_vertical_tail_size(self):
+        static_stability = self.get_vertical_tail_size_static_stab()
+        one_engine_inoperative = self.get_vertical_tail_size_one_engine_inoperative()
+
+        tail_size = max(static_stability, one_engine_inoperative)
+        self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['S'] = tail_size
+        return tail_size
+    
+    def check_volume(self, y_axis):
+        S = self.aircraft_data.data['outputs']['wing_design']['S']
+        b = self.aircraft_data.data['outputs']['wing_design']['b']
+        l_v = self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['l_v']
+        S_v = self.get_Sv_from_fig_9_23(y_axis=y_axis)
+        volume = S_v * l_v / (S * b)
+        print(f"Volume of vertical tail: {volume}")
+        # min_volume = 
     
 if __name__ == "__main__":
     file_path = "design3.json"
     aircraft_data = Data(file_path)
     vert_tail = vertical_tail_sizing(aircraft_data=aircraft_data)
-    tail_size = vert_tail.get_vertical_tail_size_static_stab()
-    vert_tail.get_vertical_tail_size_one_engine_inoperative()
-    print('vertical_tail_area:',tail_size)
-    print('S_v:', vert_tail.S_v)
-    print('X:', vert_tail.X_axis)
-    print('y:', vert_tail.y_axis_thingy)
+    vert_tail.get_x_axis_fig_9_23()
+    vert_tail.get_Sv_from_fig_9_23(y_axis=0.15)
+    # tail_size = vert_tail.get_vertical_tail_size_static_stab()
+    # vert_tail.get_vertical_tail_size_one_engine_inoperative()
+    # print('vertical_tail_area:',tail_size)
+    # print('S_v:', vert_tail.S_v)
+    # print('X:', vert_tail.X_axis)
+    # print('y:', vert_tail.y_axis_thingy)
