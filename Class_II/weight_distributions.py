@@ -200,7 +200,16 @@ class CGCalculation:
         fuel_distributed = -self.fuel_mass * self.nmax / (self.wing_root_chord-2*fuel_margin_from_root_edges)  # Distribute fuel load over fuselage lengt
 
         # Calculate wing loads
-        wing_load = self.MTOW * self.nmax  # Convert MTOW to N and multiply by load factor
+        wing_mass = self.component_masses.get('wing_mass', 0)
+        floater_mass = self.component_masses.get('floater_mass', 0)
+        engine_mass = self.component_masses.get('engine_mass', 0)
+        nacelle_mass = self.component_masses.get('nacelle_group_mass', 0)
+        
+        # Convert masses to forces considering load factor
+        wing_supported_weight = (wing_mass + floater_mass + engine_mass + nacelle_mass) * 9.81 * self.nmax
+        
+        # Calculate net wing lift force (total lift minus wing-supported masses)
+        wing_load = self.MTOW * self.nmax - wing_supported_weight  # Convert MTOW to N and multiply by load factor
         wing_load_distributed = wing_load / self.wing_root_chord  # Distribute load over wing root chord length
 
         print(f"Wing_load/MTOW: {wing_load/self.MTOW} kN/m")
@@ -230,33 +239,33 @@ class CGCalculation:
             print(f"  Percentage: {calculated_tailcone_weight/self.component_weights['fuselage']*100:.1f}%")
         
         # Generate detailed load distribution
-        x_points = np.arange(0, self.l_fuselage, 0.01)  # Increased resolution
-        loads = np.zeros_like(x_points)
-        cargo_loads = np.zeros_like(x_points)  # Add separate array for cargo loads
-        wing_loads = np.zeros_like(x_points)   # Add array for wing loads
-        fuel_loads = np.zeros_like(x_points)   # Add array for fuel loads
+        self.x_points = np.arange(0, self.l_fuselage, 0.01)  # Increased resolution
+        loads = np.zeros_like(self.x_points)
+        cargo_loads = np.zeros_like(self.x_points)  # Add separate array for cargo loads
+        wing_loads = np.zeros_like(self.x_points)   # Add array for wing loads
+        fuel_loads = np.zeros_like(self.x_points)   # Add array for fuel loads
 
         # Add fuselage distributed loads for each section
-        nose_mask = (x_points < self.l_nose)
-        forebody_mask = (x_points >= self.l_nose) & (x_points < self.l_nose + self.l_forebody)
-        afterbody_mask = (x_points >= self.l_nose + self.l_forebody) & (x_points < self.l_nose + self.l_forebody + self.l_afterbody)
-        tailcone_mask = (x_points >= self.l_nose + self.l_forebody + self.l_afterbody)
-        fuel_mask = (x_points >= self.wing_x_LE + fuel_margin_from_root_edges) & (x_points < self.wing_x_LE + self.wing_root_chord - fuel_margin_from_root_edges)
+        nose_mask = (self.x_points < self.l_nose)
+        forebody_mask = (self.x_points >= self.l_nose) & (self.x_points < self.l_nose + self.l_forebody)
+        afterbody_mask = (self.x_points >= self.l_nose + self.l_forebody) & (self.x_points < self.l_nose + self.l_forebody + self.l_afterbody)
+        tailcone_mask = (self.x_points >= self.l_nose + self.l_forebody + self.l_afterbody)
+        fuel_mask = (self.x_points >= self.wing_x_LE + fuel_margin_from_root_edges) & (self.x_points < self.wing_x_LE + self.wing_root_chord - fuel_margin_from_root_edges)
         loads[nose_mask] += fuselage_distributed_nose
         loads[forebody_mask] += fuselage_distributed_forebody
         loads[afterbody_mask] += fuselage_distributed_afterbody
         loads[tailcone_mask] += fuselage_distributed_tailcone
 
         # Add cargo distributed loads
-        cargo_mask = (x_points >= self.cargo_x_start) & (x_points < self.cargo_x_start + self.cargo_length)
+        cargo_mask = (self.x_points >= self.cargo_x_start) & (self.x_points < self.cargo_x_start + self.cargo_length)
         cargo_loads[cargo_mask] = cargo_distributed
 
         # Add wing distributed loads
-        wing_mask = (x_points >= self.wing_x_LE) & (x_points < self.wing_x_LE + self.wing_root_chord)
+        wing_mask = (self.x_points >= self.wing_x_LE) & (self.x_points < self.wing_x_LE + self.wing_root_chord)
         wing_loads[wing_mask] = wing_load_distributed
 
         # Add fuel distributed loads
-        fuel_mask = (x_points >= self.wing_x_LE + fuel_margin_from_root_edges) & (x_points < self.wing_x_LE + self.wing_root_chord - fuel_margin_from_root_edges)
+        fuel_mask = (self.x_points >= self.wing_x_LE + fuel_margin_from_root_edges) & (self.x_points < self.wing_x_LE + self.wing_root_chord - fuel_margin_from_root_edges)
         fuel_loads[fuel_mask] = fuel_distributed
 
         print(f"end of cargo location: {self.cargo_x_start + self.cargo_length:.1f} m")
@@ -268,12 +277,12 @@ class CGCalculation:
         start_idx = 0
         
         for end in section_ends:
-            end_idx = np.searchsorted(x_points, end)
-            section_weight = np.trapezoid(loads[start_idx:end_idx], x_points[start_idx:end_idx])
+            end_idx = np.searchsorted(self.x_points, end)
+            section_weight = np.trapezoid(loads[start_idx:end_idx], self.x_points[start_idx:end_idx])
             section_weights.append(section_weight)
             start_idx = end_idx        
             total_weight_calculated = sum(section_weights)
-        total_cargo_weight = np.trapezoid(cargo_loads, x_points)
+        total_cargo_weight = np.trapezoid(cargo_loads, self.x_points)
         
         if show_verification:
             print(f"\nLoad Distribution Weight Verification:")
@@ -286,28 +295,16 @@ class CGCalculation:
             print(f"Integrated cargo weight: {total_cargo_weight/1000:.2f} kN")
 
             # Add wing load verification``
-            total_wing_load = np.trapezoid(wing_loads, x_points)
+            total_wing_load = np.trapezoid(wing_loads, self.x_points)
             print(f"\nWing Load Verification:")
             print(f"Calculated wing load (MTOW×nmax): {wing_load/1000:.2f} kN")
             print(f"Integrated wing load: {total_wing_load/1000:.2f} kN")
             print(f"Error: {abs(wing_load - total_wing_load)/wing_load*100:.2f}%")
 
-        # Create the plot with enhanced visualization
-        plt.figure(figsize=(12, 8))
-        
-        # Plot individual loads
-        plt.plot(x_points, loads/1000, 'b-', label='Fuselage Load Distribution', linewidth=2)  # Convert to kN/m
-        plt.plot(x_points, cargo_loads/1000, 'r-', label='Cargo Load Distribution', linewidth=2, alpha=0.6)  # Add cargo load plot
-        plt.plot(x_points, wing_loads/1000, 'g-', label='Wing Load Distribution (MTOW×nmax)', linewidth=2, alpha=0.6)  # Add wing load plot
-        plt.plot(x_points, fuel_loads/1000, 'm-', label='Fuel Load Distribution', linewidth=2, alpha=0.6)  # Add fuel load plot
-        
         # Calculate total loads
         total_loads = loads + cargo_loads + wing_loads + fuel_loads
 
-        # Plot the loads
-        plt.plot(x_points, total_loads/1000, 'k-', label='Total Load Distribution', linewidth=3)
-
-        # Add section lines and labels with enhanced formatting
+        # Define sections
         sections = [
             (0, "Nose Section", self.l_nose),
             (self.l_nose, "Forebody Section", self.l_nose + self.l_forebody),
@@ -316,29 +313,84 @@ class CGCalculation:
             (self.l_nose + self.l_forebody + self.l_afterbody, 
              "Tailcone Section", self.l_fuselage)
         ]
+
+        # Calculate shear force through integration
+        shear = np.zeros_like(self.x_points)
+        for i in range(1, len(self.x_points)):
+            # Integrate load up to current point
+            shear[i] = np.trapz(total_loads[:i], self.x_points[:i])
+
+        # Calculate bending moment through integration of shear
+        moment = np.zeros_like(self.x_points)
+        for i in range(1, len(self.x_points)):
+            # Integrate shear up to current point
+            moment[i] = np.trapz(-shear[:i], self.x_points[:i])  # Negative shear to match sign convention
+
+        # Create figure with three subplots
+        fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(15, 15), height_ratios=[1, 1, 1])
         
-        section_weights = [calculated_nose_weight, calculated_forebody_weight, 
-                         calculated_afterbody_weight, calculated_tailcone_weight]
+        # Plot load distribution in top subplot
+        ax1.plot(self.x_points, loads/1000, 'b-', label='Fuselage Load Distribution', linewidth=2)
+        ax1.plot(self.x_points, cargo_loads/1000, 'r-', label='Cargo Load Distribution', linewidth=2, alpha=0.6)
+        ax1.plot(self.x_points, wing_loads/1000, 'g-', label='Wing Load Distribution (MTOW×nmax)', linewidth=2, alpha=0.6)
+        ax1.plot(self.x_points, fuel_loads/1000, 'm-', label='Fuel Load Distribution', linewidth=2, alpha=0.6)
+        ax1.plot(self.x_points, total_loads/1000, 'k-', label='Total Load Distribution', linewidth=3)        # Plot shear force in middle subplot
+        ax2.plot(self.x_points, shear/1000, 'b-', label='Shear Force', linewidth=2)  # Positive for clockwise rotation
+
+        # Plot moment diagram in bottom subplot
+        ax3.plot(self.x_points, -moment/1000000, 'r-', label='Bending Moment', linewidth=2)  # Positive for upper fiber compression
         
+        # Add section lines and labels to all plots
         for i, (start, label, end) in enumerate(sections):
-            # Vertical section boundaries
-            plt.axvline(x=start, color='g', linestyle='--', alpha=0.5)
-              # Section labels with weight and percentage (accounting for nmax)
+            # Add vertical lines to all plots
+            ax1.axvline(x=start, color='g', linestyle='--', alpha=0.5)
+            ax2.axvline(x=start, color='g', linestyle='--', alpha=0.5)
+            ax3.axvline(x=start, color='g', linestyle='--', alpha=0.5)
+            
+            # Add section labels
             mid_x = (start + (end if i < len(sections)-1 else self.l_fuselage)) / 2
             weight_pct = section_weights[i] / (self.component_weights['fuselage'] * self.nmax) * 100
-            plt.text(mid_x, plt.ylim()[1], 
-                    f"{label}\n{section_weights[i]/1000:.1f} kN\n({weight_pct:.1f}%)",
-                    ha='center', va='top', fontsize=9)
             
-            # Add horizontal reference line at zero
-            plt.axhline(y=0, color='k', linestyle='-', linewidth=0.5, alpha=0.3)
+            # Labels for each plot
+            ax1.text(start, ax1.get_ylim()[1], f"{label}", 
+                    ha='right', va='top', rotation=90, fontsize=9)
+            ax2.text(start, ax2.get_ylim()[1], f"{label}", 
+                    ha='right', va='top', rotation=90, fontsize=9)
+            ax3.text(start, ax3.get_ylim()[1], f"{label}", 
+                    ha='right', va='top', rotation=90, fontsize=9)
+
+        # Add horizontal reference lines
+        ax1.axhline(y=0, color='k', linestyle='-', linewidth=0.5, alpha=0.3)
+        ax2.axhline(y=0, color='k', linestyle='-', linewidth=0.5, alpha=0.3)
+        ax3.axhline(y=0, color='k', linestyle='-', linewidth=0.5, alpha=0.3)
         
-        # Format the plot
-        plt.xlabel("Fuselage Station (m)")
-        plt.ylabel("Load Distribution (kN/m)")
-        plt.title("Fuselage Load Distribution by Section")
-        plt.grid(True, alpha=0.3, which='both')        
-        plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15))
+        # Format plots
+        ax1.set_xlabel("Fuselage Station (m)")
+        ax1.set_ylabel("Load Distribution (kN/m)")
+        ax1.set_title("Fuselage Load Distribution")
+        ax1.grid(True, alpha=0.3, which='both')
+        ax1.legend(loc='center', bbox_to_anchor=(0.5, -0.2), ncol=3)
+
+        ax2.set_xlabel("Fuselage Station (m)")
+        ax2.set_ylabel("Shear Force (kN)")
+        ax2.set_title("Shear Force Diagram")
+        ax2.grid(True, alpha=0.3, which='both')
+        ax2.legend()
+
+        ax3.set_xlabel("Fuselage Station (m)")
+        ax3.set_ylabel("Bending Moment (MN·m)")
+        ax3.set_title("Bending Moment Diagram")
+        ax3.grid(True, alpha=0.3, which='both')
+        ax3.legend()
+        
+        # Print maximum values and their locations
+        max_shear_idx = np.argmax(np.abs(shear))
+        max_moment_idx = np.argmax(np.abs(moment))
+        print(f"\nMaximum absolute shear force: {abs(shear[max_shear_idx])/1000:.2f} kN")
+        print(f"Location of maximum shear: {self.x_points[max_shear_idx]:.2f} m")
+        print(f"Maximum absolute bending moment: {abs(moment[max_moment_idx])/1000000:.2f} MN·m")
+        print(f"Location of maximum moment: {self.x_points[max_moment_idx]:.2f} m")
+
         plt.tight_layout()
         plt.show()
 
