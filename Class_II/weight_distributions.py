@@ -283,11 +283,11 @@ class CGCalculation:
         
         for end in section_ends:
             end_idx = np.searchsorted(self.x_points, end)
-            section_weight = np.trapezoid(loads[start_idx:end_idx], self.x_points[start_idx:end_idx])
+            section_weight = np.trapz(loads[start_idx:end_idx], self.x_points[start_idx:end_idx])
             section_weights.append(section_weight)
             start_idx = end_idx        
             total_weight_calculated = sum(section_weights)
-        total_cargo_weight = np.trapezoid(cargo_loads, self.x_points)
+        total_cargo_weight = np.trapz(cargo_loads, self.x_points)
         
         if show_verification:
             print(f"\nLoad Distribution Weight Verification:")
@@ -300,7 +300,7 @@ class CGCalculation:
             print(f"Integrated cargo weight: {total_cargo_weight/1000:.2f} kN")
 
             # Add wing load verification``
-            total_wing_load = np.trapezoid(wing_loads, self.x_points)
+            total_wing_load = np.trapz(wing_loads, self.x_points)
             print(f"\nWing Load Verification:")
             print(f"Calculated wing load (MTOW×nmax): {wing_load/1000:.2f} kN")
             print(f"Integrated wing load: {total_wing_load/1000:.2f} kN")

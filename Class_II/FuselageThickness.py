@@ -249,7 +249,11 @@ class FuselageThickness:
         for station in self.boom_areas_all:
             B1, B2, B3, B4, B5 = station
 
-            
+    def calculate_minimum_thickness(self):
+        tau = self.sigma_y*0.577
+        self.t_fus_shear = self.tot_shear_flow / tau
+        print(f'Min thickness due to shear is: {self.t_fus_shear}')
+        
 
 
 
