@@ -46,14 +46,17 @@ class CGCalculation:
                             self.aircraft_data.data['outputs']['fuselage_dimensions']['l_nose'])
         self.cargo_x_start = (self.aircraft_data.data['outputs']['fuselage_dimensions']['cargo_distance_from_nose'] + 
                             self.aircraft_data.data['outputs']['fuselage_dimensions']['l_nose'])
-        self.fuel_mass = self.aircraft_data.data['outputs']['design']['max_fuel']
         self.cargo_mass = self.aircraft_data.data['requirements']['cargo_mass']
         self.wing_root_chord = self.aircraft_data.data['outputs']['wing_design']['chord_root']
         self.wing_x_LE = self.aircraft_data.data['outputs']['wing_design']['X_LE']
         self.nmax = self.aircraft_data.data['outputs']['general']['nmax']
         self.fuel_mass = self.aircraft_data.data['outputs']['design']['max_fuel']  # Maximum fuel mass
         self.root_moment = self.aircraft_data.data['outputs']['wing_stress']['max_torque']  # Root moment for CG calculation
+        self.v_tail_chord_root = self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['chord_root']
+        self.v_tail_LE_pos = self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['LE_pos']
+        self.tail_moment = self.aircraft_data.data['outputs']['horizontal_tail_stress']['max_torque']  # Horizontal tail moment for CG calculation
         
+
         # Fuselage parameters
         self.l_nose = self.aircraft_data.data['outputs']['fuselage_dimensions']['l_nose']
         self.l_forebody = self.aircraft_data.data['outputs']['fuselage_dimensions']['l_forebody']
@@ -65,7 +68,6 @@ class CGCalculation:
         self.x_MAC_vertical_tail = self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['MAC']
         self.x_LE_horizontal_tail = self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['LE_pos']
         self.x_MAC_horizontal_tail = self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['MAC']
-        
         # Add new parameters needed for wing load calculation
         self.MTOW = self.aircraft_data.data['outputs']['max']['MTOW']  # Maximum takeoff weight
         self.l_fuselage = (self.l_nose + self.l_forebody + 
@@ -195,29 +197,66 @@ class CGCalculation:
         tail_share = 0.20  
         afterbody_share = 0.20 
 
+        # Additional nose section components (using component_weights which are already in N)
+        nose_components = [
+            'apu_installed', 'anchor', 'flight_control', 'instruments',
+            'furnishings', 'air_conditioning'
+        ]
+        nose_additional_weight = sum(self.component_weights.get(comp, 0) for comp in nose_components)
+        
+        # Additional forebody section components (using component_weights which are already in N)
+        forebody_components = [
+            'military_cargo_handling_system', 'electrical', 'handling_gear'
+        ]
+        forebody_additional_weight = sum(self.component_weights.get(comp, 0) for comp in forebody_components)
+
+        # Additional tailcone section components (using component_weights which are already in N)
+        tailcone_components = ['door']
+        tailcone_additional_weight = sum(self.component_weights.get(comp, 0) for comp in tailcone_components)        # Component weight verification is disabled
+
         # Calculate distributed loads for each section
-        fuselage_distributed_nose = -self.component_weights['fuselage'] * nose_share * self.nmax / self.l_nose
-        fuselage_distributed_forebody = -self.component_weights['fuselage'] * forebody_share * self.nmax / self.l_forebody
+        # Note: both fuselage share and additional components need nmax factor for load cases
+        fuselage_distributed_nose = -(self.component_weights['fuselage'] * nose_share + nose_additional_weight) * self.nmax / self.l_nose
+        fuselage_distributed_forebody = -(self.component_weights['fuselage'] * forebody_share + forebody_additional_weight) * self.nmax / self.l_forebody
         fuselage_distributed_afterbody = -self.component_weights['fuselage'] * afterbody_share * self.nmax / self.l_afterbody
-        fuselage_distributed_tailcone = -self.component_weights['fuselage'] * tail_share * self.nmax / self.l_tailcone
+        fuselage_distributed_tailcone = -(self.component_weights['fuselage'] * tail_share + tailcone_additional_weight) * self.nmax / self.l_tailcone
         cargo_distributed = -self.cargo_mass * 9.81 * self.nmax / self.cargo_length 
         fuel_margin_from_root_edges = 0.5
-        fuel_distributed = -self.fuel_mass * self.nmax / (self.wing_root_chord-2*fuel_margin_from_root_edges)  # Distribute fuel load over fuselage lengt
-
-        # Calculate wing loads
+        fuel_distributed = -self.fuel_mass * self.nmax / (self.wing_root_chord-2*fuel_margin_from_root_edges)  # Distribute fuel load over fuselage lengt        # Calculate wing loads
+        # Components that we have as masses (in kg)
         wing_mass = self.component_masses.get('wing_mass', 0)
         floater_mass = self.component_masses.get('floater_mass', 0)
         engine_mass = self.component_masses.get('engine_mass', 0)
         nacelle_mass = self.component_masses.get('nacelle_group_mass', 0)
         
-        # Convert masses to forces considering load factor
-        wing_supported_weight = (wing_mass + floater_mass + engine_mass + nacelle_mass) * 9.81 * self.nmax
+        # Convert masses to forces (N)
+        mass_based_force = (wing_mass + floater_mass + engine_mass + nacelle_mass) * 9.81
         
-        # Calculate net wing lift force (total lift minus wing-supported masses)
+        # Components that we have as weights (already in N)
+        weight_components = ['anti_ice', 'fuel_system', 'avionics', 'starter_pneumatic', 'engine_controls']
+        direct_weight_force = sum(self.component_weights.get(comp, 0) for comp in weight_components)
+          # Wing-supported component verification is disabled
+        
+        # Total wing-supported weight (all in N) with load factor
+        wing_supported_weight = (mass_based_force + direct_weight_force) * self.nmax
+        
+        # Calculate empennage weight (using masses)
+        empennage_mass = self.component_masses.get('vertical_tail_mass', 0) + self.component_masses.get('horizontal_tail_mass', 0)
+        empennage_supported_weight = empennage_mass * 9.81 * self.nmax
+          # Calculate net wing lift force (total lift minus wing-supported masses)
         wing_load = self.MTOW * self.nmax - wing_supported_weight  # Convert MTOW to N and multiply by load factor
         wing_load_distributed = wing_load / self.wing_root_chord  # Distribute load over wing root chord length
-
-        print(f"Wing_load/MTOW: {wing_load/self.MTOW} kN/m")
+        # Case 1: No horizontal tail force
+        horizontal_tail_force = 0
+        empennage_load = -(empennage_supported_weight + horizontal_tail_force)*self.nmax
+        empennage_load_distributed = empennage_load / self.v_tail_chord_root
+        print(f"\nEmpennage total load (no horizontal tail force): {empennage_load:.2f} N")
+        
+        # Case 2: With horizontal tail force
+        horizontal_tail_force = 0
+        empennage_load = - (empennage_supported_weight + horizontal_tail_force)*self.nmax
+        empennage_load_distributed = empennage_load / self.v_tail_chord_root
+        print(f"Empennage total load (with 80 kN horizontal tail force): {empennage_load:.2f} N\n")
         # Calculate section weights for verification
         calculated_nose_weight = fuselage_distributed_nose * self.l_nose
         calculated_forebody_weight = fuselage_distributed_forebody * self.l_forebody
@@ -247,8 +286,9 @@ class CGCalculation:
         self.x_points = np.arange(0, self.l_fuselage, 0.01)  # Increased resolution
         loads = np.zeros_like(self.x_points)
         cargo_loads = np.zeros_like(self.x_points)  # Add separate array for cargo loads
-        wing_loads = np.zeros_like(self.x_points)   # Add array for wing loads
+        aerodynamic_loads = np.zeros_like(self.x_points)   # Add array for wing loads
         fuel_loads = np.zeros_like(self.x_points)   # Add array for fuel loads
+        
 
         # Add fuselage distributed loads for each section
         nose_mask = (self.x_points < self.l_nose)
@@ -256,6 +296,8 @@ class CGCalculation:
         afterbody_mask = (self.x_points >= self.l_nose + self.l_forebody) & (self.x_points < self.l_nose + self.l_forebody + self.l_afterbody)
         tailcone_mask = (self.x_points >= self.l_nose + self.l_forebody + self.l_afterbody)
         fuel_mask = (self.x_points >= self.wing_x_LE + fuel_margin_from_root_edges) & (self.x_points < self.wing_x_LE + self.wing_root_chord - fuel_margin_from_root_edges)
+        
+
         loads[nose_mask] += fuselage_distributed_nose
         loads[forebody_mask] += fuselage_distributed_forebody
         loads[afterbody_mask] += fuselage_distributed_afterbody
@@ -267,14 +309,12 @@ class CGCalculation:
 
         # Add wing distributed loads
         wing_mask = (self.x_points >= self.wing_x_LE) & (self.x_points < self.wing_x_LE + self.wing_root_chord)
-        wing_loads[wing_mask] = wing_load_distributed
-
-        # Add fuel distributed loads
+        vertical_tail_mask = (self.x_points >= self.x_LE_vertical_tail) & (self.x_points < self.x_LE_vertical_tail + self.v_tail_chord_root)
+        aerodynamic_loads[wing_mask] = wing_load_distributed
+        aerodynamic_loads[vertical_tail_mask] = empennage_load_distributed        # Add fuel distributed loads
         fuel_mask = (self.x_points >= self.wing_x_LE + fuel_margin_from_root_edges) & (self.x_points < self.wing_x_LE + self.wing_root_chord - fuel_margin_from_root_edges)
         fuel_loads[fuel_mask] = fuel_distributed
 
-        print(f"end of cargo location: {self.cargo_x_start + self.cargo_length:.1f} m")
-        print(f" start of tailcone: {self.l_nose + self.l_forebody + self.l_afterbody:.1f} m")
         # Running weight verification
         section_weights = []
         section_ends = [self.l_nose, self.l_nose + self.l_forebody, 
@@ -300,15 +340,16 @@ class CGCalculation:
             print(f"Integrated cargo weight: {total_cargo_weight/1000:.2f} kN")
 
             # Add wing load verification``
-            total_wing_load = np.trapezoid(wing_loads, self.x_points)
+            total_wing_load = np.trapezoid(aerodynamic_loads, self.x_points)
             print(f"\nWing Load Verification:")
             print(f"Calculated wing load (MTOW×nmax): {wing_load/1000:.2f} kN")
             print(f"Integrated wing load: {total_wing_load/1000:.2f} kN")
             print(f"Error: {abs(wing_load - total_wing_load)/wing_load*100:.2f}%")
 
         # Calculate total loads
-        total_loads = loads + cargo_loads + wing_loads + fuel_loads
-
+        total_loads = loads + cargo_loads + aerodynamic_loads + fuel_loads
+        
+        
         # Define sections
         sections = [
             (0, "Nose Section", self.l_nose),
@@ -323,13 +364,18 @@ class CGCalculation:
         shear = np.zeros_like(self.x_points)
         for i in range(1, len(self.x_points)):
             # Integrate load up to current point
-            shear[i] = np.trapz(total_loads[:i], self.x_points[:i])
+            shear[i] = np.trapezoid(total_loads[:i], self.x_points[:i])
 
         # Calculate bending moment through integration of shear
         moment = np.zeros_like(self.x_points)
         for i in range(1, len(self.x_points)):
             # Integrate shear up to current point
-            moment[i] = np.trapz(-shear[:i], self.x_points[:i])  # Negative shear to match sign convention
+            moment[i] = np.trapezoid(-shear[:i], self.x_points[:i])  # Negative shear to match sign convention
+        
+        # Add wing root moment to all points after the wing root
+        wing_root_center = self.wing_x_LE + self.wing_root_chord/2
+        moment_mask = self.x_points >= wing_root_center
+        moment[moment_mask] += -2*self.root_moment
 
         # Create figure with three subplots
         fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(15, 15), height_ratios=[1, 1, 1])
@@ -337,13 +383,16 @@ class CGCalculation:
         # Plot load distribution in top subplot
         ax1.plot(self.x_points, loads/1000, 'b-', label='Fuselage Load Distribution', linewidth=2)
         ax1.plot(self.x_points, cargo_loads/1000, 'r-', label='Cargo Load Distribution', linewidth=2, alpha=0.6)
-        ax1.plot(self.x_points, wing_loads/1000, 'g-', label='Wing Load Distribution (MTOW×nmax)', linewidth=2, alpha=0.6)
+        ax1.plot(self.x_points, aerodynamic_loads/1000, 'g-', label='Wing Load Distribution (MTOW×nmax)', linewidth=2, alpha=0.6)
         ax1.plot(self.x_points, fuel_loads/1000, 'm-', label='Fuel Load Distribution', linewidth=2, alpha=0.6)
         ax1.plot(self.x_points, total_loads/1000, 'k-', label='Total Load Distribution', linewidth=3)        # Plot shear force in middle subplot
-        ax2.plot(self.x_points, shear/1000, 'b-', label='Shear Force', linewidth=2)  # Positive for clockwise rotation
-
-        # Plot moment diagram in bottom subplot
+        ax2.plot(self.x_points, shear/1000, 'b-', label='Shear Force', linewidth=2)  # Positive for clockwise rotation        # Plot moment diagram in bottom subplot
         ax3.plot(self.x_points, -moment/1000000, 'r-', label='Bending Moment', linewidth=2)  # Positive for upper fiber compression
+        
+        # Add vertical line at wing root to show where moment increases
+        wing_root_center = self.wing_x_LE + self.wing_root_chord/2
+        ax3.axvline(x=wing_root_center, color='green', linestyle='--', alpha=0.5,
+                   label=f'Wing Root (Added moment: {self.root_moment/1000000:.2f} MN·m)')
         
         # Add section lines and labels to all plots
         for i, (start, label, end) in enumerate(sections):
@@ -387,14 +436,9 @@ class CGCalculation:
         ax3.set_title("Bending Moment Diagram")
         ax3.grid(True, alpha=0.3, which='both')
         ax3.legend()
-        
-        # Print maximum values and their locations
+          # Maximum values calculations
         max_shear_idx = np.argmax(np.abs(shear))
         max_moment_idx = np.argmax(np.abs(moment))
-        print(f"\nMaximum absolute shear force: {abs(shear[max_shear_idx])/1000:.2f} kN")
-        print(f"Location of maximum shear: {self.x_points[max_shear_idx]:.2f} m")
-        print(f"Maximum absolute bending moment: {abs(moment[max_moment_idx])/1000000:.2f} MN·m")
-        print(f"Location of maximum moment: {self.x_points[max_moment_idx]:.2f} m")
 
         plt.tight_layout()
         plt.show()
@@ -409,10 +453,12 @@ def main():
     # Calculate and print CG positions
     mtow_cg = cg_calculator.calculate_cg(OEW=False)
     oew_cg = cg_calculator.calculate_cg(OEW=True)
-    print(f"Total CG position: {mtow_cg:.3f} m")
+    print(f"MTOW CG position: {mtow_cg:.3f} m")
     print(f"OEW CG position: {oew_cg:.3f} m")
-    cg_calculator.load_diagram()
-
+    
+    # Generate and plot the load diagram
+    cg_calculator.load_diagram(show_verification=False)
+    
     # Update JSON with CG positions
     cg_calculator.update_json()
 
