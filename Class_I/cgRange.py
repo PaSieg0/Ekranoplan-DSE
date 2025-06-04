@@ -93,9 +93,9 @@ class CGRange:
 
     def update_attributes(self):
         self.aircraft_data.data["outputs"]["cg_range"]["most_aft_cg"] = self.most_aft_cg
-        self.aircraft_data.data["outputs"]["cg_range"]["most_aft_mission"] = self.most_aft_mission
+        # self.aircraft_data.data["outputs"]["cg_range"]["most_aft_mission"] = self.most_aft_mission
         self.aircraft_data.data["outputs"]["cg_range"]["most_forward_cg"] = self.most_forward_cg
-        self.aircraft_data.data["outputs"]["cg_range"]["most_forward_mission"] = self.most_forward_mission
+        # self.aircraft_data.data["outputs"]["cg_range"]["most_forward_mission"] = self.most_forward_mission
 
 if __name__ == "__main__":
     fig, ax = plt.subplots()

@@ -1,0 +1,239 @@
+import sys
+import os
+import control as ctrl
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.append(project_root)
+
+from utils import Data
+import pandas as pd
+import numpy as np
+from enum import Enum, auto
+import matplotlib.pyplot as plt
+
+class EmpType(Enum):
+    CRUCIFORM = auto()
+    T_TAIL = auto()
+    CONVENTIONAL = auto()
+    H_TAIL = auto()
+    NONE = auto()
+
+class Take_off_mechanics:
+
+    def __init__(self, aircraft_data: Data):
+        self.design_number = aircraft_data.data['design_id']
+        self.design_file = f"design{self.design_number}.json"
+        self.aircraft_data = aircraft_data
+        self.tail_type = EmpType[aircraft_data.data['inputs']['tail_type']]
+        if self.tail_type == EmpType.NONE:
+            return
+
+        self.S = self.aircraft_data.data['outputs']['wing_design']['S']
+        self.hull_surface = self.aircraft_data.data['outputs']['general']['hull_surface']
+        self.MAC = self.aircraft_data.data['outputs']['wing_design']['MAC']
+
+        self.CLmax_takeoff = self.aircraft_data.data['inputs']['CLmax_takeoff']
+        self.CL_hydro = self.aircraft_data.data['inputs']['CL_hydro']
+        self.Cd = self.aircraft_data.data['outputs']['general']['Cd']
+        self.Cd_water = self.aircraft_data.data['outputs']['general']['Cd_water']
+
+        self.MTOW = self.aircraft_data.data['outputs']['design']['MTOW']
+
+        self.thrust = 0#110000*self.aircraft_data.data['inputs']['n_engines']
+
+        #hardcoded variables for now, change these later on to be self-iterating
+        self.rho_air = 1.225  # kg/m³ at sea level, 15°C
+        self.P0 = 101325  # Pa
+        self.Temp_air = 288.15  # K (15°C)
+        self.rho_water = 1025  # kg/m³ at sea level
+        self.g = 9.80665
+        self.AOA = np.deg2rad(5.0)
+        self.ThrustVectorAngle = np.deg2rad(3.0)  # im just capping everything here
+        self.HydroLiftAngle = 0.0
+        self.HydroDragAngle = 0.0
+
+        #hull shaped fuselage sizing
+        self.triangle_height = 3.0
+        self.width = 6.43
+        self.length = 39.0
+
+        self.I = np.array([
+            [1.20e9, 0.00e0,  0.00e0],   # Ixx, Ixy, Ixz
+            [0.00e0, 2.70e9, 0.00e0],   # Ixy, Iyy, Iyz
+            [0.00e0, 0.00e0, 3.00e9]    # Ixz, Iyz, Izz
+            ])
+
+    def submerged_volume(self, z):
+        #Piecewise volume as function of immersion depth h (m)
+        #Considering hull shape
+
+        h = -z
+        if h <= self.triangle_height:
+            return 0.5 * self.width * h * self.length
+        else:
+            triangle_vol = 0.5 * self.width * self.triangle_height * self.length
+            rect_vol = self.width * (h - self.triangle_height) * self.length
+            return triangle_vol + rect_vol
+        
+    def get_aero_lift(self,v):
+        L = 0.5 * self.CLmax_takeoff * self.rho_air * v**2 * self.S
+        return L
+    
+    #Todo: use correct C_D!
+    def get_aero_drag(self,v):
+        D = 0.5 * self.Cd * self.rho_air * v**2 * self.S
+        return D
+
+
+    def get_hydro_lift(self):
+        return 0
+
+
+    def get_hydro_drag(self):
+        return 0
+    
+    def get_bouyancy_force(self, z):
+        if z>3:
+            F = 0
+            return F
+        else: return self.MTOW
+
+
+    def TakeOffMotion(self):
+     # I = | Ixx  Ixy  Ixz |
+     #     | Ixy  Iyy  Iyz |   <-- symmetric matrix
+     #     | Ixz  Iyz  Izz |
+
+     #Todo: the inertial matrix will be computed later on and integrated into json
+     #for now I is value for a380 given by chatgpt, at line 59
+
+
+        I = self.I
+        Ixx = I[0, 0]
+        #Ixy = I[0, 1]
+        Ixz = I[0, 2]
+        Izx = Ixz
+        Iyy = I[1, 1]
+        #Iyz = I[1, 2]
+        Izz = I[2, 2]
+
+        g = self.g
+        m = self.MTOW/g
+        T = self.thrust    
+        Rw = 0 #overall water resistance
+        Lw = 0 #overall water lift
+        #F_bouy = self.MTOW
+
+        #initial conditions
+        u = 0
+        v = 0
+        w = 0
+        p = 0
+        q = 0
+        r = 0
+        theta = 0
+        x = 0
+        z = 0
+        velocity = 0
+
+        #External forces
+        F_Tx =  110000
+        F_Tz = 0
+        Ma = 200
+        Mw = 0
+        Mqw = 0
+        MT = 0
+        
+        #time
+        t = 0
+        dt = 0.1
+        t_max = 100
+
+        #plot history of states
+        v_list = []
+        x_list = []
+        z_list = []
+        theta_list = []
+        T = []
+
+        while t< t_max:
+            L = self.get_aero_lift(velocity)
+            D = self.get_aero_drag(velocity)
+            F_bouy = self.get_bouyancy_force(z)
+            #X = np.array([u, v, w, p, q, r, theta])
+            du = (r*v-q*w)-g*np.sin(theta)-D/m + F_bouy*np.sin(theta)/m - Rw/m + F_Tx/m
+            dw = (q*u-p*v)+g*np.cos(theta)-L/m + F_bouy*np.cos(theta)/m - Lw/m - F_Tz/m
+            dq = (Izz-Ixx)/Iyy*r*p + Izx/Iyy*(p**2-r**2) + Ma/Iyy + Mw/Iyy + Mqw/Iyy + MT/Iyy
+
+            u += du*dt 
+            w += dw*dt
+            velocity = np.sqrt(u**2+w**2)
+            x += u*dt
+            q += dq*dt
+
+            print(x)
+            z += w*dt
+            print(z)
+            theta += dq*dt
+            t+=dt
+
+            T.append(t)
+            v_list.append(velocity)
+            x_list.append(x)
+            z_list.append(z)
+            theta_list.append(theta)
+
+        return(T,v_list,x_list,z_list,theta_list)
+    
+
+    def run_simulation(self, plot=True):
+        time, V, X, Z, pitch_ang = self.TakeOffMotion()
+
+        if plot:
+            plt.figure(figsize=(12, 10))
+
+            plt.subplot(3, 2, 1)
+            plt.plot(time, pitch_ang, label="pitch_ang")
+            plt.ylabel("pitch_ang (m/s)")
+            plt.xlabel("Time (s)")
+            plt.grid(True)
+            plt.legend()
+
+            plt.subplot(3, 2, 2)
+            plt.plot(time, V, label="V")
+            plt.ylabel("V (m/s)")
+            plt.xlabel("Time (s)")
+            plt.grid(True)
+            plt.legend()
+
+            plt.subplot(3, 2, 3)
+            plt.plot(time, X, label="X position")
+            plt.ylabel("X (m)")
+            plt.xlabel("Time (s)")
+            plt.grid(True)
+            plt.legend()
+
+            plt.subplot(3, 2, 4)
+            plt.plot(time, Z, label="Z position")
+            plt.ylabel("Z (m)")
+            plt.xlabel("Time (s)")
+            plt.grid(True)
+            plt.legend()
+
+            plt.tight_layout()
+            plt.show()
+
+        return time, V, X, Z, pitch_ang
+
+if __name__ == "__main__":
+    data = Data("design3.json")
+    model = Take_off_mechanics(data)
+    time, V, X, Z, pitch_ang = model.run_simulation()        
+
+
+
+
+
+
+
+
+

@@ -33,12 +33,17 @@ class CGCalculation:
 
     def _init_aircraft_parameters(self):
         """Initialize aircraft parameters needed for CG calculation"""
-        self.x_LEMAC_wing = self.aircraft_data.data['outputs']['wing_design']['X_LE']
+        self.x_LEMAC_wing = self.aircraft_data.data['outputs']['wing_design']['X_LEMAC']
         self.MAC_wing = self.aircraft_data.data['outputs']['wing_design']['MAC']
         self.cargo_length = self.aircraft_data.data['outputs']['fuselage_dimensions']['cargo_length']
         self.cargo_width = self.aircraft_data.data['outputs']['fuselage_dimensions']['cargo_width']
         self.cargo_height = self.aircraft_data.data['outputs']['fuselage_dimensions']['cargo_height']
+        self.cargo_length = self.aircraft_data.data['outputs']['fuselage_dimensions']['cargo_length']
+        self.cargo_width = self.aircraft_data.data['outputs']['fuselage_dimensions']['cargo_width']
+        self.cargo_height = self.aircraft_data.data['outputs']['fuselage_dimensions']['cargo_height']
         self.cargo_density = self.aircraft_data.data['requirements']['cargo_density']
+        self.cargo_x_start = (self.aircraft_data.data['outputs']['fuselage_dimensions']['cargo_distance_from_nose'] + 
+                            self.aircraft_data.data['outputs']['fuselage_dimensions']['l_nose'])
         self.cargo_x_start = (self.aircraft_data.data['outputs']['fuselage_dimensions']['cargo_distance_from_nose'] + 
                             self.aircraft_data.data['outputs']['fuselage_dimensions']['l_nose'])
         self.fuel_mass = self.aircraft_data.data['outputs']['design']['max_fuel']
