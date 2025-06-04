@@ -2,6 +2,7 @@ import sys
 import os
 import numpy as np
 from scipy.optimize import fsolve
+from scipy.optimize import brentq
 
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.append(project_root)
@@ -36,10 +37,10 @@ class Buoy_sizing:
             return 2 * np.pi * r**2 * l
 
         
-    def get_submerged_height(self, l, d, Vw, vars=None, tol=1e-5, max_iter=100):
+    def get_submerged_height_bisection_method(self, l, d, Vw, vars=None, tol=1e-1, max_iter=1000):
         r = d / 2
         h_min = 0.0
-        h_max = l + 2*r  # max possible submersion is full sphere + cylinder
+        h_max = 2*r  # max possible submersion is full sphere + cylinder
         iter_count = 0
 
         def total_volume(h):
@@ -65,15 +66,95 @@ class Buoy_sizing:
             iter_count += 1
 
         h_result = (h_min + h_max) / 2
-        print("h:", h_result)
-        return h_result
+        V_final = self.submerged_cylinder_volume(l,h_result,r)+self.submerged_sphere_volume(h_result,r)
+        print("h:", h_result,V_final)
+        return h_result,V_final
+    
+    def solve_submersion_height(self, V, r, l):
+        def volume_difference(h):
+            h = float(h)  # Ensure h is scalar for fsolve
+
+            # Submerged volume of the spherical ends (combined into a full sphere)
+            if h <= r:
+                V_sphere = (np.pi * h**2 * (3*r - h)) / 3
+            elif h <= 2*r:
+                V_sphere = (4/3)*np.pi*r**3 - (np.pi * (2*r - h)**2 * (h - r)) / 3
+            else:
+                V_sphere = (4/3)*np.pi*r**3
+
+            # Submerged volume of the cylindrical part
+            if h <= r:
+                theta = np.arccos((r - h) / r)
+                A = 2 * theta * r**2 - 2 * (r - h) * np.sqrt(r**2 - (r - h)**2)
+                V_cyl = l * A
+            elif h <= 2*r:
+                theta = np.arccos((h - r) / r)
+                A = 2 * (np.pi - theta) * r**2 + 2 * (h - r) * np.sqrt(r**2 - (h - r)**2)
+                V_cyl = l * A
+            else:
+                V_cyl = 2 * np.pi * r**2 * l
+
+            print(V_sphere + V_cyl - V)
+            return V_sphere + V_cyl - V
+
+        # Initial guess: halfway submerged
+        h_initial_guess = r+0.1
+        h_solution = fsolve(volume_difference, h_initial_guess)
+        print(h_solution[0])
+        return float(h_solution[0])
+
+    def get_submerged_height_looped(self, l, d, Vw, step=0.005, tol=1e-1, max_iter=10000):
+        r = d / 2
+        h_max_total = 2*r  # full submersion
+        h_guess_start = 0.0
+
+        while h_guess_start < h_max_total:
+            h_min = h_guess_start
+            h_max = h_min+step
+            iter_count = 0
+
+            def total_volume(h):
+                h_cyl = min(max(h, 0), l)
+                h_sph = max(0.0, h - l)
+                V_cyl = self.submerged_cylinder_volume(l, h_cyl, r)
+                V_sph = self.submerged_sphere_volume(h_sph, r)
+                return V_cyl + V_sph
+
+            while (h_max - h_min) > tol and iter_count < max_iter:
+                h_mid = (h_min + h_max) / 2
+                V_mid = total_volume(h_mid)
+
+                if V_mid < Vw:
+                    h_min = h_mid
+                else:
+                    h_max = h_mid
+
+                iter_count += 1
+
+            h_result = (h_min + h_max) / 2
+            V_result = total_volume(h_result)
+            print(V_result)
+            print(h_result)
+
+            if abs(V_result - Vw) < tol:
+                return h_result, V_result
+
+            h_guess_start += step  # try next starting guess range
+
+        #raise ValueError("Failed to converge on a valid height for given volume.")
+
+    
+    
     
 if __name__ == "__main__":
     # Load the aircraft data
     aircraft = "design3.json"
     aircraft_data = Data(aircraft)
     buoy = Buoy_sizing(aircraft_data)
-    submerged_depth = buoy.get_submerged_height(6,4,100)
+    #submerged_depth = buoy.get_submerged_height_bisection_method(6,4,61)
+    #submerged_depth = buoy.solve_submersion_height(41,2,6)
+    submerged_depth = buoy.get_submerged_height_looped(6, 4, 50)
+    
     
     
         
