@@ -390,6 +390,11 @@ class CGCalculation:
         ax2.plot(self.x_points, self.shear/1000, 'b-', label='Shear Force', linewidth=2)  # Positive for clockwise rotation        # Plot moment diagram in bottom subplot
         ax3.plot(self.x_points, -self.moment/1000000, 'r-', label='Bending Moment', linewidth=2)  # Positive for upper fiber compression
         
+        # Add vertical line to bring moment to zero at the end
+        final_moment = -self.moment[-1]/1000000  # Get the final moment value
+        ax3.plot([self.l_fuselage, self.l_fuselage], [final_moment, 0], 'r--', linewidth=2, alpha=0.7,
+                label='End condition (M=0)')
+        
         # Add vertical line at wing root to show where moment increases
         wing_root_center = self.wing_x_LE + self.wing_root_chord/2
         ax3.axvline(x=wing_root_center, color='green', linestyle='--', alpha=0.5,
