@@ -365,19 +365,19 @@ class CGCalculation:
             start_idx = end_idx
         
         # Calculate shear force through integration
-        shear = np.zeros_like(self.x_points)
+        self.shear = np.zeros_like(self.x_points)
         for i in range(1, len(self.x_points)):
-            shear[i] = np.trapezoid(total_loads[:i], self.x_points[:i])
+            self.shear[i] = np.trapezoid(total_loads[:i], self.x_points[:i])
             
         # Calculate bending moment through integration of shear
-        moment = np.zeros_like(self.x_points)
+        self.moment = np.zeros_like(self.x_points)
         for i in range(1, len(self.x_points)):
-            moment[i] = np.trapezoid(-shear[:i], self.x_points[:i])  # Negative shear to match sign convention
+            self.moment[i] = np.trapezoid(-shear[:i], self.x_points[:i])  # Negative shear to match sign convention
         
         # Add wing root moment to all points after the wing root
         wing_root_center = self.wing_x_LE + self.wing_root_chord/2
         moment_mask = self.x_points >= wing_root_center
-        moment[moment_mask] += -2*self.root_moment
+        self.moment[moment_mask] += -2*self.root_moment
 
         # Create figure with three subplots
         fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(15, 15), height_ratios=[1, 1, 1])
@@ -387,8 +387,8 @@ class CGCalculation:
         ax1.plot(self.x_points, aerodynamic_loads/1000, 'g-', label='Wing Load Distribution (MTOW×nmax)', linewidth=2, alpha=0.6)
         ax1.plot(self.x_points, fuel_loads/1000, 'm-', label='Fuel Load Distribution', linewidth=2, alpha=0.6)
         ax1.plot(self.x_points, total_loads/1000, 'k-', label='Total Load Distribution', linewidth=3)# Plot shear force in middle subplot
-        ax2.plot(self.x_points, shear/1000, 'b-', label='Shear Force', linewidth=2)  # Positive for clockwise rotation        # Plot moment diagram in bottom subplot
-        ax3.plot(self.x_points, -moment/1000000, 'r-', label='Bending Moment', linewidth=2)  # Positive for upper fiber compression
+        ax2.plot(self.x_points, self.shear/1000, 'b-', label='Shear Force', linewidth=2)  # Positive for clockwise rotation        # Plot moment diagram in bottom subplot
+        ax3.plot(self.x_points, -selfmoment/1000000, 'r-', label='Bending Moment', linewidth=2)  # Positive for upper fiber compression
         
         # Add vertical line at wing root to show where moment increases
         wing_root_center = self.wing_x_LE + self.wing_root_chord/2
@@ -438,8 +438,8 @@ class CGCalculation:
         ax3.grid(True, alpha=0.3, which='both')
         ax3.legend()
           # Maximum values calculations
-        max_shear_idx = np.argmax(np.abs(shear))
-        max_moment_idx = np.argmax(np.abs(moment))
+        max_shear_idx = np.argmax(np.abs(self.shear))
+        max_moment_idx = np.argmax(np.abs(self.moment))
 
         plt.tight_layout()
         plt.show()
