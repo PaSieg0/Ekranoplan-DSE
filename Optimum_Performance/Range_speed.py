@@ -274,9 +274,8 @@ def check():
 
         # Compare results
         print("\n=== COMPARISON ===")
-        # Print results in a table with speed ranges
         print(f"{'Strategy':<18}{'Range (nmi)':>15}{'Time (hr)':>15}{'Speed range (m/s)':>22}")
-        print("-" * 70)
+        print("-" * 92)
         strategies = [
             ("Range speed", v_max_range, R_numerical_range, time_range),
             ("Endurance speed", v_max_endurance, R_numerical_endurance, time_endurance),
@@ -288,6 +287,7 @@ def check():
             analyzer.opt._current_weight = W5
             speed_W5 = v_func(analyzer.opt, altitude)
             speed_range = f"{min(speed_W4, speed_W5):.2f} - {max(speed_W4, speed_W5):.2f}"
+
             print(f"{name:<18}{rng/1852:>15.1f}{t/3600:>15.2f}{speed_range:>22}")
 
                 
