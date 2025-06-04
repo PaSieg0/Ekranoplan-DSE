@@ -213,7 +213,7 @@ if __name__ == "__main__":  #if run seperately
     ax=fig.subplots(2,2)
     cl_lst=curves.cl_lst
     cl_lst_GE = curves.Cl_correction_GE()
-    print(f'Cl_max: {max(cl_lst_GE)}')
+    print(f'Cl_max_GE: {max(cl_lst_GE)}')
     for i, cl in enumerate(cl_lst_GE):
         if cl == max(cl_lst_GE):
             print(f'alpha for Clmax: {alphalst[i]}')
@@ -221,29 +221,44 @@ if __name__ == "__main__":  #if run seperately
 
                     
 
-    #drag polar
+    # #drag polar
+    # ax[0][0].set_title('Drag polar')
+    # ax[0][0].plot(alphalst,ind_lst)
+    # ax[0][0].plot(alphalst,ind_lst2)
+    # ax[0][0].plot(alphalst, ind_lst3)
+    # ax[0][0].plot(alphalst, ind_lst4)
+
+    # drag polar
     ax[0][0].set_title('Drag polar')
-    ax[0][0].plot(alphalst,ind_lst)
-    ax[0][0].plot(alphalst,ind_lst2)
-    ax[0][0].plot(alphalst, ind_lst3)
-    ax[0][0].plot(alphalst, ind_lst4)
+    ax[0][0].plot(alphalst, ind_lst, label='h_b=0.050(old)') # Add a label
+    ax[0][0].plot(alphalst, ind_lst2, label='out GE(old)') # Add a label
+    ax[0][0].plot(alphalst, ind_lst3, label='h_b=0.050') # Add a label
+    ax[0][0].plot(alphalst, ind_lst4, label='out GE') # Add a label
+    ax[0][0].legend() # Call legend() to display the labels
 
     
     #lift curve
     ax[0][1].set_title('lift curve')
-    ax[0][1].plot(alphalst,cl_lst)
-    ax[0][1].plot(alphalst,cl_lst_GE)
+    ax[0][1].plot(alphalst,cl_lst, label='no GE')
+    ax[0][1].plot(alphalst,cl_lst_GE, label='GE')
+    ax[0][1].legend()
 
     #L/D
     L_D_lst=cl_lst/ind_lst
     ax[1][0].set_title('L/D')
     ax[1][0].set_ylim(0,70)
-    ax[1][0].plot(alphalst,L_D_lst)
+    ax[1][0].plot(alphalst,L_D_lst, label='old')
 
     #L/D WIG
     L_D_GE_lst=cl_lst_GE/ind_lst3
-    ax[1][0].set_ylim(0,70)
-    ax[1][0].plot(alphalst,L_D_GE_lst)
+    ax[1][0].plot(alphalst,L_D_GE_lst, label='new')
+    ax[1][0].legend()
+
+    print(f'L/D_max_GE: {max(L_D_GE_lst)}')
+    for i, cl in enumerate(L_D_GE_lst):
+        if cl == max(L_D_GE_lst):
+            print(f'alpha for max L/D: {alphalst[i]} degrees')
+            break
     
 
     #lift distribution
