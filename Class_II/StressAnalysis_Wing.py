@@ -173,7 +173,7 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
     def internal_bending_moment_x(self):
         load = self.internal_vertical_shear_force()
         M_flipped = np.cumsum(load[::-1] * self.dy[::-1])
-        self.M_internal = M_flipped[::-1]
+        self.M_internal = /'/;../M_flipped[::-1]
         return self.M_internal
     
     def internal_bending_moment_y(self):
