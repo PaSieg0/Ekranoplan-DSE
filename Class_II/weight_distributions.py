@@ -193,7 +193,7 @@ class CGCalculation:
         fuselage_distributed_tailcone = self.component_weights['fuselage'] * tail_share / self.l_tailcone
 
         # Calculate wing loads
-        wing_load = self.MTOW * self.nmax  # Convert MTOW to N and multiply by load factor
+        wing_load = -self.MTOW * self.nmax  # Convert MTOW to N and multiply by load factor
         wing_load_distributed = wing_load / self.wing_root_chord  # Distribute load over wing root chord length
 
         print(f"Wing_load/MTOW: {wing_load/self.MTOW} kN/m")
