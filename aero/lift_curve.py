@@ -1,13 +1,12 @@
 import numpy as np
 import matplotlib.pyplot as plt
-
-
+import sys
 
 
 class lift_curve():
     def __init__(self):
         #importing lift curve data which is generated from xfoil without WIG
-        self.data=np.loadtxt('aero\\lift curve WIG.txt')
+        self.data=np.loadtxt('aero\\lift curve no WIG.txt')
         #print(self.data)
 
         #angle of attack data
@@ -46,6 +45,15 @@ class lift_curve():
 
         #returns cl
         return cl
+    
+    def Cl_correction_GE(self,h_b=0.050, AR=8, taper = 0.4):
+        Cl_arr = self.cl_lst
+        delta_L = 1 - 2.25 * (taper**0.00273 - 0.997)*(AR*0.717 + 13.6)
+        Cl_arr_GE = (1 + delta_L * (288*(h_b)**0.787 * np.exp(-9.14*h_b**0.327))/(AR*0.882)) * Cl_arr
+        return Cl_arr_GE
+
+
+
     
     def interpolate_Cd(self, alpha):   #gets a cd for a given alpha and linearly interpolates
         #distance list in alpha
@@ -104,14 +112,37 @@ class lift_curve():
     def calc_drag(self,h_b='no',AR=8,e=0.85,alpha='n',cl='n',CD_0=0.0169):   #calculates the drag for only the wing using method from paper the values still need to be updated
         
         #correction factor
-        if h_b=='no':
-            sigma=np.exp(-2.48*(h_b)**(0.768))
-        else: 
+        if h_b =='no':
             sigma=0
+        else:
+            sigma=np.exp(-2.48*(h_b)**(0.768))
 
         # calculates cl for given alpha
         if cl=='n':
-            cl=self.interpolate(alpha)
+            cl=self.interpolate_Cl(alpha)
+
+        #calculates induced drag with correction
+        CD_i=cl**2/(np.pi*AR*e)*(1-sigma)
+
+        #adds up drag
+        CD=CD_0+CD_i
+
+        #returns drag coeff
+        return CD
+    
+    def calc_drag_butbetter(self,h_b='no',AR=8,e=0.85,alpha='n',cl='n',CD_0=0.0169):   #calculates the drag for only the wing using method from paper the values still need to be updated
+        
+        taper = 0.4
+        delta_D = 1 - 0.157 * (taper**0.775 - 0.373)*(AR**0.417)
+        #correction factor
+        if h_b=='no':
+            sigma = 0
+        else:
+            sigma=delta_D*np.exp(-4.74*(h_b)**0.814) - h_b**2*np.exp(-3.88*(h_b)**0.758)
+
+        # calculates cl for given alpha
+        if cl=='n':
+            cl=self.interpolate_Cl(alpha)
 
         #calculates induced drag with correction
         CD_i=cl**2/(np.pi*AR*e)*(1-sigma)
@@ -140,6 +171,10 @@ class lift_curve():
 
         #makes spanwise lift distr
         self.L_lst=0.5*rho*V**2*chord_lst*cl
+
+    def calc_moment_ac(self):
+        pass
+
     
 
 
@@ -160,29 +195,56 @@ if __name__ == "__main__":  #if run seperately
     #getting alpha data from instnace
     alphalst=curves.alpha
     ind_lst=[]
+    ind_lst2 = []
+    ind_lst3 = []
+    ind_lst4 = []
 
     #iteration over all alpha
     for i in range(len(alphalst)):
         #calculation of drag 
         ind_lst.append(curves.calc_drag(AR=8,e=0.85,h_b=0.050,alpha=alphalst[i]))
+        ind_lst2.append(curves.calc_drag(AR=8,e=0.85,h_b='no',alpha=alphalst[i]))
+
+        ind_lst3.append(curves.calc_drag_butbetter(AR=8,e=0.85,h_b=0.050,alpha=alphalst[i]))
+        ind_lst4.append(curves.calc_drag_butbetter(AR=8,e=0.85,h_b='no',alpha=alphalst[i]))
+
     
     fig=plt.figure()
     ax=fig.subplots(2,2)
     cl_lst=curves.cl_lst
+    cl_lst_GE = curves.Cl_correction_GE()
+    print(f'Cl_max: {max(cl_lst_GE)}')
+    for i, cl in enumerate(cl_lst_GE):
+        if cl == max(cl_lst_GE):
+            print(f'alpha for Clmax: {alphalst[i]}')
+            break
+
+                    
 
     #drag polar
     ax[0][0].set_title('Drag polar')
     ax[0][0].plot(alphalst,ind_lst)
+    ax[0][0].plot(alphalst,ind_lst2)
+    ax[0][0].plot(alphalst, ind_lst3)
+    ax[0][0].plot(alphalst, ind_lst4)
+
     
     #lift curve
     ax[0][1].set_title('lift curve')
     ax[0][1].plot(alphalst,cl_lst)
+    ax[0][1].plot(alphalst,cl_lst_GE)
 
     #L/D
     L_D_lst=cl_lst/ind_lst
     ax[1][0].set_title('L/D')
     ax[1][0].set_ylim(0,70)
     ax[1][0].plot(alphalst,L_D_lst)
+
+    #L/D WIG
+    L_D_GE_lst=cl_lst_GE/ind_lst3
+    ax[1][0].set_ylim(0,70)
+    ax[1][0].plot(alphalst,L_D_GE_lst)
+    
 
     #lift distribution
     #curves.lift_dist(alpha=2,V=90,ct=4.5,cr=11.5)
