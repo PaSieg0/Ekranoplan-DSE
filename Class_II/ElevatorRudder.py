@@ -15,7 +15,7 @@ class ElevatorRudder:
         self.design_number = aircraft_data.data['design_id']
         self.design_file = f"design{self.design_number}.json"
         self.aircraft_data = aircraft_data
-        self.engine_positions = [7, 12, 17] #TODO link to json
+        self.engine_positions = self.aircraft_data.data['outputs']['engine_positions']['y_engines']
 
         self.plot = plot
 

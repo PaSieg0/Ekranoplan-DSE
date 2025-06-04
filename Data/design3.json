@@ -53,8 +53,8 @@
             "flap_type": "DOUBLE_SLOT",
             "aileron_deflection": 25,
             "aileron_chord": 0.25,
-            "rudder_chord": 0.25,
-            "rudder_deflection": 30,
+            "rudder_chord": 0.38,
+            "rudder_deflection": 37,
             "rudder_start": 0.08,
             "elevator_start": 0.1,
             "elevator_chord": 0.35,
@@ -403,26 +403,26 @@
                 "aileron_lift": 317598.4578386115
             },
             "rudder": {
-                "end": 11.94969419603288,
-                "start": 1.0056941960340848,
-                "chord_ratio": 0.25,
-                "deflection": 30,
-                "area": 22.590587030491186,
-                "CN_OEI": 0.0024492795062871914,
-                "cndr": -0.004676964986710158,
-                "rudder_lift": -20757.457101787502,
-                "Sr": 90.36234812196474
+                "end": 9.93268059234261,
+                "start": 0.8286805923426022,
+                "chord_ratio": 0.38,
+                "deflection": 37,
+                "area": 23.440544350957367,
+                "CN_OEI": 0.0038670673397937145,
+                "cndr": -0.005987297502255649,
+                "rudder_lift": -22251.730230763245,
+                "Sr": 61.68564302883517
             },
             "elevator": {
-                "end": 11.247,
-                "area": 23.44312455909613,
-                "start": 0.8462631746323162,
+                "end": 7.4830000000000005,
+                "area": 13.13083114158412,
+                "start": 0.7149123779738104,
                 "chord_ratio": 0.35,
                 "deflection": 40,
                 "pitch_rate": 3.877120671370963,
-                "CMde": -0.06980444681348755,
-                "elevator_lift": -17947.236810705657,
-                "Se": 66.9803558831318
+                "CMde": -0.05841744957870493,
+                "elevator_lift": -10372.53183511474,
+                "Se": 37.51666040452606
             }
         },
         "HLD": {
