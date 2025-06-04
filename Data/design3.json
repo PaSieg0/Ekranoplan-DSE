@@ -301,7 +301,8 @@
             "l_forebody": 20.3,
             "cargo_door_height": 6.0,
             "cargo_door_width": 5.2,
-            "radius_of_curvature_door": 5
+            "radius_of_curvature_door": 5,
+            "l_fuselage": 55.605000000000004
         },
         "ferry": {
             "MTOW": 1049281.983533873,
@@ -584,8 +585,8 @@
             ]
         },
         "cg_positions": {
-            "OEW_CG": 26.03931399254156,
-            "MTOW_CG": 24.476057765121276
+            "OEW_CG": 29.723814644865524,
+            "MTOW_CG": 29.84974107250118
         }
     },
     "kinematic_viscosity": 1.006e-06,
