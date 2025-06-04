@@ -294,6 +294,10 @@ class FuselageThickness:
 
         print(self.shear_flow_dicts)
 
+    def calculate_minimum_thickness(self):
+        tau = self.sigma_y*0.577
+        self.t_fus_shear = self.tot_shear_flow / tau
+        print(f'Min thickness due to shear is: {self.t_fus_shear}')
 
 
     def main(self):
