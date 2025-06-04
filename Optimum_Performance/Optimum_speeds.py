@@ -92,8 +92,6 @@ if __name__ == "__main__":
 
     optimum_speeds._current_weight = 1839082
     v = optimum_speeds.v_range(h)
-    ld = optimum_speeds.L_over_D(h, v)
-    print(f"{v:.2f}\t\t{optimum_speeds._current_weight:.2f}\t\t{ld:.2f}")
 
     v_range = optimum_speeds.v_range(h)
     v_endurance = optimum_speeds.v_endurance(h)

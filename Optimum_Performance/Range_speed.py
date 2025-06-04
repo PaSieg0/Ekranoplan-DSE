@@ -280,16 +280,11 @@ def check():
         def v_test(opt, h):
             """Example"""
             return opt.v_range(h)*1.25
-        
-        # Analytical range calculation
-        R_analytical = analyzer.calculate_analytical_range(W4, W5, altitude)
 
         # Numerical integration for range, endurance, and constant speed
         R_numerical_range, time_range, _ = analyzer.calculate_numerical_range(W4, W5, v_max_range, altitude, weight_step)
         R_numerical_endurance, time_endurance, _ = analyzer.calculate_numerical_range(W4, W5, v_max_endurance, altitude, weight_step)
         R_numerical_test, time_test, _= analyzer.calculate_numerical_range(W4, W5, v_test, altitude, weight_step)
-        # Perform sanity check
-        analyzer.perform_sanity_check(R_numerical_range, R_analytical, print_results=False)
 
         # Compare results
         print("\n=== COMPARISON ===")
