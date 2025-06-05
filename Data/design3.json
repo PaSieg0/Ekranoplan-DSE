@@ -269,7 +269,8 @@
             "l_tailcone": 5.5,
             "l_afterbody": 14.805,
             "l_nose": 5.5,
-            "l_forebody": 13.12
+            "l_forebody": 13.12,
+            "total_volume": 1671.0
         },
         "ferry": {
             "MTOW": 887074.0994679945,
@@ -486,14 +487,14 @@
             ]
         },
         "aerodynamic_stability_coefficients_sym": {
-            "C_m_q": -51.18328807937694,
-            "C_z_alpha": -9.167,
-            "C_x_alpha": 0.1417803745156444,
-            "C_m_alpha": -1.4757013903334852,
-            "C_Z_u": -2,
-            "C_X_u": -0.051000000000000004,
+            "C_m_q": 0.8722565985616794,
+            "C_z_alpha": -1,
+            "C_x_alpha": 0.43212944557214633,
+            "C_m_alpha": -0.8074694530176071,
+            "C_Z_u": -1.0,
+            "C_X_u": -4.728016624907813,
             "C_m_u": 0,
-            "C_m_alphadot": -0.45515545092394544
+            "C_m_alphadot": -0.00606404439076621
         },
         "aerodynamic_stability_coefficients_asym": {
             "CyB": -0.027353530462980932,

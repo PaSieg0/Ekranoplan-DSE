@@ -20,7 +20,7 @@ class DerivativesDatcom_sym:
         self.Ah = aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['aspect_ratio']
         self.Sh = aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['S'] # Surface area of the horizontal tail: 100
         self.Sv = aircraft_data.data['outputs']['empennage_design']['vertical_tail']['S'] # Surface area of the vertical tail: 75
-        self.V_b = 1 # total body volume [m3]: 20000
+        self.V_b = aircraft_data.data['outputs']['fuselage_dimensions']['total_volume'] # total body volume [m3]: 20000
         self.b = aircraft_data.data['outputs']['design']['b']
         self.lp = 1 # 36.431
         self.Cl_alpha = 1 # Lift curve slope of the wing, in rad: 9.167
@@ -29,16 +29,17 @@ class DerivativesDatcom_sym:
         self.MAC = aircraft_data.data['outputs']['wing_design']['MAC']  # Mean Aerodynamic Chord: 8.456
         self.x_bar = 1 # x_ac - x_cg # Distance from the leading edge of the wing to the center of gravity: 31.5(from excel)
         self.Cd0 = aircraft_data.data['inputs']['Cd0'] # Zero-lift drag coefficient of the wing
-        self.c_h = 1
+        self.c_h = aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['MAC'] # Mean aerodynamic chord of the horizontal tail
         self.Cm_alpha = 1
-        self.x_h = aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['l_h']  # Distance from the leading edge of the wing to the horizontal tail
-        self.Cl_alpha_h = 1
+        self.x_h = aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['l_h']
+        self.Cl_alpha_h = 1 # Lift curve slope of the horizontal tail
         self.x_w = 1
         self.x_cg = 1
-        self.M = 1
-        self.theta_0 = 1
-        self.Cl_0 = 1
-        self.d_fusel = 1  # Diameter of the fuselage, assumed to be 0 for now
+        isa = ISA(self.aircraft_data.data['inputs']['cruise_altitude'])
+        self.M = isa.Mach(self.aircraft_data.data['requirements']['cruise_speed'])
+        self.theta_0 = 0
+        self.Cl_0 = 0
+        self.d_fusel = aircraft_data.data['outputs']['fuselage_dimensions']['d_fuselage_equivalent_station2']  # Diameter of the fuselage, assumed to be 0 for now
 
         self.Cl = 0.5
         self.alpha = np.deg2rad(2)  # Example angle of attack in radians
