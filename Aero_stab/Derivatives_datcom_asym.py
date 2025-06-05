@@ -63,7 +63,7 @@ class DerivativesDatcom_asym:
         return CyB_wing_body + CyB_tail, CyB_tail
     
     def ClB(self, Cl, alpha):
-        clB__cl_s = -0.002/5 # from plot->p1563
+        clB__cl_s = -0.002/5 # from plot-> p1563
         Km_s = 1.03 #from plot p1564
         kf = 0.95 # from plot p1625
         clB__Cl_A = 0 #from plot
