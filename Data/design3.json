@@ -46,6 +46,8 @@
         "w_fuselage": 7,
         "h_fuselage": 6,
         "t_fuselage": 3,
+        "alpha_cruise": 5.0,
+        "alpha_fuselage": 5.0,
         "control_surfaces": {
             "aileron_end": 0.985,
             "LE_flap_chord": 0.1,
@@ -388,7 +390,8 @@
                 "LE_pos": 65.19629899978452,
                 "relative_pos_mac/4": 0.9075319161148122,
                 "MAC": 6.960770065411358,
-                "sweep_c_4": 15
+                "sweep_c_4": 15,
+                "z_MAC_v": 0.5
             },
             "horizontal_tail": {
                 "S": 75.38002384552769,
