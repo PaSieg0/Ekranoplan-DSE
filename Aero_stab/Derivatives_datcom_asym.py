@@ -235,6 +235,11 @@ class DerivativesDatcom_asym:
         ClB_dot = self.CyBdot() * (zp * np.cos(np.radians(self.alpha_f)) - self.lp * np.sin(np.radians(np.radians(self.alpha_f)))) / self.b
         return ClB_dot
     
+    def CnBdot(self):
+        zp = 7
+        CnB_dot = -self.CyBdot() * (self.lp * np.cos(self.alpha_f) + zp * np.sin(self.alpha_f)) / self.b
+        return CnB_dot
+    
     def update_json(self):
         # Run the functions you want to store
         # Run the functions you want to store
@@ -251,6 +256,7 @@ class DerivativesDatcom_asym:
             'Cnr': derivatives.Cnr(),  # Example usage with Cl = 0.5, alpha = 5 degrees
             'CyBdot': derivatives.CyBdot(),  # Example usage with Cl = 0.5, alpha = 5 degrees
             'ClBdot': derivatives.ClBdot(),  # Example usage with Cl = 0.5, alpha = 5 degrees
+            'CnBdot': derivatives.CnBdot(),
             # Add more functions here if needed
         }
 
