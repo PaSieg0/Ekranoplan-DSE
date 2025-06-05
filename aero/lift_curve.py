@@ -180,50 +180,119 @@ class lift_curve():
         self.L_lst=0.5*rho*V**2*chord_lst*cl
 
 
-    def calc_moment_ac(self):
-        self.x__c=0.25
-        self.cmx__c=np.array([])
-        seg1=[-4.5,]
-        self.cmac_seg1=np.array([])
+    def calc_moment_ac(self,x__c=0.25): #calculates the cmac and xac
+        #general parameters
+        self.x__c=x__c
+        self.cmx__c=np.array([])   #cm at x__C
         self.xac=np.array([])
+
+
+        seg1=[-4.5,3]   #alpha
+        self.cmac_seg1=np.array([])
+        self.alpha_seg1=np.array([])
+        self.xac_seg1=np.array([])
+        
+        seg2=[6,11]  #alpha
         self.cmac_seg2=np.array([])
+        self.alpha_seg2=np.array([])
+        self.xac_seg2=np.array([])
 
         for i in range(len(self.cm_lst)):
-            # if self.cm_lst[i+1]==0 or self.cm_lst[i]==0:
-            #     pass
-            
+
+            #calculating cmx__c
             cmx__c=self.cl_lst[i]*(0.25-self.x__c)+self.cm_lst[i]
             self.cmx__c=np.append(self.cmx__c,cmx__c)
 
-            if i==len(self.cm_lst)-1:
+            
+
+            #calculates xac on a certain point
+            if i==len(self.cm_lst)-1: #if last angle of attack
                 xac=(0-self.cm_lst[i])/(0-self.cl_lst[i])+0.25
                 self.xac=np.append(xac,self.xac)
-                
-            else:
-                xac=(self.cm_lst[i+1]-self.cm_lst[i])/(self.cl_lst[i+1]-self.cl_lst[i])+0.25
+
+            
+            else:  #if normal
+                if (self.cl_lst[i+1]-self.cl_lst[i])!=0:
+                    xac=(self.cm_lst[i+1]-self.cm_lst[i])/(self.cl_lst[i+1]-self.cl_lst[i])+0.25
+                else: #replace by 1/4
+                    xac=0.25
                 self.xac=np.append(self.xac,xac)
 
+
+            #extracts xacs for segments
+            if self.alpha[i]>=seg1[0] and self.alpha[i]<=seg1[1]:
+                self.xac_seg1=np.append(self.xac_seg1,xac)
+
+            if self.alpha[i]>=seg2[0] and self.alpha[i]<=seg2[1]:
+                self.xac_seg2=np.append(self.xac_seg2,xac)
+
+        #calculates xac for certain segment
+        self.xac_segm1=np.mean(self.xac_seg1)
+        self.xac_segm2=np.mean(self.xac_seg2)
+
+
+        #calc cmac for segments
         for i in range(len(self.cm_lst)):
-            if self.alpha[i]<=3 and self.alpha[i]>=-5:
-                
-                self.cmac_seg1.append(cm)
+            if self.alpha[i]<=seg1[1] and self.alpha[i]>=seg1[0]:
+                cmac=self.cl_lst[i]*(0.25-self.xac_segm1)+self.cm_lst[i]
+                self.cmac_seg1=np.append(self.cmac_seg1,cmac)
+                self.alpha_seg1=np.append(self.alpha_seg1,self.alpha[i])
+
+            if self.alpha[i]<=seg2[1] and self.alpha[i]>=seg2[0]:
+                cmac=self.cl_lst[i]*(0.25-self.xac_segm2)+self.cm_lst[i]
+                self.cmac_seg2=np.append(self.cmac_seg2,cmac)
+                self.alpha_seg2=np.append(self.alpha_seg2,self.alpha[i])
         
+        self.cmac_segm1=np.mean(self.cmac_seg1)
+        self.cmac_segm2=np.mean(self.cmac_seg2)
 
+
+
+        #print
+        print('--------cmac-------')
+        print(f'cmac for {seg1[0]} < α < {seg1[1]} = {round(self.cmac_segm1,4)} and xac = {round(self.xac_segm1,3)}.')
+        print(f'cmac for {seg2[0]} < α < {seg2[1]} = {round(self.cmac_segm2,4)} and xac = {round(self.xac_segm2,3)}.')
+        print('\t')
     
 
-    def plot_moment_ac(self):
+    def plot_moment_ac(self): #plots xac and mx/c
+
+        #calc cmac and xac
         self.calc_moment_ac()
-        fig=plt.figure()
-        ax=fig.subplots(2)
-        ax[0].plot(self.alpha,self.cmx__c)
-        ax[0].set_ylabel('cmac_x__c')
-        ax[1].plot(self.alpha,self.xac)
-        ax[1].set_ylim(-1,1)#,'x_ac')
-        ax[1].set_ylabel('x_ac')
-        ax[1].set_xlabel('alpha')
-    
-        plt.show()
 
+        fig=plt.figure()
+        ax=fig.subplots(2,2)
+
+        #cmx__c plot
+        ax[0][0].plot(self.alpha,self.cmx__c)
+        ax[0][0].set_title('cm at arbitrary x/c for multiple alpha')
+        ax[0][0].set_ylim(0,-0.1)
+        ax[0][0].set_ylabel('cmac_x__c')
+
+        #x_ac plot
+        ax[0][1].plot(self.alpha,self.xac)
+        ax[0][1].set_title('Position of the aerodynamic centre at every angle of attack')
+        ax[0][1].set_ylim(-1,1)
+        ax[0][1].set_ylabel('x_ac')
+
+        #cmac1
+        ax[1][0].plot(self.alpha_seg1,self.cmac_seg1)
+        ax[1][0].set_title('cm at first range angle of attack')
+        ax[1][0].set_ylim(-0.08,-0.1)
+        ax[1][0].set_xlim(-7,22)
+        ax[1][0].set_ylabel('cm')
+        ax[1][0].set_xlabel('alpha')
+
+        #cmac2
+        ax[1][1].plot(self.alpha_seg2,self.cmac_seg2)
+        ax[1][1].set_ylim(-0.24,-0.26)
+        ax[1][1].set_xlim(-7,22)
+        ax[1][1].set_title('cm at second range angle of attack')
+        ax[1][1].set_ylabel('cm')
+        ax[1][1].set_xlabel('alpha')
+
+        
+        plt.show()
             
     def dcl_dalpha(self):
     # Convert alpha to numpy array if it's not already
@@ -233,7 +302,7 @@ class lift_curve():
         # Find index where alpha is closest to 5
         
         idx = 7   #np.argmin(np.abs(alpha_arr - 3))
-        print(alpha_arr[idx])
+        # print(alpha_arr[idx])
         
         # Slice arrays up to and including that index
         alpha_fit = alpha_arr[:idx+1]
@@ -242,22 +311,98 @@ class lift_curve():
         # Perform linear fit
         slope, intercept = np.polyfit(alpha_fit, cl_fit, 1)
 
-        # Plot original data and linear fit
-        # plt.plot(alpha_arr, cl_arr, label='Lift Curve')
-        # plt.plot(alpha_fit, slope * alpha_fit + intercept, label='Linear Fit', linestyle='--')
-        # plt.xlabel("Angle of Attack (alpha)")
-        # plt.ylabel("Lift Coefficient (Cl)")
-        # plt.legend()
-        # plt.grid(True)
-        # plt.tight_layout()
-        # plt.show()
-
         return slope, intercept
+    
+
+    def make_plot_data(self):
+        #drag polar
+        self.ind_lst=[]
+        self.ind_lst2 = []
+        self.ind_lst3 = []
+        self.ind_lst4 = []
+
+        #iteration over all alpha
+        for i in range(len(self.alpha)):
+            #calculation of drag 
+            self.ind_lst.append(self.calc_drag(AR=8,e=0.85,h_b=0.050,alpha=self.alpha[i]))
+            self.ind_lst2.append(self.calc_drag(AR=8,e=0.85,h_b='no',alpha=self.alpha[i]))
+
+            self.ind_lst3.append(self.calc_drag_butbetter(AR=8,e=0.85,h_b=0.050,alpha=self.alpha[i]))
+            self.ind_lst4.append(self.calc_drag_butbetter(AR=8,e=0.85,h_b='no',alpha=self.alpha[i]))
+        
+
+        #cl curve
+        par0,par1=self.dcl_dalpha()
+        self.cl_fit_no_WIG=par0*self.alpha+par1
+        self.cl_lst_GE = self.Cl_correction_GE()
+
+        #L/D
+        self.L_D_lst=self.cl_lst/self.ind_lst
+        self.L_D_GE_lst=self.cl_lst_GE/self.ind_lst3
+
+        #spanwise distr
+        CL = 1.8
+        self.span = np.arange(-35, 35, 0.01)
+        self.Cl_array_span = CL * np.ones(np.shape(self.span))
 
 
+    def plotting(self):
+        self.make_plot_data()
+
+        fig=plt.figure()
+        ax=fig.subplots(2,2)
+
+        # drag polar
+        ax[0][0].set_title('Drag polar')
+        ax[0][0].plot(self.alpha, self.ind_lst, label='h_b=0.050(old)') # Add a label
+        ax[0][0].plot(self.alpha, self.ind_lst2, label='out GE(old)') # Add a label
+        ax[0][0].plot(self.alpha, self.ind_lst3, label='h_b=0.050') # Add a label
+        ax[0][0].plot(self.alpha, self.ind_lst4, label='out GE') # Add a label
+        ax[0][0].legend() # Call legend() to display the labels
 
 
-            
+        #lift curve
+        ax[0][1].set_title('lift curve')
+        ax[0][1].plot(self.alpha,self.cl_lst, label='no GE')
+        ax[0][1].plot(self.alpha,self.cl_lst_GE, label='GE')
+        ax[0][1].plot(self.alpha,self.cl_fit_no_WIG, '--r', label='no GE fit')
+        ax[0][1].legend()
+
+        #L/D
+        ax[1][0].set_title('L/D')
+        ax[1][0].set_ylim(0,70)
+        ax[1][0].plot(self.alpha,self.L_D_lst, label='old')
+
+        #L/D WIG
+        ax[1][0].plot(self.alpha,self.L_D_GE_lst, label='new')
+        ax[1][0].legend()
+
+
+        #Spanwise distribution
+        ax[1][1].set_title('lift spanwise')
+        ax[1][1].plot(self.span, self.Cl_array_span)
+        ax[1][1].set_ylim(0,2)
+        ax[1][1].set_xlim(-40,40)
+        ax[1][1].vlines([min(self.span),max(self.span)],0,self.Cl_array_span[0])
+
+        plt.show()
+
+    def printing(self):
+        print('---------clmax----------')
+        print(f'Cl_max_GE: {round(max(self.cl_lst_GE),3)}')
+        for i, cl in enumerate(self.cl_lst_GE):
+            if cl == max(self.cl_lst_GE):
+                print(f'alpha for Clmax: {self.alpha[i]}')
+                break
+        print('\t')
+
+        print('--------L/D---------')
+        print(f'L/D_max_GE: {round(max(self.L_D_GE_lst),1)}')
+        for i, cl in enumerate(self.L_D_GE_lst):
+            if cl == max(self.L_D_GE_lst):
+                print(f'alpha for max L/D: {self.alpha[i]} degrees')
+                break
+        print('\t')
 
 
 
@@ -267,95 +412,8 @@ if __name__ == "__main__":  #if run seperately
     #defines instance
     curves=lift_curve()
     curves.plot_moment_ac()
-
-    par0,par1=curves.dcl_dalpha()
-    #curves.interpolate(-4.2)
-    cl_fit_no_WIG=par0*curves.alpha+par1
-    #getting alpha data from instnace
-    alphalst=curves.alpha
-    ind_lst=[]
-    ind_lst2 = []
-    ind_lst3 = []
-    ind_lst4 = []
-
-    #iteration over all alpha
-    for i in range(len(alphalst)):
-        #calculation of drag 
-        ind_lst.append(curves.calc_drag(AR=8,e=0.85,h_b=0.050,alpha=alphalst[i]))
-        ind_lst2.append(curves.calc_drag(AR=8,e=0.85,h_b='no',alpha=alphalst[i]))
-
-        ind_lst3.append(curves.calc_drag_butbetter(AR=8,e=0.85,h_b=0.050,alpha=alphalst[i]))
-        ind_lst4.append(curves.calc_drag_butbetter(AR=8,e=0.85,h_b='no',alpha=alphalst[i]))
+    curves.plotting()
+    curves.printing()
 
     
-    fig=plt.figure()
-    ax=fig.subplots(2,2)
-    cl_lst=curves.cl_lst
-    cl_lst_GE = curves.Cl_correction_GE()
-    print(f'Cl_max_GE: {max(cl_lst_GE)}')
-    for i, cl in enumerate(cl_lst_GE):
-        if cl == max(cl_lst_GE):
-            print(f'alpha for Clmax: {alphalst[i]}')
-            break
-
-                    
-
-    # #drag polar
-    # ax[0][0].set_title('Drag polar')
-    # ax[0][0].plot(alphalst,ind_lst)
-    # ax[0][0].plot(alphalst,ind_lst2)
-    # ax[0][0].plot(alphalst, ind_lst3)
-    # ax[0][0].plot(alphalst, ind_lst4)
-
-    # drag polar
-    ax[0][0].set_title('Drag polar')
-    ax[0][0].plot(alphalst, ind_lst, label='h_b=0.050(old)') # Add a label
-    ax[0][0].plot(alphalst, ind_lst2, label='out GE(old)') # Add a label
-    ax[0][0].plot(alphalst, ind_lst3, label='h_b=0.050') # Add a label
-    ax[0][0].plot(alphalst, ind_lst4, label='out GE') # Add a label
-    ax[0][0].legend() # Call legend() to display the labels
-
-    
-    #lift curve
-    ax[0][1].set_title('lift curve')
-    ax[0][1].plot(alphalst,cl_lst, label='no GE')
-    ax[0][1].plot(alphalst,cl_lst_GE, label='GE')
-    ax[0][1].plot(alphalst,cl_fit_no_WIG, '--r', label='no GE fit')
-    ax[0][1].legend()
-
-    #L/D
-    L_D_lst=cl_lst/ind_lst
-    ax[1][0].set_title('L/D')
-    ax[1][0].set_ylim(0,70)
-    ax[1][0].plot(alphalst,L_D_lst, label='old')
-
-    #L/D WIG
-    L_D_GE_lst=cl_lst_GE/ind_lst3
-    ax[1][0].plot(alphalst,L_D_GE_lst, label='new')
-    ax[1][0].legend()
-
-    print(f'L/D_max_GE: {max(L_D_GE_lst)}')
-    for i, cl in enumerate(L_D_GE_lst):
-        if cl == max(L_D_GE_lst):
-            print(f'alpha for max L/D: {alphalst[i]} degrees')
-            break
-
-    #Spanwise distribution
-    CL = 1.8
-    span = np.arange(-35, 35, 0.01)
-    Cl_array_span = CL * np.ones(np.shape(span))
-    ax[0][1].set_title('lift spanwise')
-    ax[1][1].plot(span, Cl_array_span)
-
-
-    
-
-    #lift distribution
-    #curves.lift_dist(alpha=2,V=90,ct=4.5,cr=11.5)
-    #ax[1][1].set_title('spanwise lift distr')
-    #ax[1][1].plot(curves.ylst,curves.L_lst)
-    #ax[1][1].set_ylim(0,100000)
-
-    #show
-    plt.show()
     
