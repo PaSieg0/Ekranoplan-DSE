@@ -296,7 +296,7 @@ class CGCalculation:
             plt.subplots_adjust(bottom=0.05)
             plt.subplots_adjust(top=0.95)
             plt.show()
-        return   
+        return load_max, shear_max, 
 
 def main():
     data = Data("design3.json")
