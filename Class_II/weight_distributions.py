@@ -320,7 +320,7 @@ class CGCalculation:
             start_idx = end_idx
         
         total_weight_calculated = sum(section_weights)
-        total_cargo_weight = np.trapezoid(cargo_loads, self.x_points)
+        total_cargo_weight = np.trapz(cargo_loads, self.x_points)
         
         if show_verification:
             print(f"\nLoad Distribution Weight Verification:")
@@ -333,7 +333,7 @@ class CGCalculation:
             print(f"Integrated cargo weight: {total_cargo_weight/1000:.2f} kN")
 
             # Add wing load verification``
-            total_wing_load = np.trapezoid(aerodynamic_loads, self.x_points)
+            total_wing_load = np.trapz(aerodynamic_loads, self.x_points)
             print(f"\nWing Load Verification:")
             print(f"Calculated wing load (MTOW×nmax): {wing_load/1000:.2f} kN")
             print(f"Integrated wing load: {total_wing_load/1000:.2f} kN")
@@ -364,18 +364,19 @@ class CGCalculation:
         # Calculate shear force through integration
         self.shear = np.zeros_like(self.x_points)
         for i in range(1, len(self.x_points)):
-            self.shear[i] = np.trapezoid(total_loads[:i], self.x_points[:i])
+            self.shear[i] = np.trapz(total_loads[:i], self.x_points[:i])
             
         # Calculate bending moment through integration of shear
         self.moment = np.zeros_like(self.x_points)
         for i in range(1, len(self.x_points)):
-            self.moment[i] = np.trapezoid(-self.shear[:i], self.x_points[:i])  # Negative shear to match sign convention
+            self.moment[i] = np.trapz(-self.shear[:i], self.x_points[:i])  # Negative shear to match sign convention
         
         # Add wing root moment to all points after the wing root
         wing_root_center = self.wing_x_LE + self.wing_root_chord/2
         moment_mask = self.x_points >= wing_root_center
         self.moment[moment_mask] += -2*self.root_moment
-
+    	
+        self.moment *= -1
         # Create figure with three subplots
         fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(15, 15), height_ratios=[1, 1, 1])
           # Plot load distribution in top subplot
@@ -385,7 +386,7 @@ class CGCalculation:
         ax1.plot(self.x_points, fuel_loads/1000, 'm-', label='Fuel Load Distribution', linewidth=2, alpha=0.6)
         ax1.plot(self.x_points, total_loads/1000, 'k-', label='Total Load Distribution', linewidth=3)# Plot shear force in middle subplot
         ax2.plot(self.x_points, self.shear/1000, 'b-', label='Shear Force', linewidth=2)  # Positive for clockwise rotation        # Plot moment diagram in bottom subplot
-        ax3.plot(self.x_points, -self.moment/1000000, 'r-', label='Bending Moment', linewidth=2)  # Positive for upper fiber compression
+        ax3.plot(self.x_points, self.moment/1000000, 'r-', label='Bending Moment', linewidth=2)  # Positive for upper fiber compression
         
         # Add vertical line to bring moment to zero at the end
         final_moment = -self.moment[-1]/1000000  # Get the final moment value
