@@ -205,8 +205,8 @@ class lift_curve():
 
         for i in range(len(self.cm_lst)):
             if self.alpha[i]<=3 and self.alpha[i]>=-5:
-                
-                self.cmac_seg1.append(cm)
+                pass
+                # self.cmac_seg1.append(cm), commented as cm does not exist
         
 
     
@@ -233,7 +233,7 @@ class lift_curve():
         # Find index where alpha is closest to 5
         
         idx = 7   #np.argmin(np.abs(alpha_arr - 3))
-        print(alpha_arr[idx])
+        # print(alpha_arr[idx])
         
         # Slice arrays up to and including that index
         alpha_fit = alpha_arr[:idx+1]
