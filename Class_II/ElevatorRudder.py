@@ -29,7 +29,7 @@ class ElevatorRudder:
         self.rudder_deflection = self.aircraft_data.data['inputs']['control_surfaces']['rudder_deflection']
         self.elevator_deflection = self.aircraft_data.data['inputs']['control_surfaces']['elevator_deflection']
 
-        self.engine_power = self.aircraft_data.data['inputs']['engine_power']
+        self.engine_power = self.aircraft_data.data['inputs']['engine']['engine_power']
         self.prop_efficiency = self.aircraft_data.data['inputs']['prop_efficiency']
         self.V = self.aircraft_data.data['requirements']['cruise_speed']
         self.S = self.aircraft_data.data['outputs']['wing_design']['S']
@@ -116,7 +116,7 @@ class ElevatorRudder:
 
     def calculate_pitch_rate(self):
 
-        pitch_rate = (self.nmax-1)*9.81/self.V*0.5
+        pitch_rate = (self.nmax-1)*9.81/self.V*0.9
         return pitch_rate
     
     def calculate_Cmde_Cmq(self,b):
@@ -153,6 +153,9 @@ class ElevatorRudder:
 
         elevator_effectiveness = self.control_surface_effectiveness(self.elevator_chord_ratio)
         self.CMde = -self.airfoil_cl_alpha * elevator_effectiveness * self.l_h/(self.S * self.MAC)*self.Se
+
+        Cmq = -2*self.Sh*self.l_h**2/self.S/self.MAC * self.tail_lift_slope
+        print(f'cmq: {Cmq}')
 
         N = self.CMde * np.deg2rad(self.elevator_deflection) * 0.5 * self.rho_high * self.V**2 * self.S * self.MAC/self.l_h
         return N

@@ -46,6 +46,10 @@ class FuselageThickness:
         self.sigma_y = self.material['sigma_y']
         self.poisson_ratio = self.material['poisson_ratio']
 
+        self.C = self.aircraft_data.data['inputs']['structures']['fuselage']['C_fus']
+
+        self.shear_yield = self.sigma_y * 0.577
+
         self.rho_fuselage = self.material['rho']
 
         self.fuselage_width = np.array([self.aircraft_data.data['outputs']['fuselage_dimensions']['w_fuselage'], self.aircraft_data.data['outputs']['fuselage_dimensions']['w_fuselage'], self.aircraft_data.data['outputs']['fuselage_dimensions']['w_fuselage']])
@@ -56,262 +60,350 @@ class FuselageThickness:
         self.chord_root = self.aircraft_data.data['outputs']['wing_design']['chord_root']
         self.lift_acting_point = self.wing_LE_pos + 1/4* self.chord_root
 
-        self.t_fuselage = self.aircraft_data.data['inputs']['t_fuselage']/1000
+        self.t_fuselage = self.aircraft_data.data['inputs']['structures']['fuselage']['t_fuselage']/1000
 
         self.b_array = np.arange(0, self.b/2 + 0.01, 0.01)
 
         aerodynamics = Data("AeroForces.txt", "aerodynamics")
         self.aeroforces = AerodynamicForces(self.aircraft_data, aerodynamics)
-        fuselage_mass = CGCalculation(self.aircraft_data)
-        fuselage_mass.load_diagram()
-        self.distributed_weight = fuselage_mass.loads
-        self.x_points = fuselage_mass.x_points
+        self.fuselage_mass = CGCalculation(self.aircraft_data)
+        self.fuselage_mass.load_diagram()
+        self.distributed_weight = self.fuselage_mass.loads
+        self.x_points = self.fuselage_mass.x_points
+
+        self.V_internal = self.fuselage_mass.shear
+
+        self.M_internal = self.fuselage_mass.moment
+
         self.dx = np.gradient(self.x_points)
         self.h_tail_pos = self.x_points[-1]
-        self.a_dim = 0.5 / np.tan(np.radians(65))
-        self.s_dim = 0.5 / np.sin(np.radians(65))
+        self.a_dim = 0.5 / np.tan(np.radians(65))*self.fuselage_width
+        self.s_dim = 0.5 / np.sin(np.radians(65))*self.fuselage_width
         self.o_dim = self.s_dim/2 * np.sin(np.radians(25))
 
+        self.station1_threshold = self.aircraft_data.data['outputs']['fuselage_dimensions']['l_nose']
+        self.station2_threshold = self.aircraft_data.data['outputs']['fuselage_dimensions']['l_nose'] + self.aircraft_data.data['outputs']['fuselage_dimensions']['l_forebody']
+        self.station3_threshold = self.aircraft_data.data['outputs']['fuselage_dimensions']['l_nose'] + self.aircraft_data.data['outputs']['fuselage_dimensions']['l_forebody'] + self.aircraft_data.data['outputs']['fuselage_dimensions']['l_afterbody']
+
+        self.thresholds = [
+            self.station1_threshold,
+            self.station2_threshold,
+            self.station3_threshold]  
+        
+    def get_boom_areas(self):    
+        self.B1 = self.aircraft_data.data['inputs']['structures']['fuselage']['B1']/1e6
+        self.B2 = self.aircraft_data.data['inputs']['structures']['fuselage']['B2']/1e6
+        self.B3 = self.aircraft_data.data['inputs']['structures']['fuselage']['B3']/1e6
+        self.B4 = self.aircraft_data.data['inputs']['structures']['fuselage']['B4']/1e6
+        self.B5 = self.aircraft_data.data['inputs']['structures']['fuselage']['B5']/1e6
 
 
     def calculate_fuselage_centroid(self):
+        self.boom_coords = {
+            "B1": {'coords': (0.5*self.fuselage_width, self.a_dim + self.fuselage_ratio * self.fuselage_width), 'area': self.B1},
+            "B2": {'coords': (-0.5*self.fuselage_width, self.a_dim + self.fuselage_ratio * self.fuselage_width), 'area': self.B2},
+            "B3": {'coords': (0.5*self.fuselage_width, self.a_dim), 'area': self.B3},
+            "B4": {'coords': (-0.5*self.fuselage_width, self.a_dim), 'area': self.B4},
+            "B5": {'coords': (0.0, 0.0), 'area': self.B5}
+        }
 
+        area_distance = sum([i['coords'][1]* i['area'] for i in self.boom_coords.values()])
+        area = sum([i['area'] for i in self.boom_coords.values()])
+        self.z_bar = area_distance / area
+        self.y_bar = 0.0 
 
-        #Unit is meters
-        self.z_bar_fuselage = (2*(self.fuselage_ratio*((self.a_dim + 0.4)*self.fuselage_width)) + 2*(self.s_dim * (self.o_dim * self.fuselage_width)) + ((self.a_dim + self.fuselage_ratio) * self.fuselage_width)) / (2*self.s_dim + 2*self.fuselage_ratio + 1)
+        self.z_coords = [
+            self.boom_coords['B1']['coords'][1] - self.z_bar,
+            self.boom_coords['B2']['coords'][1] - self.z_bar,
+            self.boom_coords['B3']['coords'][1] - self.z_bar,
+            self.boom_coords['B4']['coords'][1] - self.z_bar,
+            self.boom_coords['B5']['coords'][1] - self.z_bar
+        ]
+
+        self.y_coords = [
+            self.boom_coords['B1']['coords'][0] - self.y_bar,
+            self.boom_coords['B2']['coords'][0] - self.y_bar,
+            self.boom_coords['B3']['coords'][0] - self.y_bar,
+            self.boom_coords['B4']['coords'][0] - self.y_bar,
+            self.boom_coords['B5']['coords'][0] - self.y_bar
+        ]
+
+        self.calculate_MOI()
+
+    def calculate_MOI(self):
         
-        self.x_bar_fuselage = (self.s_dim * 0.25 * self.fuselage_width + (self.s_dim * 0.75 * self.fuselage_width) + (0.5*self.fuselage_width) + (self.fuselage_ratio*self.fuselage_width)) / (2*self.s_dim + 2*self.fuselage_ratio + 1)
+        self.I_yy_all = []
+        self.I_zz_all = []
+        count = 0
+        for i in self.boom_coords:
+            area = self.boom_coords[i]['area']
+            z_coord = self.z_coords[count]
+            y_coord = self.y_coords[count]
+            I_yy = area * z_coord**2
+            I_zz = area * y_coord**2
+            self.I_yy_all.append(I_yy)
+            if isinstance(I_zz, float):
+                I_zz = np.zeros_like(self.z_coords[count])
+            self.I_zz_all.append(I_zz)
+            count += 1
 
-        return self.x_bar_fuselage, self.z_bar_fuselage
-        
+        self.I_yy_all = np.array(self.I_yy_all)
+        self.I_zz_all = np.array(self.I_zz_all)
+        self.I_yy_all = np.array([sum(self.I_yy_all[:,i]) for i in range(len(self.thresholds))])
+        self.I_zz_all = np.array([sum(self.I_zz_all[:,i]) for i in range(len(self.thresholds))])
+
+    def calculate_base_shearflows(self, V_z=10e6, V_y=0):
+        count = 0
+        self.delta_qs = []
+        for i in self.boom_coords:
+            B = self.boom_coords[i]['area']
+
+            qb = -V_z/self.I_yy_all*B*self.z_coords[count] - V_y/self.I_zz_all*B*self.y_coords[count]
+            self.delta_qs.append(qb)
+            count += 1
+
+        self.delta_qs = np.array(self.delta_qs)
+        self.base_shear_flows = {}
+        for i in range(self.delta_qs.shape[1]):
+            column = self.delta_qs[:, i]
+
+            dq1, dq2, dq3, dq4, dq5 = column
+
+            q21 = 0
+            q13 = dq1
+            q35 = q13 + dq3
+            q54 = q35 + dq5
+            q42 = q54 + dq4
+
+            self.base_shear_flows[f'Station_{i}'] = {
+                "q21": q21,
+                "q13": q13,
+                "q35": q35,
+                "q54": q54,
+                "q42": q42
+            }
+
+        return self.base_shear_flows
     
-    def calculate_fuselage_moi(self):
-        # Thin walled assumption used for fuselage
-        # All moments of inertia are calculated about the centroid of the fuselage
-        # All moments of inertia still have to be multiplied by the thickness of the skin
-        # Unit is m^4 --> means that t_skin must also be in METERS!
 
-        self.I_xy_fuselage = 0 # * t_fuselage
-
-        self.I_yy_fuselage = self.fuselage_width*(((self.fuselage_ratio + self.a_dim)*self.fuselage_width - self.z_bar_fuselage)**2) + 2*(((self.fuselage_ratio*self.fuselage_width)**3)/12 + self.fuselage_ratio*self.fuselage_width*((self.a_dim + self.fuselage_ratio/2)*self.fuselage_width - self.z_bar_fuselage)**2) + 2*(((self.s_dim**3 * (np.sin(np.radians(25)))**2)/12) + self.s_dim*(self.o_dim -self.z_bar_fuselage)**2) # * t_fuselage
-
-        self.I_zz_fuselage = (self.fuselage_width**3) / 12 + 2*(self.fuselage_ratio*self.fuselage_width*(self.fuselage_width/2)**2) + 2*(self.s_dim*(0.25*self.fuselage_width)**2) # * self.t_fuselage
-
-        return self.I_yy_fuselage, self.I_zz_fuselage, self.I_xy_fuselage
-        
-    
-    # def calculate_stresses(self):
-
-    #     self.sigma_1 = (((M_x * self.I_zz_fuselage)*((self.a_dim+(self.fuselage_ratio*self.fuselage_width)-self.z_bar_fuselage))) + (M_y*self.I_yy_fuselage)*(-0.5*self.fuselage_width)) / (self.I_yy_fuselage*self.I_zz_fuselage)
-    #     self.sigma_2 = (((M_x * self.I_zz_fuselage)*((self.a_dim+(self.fuselage_ratio*self.fuselage_width)-self.z_bar_fuselage))) + (M_y*self.I_yy_fuselage)*(0.5*self.fuselage_width)) / (self.I_yy_fuselage*self.I_zz_fuselage)
-
-    #     self.sigma_3 = ((M_x * self.I_zz_fuselage) * -(self.z_bar_fuselage-self.a_dim) + (M_y *self.I_yy_fuselage)*(-0.5*self.fuselage_width)) / (self.I_yy_fuselage*self.I_zz_fuselage)
-    #     self.sigma_4 = ((M_x * self.I_zz_fuselage) * -(self.z_bar_fuselage-self.a_dim) + (M_y *self.I_yy_fuselage)*(0.5*self.fuselage_width)) / (self.I_yy_fuselage*self.I_zz_fuselage)
-
-    #     self.sigma_5 = ((M_x * self.I_zz_fuselage)*(-self.z_bar_fuselage)) / (self.I_yy_fuselage*self.I_zz_fuselage)
-    #     return self.sigma_1, self.sigma_2, self.sigma_3, self.sigma_4, self.sigma_5
-
-    def calculate_boom_areas(self):
-       
-        # All boom areas are a function of the skin thickness
-        w = self.fuselage_width
-        r = self.fuselage_ratio
-        s = self.s_dim
-
-        B1 = (w / 6) * (2 + self.sigma_2 / self.sigma_1) + (r * w / 6) * (2 + self.sigma_3 / self.sigma_1) # * t_fuselage
-        B2 = (w / 6) * (2 + self.sigma_1 / self.sigma_2) + (r * w / 6) * (2 + self.sigma_4 / self.sigma_2) # * t_fuselage
-        B3 = (r * w / 6) * (2 + self.sigma_1 / self.sigma_3) + (s * w / 6) * (2 + self.sigma_5 / self.sigma_3) # * t_fuselage
-        B4 = (r * w / 6) * (2 + self.sigma_2 / self.sigma_4) + (s * w / 6) * (2 + self.sigma_5 / self.sigma_4) # * t_fuselage
-        B5 = (s * w / 6) * (2 + self.sigma_3 / self.sigma_5) + (s * w / 6) * (2 + self.sigma_4 / self.sigma_5) # * t_fuselage
-
-        return B1, B2, B3, B4, B5
-
-
-    def iterate_booms_per_station(
-        self, 
-        M_x, 
-        M_y, 
-        t_fuselage_init=0.001, 
-        I_yy_init=0.01, 
-        I_zz_init=0.01, 
-        tol=1e-5, 
-        max_iter=1000, 
-        alpha=0.5
-    ):
-        n_stations = len(self.fuselage_width)
-
-        self.boom_areas_all = np.zeros((n_stations, 5))
-        self.I_yy_all = np.zeros(n_stations)
-        self.I_zz_all = np.zeros(n_stations)
-        self.t_fuselage_final = np.zeros(n_stations)
-        iterations_to_converge = np.zeros(n_stations, dtype=int)
-
-        for i in range(n_stations):
-            w = self.fuselage_width[i]
-            h = self.fuselage_height[i]
-            fr = h / w
-
-            # Initial fuselage thickness 
-            t = t_fuselage_init if np.isscalar(t_fuselage_init) else t_fuselage_init[i]
-
-            # Initial moments of inertia
-            I_yy_old = I_yy_init if np.isscalar(I_yy_init) else I_yy_init[i]
-            I_zz_old = I_zz_init if np.isscalar(I_zz_init) else I_zz_init[i]
-
-            
-            a_dim = 0.5 / np.tan(np.radians(65))
-            s_dim = 0.5 / np.sin(np.radians(65))
-            o_dim = s_dim / 2 * np.sin(np.radians(25))
-
-            z_bar = (2 * (fr * ((a_dim + 0.4) * w)) + 2 * (s_dim * (o_dim * w)) + ((a_dim + fr) * w)) / (2 * s_dim + 2 * fr + 1)
-
-            self.z_coords = np.array([
-                (z_bar - a_dim),
-                (z_bar - a_dim),
-                (a_dim + fr * w - z_bar),
-                (a_dim + fr * w - z_bar),
-                -z_bar
-            ])
-            self.y_coords = np.array([
-                0.5 * w,
-                -0.5 * w,
-                0.5 * w,
-                -0.5 * w,
-                0.0
-            ])
-
-            # Initial boom areas
-            B_old = np.ones(5) * 0.01
-
-            for iteration in range(max_iter):
-                # Stress calculation
-                sigma = np.zeros(5)
-                for j in range(5):
-                    sigma[j] = (M_x * I_zz_old * self.z_coords[j] + M_y * I_yy_old * self.y_coords[j]) / (I_yy_old * I_zz_old)
-
-                # New boom areas
-                B1 = (w / 6) * (2 + sigma[1] / sigma[0]) + (fr * w / 6) * (2 + sigma[2] / sigma[0])
-                B2 = (w / 6) * (2 + sigma[0] / sigma[1]) + (fr * w / 6) * (2 + sigma[3] / sigma[1])
-                B3 = (fr * w / 6) * (2 + sigma[0] / sigma[2]) + (s_dim * w / 6) * (2 + sigma[4] / sigma[2])
-                B4 = (fr * w / 6) * (2 + sigma[1] / sigma[3]) + (s_dim * w / 6) * (2 + sigma[4] / sigma[3])
-                B5 = (s_dim * w / 6) * (2 + sigma[2] / sigma[4]) + (s_dim * w / 6) * (2 + sigma[3] / sigma[4])
-                B_new = np.array([B1, B2, B3, B4, B5]) * t
-
-                # Under-relaxation: boom areas
-                B_i = alpha * B_new + (1 - alpha) * B_old
-
-                # New moments of inertia based on updated boom areas
-                I_yy_new = np.sum((self.z_coords ** 2) * B_i)
-                I_zz_new = np.sum((self.y_coords ** 2) * B_i)
-
-                # Under-relaxation: moments of inertia
-                I_yy_relaxed = alpha * I_yy_new + (1 - alpha) * I_yy_old
-                I_zz_relaxed = alpha * I_zz_new + (1 - alpha) * I_zz_old
-
-                # Thickness update
-                sigma_max = np.max(np.abs(sigma))
-                t_new = t * (sigma_max / self.sigma_y)
-                t = alpha * t_new + (1 - alpha) * t
-
-                # Check for convergence
-                if (
-                    np.all(np.abs(B_i - B_old) < tol) and
-                    abs(I_yy_relaxed - I_yy_old) < tol and
-                    abs(I_zz_relaxed - I_zz_old) < tol and
-                    abs(t_new - t) < tol
-                ):
-                    iterations_to_converge[i] = iteration + 1
-                    print(f"Station {i}: Converged in {iteration + 1} iteration(s)")
-                    break
-
-                # Update for next iteration
-                B_old = B_i.copy()
-                I_yy_old = I_yy_relaxed
-                I_zz_old = I_zz_relaxed
-
-            else:
-                iterations_to_converge[i] = max_iter
-                print(f"Warning: Station {i} did not converge after {max_iter} iterations.")
-
-            # Save final results
-            self.boom_areas_all[i, :] = B_i
-            self.I_yy_all[i] = I_yy_relaxed
-            self.I_zz_all[i] = I_zz_relaxed
-            self.t_fuselage_final[i] = t
-
-            # self.boom_areas_all[i, :] *= t 
-            # self.I_yy_all[i] *= t 
-            # self.I_zz_all[i] *= t
-        return self.boom_areas_all
-    
-    def calculate_base_shearflows(self, B, z, y, idx):
-        qb = -self.V_z/self.I_yy_all[idx]*B*z - self.V_y/self.I_zz_all[idx]*B*y
-        return qb
-
-    def calculate_shear_flow_distribution(self):
-        
-        # Both shear forces are assumed to act at the centroid of 
-        self.V_y = 5e6
-        self.V_z = 12e6
-        print(self.z_coords, self.y_coords)
+    def calculate_shear_flow_distribution(self, V_z=10e6, V_y=0):
 
         self.A_m = (self.fuselage_width**2 * self.fuselage_ratio) + 2*(0.25*self.fuselage_width*self.a_dim)
-        distances_array = np.array([(0.5*self.fuselage_ratio*(self.fuselage_width**2)), (0.5*self.fuselage_ratio*(self.fuselage_width**2)), self.z_bar_fuselage]) / (2*self.A_m)
+        distances_array = np.array([(0.5*self.fuselage_ratio*(self.fuselage_width**2)), (0.5*self.fuselage_ratio*(self.fuselage_width**2)), self.z_bar]) / (2*self.A_m)
         self.base_shear_flows = []
         self.tot_shear_flow = []
         self.shear_flow_dicts = []
-        for i, station in enumerate(self.boom_areas_all):
-            B1, B2, B3, B4, B5 = station
-            delta_B1 = self.calculate_base_shearflows(B1, self.z_coords[0], self.y_coords[0], i)
-            delta_B3 = self.calculate_base_shearflows(B3, self.z_coords[2], self.y_coords[2], i)
-            delta_B4 = -self.calculate_base_shearflows(B4, self.z_coords[3], self.y_coords[3], i)
-            delta_B2 = -self.calculate_base_shearflows(B2, self.z_coords[1], self.y_coords[1], i)
 
-            print(f"Station {i}: B1={B1}, B2={B2}, B3={B3}, B4={B4}, B5={B5}")
-            # print(f"Station {i}: B1={B1}, B2={B2}, B3={B3}, B4={B4}, B5={B5}")
-            # print(delta_B1, delta_B2, delta_B3, delta_B4, delta_B5)
+        self.calculate_base_shearflows()
 
-            q21 = 0
-            q13 = delta_B1
-            q35 = q13 + delta_B3
-            q42 = delta_B2
-            q54 = q42 + delta_B4
+        for i in range(len(self.thresholds)):
+            q21 = self.base_shear_flows[f'Station_{i}']['q21']
+            q13 = self.base_shear_flows[f'Station_{i}']['q13']
+            q35 = self.base_shear_flows[f'Station_{i}']['q35']
+            q54 = self.base_shear_flows[f'Station_{i}']['q54']
+            q42 = self.base_shear_flows[f'Station_{i}']['q42']
+
+
             base_shear_flows = [q21, q13, q35, q54, q42]
-            red_base_q_array = [q42, q13, self.V_y]
+            red_base_q_array = [q42, q13, V_y]
+
             q_s0 = np.dot(red_base_q_array, distances_array[:, i])
-            if round(q_s0, 2) == 0:
+            if 0 < abs(q_s0) < 1e-8:
                 q_s0 = 0.0
-            print(q_s0)
+
+
             total_shear_flows = [q + q_s0 for q in base_shear_flows]
             self.tot_shear_flow.append(total_shear_flows)
 
-            # Store as dictionary
-            shear_flow_dict = {
-            "q21": total_shear_flows[0],
-            "q13": total_shear_flows[1],
-            "q35": total_shear_flows[2],
-            "q54": total_shear_flows[3],
-            "q42": total_shear_flows[4]
-            }
-            self.shear_flow_dicts.append(shear_flow_dict)
-        print(self.shear_flow_dicts)
+        # Store as dictionary
+        shear_flow_dict = {
+        "q21": total_shear_flows[0],
+        "q13": total_shear_flows[1],
+        "q35": total_shear_flows[2],
+        "q54": total_shear_flows[3],
+        "q42": total_shear_flows[4]
+        }
+        self.shear_flow_dicts.append(shear_flow_dict)
 
-    def calculate_minimum_thickness(self):
-        tau = self.sigma_y*0.577
-        t_fus_shear_list = []
-        for i in self.tot_shear_flow:
-            t_fus_shear = np.array(i) / tau
-            t_fus_shear_list.append(abs(t_fus_shear*1000))
-        print(f'Min thickness due to shear is[mm]: {t_fus_shear_list}')
+    def calculate_shear_stress(self):
+        self.shear_stresses = {
+            'Section_12': [],
+            'Section_13': [],
+            'Section_35': [],
+            'Section_45': [],
+            'Section_24': []
+        }
+
+        for i in range(len(self.x_points)):
+            V_z = self.V_internal[i]
+            V_y = 0
+            self.calculate_shear_flow_distribution(V_z, V_y)
+            station_idx = np.argmin(np.abs(np.array(self.thresholds) - self.x_points[i]))
+
+            for idx,q_dist in enumerate(self.shear_flow_dicts):
+                for i,q in enumerate(list(q_dist.values())):
+                    section_key = f'Section_{self.section_order[i]}'
+                    if q != 0:
+                        shear_stress = abs(q / (self.final_thicknesses[idx][station_idx]))
+                    else:
+                        shear_stress = 0.0
+                    self.shear_stresses[section_key].append(shear_stress)
+                    
+        self.shear_stresses = {k: np.array(v) for k, v in self.shear_stresses.items()}
+        evaluate_stress = 'Section_13'
+        plt.plot(self.x_points, self.shear_stresses[evaluate_stress]/1e6, label='Bending Stress Distribution')
+        plt.plot(self.x_points, np.full_like(self.x_points, np.sign(self.shear_stresses[evaluate_stress])*self.shear_yield/1e6), 'k--', label='Zero Stress Line')
+        plt.xlabel('Position along Fuselage (m)')
+        plt.ylabel('Bending Stress (MPa)')
+        plt.title('Bending Stress Distribution on Fuselage')
+        plt.legend()
+        plt.grid()
+        plt.show()
+        
+
+    def calculate_top_bending_stress(self):
+        self.bending_stresses = {}
+        loop_flag = 0
+        for boom in self.boom_coords:
+            self.bending_stresses[boom] = []
+            count = 0
+            prev_idx = 0
+
+            for idx, iyy in enumerate(self.I_yy_all):
+                count += 1
+
+                curr_idx = np.argmin(np.abs(self.x_points - self.thresholds[idx]))
+                self.bending_stresses[boom].append(self.M_internal[prev_idx:curr_idx]*self.z_coords[loop_flag][idx]/iyy)
+                if count == 3:
+                    self.bending_stresses[boom].append(self.M_internal[curr_idx:]*self.z_coords[loop_flag][idx]/iyy)
+                prev_idx = curr_idx
+
+            loop_flag += 1
+        self.bending_stresses = {k: np.concatenate(v, axis=0) for k, v in self.bending_stresses.items()}
+
+        evaluate_stress = 'B5'
+        plt.plot(self.x_points, self.bending_stresses[evaluate_stress]/1e6, label='Bending Stress Distribution')
+        plt.plot(self.x_points, np.full_like(self.x_points, np.sign(self.bending_stresses[evaluate_stress])*self.sigma_y/1e6), 'k--', label='Zero Stress Line')
+        plt.xlabel('Position along Fuselage (m)')
+        plt.ylabel('Bending Stress (MPa)')
+        plt.title('Bending Stress Distribution on Fuselage')
+        plt.legend()
+        plt.grid()
+        plt.show()
+        return self.bending_stresses
+    
+    def calculate_boom_thicknesses(self):
+
+        boom_connections = [('B1', 'B2', 'B3'), ('B2', 'B1', 'B3'), ('B3', 'B1', 'B5'), ('B4', 'B2', 'B5'), ('B5', 'B3', 'B4')]
+
+        boom_sections = {
+            'B1': [self.fuselage_width, self.fuselage_ratio * self.fuselage_width],
+            'B2': [self.fuselage_width, self.fuselage_ratio * self.fuselage_width],
+            'B3': [self.fuselage_ratio*self.fuselage_width, self.s_dim],
+            'B4': [self.fuselage_ratio*self.fuselage_width, self.s_dim],
+            'B5': [self.s_dim, self.s_dim]
+        }
+
+        self.final_thicknesses = {}
+        for connection in boom_connections:
+            main_boom = connection[0]
+            boom_area = self.boom_coords[main_boom]['area']
+            ratio_sum = 0
+            for boom in range(len(connection[1:])):
+                boom_name = connection[boom]
+                section = boom_sections[main_boom][boom]
+                
+                stress_ratio = min(self.bending_stresses[boom_name][np.flatnonzero(self.bending_stresses[boom_name])]/self.bending_stresses[main_boom][np.flatnonzero(self.bending_stresses[main_boom])])
+
+                contribution = section/6*(2+stress_ratio)
+                ratio_sum += contribution
+            
+            thickness = boom_area / ratio_sum
+            self.final_thicknesses[main_boom] = {connection[1]: thickness, connection[2]: thickness}
+
+        self.section_order = ['12', '13', '35', '45', '24']
+        self.section_map = {'12': ('B1', 'B2'), '13': ('B1', 'B3'), '35': ('B3', 'B5'),
+                    '45': ('B4', 'B5'), '24': ('B2', 'B4')}
+
+        # Output list
+        final_thickness_list = []
+
+        for sec in self.section_order:
+            boom1, boom2 = self.section_map[sec]
+            
+            # Get thickness from both directions if available
+            t1 = self.final_thicknesses.get(boom1, {}).get(boom2, None)
+            t2 = self.final_thicknesses.get(boom2, {}).get(boom1, None)
+            
+            if t1 is not None and t2 is not None:
+                thickness = np.maximum(t1, t2)
+            elif t1 is not None:
+                thickness = t1
+            elif t2 is not None:
+                thickness = t2
+            else:
+                raise ValueError(f"Section {sec} ({boom1}-{boom2}) not found in either direction.")
+            
+            final_thickness_list.append(thickness)
+
+        self.final_thicknesses = final_thickness_list
+        print("Final Thicknesses per Boom Connection:")
+        print(self.final_thicknesses)
+
+    def calculate_fuselage_weight(self):
+
+        for x in self.x_points:
+            for section in self.final_thicknesses:
+                thickness = self.final_thicknesses[section]
+
+                
+
+
+    def calculate_rib_spacing_skin(self):
+        factor = (np.pi**2 * self.E) / (12 * (1 - self.poisson_ratio**2))
+        
+        self.rib_spacings = []
+        self.rib_positions = []
+        self.rib_span_indices = []
+
+        self.calculate_top_bending_stress()
+        x = 0.0  
+        self.rib_positions.append(x)
+        
+        for idx, x in enumerate(self.x_points):
+            station_idx = np.argmin(np.abs(np.array(self.thresholds) - x))
+            
+            stress = self.bending_stresses[idx]
+            if abs(stress) < 1e6:
+                b = 2.0
+            else:
+                b = self.final_thicknesses[station_idx]['54'] * np.sqrt(self.C * factor / stress)
+            self.rib_spacings.append(b)
+            x += b
+            self.rib_positions.append(x)
+
+        
+        self.rib_amount = len(self.rib_positions)
+
+
+    def get_shear_buckling_thickness(self, tau_cr):
+        b = self.cutout_spacing 
+        factor = (12 * (1 - self.poisson_ratio**2)) / (self.k_s * np.pi**2 * self.E)
+
+        t_required = b * np.sqrt(tau_cr * factor)
+        return t_required
+
 
     def main(self):
         M_x = 20e6  # Nm # TODO: Replace with actual bending moment
         M_y = 0  # Nm # TODO: Replace with actual moment
         self.calculate_fuselage_centroid()
-        self.iterate_booms_per_station(M_x, M_y)
 
         self.calculate_shear_flow_distribution()
-        fuselage.calculate_minimum_thickness()
+        self.calculate_top_bending_stress()
+        self.calculate_boom_thicknesses()
+        self.calculate_shear_stress()
+        # self.calculate_rib_spacing_skin()
 
 
 if __name__ == '__main__':

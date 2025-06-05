@@ -10,10 +10,10 @@ import numpy as np
 
 class StressAnalysisWing(AerodynamicForces, WingStructure):
 
-    def __init__(self, aircraft_data: Data, airfoil_aerodynamics: Data,
+    def __init__(self, aircraft_data: Data,
                  wing_mat: Materials, wingbox_mat: Materials, stringer_mat: Materials, 
                  evaluate: EvaluateType, PLOT: bool = False):
-        AerodynamicForces.__init__(self, aircraft_data, airfoil_aerodynamics, evaluate=evaluate)
+        AerodynamicForces.__init__(self, aircraft_data, evaluate=evaluate)
         WingStructure.__init__(self, aircraft_data, wingbox_mat=wingbox_mat, wing_mat=wing_mat, stringer_mat=stringer_mat, evaluate=evaluate)
         self.get_wing_structure()
         self.safety_factor = 1.5
@@ -173,7 +173,7 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
     def internal_bending_moment_x(self):
         load = self.internal_vertical_shear_force()
         M_flipped = np.cumsum(load[::-1] * self.dy[::-1])
-        self.M_internal = /'/;../M_flipped[::-1]
+        self.M_internal = M_flipped[::-1]
         return self.M_internal
     
     def internal_bending_moment_y(self):
@@ -441,7 +441,7 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
     
     def get_margins(self):
 
-        relevant_stresses = [StressOutput.BENDING_STRESS, StressOutput.BENDING_STRESS_BOTTOM, StressOutput.SHEAR_STRESS, StressOutput.WING_BENDING_STRESS]
+        relevant_stresses = [StressOutput.BENDING_STRESS, StressOutput.BENDING_STRESS_BOTTOM, StressOutput.SHEAR_STRESS, StressOutput.WING_BENDING_STRESS, StressOutput.INTERNAL_MOMENT_X]
 
         self.load_data[self.evaluate_case] = {}
         for i in relevant_stresses:
@@ -456,7 +456,7 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
                 'labels': labels,
                 'unit': output['unit']
             }
-
+            
             for idx,ref in enumerate(references):
                 margin = np.min(abs(ref)/abs(main_stress))
                 if margin < 1:
@@ -681,11 +681,15 @@ def main():
     wingbox_material = Materials.Al7075
     wing_material = Materials.Al5052
 
-    for evaluate in EvaluateType:
+    # for evaluate in EvaluateType:
 
-        stress_analysis = StressAnalysisWing(aircraft_data=Data("design3.json"),airfoil_aerodynamics=Data("AeroForces.txt", 'aerodynamics'),wingbox_mat=wingbox_material,wing_mat=wing_material, stringer_mat=stringer_material,evaluate=evaluate,PLOT=False)
+    #     stress_analysis = StressAnalysisWing(aircraft_data=Data("design3.json"),wingbox_mat=wingbox_material,wing_mat=wing_material, stringer_mat=stringer_material,evaluate=evaluate,PLOT=False)
         
-        stress_analysis.main_analysis()
+    #     stress_analysis.main_analysis()
+    #     stress_analysis.plot_any(StressOutput.INTERNAL_MOMENT_X)
+    stress_analysis = StressAnalysisWing(aircraft_data=Data("design3.json"), wingbox_mat=wingbox_material, wing_mat=wing_material, stringer_mat=stringer_material, evaluate=EvaluateType.WING, PLOT=True)
+    stress_analysis.main_analysis()
+    # stress_analysis.plot_any(StressOutput.INTERNAL_MOMENT_X)
         
 if __name__ == "__main__":
 

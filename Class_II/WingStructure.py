@@ -23,7 +23,7 @@ class WingStructure:
             self.b = self.aircraft_data.data['outputs']['wing_design']['b']
             self.chord_root = self.aircraft_data.data['outputs']['wing_design']['chord_root']
             self.chord_tip = self.aircraft_data.data['outputs']['wing_design']['chord_tip']
-            self.b_array = np.arange(0, self.b/2, 0.01)
+            self.b_array = np.arange(0, self.b/2+0.01, 0.01)
             self.chord_array = self.chord_span_function(self.b_array)
             self.chord_length = self.chord_root
             self.S = self.aircraft_data.data['outputs']['wing_design']['S']
@@ -68,7 +68,7 @@ class WingStructure:
             self.b = self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['b']
             self.chord_root = self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['chord_root']
             self.chord_tip = self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['chord_tip']
-            self.b_array = np.arange(0, self.b/2, 0.01)
+            self.b_array = np.arange(0, self.b/2+0.01, 0.01)
             self.chord_array = self.chord_span_function(self.b_array)
             self.chord_length = self.chord_root
             self.S = self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['S']
@@ -104,7 +104,7 @@ class WingStructure:
             self.b = self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['b']
             self.chord_root = self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['chord_root']
             self.chord_tip = self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['chord_tip']
-            self.b_array = np.arange(0, self.b, 0.01)
+            self.b_array = np.arange(0, self.b+0.01, 0.01)
             self.chord_array = self.chord_span_function(self.b_array)
 
             self.chord_length = self.chord_root
@@ -118,7 +118,7 @@ class WingStructure:
             self.t_wing = self.aircraft_data.data['inputs']['structures']['vertical_wing_box']['t_wing']/1000
             self.engine_positions = None
             self.cutout_spacing = self.aircraft_data.data['inputs']['structures']['vertical_wing_box']['cutout_spacing']
-            self.bottom_spar_margin = 0.05
+            self.bottom_spar_margin = 0.02
             self.top_spar_margin = 0.98
             self.min_skin_thickness = self.aircraft_data.data['inputs']['structures']['vertical_wing_box']['min_skin_thickness']/1000
             self.min_spar_thickness = self.aircraft_data.data['inputs']['structures']['vertical_wing_box']['min_spar_thickness']/1000
@@ -156,7 +156,7 @@ class WingStructure:
         self.wing_material = self.aircraft_data.data['inputs']['structures']['materials'][wing_mat.name.lower()]
         self.rho_wing = self.wing_material['rho']
 
-        self.w_fuselage = self.aircraft_data.data['outputs']['general']['w_fuselage']
+        self.w_fuselage = self.aircraft_data.data['outputs']['fuselage_dimensions']['w_fuselage']
         self.fuel_start = self.w_fuselage/2 + 0.3
 
         self.leading_edge = self.chord_root - np.tan(np.deg2rad(self.aircraft_data.data['outputs']['wing_design']['sweep_x_c'])) * self.b_array
