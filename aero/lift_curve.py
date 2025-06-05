@@ -181,21 +181,49 @@ class lift_curve():
 
 
     def calc_moment_ac(self):
-        self.x__c=0.3
-        self.cmx__c=self.cl_lst*(0.25-self.x__c)+self.cm_lst
+        self.x__c=0.25
+        self.cmx__c=np.array([])
+        seg1=[-4.5,]
+        self.cmac_seg1=np.array([])
         self.xac=np.array([])
+        self.cmac_seg2=np.array([])
 
         for i in range(len(self.cm_lst)):
+            # if self.cm_lst[i+1]==0 or self.cm_lst[i]==0:
+            #     pass
+            
+            cmx__c=self.cl_lst[i]*(0.25-self.x__c)+self.cm_lst[i]
+            self.cmx__c=np.append(self.cmx__c,cmx__c)
+
             if i==len(self.cm_lst)-1:
-                None
+                xac=(0-self.cm_lst[i])/(0-self.cl_lst[i])+0.25
+                self.xac=np.append(xac,self.xac)
+                
             else:
                 xac=(self.cm_lst[i+1]-self.cm_lst[i])/(self.cl_lst[i+1]-self.cl_lst[i])+0.25
-                self.xac=np.append(xac,self.xac)
+                self.xac=np.append(self.xac,xac)
+
+        for i in range(len(self.cm_lst)):
+            if self.alpha[i]<=3 and self.alpha[i]>=-5:
+                
+                self.cmac_seg1.append(cm)
+        
+
     
 
     def plot_moment_ac(self):
+        self.calc_moment_ac()
         fig=plt.figure()
-        ax=plt.add_subplots(2)
+        ax=fig.subplots(2)
+        ax[0].plot(self.alpha,self.cmx__c)
+        ax[0].set_ylabel('cmac_x__c')
+        ax[1].plot(self.alpha,self.xac)
+        ax[1].set_ylim(-1,1)#,'x_ac')
+        ax[1].set_ylabel('x_ac')
+        ax[1].set_xlabel('alpha')
+    
+        plt.show()
+
             
     def dcl_dalpha(self):
     # Convert alpha to numpy array if it's not already
@@ -203,7 +231,9 @@ class lift_curve():
         cl_arr = np.array(self.cl_lst)
 
         # Find index where alpha is closest to 5
-        idx = np.argmin(np.abs(alpha_arr - 3))
+        
+        idx = 7   #np.argmin(np.abs(alpha_arr - 3))
+        print(alpha_arr[idx])
         
         # Slice arrays up to and including that index
         alpha_fit = alpha_arr[:idx+1]
@@ -222,7 +252,7 @@ class lift_curve():
         # plt.tight_layout()
         # plt.show()
 
-        return slope
+        return slope, intercept
 
 
 
@@ -236,9 +266,11 @@ class lift_curve():
 if __name__ == "__main__":  #if run seperately  
     #defines instance
     curves=lift_curve()
+    curves.plot_moment_ac()
 
+    par0,par1=curves.dcl_dalpha()
     #curves.interpolate(-4.2)
-
+    cl_fit_no_WIG=par0*curves.alpha+par1
     #getting alpha data from instnace
     alphalst=curves.alpha
     ind_lst=[]
@@ -288,6 +320,7 @@ if __name__ == "__main__":  #if run seperately
     ax[0][1].set_title('lift curve')
     ax[0][1].plot(alphalst,cl_lst, label='no GE')
     ax[0][1].plot(alphalst,cl_lst_GE, label='GE')
+    ax[0][1].plot(alphalst,cl_fit_no_WIG, '--r', label='no GE fit')
     ax[0][1].legend()
 
     #L/D
