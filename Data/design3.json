@@ -403,7 +403,8 @@
                 "aspect_ratio": 4.5,
                 "tail_height": 18.51741246571534,
                 "LE_pos": 69.56436862366374,
-                "relative_pos_mac/4": 0.9556636386107878
+                "relative_pos_mac/4": 0.9556636386107878,
+                "Cl_alpha": 0.119
             }
         },
         "control_surfaces": {
