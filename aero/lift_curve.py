@@ -173,8 +173,22 @@ class lift_curve():
         self.L_lst=0.5*rho*V**2*chord_lst*cl
 
     def calc_moment_ac(self):
-        pass
+        self.x__c=0.3
+        self.cmx__c=self.cl_lst*(0.25-self.x__c)+self.cm_lst
+        self.xac=np.array([])
 
+        for i in range(len(self.cm_lst)):
+            if i==len(self.cm_lst)-1:
+                None
+            else:
+                xac=(self.cm_lst[i+1]-self.cm_lst[i])/(self.cl_lst[i+1]-self.cl_lst[i])+0.25
+                self.xac=np.append(xac,self.xac)
+    
+
+    def plot_moment_ac(self):
+        fig=plt.figure()
+        ax=plt.add_subplots(2)
+        
     
 
 
