@@ -68,7 +68,7 @@ class Tail_area:
         CL_A_h = 1.36 #5def AOA
         CL_h = 0.665
         Vh_V = 1
-        lh = self.horizontal_tail_pos[0]-self.most_aft_cg
+        lh = self.l_h
         c = self.MAC
         Sh_S = -(X_cg-X_ac+(C_m_ac/CL_A_h))/((CL_h/CL_A_h)*(lh/c)*Vh_V**2)
         return Sh_S
