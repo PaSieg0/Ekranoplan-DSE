@@ -5,10 +5,12 @@ import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import matplotlib.pyplot as plt
 from utils import Data, MissionType, ISA, AircraftType
+from aero.lift_curve import lift_curve
 
 class DerivativesDatcom_asym:
     def __init__(self, aircraft_data: Data, mission_type: MissionType) -> None:
         self.aircraft_data = aircraft_data
+        self.lift_curve = lift_curve()
         self.Delta_c4 = aircraft_data.data['outputs']['wing_design']['sweep_c_4'] #degrees
         self.l_b = aircraft_data.data['outputs']['fuselage_dimensions']['l_fuselage'] # length of body 
         self.dihedral = aircraft_data.data['outputs']['wing_design']['dihedral'] #degrees
@@ -21,8 +23,8 @@ class DerivativesDatcom_asym:
         self.d_fusel = np.array([aircraft_data.data['outputs']['fuselage_dimensions']['d_fuselage_equivalent_station1'], aircraft_data.data['outputs']['fuselage_dimensions']['d_fuselage_equivalent_station2'], aircraft_data.data['outputs']['fuselage_dimensions']['d_fuselage_equivalent_station3']]) # Diameter of the fuselage
         self.V_b = V_b # total body volume [m3]: 20000
         self.b = aircraft_data.data['outputs']['design']['b']
-        self.lp = lp # 36.431
-        self.Cl_alpha = Cl_alpha # Lift curve slope of the wing, in rad: 9.167
+        self.lp = lp # 36.431 # ℓₚ is the distance parallel to the longitudinal body axis between the vehicle moment center and the quarter-chord point of the MAC of the vertical panel, positive for the panel aft of the vehicle moment center.
+        self.Cl_alpha = self.lift_curve.dcl_dalpha() # Lift curve slope of the wing, in rad: 9.167
         self.e = aircraft_data.data['inputs']['oswald_factor'] # Oswald efficiency factor of the wing : 0.85 (guessed, typical value for a subsonic aircraft)
         self.taper = aircraft_data.data['outputs']['wing_design']['taper_ratio'] # Taper ratio of the wing: 0.4
         self.MAC = aircraft_data.data['outputs']['wing_design']['MAC']  # Mean Aerodynamic Chord: 8.456
@@ -246,10 +248,15 @@ class DerivativesDatcom_asym:
             'Cnr': derivatives.Cnr(),  # Example usage with Cl = 0.5, alpha = 5 degrees
             'CyBdot': derivatives.CyBdot(),  # Example usage with Cl = 0.5, alpha = 5 degrees
             'ClBdot': derivatives.ClBdot(),  # Example usage with Cl = 0.5, alpha = 5 degrees
-
             # Add more functions here if needed
         }
+
+        lift_curve_slope = {
+            'Cl_alpha': self.lift_curve.dcl_dalpha()  # Lift curve slope of the wing, in deg
+        }
+
         self.aircraft_data.data['outputs']['aerodynamic_stability_coefficients_asym'] = aero_stability_outputs
+        self.aircraft_data.data['outputs']['aerodynamics']['Cl_alpha'] = lift_curve_slope
         self.aircraft_data.save_design('design3.json')
 
 
