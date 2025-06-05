@@ -239,20 +239,21 @@ class FuselageThickness:
             self.I_zz_all[i] = I_zz_relaxed
             self.t_fuselage_final[i] = t
 
-            self.boom_areas_all[i, :] *= t 
-            self.I_yy_all[i] *= t 
-            self.I_zz_all[i] *= t
+            # self.boom_areas_all[i, :] *= t 
+            # self.I_yy_all[i] *= t 
+            # self.I_zz_all[i] *= t
         return self.boom_areas_all
     
     def calculate_base_shearflows(self, B, z, y, idx):
-        qb = -self.V_z/self.I_yy_all[idx]*B*y - self.V_y/self.I_zz_all[idx]*B*z
+        qb = -self.V_z/self.I_yy_all[idx]*B*z - self.V_y/self.I_zz_all[idx]*B*y
         return qb
 
     def calculate_shear_flow_distribution(self):
         
         # Both shear forces are assumed to act at the centroid of 
-        self.V_y = -5e6
-        self.V_z = 10e6
+        self.V_y = 5e6
+        self.V_z = 12e6
+        print(self.z_coords, self.y_coords)
 
         self.A_m = (self.fuselage_width**2 * self.fuselage_ratio) + 2*(0.25*self.fuselage_width*self.a_dim)
         distances_array = np.array([(0.5*self.fuselage_ratio*(self.fuselage_width**2)), (0.5*self.fuselage_ratio*(self.fuselage_width**2)), self.z_bar_fuselage]) / (2*self.A_m)
@@ -263,20 +264,23 @@ class FuselageThickness:
             B1, B2, B3, B4, B5 = station
             delta_B1 = self.calculate_base_shearflows(B1, self.z_coords[0], self.y_coords[0], i)
             delta_B3 = self.calculate_base_shearflows(B3, self.z_coords[2], self.y_coords[2], i)
-            delta_B5 = self.calculate_base_shearflows(B5, self.z_coords[4], self.y_coords[4], i)
-            delta_B4 = self.calculate_base_shearflows(B4, self.z_coords[3], self.y_coords[3], i)
+            delta_B4 = -self.calculate_base_shearflows(B4, self.z_coords[3], self.y_coords[3], i)
+            delta_B2 = -self.calculate_base_shearflows(B2, self.z_coords[1], self.y_coords[1], i)
+
+            print(f"Station {i}: B1={B1}, B2={B2}, B3={B3}, B4={B4}, B5={B5}")
+            # print(f"Station {i}: B1={B1}, B2={B2}, B3={B3}, B4={B4}, B5={B5}")
+            # print(delta_B1, delta_B2, delta_B3, delta_B4, delta_B5)
 
             q21 = 0
             q13 = delta_B1
             q35 = q13 + delta_B3
-            q54 = q35 + delta_B5
-            q42 = q54 + delta_B4
-
+            q42 = delta_B2
+            q54 = q42 + delta_B4
             base_shear_flows = [q21, q13, q35, q54, q42]
-
-            print(q42, q13)
             red_base_q_array = [q42, q13, self.V_y]
             q_s0 = np.dot(red_base_q_array, distances_array[:, i])
+            if round(q_s0, 2) == 0:
+                q_s0 = 0.0
             print(q_s0)
             total_shear_flows = [q + q_s0 for q in base_shear_flows]
             self.tot_shear_flow.append(total_shear_flows)
@@ -290,9 +294,7 @@ class FuselageThickness:
             "q42": total_shear_flows[4]
             }
             self.shear_flow_dicts.append(shear_flow_dict)
-
         print(self.shear_flow_dicts)
-
 
 
     def main(self):
