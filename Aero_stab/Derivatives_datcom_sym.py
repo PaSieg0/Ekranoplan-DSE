@@ -27,8 +27,8 @@ class DerivativesDatcom_sym:
         self.e = aircraft_data.data['inputs']['oswald_factor'] # Oswald efficiency factor of the wing : 0.85 (guessed, typical value for a subsonic aircraft)
         self.taper = aircraft_data.data['outputs']['wing_design']['taper_ratio'] # Taper ratio of the wing: 0.4
         self.MAC = aircraft_data.data['outputs']['wing_design']['MAC']  # Mean Aerodynamic Chord: 8.456
-        self.x_cg = 1/2 * (aircraft_data.data['outputs']['cg_range']['most_aft_cg'] + aircraft_data.data['outputs']['cg_range']['most_forward_cg'])
-        self.x_ac = aircraft_data.data['outputs']['wing_design']['X_LEMAC'] +  aircraft_data.data['outputs']['wing_design']['MAC']*0.3 # Aerodynamic center of the wing: 0.25 * MAC
+        self.x_cg = aircraft_data.data['outputs']['cg_range']['most_aft_cg'] 
+        self.x_ac = aircraft_data.data['outputs']['wing_design']['X_LEMAC'] +  aircraft_data.data['outputs']['wing_design']['MAC']*0.25 # Aerodynamic center of the wing: 0.25 * MAC
         self.x_bar = self.x_ac - self.x_cg # Distance from the leading edge of the wing to the center of gravity: 31.5(from excel)
         self.Cd0 = aircraft_data.data['inputs']['Cd0'] # Zero-lift drag coefficient of the wing
         self.c_h = aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['MAC'] # Mean aerodynamic chord of the horizontal tail
@@ -53,16 +53,16 @@ class DerivativesDatcom_sym:
         """
         #p.2686
         K_wb = 0.95 #1047
-        K_bw = 0.15 #p.1047
-        Cmqe = -0.7 * self.Cl_alpha * np.cos(self.Delta_c4) * ((self.A * (0.5 * self.x_bar / self.MAC + 2 * (self.x_bar / self.MAC)**2))/(self.A + 2 * np.cos(self.Delta_c4)) + 1/24 * self.A**3 * np.cos(self.Delta_c4)**2 / (self.A + 6 * np.cos(self.Delta_c4)) + 1/8) #p.2488
+        K_bw = 0.11 #p.1047
+        Cmqe = -0.7 * self.Cl_alpha * np.cos(np.radians(self.Delta_c4)) * ((self.A * (0.5 * self.x_bar / self.MAC + 2 * (self.x_bar / self.MAC)**2))/(self.A + 2 * np.cos(np.radians(self.Delta_c4))) + 1/24 * self.A**3 * np.tan(np.radians(self.Delta_c4))**2 / (self.A + 6 * np.cos(np.radians(self.Delta_c4))) + 1/8) #p.2488
         x_m = 32.55 # longtitudinal
         x_c = 75.078 / 2 # cross-sectional
         S_b = self.d_fusel * self.l_b
-        CmqB = 2 * self.Cmalpha() * ((1 - x_m/self.l_b)**2 - self.V_b /(S_b * self.l_b)*(x_c/self.l_b - x_m / self.l_b) / ((1-x_m/self.l_b) - self.V_b/(S_b*self.l_b))) #p.2655
+        CmqB = 2 * self.Cmalpha() * (((1 - x_m/self.l_b)**2 - self.V_b /(S_b * self.l_b)*(x_c/self.l_b - x_m / self.l_b)) / ((1-x_m/self.l_b) - self.V_b/(S_b*self.l_b))) #p.2655
         Cm_wb = (K_wb + K_bw)*(self.Sh/self.S)*(self.c_h/self.MAC)**2 * Cmqe + CmqB * (S_b / self.S)*(self.l_b/self.MAC)**2
         
         
-        Cm_tail = 2*(K_wb + K_bw)*(self.Sh / self.S) * ((x_c - self.x_h)/self.MAC)**2 * self.Cl_alpha_h #p.2743
+        Cm_tail = 2*(K_wb + K_bw)*(self.Sh / self.S) * ((x_c - self.x_h)/self.MAC)**2 * (self.Cl_alpha_h/(np.pi/180)) #p.2743
 
         return Cm_wb - Cm_tail
     
@@ -83,7 +83,7 @@ class DerivativesDatcom_sym:
         return -2 * self.Cl #From FD and other source, which tells us that rest can be ignored.
     
     def C_X_u(self):
-        Cxu = -3 * self.Cd0 - 3 * self.Cl_0 * np.tan(self.theta_0)
+        Cxu = -3 * self.Cd0 - 3 * self.Cl_0 * np.tan(np.radians(self.theta_0))
         return Cxu
 
     def C_m_u(self):
@@ -100,9 +100,10 @@ class DerivativesDatcom_sym:
         # Cm_alphadot_B = ...
         # Cm_alphadot_wb = (K_bw + K_wb) * (self.Sh/self.S)*(self.c_h/self.MAC)**2 * Cm_alphadot_e + Cm_alphadot_B * ((S_b / self.S)*(self.l_b/self.MAC)**2)
         l_h = self.x_h - self.x_cg
-        downwash_gradient = 2 * self.Cl_alpha / (np.pi * self.A)
-        Cm_alphadot = -self.Cl_alpha * 1 * downwash_gradient *self.Sh*l_h**2 / (self.S * self.MAC**2)
-        return np.deg2rad(Cm_alphadot)
+        downwash_gradient = (2 * self.Cl_alpha / (np.pi * self.A))*(180/np.pi)
+        #TODO: Look into wing contribution of this expression
+        Cm_alphadot = -(self.Cl_alpha * 1 * downwash_gradient *self.Sh*l_h**2) / (self.S * self.MAC**2)
+        return Cm_alphadot
     
     def update_json(self):
         # Run the functions you want to store
