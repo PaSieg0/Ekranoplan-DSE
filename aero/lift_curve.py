@@ -7,6 +7,7 @@ class lift_curve():
     def __init__(self):
         #importing lift curve data which is generated from xfoil without WIG
         self.data=np.loadtxt('aero\\lift curve no WIG.txt')
+        self.data_span = np.loadtxt('aero\\spanwise curves.txt')
         #print(self.data)
 
         #angle of attack data
@@ -16,6 +17,12 @@ class lift_curve():
         self.cl_lst=self.data[:,1]
         self.cd_lst=self.data[:,2]
         self.cm_lst=self.data[:,3]
+
+        self.y_spanwise = self.data_span[:0]
+        self.chord_spanwise = self.data_span[:1]
+        self.Cl_spanwise = self.data_span[:2]
+        self.iCd_spanwise = self.data_span[:3]
+
 
 
     
@@ -155,7 +162,7 @@ class lift_curve():
     
     def lift_dist(self,V,ct,cr,rho=1.225,alpha='n',cl='n'):  #makes lift distrubution for now this looks like a tent is not to be trusted
         
-        #makes a function of the chorsd of the airplane
+        #makes a function of the chord of the airplane
         def chord(y,ct,cr):
             return 2*(ct-cr)*abs(y)+cr
         
@@ -172,9 +179,9 @@ class lift_curve():
         #makes spanwise lift distr
         self.L_lst=0.5*rho*V**2*chord_lst*cl
 
+
     def calc_moment_ac(self):
         pass
-
     
     def dcl_dalpha(self):
     # Convert alpha to numpy array if it's not already
@@ -285,6 +292,13 @@ if __name__ == "__main__":  #if run seperately
         if cl == max(L_D_GE_lst):
             print(f'alpha for max L/D: {alphalst[i]} degrees')
             break
+
+    #Spanwise distribution
+    CL = 1.8
+    span = np.arange(-35, 35, 0.01)
+    Cl_array_span = CL * np.ones(np.shape(span))
+
+
     
 
     #lift distribution
