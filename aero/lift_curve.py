@@ -7,6 +7,7 @@ class lift_curve():
     def __init__(self):
         #importing lift curve data which is generated from xfoil without WIG
         self.data=np.loadtxt('aero\\lift curve no WIG.txt')
+        self.data_span = np.loadtxt('aero\\spanwise curves.txt')
         #print(self.data)
 
         #angle of attack data
@@ -16,6 +17,12 @@ class lift_curve():
         self.cl_lst=self.data[:,1]
         self.cd_lst=self.data[:,2]
         self.cm_lst=self.data[:,3]
+
+        self.y_spanwise = self.data_span[:0]
+        self.chord_spanwise = self.data_span[:1]
+        self.Cl_spanwise = self.data_span[:2]
+        self.iCd_spanwise = self.data_span[:3]
+
 
 
     
@@ -155,7 +162,7 @@ class lift_curve():
     
     def lift_dist(self,V,ct,cr,rho=1.225,alpha='n',cl='n'):  #makes lift distrubution for now this looks like a tent is not to be trusted
         
-        #makes a function of the chorsd of the airplane
+        #makes a function of the chord of the airplane
         def chord(y,ct,cr):
             return 2*(ct-cr)*abs(y)+cr
         
@@ -171,6 +178,7 @@ class lift_curve():
 
         #makes spanwise lift distr
         self.L_lst=0.5*rho*V**2*chord_lst*cl
+
 
     def calc_moment_ac(self):
         self.x__c=0.3
@@ -188,8 +196,33 @@ class lift_curve():
     def plot_moment_ac(self):
         fig=plt.figure()
         ax=plt.add_subplots(2)
+            
+    def dcl_dalpha(self):
+    # Convert alpha to numpy array if it's not already
+        alpha_arr = np.array(self.alpha)
+        cl_arr = np.array(self.cl_lst)
+
+        # Find index where alpha is closest to 5
+        idx = np.argmin(np.abs(alpha_arr - 3))
         
-    
+        # Slice arrays up to and including that index
+        alpha_fit = alpha_arr[:idx+1]
+        cl_fit = cl_arr[:idx+1]
+        
+        # Perform linear fit
+        slope, intercept = np.polyfit(alpha_fit, cl_fit, 1)
+
+        # Plot original data and linear fit
+        # plt.plot(alpha_arr, cl_arr, label='Lift Curve')
+        # plt.plot(alpha_fit, slope * alpha_fit + intercept, label='Linear Fit', linestyle='--')
+        # plt.xlabel("Angle of Attack (alpha)")
+        # plt.ylabel("Lift Coefficient (Cl)")
+        # plt.legend()
+        # plt.grid(True)
+        # plt.tight_layout()
+        # plt.show()
+
+        return slope
 
 
 
@@ -227,7 +260,7 @@ if __name__ == "__main__":  #if run seperately
     ax=fig.subplots(2,2)
     cl_lst=curves.cl_lst
     cl_lst_GE = curves.Cl_correction_GE()
-    print(f'Cl_max: {max(cl_lst_GE)}')
+    print(f'Cl_max_GE: {max(cl_lst_GE)}')
     for i, cl in enumerate(cl_lst_GE):
         if cl == max(cl_lst_GE):
             print(f'alpha for Clmax: {alphalst[i]}')
@@ -235,29 +268,53 @@ if __name__ == "__main__":  #if run seperately
 
                     
 
-    #drag polar
+    # #drag polar
+    # ax[0][0].set_title('Drag polar')
+    # ax[0][0].plot(alphalst,ind_lst)
+    # ax[0][0].plot(alphalst,ind_lst2)
+    # ax[0][0].plot(alphalst, ind_lst3)
+    # ax[0][0].plot(alphalst, ind_lst4)
+
+    # drag polar
     ax[0][0].set_title('Drag polar')
-    ax[0][0].plot(alphalst,ind_lst)
-    ax[0][0].plot(alphalst,ind_lst2)
-    ax[0][0].plot(alphalst, ind_lst3)
-    ax[0][0].plot(alphalst, ind_lst4)
+    ax[0][0].plot(alphalst, ind_lst, label='h_b=0.050(old)') # Add a label
+    ax[0][0].plot(alphalst, ind_lst2, label='out GE(old)') # Add a label
+    ax[0][0].plot(alphalst, ind_lst3, label='h_b=0.050') # Add a label
+    ax[0][0].plot(alphalst, ind_lst4, label='out GE') # Add a label
+    ax[0][0].legend() # Call legend() to display the labels
 
     
     #lift curve
     ax[0][1].set_title('lift curve')
-    ax[0][1].plot(alphalst,cl_lst)
-    ax[0][1].plot(alphalst,cl_lst_GE)
+    ax[0][1].plot(alphalst,cl_lst, label='no GE')
+    ax[0][1].plot(alphalst,cl_lst_GE, label='GE')
+    ax[0][1].legend()
 
     #L/D
     L_D_lst=cl_lst/ind_lst
     ax[1][0].set_title('L/D')
     ax[1][0].set_ylim(0,70)
-    ax[1][0].plot(alphalst,L_D_lst)
+    ax[1][0].plot(alphalst,L_D_lst, label='old')
 
     #L/D WIG
     L_D_GE_lst=cl_lst_GE/ind_lst3
-    ax[1][0].set_ylim(0,70)
-    ax[1][0].plot(alphalst,L_D_GE_lst)
+    ax[1][0].plot(alphalst,L_D_GE_lst, label='new')
+    ax[1][0].legend()
+
+    print(f'L/D_max_GE: {max(L_D_GE_lst)}')
+    for i, cl in enumerate(L_D_GE_lst):
+        if cl == max(L_D_GE_lst):
+            print(f'alpha for max L/D: {alphalst[i]} degrees')
+            break
+
+    #Spanwise distribution
+    CL = 1.8
+    span = np.arange(-35, 35, 0.01)
+    Cl_array_span = CL * np.ones(np.shape(span))
+    ax[0][1].set_title('lift spanwise')
+    ax[1][1].plot(span, Cl_array_span)
+
+
     
 
     #lift distribution
