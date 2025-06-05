@@ -23,22 +23,19 @@ class OptimumSpeeds(AltitudeVelocity):
         self.fuel_weight_per_metre = (self._mtow - self._zfw) / self.data.data['requirements']['design_range']  # kg/m
 
         self._current_weight = self._mtow
-
-        self.ddist = 100000.0  # distance step in meters
     
-    def step_weight(self) -> None:
+    def step_weight(self, dw) -> None:
         """
         Update the current weight of the aircraft.
         """
-        dfuel_weight = -self.fuel_weight_per_metre*self.ddist
-        self._current_weight += dfuel_weight
+        self._current_weight += dw
 
     def v_range(self, h: float) -> float:
         """
         Calculate the maximum range velocity at a given altitude.
         """
         V_stall = self.calculate_stall_speed(h)
-        velocity_range = np.linspace(V_stall, self.dive_speed, self.velocity_steps)
+        velocity_range = np.linspace(V_stall, self.dive_speed, self.velocity_steps*5)
 
         # Compute drag for each velocity
         drag = np.array([self.calculate_drag(v, h) for v in velocity_range])
@@ -54,14 +51,14 @@ class OptimumSpeeds(AltitudeVelocity):
         Calculate the maximum endurance velocity at a given altitude.
         """
         V_stall = self.calculate_stall_speed(h)
-        velocity_range = np.linspace(V_stall, self.dive_speed, self.velocity_steps)
+        velocity_range = np.linspace(V_stall, self.dive_speed, self.velocity_steps*5)
 
         # Compute drag for each velocity
         Pr = np.array([self.calculate_power_required(v, h) for v in velocity_range])
 
         # Find velocity at which drag is minimized
-        min_drag_index = np.argmin(Pr)
-        v_max_endurance = velocity_range[min_drag_index]
+        min_pr_index = np.argmin(Pr)
+        v_max_endurance = velocity_range[min_pr_index]
 
         return v_max_endurance
     
@@ -93,6 +90,9 @@ if __name__ == "__main__":
 
     h = h_WIG = 10  # Example altitude in meters
 
+    optimum_speeds._current_weight = 1839082
+    v = optimum_speeds.v_range(h)
+
     v_range = optimum_speeds.v_range(h)
     v_endurance = optimum_speeds.v_endurance(h)
     _, v_max_roc = optimum_speeds.calculate_max_RoC(h)
@@ -106,9 +106,3 @@ if __name__ == "__main__":
     print(f"Maximum angle of climb speed: {v_max_aod:.2f} m/s")
     print(f"Minimum rate of descent speed: {v_min_rod:.2f} m/s")
     print(f"Minimum angle of descent speed: {v_min_aod:.2f} m/s")
-    
-    # for i in np.arange(0, 3704000, optimum_speeds.ddist):
-    #     v_range = optimum_speeds.v_range(0)  # Example altitude
-    #     # Call methods as needed
-    #     print(optimum_speeds.L_over_D(0, v_range), optimum_speeds.calculate_drag(v_range, 0))  # Example altitude and velocity
-    #     optimum_speeds.step_weight()

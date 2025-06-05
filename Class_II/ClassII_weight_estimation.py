@@ -3,13 +3,19 @@ import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from utils import *
 import numpy as np
+from Class_II.Modified_CD0 import Cd0Estimation
 
 class ClassII:
     def __init__(self, aircraft_data: Data) -> None:
-
         self.aircraft_data = aircraft_data
         self.design_number = aircraft_data.data['design_id']
         self.design_file = f"design{self.design_number}.json"
+
+        cdest = Cd0Estimation(
+        aircraft_data=aircraft_data,
+        mission_type=MissionType.DESIGN,
+        class_ii_OEW=aircraft_data.data['outputs']['max']['OEW']
+        )
 
         self.fudge_factor = 1.25 # fudge factor for weight estimation for flying boat
 
@@ -88,10 +94,10 @@ class ClassII:
         self.S_cs = msq2ftsq(100) # total control surface area
         self.S_csw = 2*msq2ftsq(self.aircraft_data.data['outputs']['control_surfaces']['aileron']['area_single']) # control surface area wing mounted 
         self.S_e = 2*msq2ftsq(self.aircraft_data.data['outputs']['control_surfaces']['aileron']['area_single']) # elevator area
-        self.S_f = msq2ftsq(2*np.pi*self.aircraft_data.data['outputs']['fuselage_dimensions']['d_fuselage_equivalent_station2']*self.aircraft_data.data['outputs']['fuselage_dimensions']['l_fuselage'] + 2*np.pi*self.aircraft_data.data['outputs']['fuselage_dimensions']['d_fuselage_equivalent_station2']**2) # fuselage wetted area
+        self.S_f = msq2ftsq(cdest.fuselage_wet())
         # self.S_fw = # firewall surface area
         self.S_ht = msq2ftsq(self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['S']) # horizontal tail surface area
-        self.S_n = msq2ftsq(np.pi*self.N_w*self.N_Lt + np.pi*(self.N_w/2)**2) # nacelle wetted area
+        self.S_n = msq2ftsq(cdest.nacelle_wet()) # nacelle wetted area
         # self.S_r = # rudder area
         self.S_vt = msq2ftsq(self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['S']) # vertical tail surface area
         self.S_w = msq2ftsq(self.aircraft_data.data['outputs']['wing_design']['S']) # wing surface area
