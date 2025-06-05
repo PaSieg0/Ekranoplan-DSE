@@ -20,7 +20,7 @@ class DerivativesDatcom_asym:
         self.Ah = aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['aspect_ratio']
         self.Sh = aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['S'] # Surface area of the horizontal tail: 100
         self.Sv = aircraft_data.data['outputs']['empennage_design']['vertical_tail']['S'] # Surface area of the vertical tail: 75
-        self.d_fusel = np.array([aircraft_data.data['outputs']['fuselage_dimensions']['d_fuselage_equivalent_station1'], aircraft_data.data['outputs']['fuselage_dimensions']['d_fuselage_equivalent_station2'], aircraft_data.data['outputs']['fuselage_dimensions']['d_fuselage_equivalent_station3']]) # Diameter of the fuselage
+        self.d_fusel = aircraft_data.data['outputs']['fuselage_dimensions']['d_fuselage_equivalent_station2'] # Diameter of the fuselage
         self.V_b = aircraft_data.data['outputs']['fuselage_dimensions']['total_volume'] # total body volume [m3]: 20000
         self.b = aircraft_data.data['outputs']['design']['b']
         self.lp = 1 # 36.431 # ℓₚ is the distance parallel to the longitudinal body axis between the vehicle moment center and the quarter-chord point of the MAC of the vertical panel, positive for the panel aft of the vehicle moment center.

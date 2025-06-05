@@ -32,7 +32,7 @@ class DerivativesDatcom_sym:
         self.c_h = aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['MAC'] # Mean aerodynamic chord of the horizontal tail
         self.Cm_alpha = 1
         self.x_h = aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['l_h']
-        self.Cl_alpha_h = 1 # Lift curve slope of the horizontal tail
+        self.Cl_alpha_h = 0.119 # Lift curve slope of the horizontal tail
         self.x_w = 1
         self.x_cg = 1
         isa = ISA(self.aircraft_data.data['inputs']['cruise_altitude'])
