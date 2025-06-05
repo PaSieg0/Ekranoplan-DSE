@@ -5,12 +5,12 @@ import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import matplotlib.pyplot as plt
 from utils import Data, MissionType, ISA, AircraftType
-
-
+from aero.lift_curve import lift_curve
 
 class DerivativesDatcom_sym:
     def __init__(self, aircraft_data: Data):
         self.aircraft_data = aircraft_data
+        self.lift_curve = lift_curve()
         self.Delta_c4 = aircraft_data.data['outputs']['wing_design']['sweep_c_4'] #degrees
         self.l_b = aircraft_data.data['outputs']['fuselage_dimensions']['l_fuselage'] # length of body 
         self.dihedral = aircraft_data.data['outputs']['wing_design']['dihedral'] #degrees
@@ -20,25 +20,26 @@ class DerivativesDatcom_sym:
         self.Ah = aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['aspect_ratio']
         self.Sh = aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['S'] # Surface area of the horizontal tail: 100
         self.Sv = aircraft_data.data['outputs']['empennage_design']['vertical_tail']['S'] # Surface area of the vertical tail: 75
-        self.V_b = 1 # total body volume [m3]: 20000
+        self.V_b = aircraft_data.data['outputs']['fuselage_dimensions']['total_volume'] # total body volume [m3]: 20000
         self.b = aircraft_data.data['outputs']['design']['b']
-        self.lp = 1 # 36.431
-        self.Cl_alpha = 1 # Lift curve slope of the wing, in rad: 9.167
+        self.lp = (aircraft_data.data['outputs']['fuselage_dimensions']['d_fuselage_equivalent_station3'] / 2) + (aircraft_data.data['outputs']['empennage_design']['vertical_tail']['z_MAC_v'])  # ℓₚ is the distance parallel to the longitudinal body axis between the vehicle moment center and the quarter-chord point of the MAC of the vertical panel, positive for the panel aft of the vehicle moment center.
+        self.Cl_alpha = self.lift_curve.dcl_dalpha()[0] # Lift curve slope of the wing, in rad: 9.167
         self.e = aircraft_data.data['inputs']['oswald_factor'] # Oswald efficiency factor of the wing : 0.85 (guessed, typical value for a subsonic aircraft)
         self.taper = aircraft_data.data['outputs']['wing_design']['taper_ratio'] # Taper ratio of the wing: 0.4
         self.MAC = aircraft_data.data['outputs']['wing_design']['MAC']  # Mean Aerodynamic Chord: 8.456
-        self.x_bar = 1 # x_ac - x_cg # Distance from the leading edge of the wing to the center of gravity: 31.5(from excel)
+        self.x_cg = 1/2 * (aircraft_data.data['outputs']['cg_range']['most_aft_cg'] + aircraft_data.data['outputs']['cg_range']['most_forward_cg'])
+        self.x_ac = aircraft_data.data['outputs']['wing_design']['X_LEMAC'] +  aircraft_data.data['outputs']['wing_design']['MAC']*0.3 # Aerodynamic center of the wing: 0.25 * MAC
+        self.x_bar = self.x_ac - self.x_cg # Distance from the leading edge of the wing to the center of gravity: 31.5(from excel)
         self.Cd0 = aircraft_data.data['inputs']['Cd0'] # Zero-lift drag coefficient of the wing
-        self.c_h = 1
-        self.Cm_alpha = 1
-        self.x_h = aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['l_h']  # Distance from the leading edge of the wing to the horizontal tail
-        self.Cl_alpha_h = 1
-        self.x_w = 1
-        self.x_cg = 1
-        self.M = 1
-        self.theta_0 = 1
-        self.Cl_0 = 1
-        self.d_fusel = 1  # Diameter of the fuselage, assumed to be 0 for now
+        self.c_h = aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['MAC'] # Mean aerodynamic chord of the horizontal tail
+        self.x_h = aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['l_h']
+        self.Cl_alpha_h = aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['Cl_alpha']
+        self.x_w = self.x_ac
+        isa = ISA(self.aircraft_data.data['inputs']['cruise_altitude'])
+        self.M = isa.Mach(self.aircraft_data.data['requirements']['cruise_speed'])
+        self.theta_0 = 0
+        self.Cl_0 = 0
+        self.d_fusel = aircraft_data.data['outputs']['fuselage_dimensions']['d_fuselage_equivalent_station2']  # Diameter of the fuselage, assumed to be 0 for now
 
         self.Cl = 0.5
         self.alpha = np.deg2rad(2)  # Example angle of attack in radians
@@ -57,7 +58,7 @@ class DerivativesDatcom_sym:
         x_m = 32.55 # longtitudinal
         x_c = 75.078 / 2 # cross-sectional
         S_b = self.d_fusel * self.l_b
-        CmqB = 2 * self.Cm_alpha * ((1 - x_m/self.l_b)**2 - self.V_b /(S_b * self.l_b)*(x_c/self.l_b - x_m / self.l_b) / ((1-x_m/self.l_b) - self.V_b/(S_b*self.l_b))) #p.2655
+        CmqB = 2 * self.Cmalpha() * ((1 - x_m/self.l_b)**2 - self.V_b /(S_b * self.l_b)*(x_c/self.l_b - x_m / self.l_b) / ((1-x_m/self.l_b) - self.V_b/(S_b*self.l_b))) #p.2655
         Cm_wb = (K_wb + K_bw)*(self.Sh/self.S)*(self.c_h/self.MAC)**2 * Cmqe + CmqB * (S_b / self.S)*(self.l_b/self.MAC)**2
         
         
@@ -76,8 +77,6 @@ class DerivativesDatcom_sym:
         downwash_gradient = 2 * self.Cl_alpha / (np.pi * self.A)
         l_h = self.x_h - self.x_cg
         Cmalpha = self.Cl_alpha * (self.x_cg - self.x_w)/self.MAC - self.Cl_alpha_h*(1-downwash_gradient)*self.Sh*l_h / (self.S * self.MAC)
-        print(downwash_gradient)
-        print(f"Cl_alpha: {self.Cl_alpha}, x_cg: {self.x_cg}, x_w: {self.x_w}, MAC: {self.MAC}, x_h: {self.x_h}, Sh: {self.Sh}, S: {self.S}, l_h: {l_h}")
         return Cmalpha
     
     def C_Z_u(self):
@@ -88,7 +87,7 @@ class DerivativesDatcom_sym:
         return Cxu
 
     def C_m_u(self):
-        print('Ignored, see paper, Pitching moment coefficient science direct')
+        # 'Ignored, see paper, Pitching moment coefficient science direct')
         return 0
 
     def C_m_alphadot(self):
@@ -102,7 +101,6 @@ class DerivativesDatcom_sym:
         # Cm_alphadot_wb = (K_bw + K_wb) * (self.Sh/self.S)*(self.c_h/self.MAC)**2 * Cm_alphadot_e + Cm_alphadot_B * ((S_b / self.S)*(self.l_b/self.MAC)**2)
         l_h = self.x_h - self.x_cg
         downwash_gradient = 2 * self.Cl_alpha / (np.pi * self.A)
-        print(downwash_gradient)
         Cm_alphadot = -self.Cl_alpha * 1 * downwash_gradient *self.Sh*l_h**2 / (self.S * self.MAC**2)
         return np.deg2rad(Cm_alphadot)
     

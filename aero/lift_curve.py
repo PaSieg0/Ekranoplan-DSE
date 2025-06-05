@@ -8,15 +8,18 @@ class lift_curve():
         #importing lift curve data which is generated from xfoil without WIG
         self.data=np.loadtxt('aero\\lift curve no WIG.txt')
         self.data_span = np.loadtxt('aero\\spanwise curves.txt')
+        self.data_tail_NACA0012 = np.loadtxt('aero\\Tail_NACA0012_XFLR.txt')
         #print(self.data)
 
         #angle of attack data
         self.alpha=self.data[:, 0]
+        self.alpha_tail = self.data_tail_NACA0012[:,0]
 
         #lift coefficient data
         self.cl_lst=self.data[:,1]
         self.cd_lst=self.data[:,2]
         self.cm_lst=self.data[:,3]
+        self.cl_lst_tail = self.data_tail_NACA0012[:,1]
 
         self.y_spanwise = self.data_span[:0]
         self.chord_spanwise = self.data_span[:1]
@@ -302,7 +305,7 @@ class lift_curve():
         # Find index where alpha is closest to 5
         
         idx = 7   #np.argmin(np.abs(alpha_arr - 3))
-        # print(alpha_arr[idx])
+        # # print(alpha_arr[idx])
         
         # Slice arrays up to and including that index
         alpha_fit = alpha_arr[:idx+1]
@@ -312,7 +315,19 @@ class lift_curve():
         slope, intercept = np.polyfit(alpha_fit, cl_fit, 1)
 
         return slope, intercept
-    
+
+    def dcl_dalpha_tail(self):
+        NACA0012_data = self.cl_lst_tail
+        slope_tail = self.dcl_dalpha(NACA0012_data)
+        print(slope_tail)
+        return slope_tail
+
+    def dcl_dalpha_tail(self):
+        NACA0012_data = self.cl_lst_tail
+        slope_tail = self.dcl_dalpha(NACA0012_data)
+        print(slope_tail)
+        return slope_tail
+
 
     def make_plot_data(self):
         #drag polar

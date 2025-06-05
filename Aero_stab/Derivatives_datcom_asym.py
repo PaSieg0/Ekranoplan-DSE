@@ -5,34 +5,39 @@ import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import matplotlib.pyplot as plt
 from utils import Data, MissionType, ISA, AircraftType
+from aero.lift_curve import lift_curve
 
 class DerivativesDatcom_asym:
     def __init__(self, aircraft_data: Data, mission_type: MissionType) -> None:
         self.aircraft_data = aircraft_data
+        self.lift_curve = lift_curve()
         self.Delta_c4 = aircraft_data.data['outputs']['wing_design']['sweep_c_4'] #degrees
         self.l_b = aircraft_data.data['outputs']['fuselage_dimensions']['l_fuselage'] # length of body 
         self.dihedral = aircraft_data.data['outputs']['wing_design']['dihedral'] #degrees
+
         self.A = aircraft_data.data['outputs']['wing_design']['aspect_ratio'] 
         self.S = aircraft_data.data['outputs']['wing_design']['S'] 
         self.Av = aircraft_data.data['outputs']['empennage_design']['vertical_tail']['aspect_ratio'] # Aspect ratio of the vertical tail
         self.Ah = aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['aspect_ratio']
         self.Sh = aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['S'] # Surface area of the horizontal tail: 100
         self.Sv = aircraft_data.data['outputs']['empennage_design']['vertical_tail']['S'] # Surface area of the vertical tail: 75
-        self.d_fusel = np.array([aircraft_data.data['outputs']['fuselage_dimensions']['d_fuselage_equivalent_station1'], aircraft_data.data['outputs']['fuselage_dimensions']['d_fuselage_equivalent_station2'], aircraft_data.data['outputs']['fuselage_dimensions']['d_fuselage_equivalent_station3']]) # Diameter of the fuselage
-        self.V_b = V_b # total body volume [m3]: 20000
+        self.d_fusel = aircraft_data.data['outputs']['fuselage_dimensions']['d_fuselage_equivalent_station2'] # Diameter of the fuselage
+        self.V_b = aircraft_data.data['outputs']['fuselage_dimensions']['total_volume'] # total body volume [m3]
         self.b = aircraft_data.data['outputs']['design']['b']
-        self.lp = lp # 36.431
-        self.Cl_alpha = Cl_alpha # Lift curve slope of the wing, in rad: 9.167
+
+        self.lp = (aircraft_data.data['outputs']['fuselage_dimensions']['d_fuselage_equivalent_station3'] / 2) + (aircraft_data.data['outputs']['empennage_design']['vertical_tail']['z_MAC_v'])  # ℓₚ is the distance parallel to the longitudinal body axis between the vehicle moment center and the quarter-chord point of the MAC of the vertical panel, positive for the panel aft of the vehicle moment center.
+        self.Cl_alpha = self.lift_curve.dcl_dalpha()[0] # Lift curve slope of the wing in deg
         self.e = aircraft_data.data['inputs']['oswald_factor'] # Oswald efficiency factor of the wing : 0.85 (guessed, typical value for a subsonic aircraft)
         self.taper = aircraft_data.data['outputs']['wing_design']['taper_ratio'] # Taper ratio of the wing: 0.4
-        self.MAC = aircraft_data.data['outputs']['wing_design']['MAC']  # Mean Aerodynamic Chord: 8.456
-        self.x_bar = x_ac - x_cg # Distance from the leading edge of the wing to the center of gravity: 31.5(from excel)
+        self.MAC =  aircraft_data.data['outputs']['wing_design']['MAC']  # Mean Aerodynamic Chord
+        self.x_bar = (aircraft_data.data['outputs']['wing_design']['X_LEMAC'] + (0.25*aircraft_data.data['outputs']['wing_design']['MAC'])) - aircraft_data.data['outputs']['cg_range']['most_aft_cg'] #x_ac - x_cg # Distance from the leading edge of the wing to the center of gravity: 31.5(from excel)
         self.Cd0 = aircraft_data.data['inputs']['Cd0'] # Zero-lift drag coefficient of the wing
-        self.c_h = c_h
-        self.alpha = 5.0 # Angle of attack in degrees, TODO: UPDATE!!
+
+        self.c_h = aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['MAC']
+        self.alpha = aircraft_data.data['inputs']['alpha_cruise'] # Angle of attack in degrees, TODO: UPDATE!!
         self.Cl = 0.5   # Lift coefficient at the angle of attack, TODO: UPDATE!!
-        self.alpha_f = 5.0 # Fuselage AoA in degrees, TODO: UPDATE!!
-        self.h_b = 0.05
+        self.alpha_f = aircraft_data.data['inputs']['alpha_fuselage'] # Fuselage AoA in degrees, TODO: UPDATE!!
+        self.h_b = aircraft_data.data['inputs']['cruise_altitude'] / self.b 
 
 
     def CyB(self):
@@ -84,7 +89,7 @@ class DerivativesDatcom_asym:
         dclB_zw = 1.2 * np.sqrt(self.A) / 57.3 * (2/self.b) * (2 * self.d_fusel / self.b)
 
         #TODO: check if dihedral should indeed be in degrees for this formula
-        ClB_wb = Cl *(clB__cl_s*Km_s*kf+clB__Cl_A) + self.dihedral * (clB__dihedral * Km_d + dclB__dihedral) + dclB_zw + 0
+        ClB_wb = self.Cl *(clB__cl_s*Km_s*kf+clB__Cl_A) + self.dihedral * (clB__dihedral * Km_d + dclB__dihedral) + dclB_zw + 0
 
         K = 1.4 #p.1600 smthng
         cl_alpha_V_tail = 0.16 #p.1600 smthng
@@ -125,7 +130,7 @@ class DerivativesDatcom_asym:
         dCyp_dihedral = (3 * np.sin(np.radians(self.dihedral) * (1 - 2 * z / (self.b / 2)) * np.sin(np.radians(self.dihedral)))) * clp_cl0
         Cyp_wb = K*((Cyp__Cl * self.Cl)) + dCyp_dihedral
 
-        dCyB_VWBH = self.CyB(self.Cl)[1]
+        dCyB_VWBH = self.CyB()[1]
         Cyp_Vtail = Cyp_wb + 2 * ((z - zp) / self.b) * dCyB_VWBH
         return Cyp_wb + Cyp_Vtail, K
     
@@ -152,11 +157,11 @@ class DerivativesDatcom_asym:
         B = np.sqrt(1 - 0.34**2 * np.cos(np.radians(self.Delta_c4))**2) # p.2522
         Cnp__Cl_M0 = (-(1 / 6) * (self.A + 6 * (self.A + np.cos(np.radians(self.Delta_c4))))*(x__c * np.tan(np.radians(self.Delta_c4)) / self.A  + (np.tan(np.radians(self.Delta_c4)))**2 / 12)) / (self.A + 4 * np.cos(np.radians(self.Delta_c4)))
         Cnp__Cl = ((self.A + 4 * np.cos(np.radians(self.Delta_c4))) / (self.A * B + 4 * np.cos(np.radians(self.Delta_c4)))) * ((self.A * B + 0.5 * (self.A * B + np.cos(np.radians(self.Delta_c4)) * (np.tan(np.radians(self.Delta_c4)))**2)) / (self.A + 0.5 * (self.A + np.cos(np.radians(self.Delta_c4)) * (np.tan(np.radians(self.Delta_c4)))**2))) * Cnp__Cl_M0
-        Cnp_w = -self.Clp() * np.tan(np.radians(self.alpha)) - self.Cyp(self.Cl, self.alpha, h_b = 0.05)[1] * (-self.Clp() * np.tan(np.radians(self.alpha)) - Cnp__Cl * self.Cl) # p.2559 
+        Cnp_w = -self.Clp() * np.tan(np.radians(self.alpha)) - self.Cyp()[1] * (-self.Clp() * np.tan(np.radians(self.alpha)) - Cnp__Cl * self.Cl) # p.2559 
 
         zp = 7 # Guessed, distance from the centerline of the body to the centerline of the vertical tail
         z = zp * np.cos(np.radians(self.alpha)) - self.lp * np.sin(np.radians(self.alpha)) # distance from the centerline of the body to the centerline of the wing
-        Cnp_tail = 2 / self.b * (self.lp * np.cos(np.radians(self.alpha)) + zp * np.sin(np.radians(self.alpha)) * (z - zp) / self.b * self.CyB(self.Cl)[1])
+        Cnp_tail = 2 / self.b * (self.lp * np.cos(np.radians(self.alpha)) + zp * np.sin(np.radians(self.alpha)) * (z - zp) / self.b * self.CyB()[1])
         return Cnp_w - Cnp_tail, Cnp_w, Cnp_tail
     
     def Cyr(self):
@@ -180,14 +185,14 @@ class DerivativesDatcom_asym:
         kf = 0.95 # from plot p1625
         clB__Cl_A = 0 #from plot
         ClB__Cl = clB__cl_s*Km_s*kf+clB__Cl_A
-        dClr_Cl = self.Cl * ClB__Cl - self.ClB(self.Cl, self.alpha)
+        dClr_Cl = self.Cl * ClB__Cl - self.ClB()
         dClr__dihedral = 1/12 * (np.pi * self.A * np.sin(np.radians(self.Delta_c4))) / (self.A + 4 * np.cos(np.radians(self.Delta_c4)))
 
         #TODO: Check if dihedral should indeed be in degrees for this formula
         Clr_wb = self.Cl * Clr__Cl + dClr_Cl + dClr__dihedral * self.dihedral
 
         zp = 7 # Guessed, distance from the centerline of the body to the centerline of the vertical tail
-        Clr_tail = 2 / self.b**2 * (self.lp * np.cos(np.radians(self.alpha)) + zp * np.sin(np.radians(self.alpha))*(zp*np.cos(np.radians(self.alpha) - self.lp * np.sin(np.radians(self.alpha)))) * self.CyB(self.Cl)[1]) #p.2802
+        Clr_tail = 2 / self.b**2 * (self.lp * np.cos(np.radians(self.alpha)) + zp * np.sin(np.radians(self.alpha))*(zp*np.cos(np.radians(self.alpha) - self.lp * np.sin(np.radians(self.alpha)))) * self.CyB()[1]) #p.2802
         return Clr_wb - Clr_tail
     
     def Cnr(self):
@@ -202,7 +207,7 @@ class DerivativesDatcom_asym:
         Cnr_wb = Cnr__Cl2 * self.Cl**2 + Cnr__Cd0 * self.Cd0
 
         zp = 7 # Guessed, distance from the centerline of the body to the centerline of the vertical tail
-        Cnr_tail = 2 / self.b**2 * (self.lp * np.cos(np.radians(self.alpha)) + zp * np.sin(np.radians(self.alpha)))**2 * self.CyB(self.Cl)[1]
+        Cnr_tail = 2 / self.b**2 * (self.lp * np.cos(np.radians(self.alpha)) + zp * np.sin(np.radians(self.alpha)))**2 * self.CyB()[1]
 
         return Cnr_wb + Cnr_tail
     
@@ -227,8 +232,13 @@ class DerivativesDatcom_asym:
     
     def ClBdot(self):
         zp = 7
-        ClB_dot = self.CyBdot(self.Cl,self.alpha_f) * (zp * np.cos(np.radians(self.alpha_f)) - self.lp * np.sin(np.radians(np.radians(self.alpha_f)))) / self.b
+        ClB_dot = self.CyBdot() * (zp * np.cos(np.radians(self.alpha_f)) - self.lp * np.sin(np.radians(np.radians(self.alpha_f)))) / self.b
         return ClB_dot
+    
+    def CnBdot(self):
+        zp = 7
+        CnB_dot = -self.CyBdot() * (self.lp * np.cos(self.alpha_f) + zp * np.sin(self.alpha_f)) / self.b
+        return CnB_dot
     
     def update_json(self):
         # Run the functions you want to store
@@ -246,36 +256,19 @@ class DerivativesDatcom_asym:
             'Cnr': derivatives.Cnr(),  # Example usage with Cl = 0.5, alpha = 5 degrees
             'CyBdot': derivatives.CyBdot(),  # Example usage with Cl = 0.5, alpha = 5 degrees
             'ClBdot': derivatives.ClBdot(),  # Example usage with Cl = 0.5, alpha = 5 degrees
-
+            'CnBdot': derivatives.CnBdot(),
             # Add more functions here if needed
         }
+
+        lift_curve_slope = {
+            'Cl_alpha': self.lift_curve.dcl_dalpha()[0]  # Lift curve slope of the wing, in deg
+        }
+
         self.aircraft_data.data['outputs']['aerodynamic_stability_coefficients_asym'] = aero_stability_outputs
+        self.aircraft_data.data['outputs']['aerodynamics'] = lift_curve_slope
         self.aircraft_data.save_design('design3.json')
 
-
-
-
-# cyb = DerivativesDatcom(0, 8, 507, 1.5, 100, 75, 1,60, 6, 2000, 63.79, 36.431, 0.16, 0.85)
-# print(cyb.CnB())
-# Cyp = DerivativesDatcom(0, 8, 507, 1.5, 100, 75, 1,60, 6, 2000, 63.79, 36.431, 0.16, 0.85)
-# print(Cyp.Cyp(0.5, 0.1, 0.05))
-# Clp = DerivativesDatcom(0, 8, 507, 1.5, 100, 75, 1,60, 6, 2000, 63.79, 36.431, 0.16, 0.85, 0.4)
-# print(Clp.Clp())
-# Cnp = DerivativesDatcom(0, 8, 507, 1.5, 100, 75, 1,60, 6, 2000, 63.79, 36.431, 0.16, 0.85, 0.4)
-# print(Cnp.Cnp(1, np.deg2rad(2)))
-# Cnr = DerivativesDatcom(0, 8, 507, 1.5, 100, 75, 1,60, 6, 2000, 63.79, 36.431, 0.16, 0.85, 0.4)
-# print(Cnr.Cnr(1, np.deg2rad(2)))
-# Clr = DerivativesDatcom(0, 8, 507, 1.5, 100, 75, np.deg2rad(1) ,60, 6, 2000, 63.79, 36.431, 0.16, 0.85, 0.4)
-# print(Clr.Clr(1, np.deg2rad(2)))
-derivatives = DerivativesDatcom_asym(0, 8, 507, 1.5, 100, 75, np.deg2rad(1), 60, 6, 2000, 63.79, 36.431, 0.16, 0.85, 0.4)
-# print(CyBdot.CyB(1))
-
-
-
-
-
-
-if __name__ == 'main':
+if __name__ == '__main__':
     aircraft_data = Data("design3.json")
     derivatives = DerivativesDatcom_asym(aircraft_data=aircraft_data, mission_type=MissionType.DESIGN)
 
