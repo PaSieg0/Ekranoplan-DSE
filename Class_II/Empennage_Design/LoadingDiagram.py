@@ -146,7 +146,6 @@ class LoadingDiagram:
         fuel_cg_mac = (fuel_cg[0] - self.X_LEMAC) / self.MAC
         fuel_heavy_cg_mac = (fuel_cg[0] - self.X_LEMAC) / self.MAC
         fuel_OEW_cg_mac = (fuel_OEW_cg[0] - self.X_LEMAC) / self.MAC
-        print("fuel_cg_mac", fuel_OEW_cg_mac)
 
         self.min_cg = min(
             f2b_cg_mac.min(),
@@ -164,7 +163,7 @@ class LoadingDiagram:
             fuel_cg_mac,
             fuel_heavy_cg_mac,
         )
-        return self.min_cg, self.max_cg
+        return 0.98*self.min_cg, 1.02*self.max_cg
 
     
 
@@ -247,7 +246,7 @@ class LoadingDiagram:
 if __name__ == "__main__":
     file_path = "design3.json"
     aircraft_data = Data(file_path)
-    wing_placement = 0.331
+    wing_placement = 0.349
     loading_diagram = LoadingDiagram(aircraft_data=aircraft_data, wing_placement=wing_placement)
     loading_diagram.plot()
     min_cg, max_cg = loading_diagram.determine_range()

@@ -23,6 +23,7 @@ class Tail_area:
         self.most_aft_cg = aft_cg * self.MAC + self.lemac
         self.most_fwd_cg = fwd_cg * self.MAC + self.lemac
         self.horizontal_tail_pos = aircraft_data.data['outputs']['component_positions']['horizontal_tail']
+        self.l_h = aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['l_h']  # horizontal tail arm length
 
     def get_downwash(self):
         if self.tail_type == "T_TAIL":
@@ -48,11 +49,11 @@ class Tail_area:
         # TODO: link to json
         CL_alpha_h = 0.132 #need to account for the tail
         CL_alpha_A_h = 0.132
-        lh = self.horizontal_tail_pos[0]-self.most_aft_cg
+        lh = self.l_h
         downwash = self.get_downwash()
         c = self.MAC
         X_ac = self.get_aerodynamic_center()
-        Stability_margin = 0.05 #maybe look up if this needs to be bigger for ekrano
+        Stability_margin = 0.1 #maybe look up if this needs to be bigger for ekrano
         Vh_V = 1
 
         Sh_S = 1/((CL_alpha_h/CL_alpha_A_h)*(1-downwash)*(lh/c)*Vh_V**2)*X_cg - (X_ac-Stability_margin)/((CL_alpha_h/CL_alpha_A_h)*(1-downwash)*(lh/c)*Vh_V**2)
@@ -112,8 +113,8 @@ if __name__ == "__main__":
     file_path = "design3.json"
     aircraft_data = Data(file_path)
     Xcg_values = np.linspace(-0.5, 1.2, 200)
-    fwd_cg = 0.2676
-    aft_cg = 0.6357
+    fwd_cg = 0.182
+    aft_cg = 0.472
     tail = Tail_area(aircraft_data=aircraft_data, fwd_cg=fwd_cg, aft_cg=aft_cg)
     plot = tail.plot(Xcg_values)
     tail_area = tail.get_tail_area()
