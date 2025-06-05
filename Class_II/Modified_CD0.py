@@ -18,8 +18,8 @@ class Cd0Estimation:
         self.t_c_wing = self.aircraft_data.data['inputs']['airfoils']['wing']
         self.t_c_htail = self.aircraft_data.data['inputs']['airfoils']['horizontal_tail']
         self.t_c_vtail = self.aircraft_data.data['inputs']['airfoils']['vertical_tail']
-        self.d_F = self.aircraft_data.data['outputs']['general']['d_fuselage_equivalent_straight']
-        self.l_F = self.aircraft_data.data['outputs']['general']['l_fuselage']
+        self.d_F = self.aircraft_data.data['outputs']['fuselage_dimensions']['d_fuselage_equivalent_station2']
+        self.l_F = self.aircraft_data.data['outputs']['fuselage_dimensions']['l_fuselage']
         self.lambda_F = self.l_F / self.d_F
         self.l_nacelle = self.aircraft_data.data['inputs']['engine']['engine_length']
         self.d_nacelle = 0.92  # diameter in meters
@@ -174,7 +174,7 @@ class Cd0Estimation:
             self.iteration.run_iteration()
 
             self.curr_Cd0 = self.Cd0
-
+            self.curr_MTOM = self.aircraft_data.data['outputs'][mission_type]['MTOM']
 
             stop_condition = (abs((self.curr_Cd0 - self.prev_Cd0) / self.prev_Cd0) < self.tolerance and abs(self.curr_MTOM-self.prev_MTOM)/self.prev_MTOM) or self.iteration_number >= self.max_iterations
             if stop_condition:
