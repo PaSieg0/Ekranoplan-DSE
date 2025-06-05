@@ -71,8 +71,8 @@ class DerivativesDatcom_asym:
         downwash_gradient = 2 * self.Cl_alpha / (np.pi * self.A)
         l_h = self.x_h - self.x_cg
         Cmalpha = self.Cl_alpha * (self.x_cg - self.x_w)/self.MAC - self.Cl_alpha_h*(1-downwash_gradient)*self.Sh*l_h / (self.S * self.MAC)
-        print(downwash_gradient)
-        print(f"Cl_alpha: {self.Cl_alpha}, x_cg: {self.x_cg}, x_w: {self.x_w}, MAC: {self.MAC}, x_h: {self.x_h}, Sh: {self.Sh}, S: {self.S}, l_h: {l_h}")
+        # print(downwash_gradient)
+        # print(f"Cl_alpha: {self.Cl_alpha}, x_cg: {self.x_cg}, x_w: {self.x_w}, MAC: {self.MAC}, x_h: {self.x_h}, Sh: {self.Sh}, S: {self.S}, l_h: {l_h}")
         return Cmalpha
     
     def C_Z_u(self):

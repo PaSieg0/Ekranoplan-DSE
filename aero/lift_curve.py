@@ -8,15 +8,18 @@ class lift_curve():
         #importing lift curve data which is generated from xfoil without WIG
         self.data=np.loadtxt('aero\\lift curve no WIG.txt')
         self.data_span = np.loadtxt('aero\\spanwise curves.txt')
+        self.data_tail_NACA0012 = np.loadtxt('aero\\Tail_NACA0012_XFLR.txt')
         #print(self.data)
 
         #angle of attack data
         self.alpha=self.data[:, 0]
+        self.alpha_tail = self.data_tail_NACA0012[:,0]
 
         #lift coefficient data
         self.cl_lst=self.data[:,1]
         self.cd_lst=self.data[:,2]
         self.cm_lst=self.data[:,3]
+        self.cl_lst_tail = self.data_tail_NACA0012[:,1]
 
         self.y_spanwise = self.data_span[:0]
         self.chord_spanwise = self.data_span[:1]
@@ -183,7 +186,21 @@ class lift_curve():
     def calc_moment_ac(self):
         pass
     
-    def dcl_dalpha(self):
+    def dcl_dalpha(self, tail = False):
+        if tail == True:
+            alpha_arr = self.alpha_tail
+            cl_arr = self.cl_lst_tail
+            # Find index where alpha is closest to 5
+            idx = np.argmin(np.abs(alpha_arr - 3))
+            
+            # Slice arrays up to and including that index
+            alpha_fit = alpha_arr[:idx+1]
+            cl_fit = cl_arr[:idx+1]
+            
+            # Perform linear fit
+            slope, intercept = np.polyfit(alpha_fit, cl_fit, 1)
+            return slope
+
     # Convert alpha to numpy array if it's not already
         alpha_arr = np.array(self.alpha)
         cl_arr = np.array(self.cl_lst)
@@ -210,6 +227,12 @@ class lift_curve():
 
         return slope
 
+    def dcl_dalpha_tail(self):
+        NACA0012_data = self.cl_lst_tail
+        slope_tail = self.dcl_dalpha(NACA0012_data)
+        print(slope_tail)
+        return slope_tail
+
 
 
 
@@ -222,7 +245,7 @@ class lift_curve():
 if __name__ == "__main__":  #if run seperately  
     #defines instance
     curves=lift_curve()
-
+    print(f'tail Cl alpha: {curves.dcl_dalpha(tail = True)}')
     #curves.interpolate(-4.2)
 
     #getting alpha data from instnace
