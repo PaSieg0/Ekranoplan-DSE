@@ -8,6 +8,7 @@ from utils import Data, MissionType, ISA, AircraftType
 
 class DerivativesDatcom_asym:
     def __init__(self, aircraft_data: Data, mission_type: MissionType) -> None:
+        self.aircraft_data = aircraft_data
         self.Delta_c4 = aircraft_data.data['outputs']['wing_design']['sweep_c_4'] #degrees
         self.l_b = aircraft_data.data['outputs']['fuselage_dimensions']['l_fuselage'] # length of body 
         self.dihedral = aircraft_data.data['outputs']['wing_design']['dihedral'] #degrees
@@ -228,6 +229,28 @@ class DerivativesDatcom_asym:
         zp = 7
         ClB_dot = self.CyBdot(self.Cl,self.alpha_f) * (zp * np.cos(np.radians(self.alpha_f)) - self.lp * np.sin(np.radians(np.radians(self.alpha_f)))) / self.b
         return ClB_dot
+    
+    def update_json(self):
+        # Run the functions you want to store
+        # Run the functions you want to store
+        # Note, sometimes the [0] entry is used. THis is due to some function outputs being used in other functions. The main coefficient is always the first one
+        aero_stability_outputs = {
+            'CyB': derivatives.CyB()[0],  # Example usage with Cl = 0.5
+            'ClB': derivatives.ClB(),  # Example usage with Cl = 0.5 and alpha = 5 degrees
+            'CnB': derivatives.CnB()[0],  # Example usage
+            'Cyp': derivatives.Cyp()[0],  # Example usage with Cl = 0.5, alpha = 5 degrees, h_b = 0.05
+            'Clp': derivatives.Clp(),  # Example usage
+            'Cnp': derivatives.Cnp()[0],  # Example usage with Cl = 0.5, alpha = 5 degrees
+            'Cyr': derivatives.Cyr(),  # Example usage with Cl = 0.5, alpha = 5 degrees
+            'Clr': derivatives.Clr(),  # Example usage with Cl = 0.5, alpha = 5 degrees
+            'Cnr': derivatives.Cnr(),  # Example usage with Cl = 0.5, alpha = 5 degrees
+            'CyBdot': derivatives.CyBdot(),  # Example usage with Cl = 0.5, alpha = 5 degrees
+            'ClBdot': derivatives.ClBdot(),  # Example usage with Cl = 0.5, alpha = 5 degrees
+
+            # Add more functions here if needed
+        }
+        self.aircraft_data.data['outputs']['aerodynamic_stability_coefficients_asym'] = aero_stability_outputs
+        self.aircraft_data.save_design('design3.json')
 
 
 
@@ -249,47 +272,13 @@ derivatives = DerivativesDatcom_asym(0, 8, 507, 1.5, 100, 75, np.deg2rad(1), 60,
 
 
 
-# Run the functions you want to store
-# Note, sometimes the [0] entry is used. THis is due to some function outputs being used in other functions. The main coefficient is always the first one
-aero_stability_outputs = {
-    'CyB': derivatives.CyB()[0],  # Example usage with Cl = 0.5
-    'ClB': derivatives.ClB(),  # Example usage with Cl = 0.5 and alpha = 5 degrees
-    'CnB': derivatives.CnB()[0],  # Example usage
-    'Cyp': derivatives.Cyp()[0],  # Example usage with Cl = 0.5, alpha = 5 degrees, h_b = 0.05
-    'Clp': derivatives.Clp(),  # Example usage
-    'Cnp': derivatives.Cnp()[0],  # Example usage with Cl = 0.5, alpha = 5 degrees
-    'Cyr': derivatives.Cyr(),  # Example usage with Cl = 0.5, alpha = 5 degrees
-    'Clr': derivatives.Clr(),  # Example usage with Cl = 0.5, alpha = 5 degrees
-    'Cnr': derivatives.Cnr(),  # Example usage with Cl = 0.5, alpha = 5 degrees
-    'CyBdot': derivatives.CyBdot(),  # Example usage with Cl = 0.5, alpha = 5 degrees
-    'ClBdot': derivatives.ClBdot(),  # Example usage with Cl = 0.5, alpha = 5 degrees
 
-    # Add more functions here if needed
-}
 
-# Define path to JSON
-json_path = os.path.join('Data', 'design3.json')
 
-# Load existing JSON or create new structure
-if os.path.exists(json_path):
-    with open(json_path, 'r') as file:
-        data = json.load(file)
-else:
-    data = {}
-
-# Ensure correct nested structure exists
-if 'outputs' not in data:
-    data['outputs'] = {}
-if 'aerodynamic_stability_coefficients_asym' not in data['outputs']:
-    data['outputs']['aerodynamic_stability_coefficients_asym'] = {}
-
-# Update values
-data['outputs']['aerodynamic_stability_coefficients_asym'].update(aero_stability_outputs)
-
-# Save back to file
-with open(json_path, 'w') as file:
-    json.dump(data, file, indent=4)
-    
 if __name__ == 'main':
     aircraft_data = Data("design3.json")
+    derivatives = DerivativesDatcom_asym(aircraft_data=aircraft_data, mission_type=MissionType.DESIGN)
+
+    derivatives.update_json()
+
     
