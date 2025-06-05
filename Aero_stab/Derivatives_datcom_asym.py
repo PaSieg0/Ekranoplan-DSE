@@ -14,6 +14,7 @@ class DerivativesDatcom_asym:
         self.Delta_c4 = aircraft_data.data['outputs']['wing_design']['sweep_c_4'] #degrees
         self.l_b = aircraft_data.data['outputs']['fuselage_dimensions']['l_fuselage'] # length of body 
         self.dihedral = aircraft_data.data['outputs']['wing_design']['dihedral'] #degrees
+
         self.A = aircraft_data.data['outputs']['wing_design']['aspect_ratio'] 
         self.S = aircraft_data.data['outputs']['wing_design']['S'] 
         self.Av = aircraft_data.data['outputs']['empennage_design']['vertical_tail']['aspect_ratio'] # Aspect ratio of the vertical tail
@@ -21,8 +22,9 @@ class DerivativesDatcom_asym:
         self.Sh = aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['S'] # Surface area of the horizontal tail: 100
         self.Sv = aircraft_data.data['outputs']['empennage_design']['vertical_tail']['S'] # Surface area of the vertical tail: 75
         self.d_fusel = aircraft_data.data['outputs']['fuselage_dimensions']['d_fuselage_equivalent_station2'] # Diameter of the fuselage
-        self.V_b = aircraft_data.data['outputs']['fuselage_dimensions']['total_volume'] # total body volume [m3]: 20000
+        self.V_b = aircraft_data.data['outputs']['fuselage_dimensions']['total_volume'] # total body volume [m3]
         self.b = aircraft_data.data['outputs']['design']['b']
+
         self.lp = (aircraft_data.data['outputs']['fuselage_dimensions']['d_fuselage_equivalent_station3'] / 2) + (aircraft_data.data['outputs']['empennage_design']['vertical_tail']['z_MAC_v'])  # ℓₚ is the distance parallel to the longitudinal body axis between the vehicle moment center and the quarter-chord point of the MAC of the vertical panel, positive for the panel aft of the vehicle moment center.
         self.Cl_alpha = self.lift_curve.dcl_dalpha()[0] # Lift curve slope of the wing in deg
         self.e = aircraft_data.data['inputs']['oswald_factor'] # Oswald efficiency factor of the wing : 0.85 (guessed, typical value for a subsonic aircraft)
@@ -30,11 +32,12 @@ class DerivativesDatcom_asym:
         self.MAC =  aircraft_data.data['outputs']['wing_design']['MAC']  # Mean Aerodynamic Chord
         self.x_bar = (aircraft_data.data['outputs']['wing_design']['X_LEMAC'] + (0.25*aircraft_data.data['outputs']['wing_design']['MAC'])) - aircraft_data.data['outputs']['cg_range']['most_aft_cg'] #x_ac - x_cg # Distance from the leading edge of the wing to the center of gravity: 31.5(from excel)
         self.Cd0 = aircraft_data.data['inputs']['Cd0'] # Zero-lift drag coefficient of the wing
+
         self.c_h = aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['MAC']
         self.alpha = aircraft_data.data['inputs']['alpha_cruise'] # Angle of attack in degrees, TODO: UPDATE!!
         self.Cl = 0.5   # Lift coefficient at the angle of attack, TODO: UPDATE!!
         self.alpha_f = aircraft_data.data['inputs']['alpha_fuselage'] # Fuselage AoA in degrees, TODO: UPDATE!!
-        self.h_b = 0.05 #TODO:CHECK!
+        self.h_b = aircraft_data.data['inputs']['cruise_altitude'] / self.b 
 
 
     def CyB(self):
@@ -252,11 +255,11 @@ class DerivativesDatcom_asym:
         }
 
         lift_curve_slope = {
-            'Cl_alpha': self.lift_curve.dcl_dalpha()[1]  # Lift curve slope of the wing, in deg
+            'Cl_alpha': self.lift_curve.dcl_dalpha()[0]  # Lift curve slope of the wing, in deg
         }
 
         self.aircraft_data.data['outputs']['aerodynamic_stability_coefficients_asym'] = aero_stability_outputs
-        self.aircraft_data.data['outputs']['general']['Cl_alpha'] = lift_curve_slope
+        self.aircraft_data.data['outputs']['aerodynamics'] = lift_curve_slope
         self.aircraft_data.save_design('design3.json')
 
 if __name__ == '__main__':
