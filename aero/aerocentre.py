@@ -18,9 +18,10 @@ class aero_centre_intergration():
         self.pos=self.data[:,0]
         #print(self.cl)
         print(self.pos)
-        self.n=int(self.pos.shape[0])
-        self.pos=self.data[int(self.n/2):self.n,0]
-        self.cl=self.data[int(self.n/2):self.n,3]
+        self.n=int(self.pos.shape[0])*2
+        #self.pos=self.data[int(self.n/2):self.n,0]
+        #print(self.pos)
+        self.cl=self.data[:,3]
         self.b=self.pos[-1]
         self.a=self.pos[0]
         print(self.pos)
@@ -43,8 +44,8 @@ class aero_centre_intergration():
     def calc_w(self):
         self.w=np.linalg.solve(self.A,self.u)
         print(f'hi {self.w}')
-        self.w=self.u@np.linalg.inv(self.A)
-        print(self.w)
+        #self.w=self.u@np.linalg.inv(self.A)
+        #print(self.w)
 
     def calc_I(self):
         I_1=0

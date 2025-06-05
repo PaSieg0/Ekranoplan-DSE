@@ -184,29 +184,59 @@ class lift_curve():
 
 
     def calc_moment_ac(self):
-        pass
-    
-    def dcl_dalpha(self, tail = False):
-        if tail == True:
-            alpha_arr = self.alpha_tail
-            cl_arr = self.cl_lst_tail
-            # Find index where alpha is closest to 5
-            idx = np.argmin(np.abs(alpha_arr - 3))
-            
-            # Slice arrays up to and including that index
-            alpha_fit = alpha_arr[:idx+1]
-            cl_fit = cl_arr[:idx+1]
-            
-            # Perform linear fit
-            slope, intercept = np.polyfit(alpha_fit, cl_fit, 1)
-            return slope
+        self.x__c=0.25
+        self.cmx__c=np.array([])
+        seg1=[-4.5,]
+        self.cmac_seg1=np.array([])
+        self.xac=np.array([])
+        self.cmac_seg2=np.array([])
 
+        for i in range(len(self.cm_lst)):
+            # if self.cm_lst[i+1]==0 or self.cm_lst[i]==0:
+            #     pass
+            
+            cmx__c=self.cl_lst[i]*(0.25-self.x__c)+self.cm_lst[i]
+            self.cmx__c=np.append(self.cmx__c,cmx__c)
+
+            if i==len(self.cm_lst)-1:
+                xac=(0-self.cm_lst[i])/(0-self.cl_lst[i])+0.25
+                self.xac=np.append(xac,self.xac)
+                
+            else:
+                xac=(self.cm_lst[i+1]-self.cm_lst[i])/(self.cl_lst[i+1]-self.cl_lst[i])+0.25
+                self.xac=np.append(self.xac,xac)
+
+        for i in range(len(self.cm_lst)):
+            if self.alpha[i]<=3 and self.alpha[i]>=-5:
+                
+                self.cmac_seg1.append(cm)
+        
+
+    
+
+    def plot_moment_ac(self):
+        self.calc_moment_ac()
+        fig=plt.figure()
+        ax=fig.subplots(2)
+        ax[0].plot(self.alpha,self.cmx__c)
+        ax[0].set_ylabel('cmac_x__c')
+        ax[1].plot(self.alpha,self.xac)
+        ax[1].set_ylim(-1,1)#,'x_ac')
+        ax[1].set_ylabel('x_ac')
+        ax[1].set_xlabel('alpha')
+    
+        plt.show()
+
+            
+    def dcl_dalpha(self):
     # Convert alpha to numpy array if it's not already
         alpha_arr = np.array(self.alpha)
         cl_arr = np.array(self.cl_lst)
 
         # Find index where alpha is closest to 5
-        idx = np.argmin(np.abs(alpha_arr - 3))
+        
+        idx = 7   #np.argmin(np.abs(alpha_arr - 3))
+        print(alpha_arr[idx])
         
         # Slice arrays up to and including that index
         alpha_fit = alpha_arr[:idx+1]
@@ -225,7 +255,13 @@ class lift_curve():
         # plt.tight_layout()
         # plt.show()
 
-        return slope
+        return slope, intercept
+
+    def dcl_dalpha_tail(self):
+        NACA0012_data = self.cl_lst_tail
+        slope_tail = self.dcl_dalpha(NACA0012_data)
+        print(slope_tail)
+        return slope_tail
 
     def dcl_dalpha_tail(self):
         NACA0012_data = self.cl_lst_tail
@@ -245,9 +281,11 @@ class lift_curve():
 if __name__ == "__main__":  #if run seperately  
     #defines instance
     curves=lift_curve()
-    print(f'tail Cl alpha: {curves.dcl_dalpha(tail = True)}')
-    #curves.interpolate(-4.2)
+    curves.plot_moment_ac()
 
+    par0,par1=curves.dcl_dalpha()
+    #curves.interpolate(-4.2)
+    cl_fit_no_WIG=par0*curves.alpha+par1
     #getting alpha data from instnace
     alphalst=curves.alpha
     ind_lst=[]
@@ -297,6 +335,7 @@ if __name__ == "__main__":  #if run seperately
     ax[0][1].set_title('lift curve')
     ax[0][1].plot(alphalst,cl_lst, label='no GE')
     ax[0][1].plot(alphalst,cl_lst_GE, label='GE')
+    ax[0][1].plot(alphalst,cl_fit_no_WIG, '--r', label='no GE fit')
     ax[0][1].legend()
 
     #L/D

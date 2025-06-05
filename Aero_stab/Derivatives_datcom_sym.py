@@ -1,12 +1,16 @@
 import numpy as np
 import json
 import os
-from utils import Data
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+import matplotlib.pyplot as plt
+from utils import Data, MissionType, ISA, AircraftType
+from aero.lift_curve import lift_curve
 
-
-class DerivativesDatcom_asym:
+class DerivativesDatcom_sym:
     def __init__(self, aircraft_data: Data):
         self.aircraft_data = aircraft_data
+        self.lift_curve = lift_curve()
         self.Delta_c4 = aircraft_data.data['outputs']['wing_design']['sweep_c_4'] #degrees
         self.l_b = aircraft_data.data['outputs']['fuselage_dimensions']['l_fuselage'] # length of body 
         self.dihedral = aircraft_data.data['outputs']['wing_design']['dihedral'] #degrees
@@ -16,24 +20,27 @@ class DerivativesDatcom_asym:
         self.Ah = aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['aspect_ratio']
         self.Sh = aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['S'] # Surface area of the horizontal tail: 100
         self.Sv = aircraft_data.data['outputs']['empennage_design']['vertical_tail']['S'] # Surface area of the vertical tail: 75
-        self.V_b = V_b # total body volume [m3]: 20000
+        self.V_b = aircraft_data.data['outputs']['fuselage_dimensions']['total_volume'] # total body volume [m3]: 20000
         self.b = aircraft_data.data['outputs']['design']['b']
-        self.lp = lp # 36.431
-        self.Cl_alpha = Cl_alpha # Lift curve slope of the wing, in rad: 9.167
+        self.lp = 1 # 36.431
+        self.Cl_alpha = self.lift_curve.dcl_dalpha()[0] # Lift curve slope of the wing, in rad: 9.167
         self.e = aircraft_data.data['inputs']['oswald_factor'] # Oswald efficiency factor of the wing : 0.85 (guessed, typical value for a subsonic aircraft)
         self.taper = aircraft_data.data['outputs']['wing_design']['taper_ratio'] # Taper ratio of the wing: 0.4
         self.MAC = aircraft_data.data['outputs']['wing_design']['MAC']  # Mean Aerodynamic Chord: 8.456
-        self.x_bar = x_ac - x_cg # Distance from the leading edge of the wing to the center of gravity: 31.5(from excel)
+        self.x_cg = 1/2 * (aircraft_data.data['outputs']['cg_range']['most_aft_cg'] + aircraft_data.data['outputs']['cg_range']['most_forward_cg'])
+        self.x_ac = aircraft_data.data['outputs']['wing_design']['X_LEMAC'] +  aircraft_data.data['outputs']['wing_design']['MAC']/2 # Aerodynamic center of the wing: 0.25 * MAC
+        self.x_bar = self.x_ac - self.x_cg # Distance from the leading edge of the wing to the center of gravity: 31.5(from excel)
         self.Cd0 = aircraft_data.data['inputs']['Cd0'] # Zero-lift drag coefficient of the wing
-        self.c_h = c_h
-        self.Cm_alpha = Cm_alpha
-        self.x_h = x_h
-        self.Cl_alpha_h = Cl_alpha_h
-        self.x_w = x_w
-        self.x_cg = x_cg
-        self.M = M
-        self.theta_0 = theta_0
-        self.Cl_0 = Cl_0
+        self.c_h = aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['MAC'] # Mean aerodynamic chord of the horizontal tail
+        self.Cm_alpha = 1
+        self.x_h = aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['l_h']
+        self.Cl_alpha_h = aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['Cl_alpha']
+        self.x_w = 1
+        isa = ISA(self.aircraft_data.data['inputs']['cruise_altitude'])
+        self.M = isa.Mach(self.aircraft_data.data['requirements']['cruise_speed'])
+        self.theta_0 = 0
+        self.Cl_0 = 0
+        self.d_fusel = aircraft_data.data['outputs']['fuselage_dimensions']['d_fuselage_equivalent_station2']  # Diameter of the fuselage, assumed to be 0 for now
 
         self.Cl = 0.5
         self.alpha = np.deg2rad(2)  # Example angle of attack in radians
@@ -104,11 +111,11 @@ class DerivativesDatcom_asym:
     def update_json(self):
         # Run the functions you want to store
         aero_stability_outputs = {
-            'C_m_q': derivatives.Cmq(1, np.deg2rad(2)), #Cl=1, alpha=2 degrees
+            'C_m_q': derivatives.Cmq(), #Cl=1, alpha=2 degrees
             'C_z_alpha': derivatives.C_z_alpha(),
-            'C_x_alpha': derivatives.C_x_alpha(1),  # Cl=1
+            'C_x_alpha': derivatives.C_x_alpha(),  # Cl=1
             'C_m_alpha': derivatives.Cmalpha(),
-            'C_Z_u': derivatives.C_Z_u(1),  # Cl=1
+            'C_Z_u': derivatives.C_Z_u(),  # Cl=1
             'C_X_u': derivatives.C_X_u(),
             'C_m_u': derivatives.C_m_u(),
             'C_m_alphadot': derivatives.C_m_alphadot()
@@ -116,12 +123,12 @@ class DerivativesDatcom_asym:
             # Add more functions here if needed
         }
         self.aircraft_data.data['outputs']['aerodynamic_stability_coefficients_sym'] = aero_stability_outputs
-        self.aircraft_data.save_design(self.design_file)
+        self.aircraft_data.save_design('design3.json')
 
     
 if __name__ == "__main__":
     aircraft_data = Data('design3.json')
-    derivatives = DerivativesDatcom_asym(aircraft_data=aircraft_data)
+    derivatives = DerivativesDatcom_sym(aircraft_data=aircraft_data)
 
     derivatives.update_json()
 
