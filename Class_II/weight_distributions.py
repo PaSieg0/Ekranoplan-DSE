@@ -69,6 +69,7 @@ class CGCalculation:
         self.x_MAC_vertical_tail = self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['MAC']
         self.x_LE_horizontal_tail = self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['LE_pos']
         self.x_MAC_horizontal_tail = self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['MAC']
+        self.safety_factor = 1.5
         # Add new parameters needed for wing load calculation
         self.MTOW = self.aircraft_data.data['outputs']['max']['MTOW']  # Maximum takeoff weight
         self.l_fuselage = (self.l_nose + self.l_forebody + 
@@ -217,13 +218,13 @@ class CGCalculation:
 
         # Calculate distributed loads for each section
         # Note: both fuselage share and additional components need nmax factor for load cases
-        fuselage_distributed_nose = -(self.component_weights['fuselage'] * nose_share + nose_additional_weight) * self.nmax / self.l_nose
-        fuselage_distributed_forebody = -(self.component_weights['fuselage'] * forebody_share + forebody_additional_weight) * self.nmax / self.l_forebody
-        fuselage_distributed_afterbody = -self.component_weights['fuselage'] * afterbody_share * self.nmax / self.l_afterbody
-        fuselage_distributed_tailcone = -(self.component_weights['fuselage'] * tail_share + tailcone_additional_weight) * self.nmax / self.l_tailcone
-        cargo_distributed = -self.cargo_mass * 9.81 * self.nmax / self.cargo_length 
+        fuselage_distributed_nose = -(self.component_weights['fuselage'] * nose_share + nose_additional_weight) * self.nmax*self.safety_factor / self.l_nose
+        fuselage_distributed_forebody = -(self.component_weights['fuselage'] * forebody_share + forebody_additional_weight) * self.nmax*self.safety_factor / self.l_forebody
+        fuselage_distributed_afterbody = -self.component_weights['fuselage'] * afterbody_share * self.nmax*self.safety_factor / self.l_afterbody
+        fuselage_distributed_tailcone = -(self.component_weights['fuselage'] * tail_share + tailcone_additional_weight) * self.nmax*self.safety_factor / self.l_tailcone
+        cargo_distributed = -self.cargo_mass * 9.81 * self.nmax*self.safety_factor / self.cargo_length 
         fuel_margin_from_root_edges = 0.5
-        fuel_distributed = -self.fuel_mass * self.nmax / (self.wing_root_chord-2*fuel_margin_from_root_edges)  # Distribute fuel load over fuselage lengt        # Calculate wing loads
+        fuel_distributed = -self.fuel_mass * self.nmax*self.safety_factor / (self.wing_root_chord-2*fuel_margin_from_root_edges)  # Distribute fuel load over fuselage lengt        # Calculate wing loads
         # Components that we have as masses (in kg)
         wing_mass = self.component_masses.get('wing_mass', 0)
         floater_mass = self.component_masses.get('floater_mass', 0)
@@ -236,28 +237,21 @@ class CGCalculation:
         # Components that we have as weights (already in N)
         weight_components = ['anti_ice', 'fuel_system', 'avionics', 'starter_pneumatic', 'engine_controls']
         direct_weight_force = sum(self.component_weights.get(comp, 0) for comp in weight_components)
-          # Wing-supported component verification is disabled
+          #Wing-supported component verification is disabled
         
         # Total wing-supported weight (all in N) with load factor
-        wing_supported_weight = (mass_based_force + direct_weight_force) * self.nmax
+        wing_supported_weight = (mass_based_force + direct_weight_force) * self.nmax*self.safety_factor
         
         # Calculate empennage weight (using masses)
         empennage_mass = self.component_masses.get('vertical_tail_mass', 0) + self.component_masses.get('horizontal_tail_mass', 0)
-        empennage_supported_weight = empennage_mass * 9.81 * self.nmax
+        empennage_supported_weight = empennage_mass * 9.81 * self.nmax*self.safety_factor
           # Calculate net wing lift force (total lift minus wing-supported masses)
-        wing_load = self.MTOW * self.nmax - wing_supported_weight  # Convert MTOW to N and multiply by load factor
+        wing_load = self.MTOW * self.nmax*self.safety_factor - wing_supported_weight  # Convert MTOW to N and multiply by load factor
         wing_load_distributed = wing_load / self.wing_root_chord  # Distribute load over wing root chord length
-        # Case 1: No horizontal tail force
-        horizontal_tail_force = 0
-        empennage_load = -(empennage_supported_weight + horizontal_tail_force)*self.nmax
+
+        empennage_load = -empennage_supported_weight*self.nmax*self.safety_factor
         empennage_load_distributed = empennage_load / self.v_tail_chord_root
-        print(f"\nEmpennage total load (no horizontal tail force): {empennage_load:.2f} N")
-        
-        # Case 2: With horizontal tail force
-        horizontal_tail_force = 0
-        empennage_load = - (empennage_supported_weight + horizontal_tail_force)*self.nmax
-        empennage_load_distributed = empennage_load / self.v_tail_chord_root
-        print(f"Empennage total load (with 80 kN horizontal tail force): {empennage_load:.2f} N\n")
+
         # Calculate section weights for verification
         calculated_nose_weight = fuselage_distributed_nose * self.l_nose
         calculated_forebody_weight = fuselage_distributed_forebody * self.l_forebody
@@ -410,7 +404,7 @@ class CGCalculation:
             
             # Add section labels
             mid_x = (start + (end if i < len(sections)-1 else self.l_fuselage)) / 2
-            weight_pct = section_weights[i] / (self.component_weights['fuselage'] * self.nmax) * 100
+            weight_pct = section_weights[i] / (self.component_weights['fuselage'] * self.nmax*self.safety_factor) * 100
             
             # Labels for each plot
             ax1.text(start, ax1.get_ylim()[1], f"{label}", 
@@ -450,19 +444,8 @@ class CGCalculation:
         plt.tight_layout()
         plt.show()
 
-        self.update_json()
-
-    def torsional_loading_fuselage(self):
-        """Calculate torsional loading on the fuselage from vertical tail lift"""
-        # Create AerodynamicForces instance to get vertical tail lift
-        aerodynamics_data = Data("AeroForces.txt", "aerodynamics")
-        aeroforces = AerodynamicForces(self.aircraft_data, evaluate=EvaluateType.WING)
-        
-        # Get vertical tail lift distribution
-        vertical_tail_lift = aeroforces.get_vertical_tail_lift_distribution()
-        
-        print(f"Vertical tail lift distribution: {vertical_tail_lift}")
-        
+        self.update_json()    
+         
 
 
 def main():
@@ -478,8 +461,6 @@ def main():
     # Generate and plot the load diagram
     cg_calculator.load_diagram(show_verification=False)
     
-    # Calculate and plot torsional loading
-    cg_calculator.torsional_loading_fuselage()
     
     # Update JSON with CG positions
     cg_calculator.update_json()
