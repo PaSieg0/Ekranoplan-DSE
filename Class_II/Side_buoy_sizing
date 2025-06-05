@@ -22,10 +22,12 @@ class side_Buoy_sizing:
         self.b = self.aircraft_data.data['outputs']['design']['b']
         self.MTOM = self.aircraft_data.data['outputs']['max']['MTOM']
 
-#Taking in hydroynamic center and Cg height, forming a linearly inverted pendulum model (assume small angle)
+#Taking in hydro force center and Cg height, forming a linearly inverted pendulum model (assume small angle)
+#pendulum supported at hydro force center and CoM at Cg
 #Buoy provides corrective force linearly with submerged volume
 #Basically funcitons as a linear controller in the loop
-#Assuming no corrected force from hull >> conservative assumption
+#Assuming no corrected moment from hull >> conservative assumption
+#Ignore all damping terms < not important for stability, hull-water interaction should natually provide damping
 
     def buoy_gain(self):
         b = self.b/2
@@ -42,21 +44,21 @@ class side_Buoy_sizing:
     def LIPM(self):
 
         # Constants
-        g = 9.81      # gravity (m/s^2)
-        l = 5       # pendulum length (m)  #from hydro force center to Cg (height)
-        m = self.MTOM       # mass (kg)
+        g = 9.81      
+        l = 5       # pendulum length (m)  #from hydro force center to Cg (height) HARDCODED OUT OF MY A**!!!!!!!!!!!
+        m = self.MTOM       
         k = self.buoy_gain()
 
         def lip_dynamics(t, y):
             theta, theta_dot = y
-            torque_gravity = (g / l) * theta               # unstable term
-            torque_correction = -(k / (m * l**2)) * theta  # stabilizing term
+            Mg = (g / l) * theta #moment due to Cg              
+            Mb = -(k / (m * l**2)) * theta  #moment due to buoy
             dtheta_dt = theta_dot
-            dtheta_dot_dt = torque_gravity + torque_correction
+            dtheta_dot_dt = Mg + Mb
             return [dtheta_dt, dtheta_dot_dt]
 
         # Initial conditions
-        theta0 = np.radians(0.5)  # 5 degrees from vertical
+        theta0 = np.radians(0.5)  # 0.5 degrees from vertical
         y0 = [theta0, 0.0]
 
         # Time span
