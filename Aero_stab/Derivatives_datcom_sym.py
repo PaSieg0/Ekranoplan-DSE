@@ -33,7 +33,7 @@ class DerivativesDatcom_sym:
         self.Cd0 = aircraft_data.data['inputs']['Cd0'] # Zero-lift drag coefficient of the wing
         self.c_h = aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['MAC'] # Mean aerodynamic chord of the horizontal tail
         self.x_h = aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['l_h']
-        self.Cl_alpha_h = aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['Cl_alpha']
+        self.Cl_alpha_h = aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['Cl_alpha']*180/np.pi
         self.x_w = self.x_ac
         isa = ISA(self.aircraft_data.data['inputs']['cruise_altitude'])
         self.M = isa.Mach(self.aircraft_data.data['requirements']['cruise_speed'])
