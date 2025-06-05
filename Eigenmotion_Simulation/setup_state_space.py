@@ -6,109 +6,114 @@ import sys
 from termcolor import colored
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from utils import Data, EigenMotion, EigenMotionType
+from utils import Data, EigenMotion, EigenMotionType, ISA
 
 
 class StateSpaceModel:
     def __init__(self, aircraft_data: Data):
         self.aircraft_data = aircraft_data
-        self.stability_coefficients = aircraft_data.data['outputs']['stability_coefficients']
+        self.stability_coefficients_sym = aircraft_data.data['outputs']['aerodynamic_stability_coefficients_sym']
+        self.stability_coefficients_asym = aircraft_data.data['outputs']['aerodynamic_stability_coefficients_asym']
 
         self.time_step = 0.1
-        self.time_vector = np.arange(0, 100, self.time_step)
+        self.time_vector = np.arange(0, 10, self.time_step)
 
         self.elevator_deflection = np.zeros_like(self.time_vector)
         self.aileron_deflection = np.zeros_like(self.time_vector)
         self.rudder_deflection = np.zeros_like(self.time_vector)
 
-        c = self.aircraft_data.data['outputs']['wing_design']['MAC']
-        v = self.aircraft_data.data['requirements']['cruise_speed']
+        self.b = self.aircraft_data.data['outputs']['wing_design']['b']
+        self.c = self.aircraft_data.data['outputs']['wing_design']['MAC']
+        self.v = self.aircraft_data.data['requirements']['cruise_speed']
+        self.MTOW = self.aircraft_data.data['outputs']['max']['MTOW']
+        self.MTOM = self.aircraft_data.data['outputs']['max']['MTOM']
+        self.rho = ISA(self.aircraft_data.data['inputs']['cruise_altitude']).rho
+        self.S = self.aircraft_data.data['outputs']['wing_design']['S']
 
-        mu_c = self.stability_coefficients['mu_c']
-        C_z_alpha_dot = self.stability_coefficients['C_z_alpha_dot']
-        K_y = self.stability_coefficients['K_y']
-        C_m_alpha_dot = self.stability_coefficients['C_m_alpha_dot']
-        C_Xu = self.stability_coefficients['C_Xu']
-        C_Xalpha = self.stability_coefficients['C_Xalpha']
-        C_Z0 = self.stability_coefficients['C_Z0']
-        C_Zu = self.stability_coefficients['C_Zu']
-        C_Zalpha = self.stability_coefficients['C_Zalpha']
-        C_X0 = self.stability_coefficients['C_X0']
-        C_zq = self.stability_coefficients['C_zq']
-        C_mu = self.stability_coefficients['C_mu']
-        C_malpha = self.stability_coefficients['C_malpha']
-        C_mq = self.stability_coefficients['C_mq']
+        CL = self.stability_coefficients_sym['CL']
+
+        self.gamma_0 = np.deg2rad(0)  # Initial flight path angle (assumed level flight)
+
+        mu_c = self.MTOM/(self.rho*self.S*self.c)
+        C_z_alpha_dot = self.stability_coefficients_sym['C_Z_alphadot']
+        self.I_yy = self.aircraft_data.data['outputs']['inertia']['I_yy']
+        K_yy = self.I_yy/(self.MTOM*self.c**2)
+        C_m_alpha_dot = self.stability_coefficients_sym['C_m_alphadot']
+        C_Xu = self.stability_coefficients_sym['C_X_u']
+        C_Xalpha = self.stability_coefficients_sym['C_x_alpha']
+        C_Z0 = -self.MTOW*np.cos(self.gamma_0)/(0.5*self.rho*self.v**2*self.S)
+        C_Zu = self.stability_coefficients_sym['C_Z_u']
+        C_Zalpha = self.stability_coefficients_sym['C_z_alpha']
+        C_X0 = self.MTOW*np.sin(self.gamma_0)/(0.5*self.rho*self.v**2*self.S)
+        C_zq = self.stability_coefficients_sym['C_z_q']
+        C_mu = self.stability_coefficients_sym['C_m_u']
+        C_malpha = self.stability_coefficients_sym['C_m_alpha']
+        C_mq = self.stability_coefficients_sym['C_m_q']
 
 
-        C_Xdelta_e = self.stability_coefficients['C_Xdelta_e']
-        C_zdelta_e = self.stability_coefficients['C_zdelta_e']
-        C_mdelta_e = self.stability_coefficients['C_mdelta_e']
+        C_Xdelta_e = self.stability_coefficients_sym['C_x_delta_e']
+        C_zdelta_e = self.stability_coefficients_sym['C_z_delta_e']
+        C_mdelta_e = self.stability_coefficients_sym['C_m_delta_e']
 
-        C_Ybeta_dot = self.stability_coefficients['C_Ybeta_dot']
-        C_nbeta_dot = self.stability_coefficients['C_nbeta_dot']
-        K_X = self.stability_coefficients['K_X']
-        K_XZ = self.stability_coefficients['K_XZ']
-        K_Z = self.stability_coefficients['K_Z']
-        b = self.aircraft_data.data['outputs']['wing_design']['b']
-        mu_b = self.stability_coefficients['mu_b']
+        C_Ybeta_dot = self.stability_coefficients_asym['CyBdot']
+        C_nbeta_dot = self.stability_coefficients_asym['C_nBdot']
+        self.I_xx = self.aircraft_data.data['outputs']['inertia']['I_xx']
+        self.I_xz = self.aircraft_data.data['outputs']['inertia']['I_xz']
+        self.I_zz = self.aircraft_data.data['outputs']['inertia']['I_zz']
 
-        C_Ybeta = self.stability_coefficients['C_Ybeta']
-        CL = self.stability_coefficients['CL']
-        C_Yp = self.stability_coefficients['C_Yp']
-        C_Yr = self.stability_coefficients['C_Yr']
-        C_lbeta = self.stability_coefficients['C_lbeta']
-        C_lp = self.stability_coefficients['C_lp']
-        C_lr = self.stability_coefficients['C_lr']
-        C_nbeta = self.stability_coefficients['C_nbeta']
-        C_np = self.stability_coefficients['C_np']
-        C_nbeta = self.stability_coefficients['C_nbeta']
-        C_nbeta_dot = self.stability_coefficients['C_nbeta_dot']
-        C_Yr = self.stability_coefficients['C_Yr']
-        C_Yp = self.stability_coefficients['C_Yp']
+        K_xx = self.I_xx/(self.MTOM*self.b**2)
+        K_xz = self.I_xz/(self.MTOM*self.b*self.c)
+        K_zz = self.I_zz/(self.MTOM*self.b**2)
 
-        C_Ydelta_a = self.stability_coefficients['C_Ydelta_a']
-        C_Ydelta_r = self.stability_coefficients['C_Ydelta_r']
-        C_ldelta_a = self.stability_coefficients['C_ldelta_a']
-        C_ldelta_r = self.stability_coefficients['C_ldelta_r']
-        C_ndelta_a = self.stability_coefficients['C_ndelta_a']
-        C_ndelta_r = self.stability_coefficients['C_ndelta_r']
+        mu_b = self.MTOM/(self.rho*self.S*self.b)
+
+        C_Ybeta = self.stability_coefficients_asym['CyB']
+        C_Yp = self.stability_coefficients_asym['Cyp']
+        C_Yr = self.stability_coefficients_asym['Cyr']
+        C_lbeta = self.stability_coefficients_asym['ClB']
+        C_lp = self.stability_coefficients_asym['Clp']
+        C_lr = self.stability_coefficients_asym['Clr']
+        C_nbeta = self.stability_coefficients_asym['CnB']
+        C_np = self.stability_coefficients_asym['Cnp']
+
+        C_Ydelta_a = self.stability_coefficients_asym['C_y_delta_a']
+        C_Ydelta_r = self.stability_coefficients_asym['C_y_delta_r']
+        C_ldelta_a = self.stability_coefficients_asym['C_l_delta_a']
+        C_ldelta_r = self.stability_coefficients_asym['C_l_delta_r']
+        C_ndelta_a = self.stability_coefficients_asym['C_n_delta_a']
+        C_ndelta_r = self.stability_coefficients_asym['C_n_delta_r']
         
 
         P_sym = np.array([
-            [-2*mu_c*c/v, 0, 0, 0],
-            [0, (C_z_alpha_dot-2*mu_c)*c/v, 0, 0],
-            [0, 0, -c/v, 0],
-            [0, C_m_alpha_dot*c/v, 0, -2*mu_c*K_y**2*c/v]
+            [-2*mu_c*self.c/self.v, 0                                   , 0             , 0                            ],
+            [0                    , (C_z_alpha_dot-2*mu_c)*self.c/self.v, 0             , 0                            ],
+            [0                    , 0                                   , -self.c/self.v, 0                            ],
+            [0                    , C_m_alpha_dot*self.c/self.v         , 0             , -2*mu_c*K_yy**2*self.c/self.v]
         ])
 
         Q_sym = np.array([
-            [-C_Xu, -C_Xalpha, -C_Z0, 0],
-            [-C_Zu, -C_Zalpha, C_X0, -(C_zq+2*mu_c)],
-            [0, 0, 0, -1],
-            [-C_mu, -C_malpha, 0, -C_mq]
+            [-C_Xu, -C_Xalpha, -C_Z0, 0             ],
+            [-C_Zu, -C_Zalpha, C_X0 , -(C_zq+2*mu_c)],
+            [0    , 0        , 0    , -1            ],
+            [-C_mu, -C_malpha, 0    , -C_mq         ]
         ])
 
         R_sym = np.array([
             [-C_Xdelta_e],
             [-C_zdelta_e],
-            [0.0],
+            [0.0        ],
             [-C_mdelta_e]
         ])
 
-        A_sym = P_sym.inverse() @ Q_sym
-        B_sym = P_sym.inverse() @ R_sym
+        A_sym = np.linalg.solve(P_sym, -Q_sym)
+        B_sym = np.linalg.solve(P_sym, -R_sym)
 
-        print("Symmetric Model A Matrix:")
-        print(A_sym)
-        print("Symmetric Model B Matrix:")
-        print(B_sym)
-        
 
         C_sym = np.array([
             [1, 0, 0, 0],
             [0, 1, 0, 0],
             [0, 0, 1, 0],
-            [0, 0, 0, 1]
+            [0, 0, 0, self.v/self.c]
         ])
 
         D_sym = np.array([
@@ -119,40 +124,34 @@ class StateSpaceModel:
         ])
         
         P_asym = np.array([
-            [(C_Ybeta_dot-2*mu_b)*b/v, 0, 0, 0],
-            [0, -b/(2*v), 0, 0],
-            [0, 0, -4*mu_b*K_X**2*b/v, 4*mu_b*K_XZ*b/v],
-            [C_nbeta_dot*b/v, 0, 4*mu_b*K_XZ*b/v, -4*mu_b*K_Z**2*b/v]
+            [(C_Ybeta_dot-2*mu_b)*self.b/self.v, 0                 , 0                            , 0                            ],
+            [0                                 , -self.b/(2*self.v), 0                            , 0                            ],
+            [0                                 , 0                 , -4*mu_b*K_xx**2*self.b/self.v, 4*mu_b*K_xz*self.b/self.v    ],
+            [C_nbeta_dot*self.b/self.v         , 0                 , 4*mu_b*K_xz*self.b/self.v    , -4*mu_b*K_zz**2*self.b/self.v]
         ])
 
         Q_asym = np.array([
             [-C_Ybeta, -CL, -C_Yp, -(C_Yr-4*mu_b)],
-            [0, 0, -1, 0],
-            [-C_lbeta, 0, -C_lp, -C_lr],
-            [-C_nbeta, 0, -C_np, -C_lp]
+            [0       , 0  , -1   , 0             ],
+            [-C_lbeta, 0  , -C_lp, -C_lr         ],
+            [-C_nbeta, 0  , -C_np, -C_lp         ]
         ])
 
         R_asym = np.array([
             [-C_Ydelta_a, -C_Ydelta_r],
-            [0.0, 0.0],
+            [0.0        , 0.0        ],
             [-C_ldelta_a, -C_ldelta_r],
             [-C_ndelta_a, -C_ndelta_r]
         ])
-
-        A_asym = P_asym.inverse() @ Q_asym
-        B_asym = P_asym.inverse() @ R_asym
-
-        print("Asymmetric Model A Matrix:")
-        print(A_asym)
-        print("Asymmetric Model B Matrix:")
-        print(B_asym)
+        A_asym = np.linalg.solve(P_asym, -Q_asym)
+        B_asym = np.linalg.solve(P_asym, -R_asym)
 
 
         C_asym = np.array([
             [1.0, 0.0, 0.0, 0.0],
             [0.0, 1.0, 0.0, 0.0],
-            [0.0, 0.0, 1.0, 0.0],
-            [0.0, 0.0, 0.0, 1.0]
+            [0.0, 0.0, self.v/self.b, 0.0],
+            [0.0, 0.0, 0.0, self.v/self.b]
         ])
 
         D_asym = np.array([
@@ -180,7 +179,7 @@ class StateSpaceModel:
     def get_phugoid_input(self):
         self.reset()
 
-        self.elevator_deflection[:50] = np.sin(self.time_vector[:50])
+        self.elevator_deflection[:50] = np.deg2rad(1)
         return np.array(self.elevator_deflection)
 
     def get_short_period_input(self):
@@ -308,9 +307,11 @@ if __name__ == "__main__":
 
     print("Eigenvalues for symmetric model:")
     for idx, eig in enumerate(state_space_model.eigenvalues_sym, 1):
-        stability = colored("STABLE", "green") if eig.real < 0 else colored("UNSTABLE", "red")
-        print(f"  λ{idx}: {eig.real:.4f} {'+' if eig.imag >= 0 else '-'} {abs(eig.imag):.4f}j  [{stability}]")
+        stability_str = "STABLE" if eig.real < 0 else "UNSTABLE"
+        stability_col = colored(f"{stability_str}", "green" if eig.real < 0 else "red")
+        print(f"  λ{idx}: {eig.real:.4f} {'+' if eig.imag >= 0 else '-'} {abs(eig.imag):.4f}j  [{stability_col}]")
     print("\nEigenvalues for asymmetric model:")
     for idx, eig in enumerate(state_space_model.eigenvalues_asym, 1):
-        stability = colored("STABLE", "green") if eig.real < 0 else colored("UNSTABLE", "red")
-        print(f"  λ{idx}: {eig.real:.4f} {'+' if eig.imag >= 0 else '-'} {abs(eig.imag):.4f}j  [{stability}]")
+        stability_str = "STABLE" if eig.real < 0 else "UNSTABLE"
+        stability_col = colored(f"{stability_str}", "green" if eig.real < 0 else "red")
+        print(f"  λ{idx}: {eig.real:.4f} {'+' if eig.imag >= 0 else '-'} {abs(eig.imag):.4f}j  [{stability_col}]")
