@@ -86,7 +86,7 @@ class DerivativesDatcom_asym:
         dclB_zw = 1.2 * np.sqrt(self.A) / 57.3 * (2/self.b) * (2 * self.d_fusel / self.b)
 
         #TODO: check if dihedral should indeed be in degrees for this formula
-        ClB_wb = Cl *(clB__cl_s*Km_s*kf+clB__Cl_A) + self.dihedral * (clB__dihedral * Km_d + dclB__dihedral) + dclB_zw + 0
+        ClB_wb = self.Cl *(clB__cl_s*Km_s*kf+clB__Cl_A) + self.dihedral * (clB__dihedral * Km_d + dclB__dihedral) + dclB_zw + 0
 
         K = 1.4 #p.1600 smthng
         cl_alpha_V_tail = 0.16 #p.1600 smthng
@@ -127,7 +127,7 @@ class DerivativesDatcom_asym:
         dCyp_dihedral = (3 * np.sin(np.radians(self.dihedral) * (1 - 2 * z / (self.b / 2)) * np.sin(np.radians(self.dihedral)))) * clp_cl0
         Cyp_wb = K*((Cyp__Cl * self.Cl)) + dCyp_dihedral
 
-        dCyB_VWBH = self.CyB(self.Cl)[1]
+        dCyB_VWBH = self.CyB()[1]
         Cyp_Vtail = Cyp_wb + 2 * ((z - zp) / self.b) * dCyB_VWBH
         return Cyp_wb + Cyp_Vtail, K
     
@@ -154,11 +154,11 @@ class DerivativesDatcom_asym:
         B = np.sqrt(1 - 0.34**2 * np.cos(np.radians(self.Delta_c4))**2) # p.2522
         Cnp__Cl_M0 = (-(1 / 6) * (self.A + 6 * (self.A + np.cos(np.radians(self.Delta_c4))))*(x__c * np.tan(np.radians(self.Delta_c4)) / self.A  + (np.tan(np.radians(self.Delta_c4)))**2 / 12)) / (self.A + 4 * np.cos(np.radians(self.Delta_c4)))
         Cnp__Cl = ((self.A + 4 * np.cos(np.radians(self.Delta_c4))) / (self.A * B + 4 * np.cos(np.radians(self.Delta_c4)))) * ((self.A * B + 0.5 * (self.A * B + np.cos(np.radians(self.Delta_c4)) * (np.tan(np.radians(self.Delta_c4)))**2)) / (self.A + 0.5 * (self.A + np.cos(np.radians(self.Delta_c4)) * (np.tan(np.radians(self.Delta_c4)))**2))) * Cnp__Cl_M0
-        Cnp_w = -self.Clp() * np.tan(np.radians(self.alpha)) - self.Cyp(self.Cl, self.alpha, h_b = 0.05)[1] * (-self.Clp() * np.tan(np.radians(self.alpha)) - Cnp__Cl * self.Cl) # p.2559 
+        Cnp_w = -self.Clp() * np.tan(np.radians(self.alpha)) - self.Cyp()[1] * (-self.Clp() * np.tan(np.radians(self.alpha)) - Cnp__Cl * self.Cl) # p.2559 
 
         zp = 7 # Guessed, distance from the centerline of the body to the centerline of the vertical tail
         z = zp * np.cos(np.radians(self.alpha)) - self.lp * np.sin(np.radians(self.alpha)) # distance from the centerline of the body to the centerline of the wing
-        Cnp_tail = 2 / self.b * (self.lp * np.cos(np.radians(self.alpha)) + zp * np.sin(np.radians(self.alpha)) * (z - zp) / self.b * self.CyB(self.Cl)[1])
+        Cnp_tail = 2 / self.b * (self.lp * np.cos(np.radians(self.alpha)) + zp * np.sin(np.radians(self.alpha)) * (z - zp) / self.b * self.CyB()[1])
         return Cnp_w - Cnp_tail, Cnp_w, Cnp_tail
     
     def Cyr(self):
@@ -182,14 +182,14 @@ class DerivativesDatcom_asym:
         kf = 0.95 # from plot p1625
         clB__Cl_A = 0 #from plot
         ClB__Cl = clB__cl_s*Km_s*kf+clB__Cl_A
-        dClr_Cl = self.Cl * ClB__Cl - self.ClB(self.Cl, self.alpha)
+        dClr_Cl = self.Cl * ClB__Cl - self.ClB()
         dClr__dihedral = 1/12 * (np.pi * self.A * np.sin(np.radians(self.Delta_c4))) / (self.A + 4 * np.cos(np.radians(self.Delta_c4)))
 
         #TODO: Check if dihedral should indeed be in degrees for this formula
         Clr_wb = self.Cl * Clr__Cl + dClr_Cl + dClr__dihedral * self.dihedral
 
         zp = 7 # Guessed, distance from the centerline of the body to the centerline of the vertical tail
-        Clr_tail = 2 / self.b**2 * (self.lp * np.cos(np.radians(self.alpha)) + zp * np.sin(np.radians(self.alpha))*(zp*np.cos(np.radians(self.alpha) - self.lp * np.sin(np.radians(self.alpha)))) * self.CyB(self.Cl)[1]) #p.2802
+        Clr_tail = 2 / self.b**2 * (self.lp * np.cos(np.radians(self.alpha)) + zp * np.sin(np.radians(self.alpha))*(zp*np.cos(np.radians(self.alpha) - self.lp * np.sin(np.radians(self.alpha)))) * self.CyB()[1]) #p.2802
         return Clr_wb - Clr_tail
     
     def Cnr(self):
@@ -204,7 +204,7 @@ class DerivativesDatcom_asym:
         Cnr_wb = Cnr__Cl2 * self.Cl**2 + Cnr__Cd0 * self.Cd0
 
         zp = 7 # Guessed, distance from the centerline of the body to the centerline of the vertical tail
-        Cnr_tail = 2 / self.b**2 * (self.lp * np.cos(np.radians(self.alpha)) + zp * np.sin(np.radians(self.alpha)))**2 * self.CyB(self.Cl)[1]
+        Cnr_tail = 2 / self.b**2 * (self.lp * np.cos(np.radians(self.alpha)) + zp * np.sin(np.radians(self.alpha)))**2 * self.CyB()[1]
 
         return Cnr_wb + Cnr_tail
     
@@ -229,7 +229,7 @@ class DerivativesDatcom_asym:
     
     def ClBdot(self):
         zp = 7
-        ClB_dot = self.CyBdot(self.Cl,self.alpha_f) * (zp * np.cos(np.radians(self.alpha_f)) - self.lp * np.sin(np.radians(np.radians(self.alpha_f)))) / self.b
+        ClB_dot = self.CyBdot() * (zp * np.cos(np.radians(self.alpha_f)) - self.lp * np.sin(np.radians(np.radians(self.alpha_f)))) / self.b
         return ClB_dot
     
     def update_json(self):
@@ -258,29 +258,6 @@ class DerivativesDatcom_asym:
         self.aircraft_data.data['outputs']['aerodynamic_stability_coefficients_asym'] = aero_stability_outputs
         self.aircraft_data.data['outputs']['aerodynamics']['Cl_alpha'] = lift_curve_slope
         self.aircraft_data.save_design('design3.json')
-
-
-
-
-# cyb = DerivativesDatcom(0, 8, 507, 1.5, 100, 75, 1,60, 6, 2000, 63.79, 36.431, 0.16, 0.85)
-# print(cyb.CnB())
-# Cyp = DerivativesDatcom(0, 8, 507, 1.5, 100, 75, 1,60, 6, 2000, 63.79, 36.431, 0.16, 0.85)
-# print(Cyp.Cyp(0.5, 0.1, 0.05))
-# Clp = DerivativesDatcom(0, 8, 507, 1.5, 100, 75, 1,60, 6, 2000, 63.79, 36.431, 0.16, 0.85, 0.4)
-# print(Clp.Clp())
-# Cnp = DerivativesDatcom(0, 8, 507, 1.5, 100, 75, 1,60, 6, 2000, 63.79, 36.431, 0.16, 0.85, 0.4)
-# print(Cnp.Cnp(1, np.deg2rad(2)))
-# Cnr = DerivativesDatcom(0, 8, 507, 1.5, 100, 75, 1,60, 6, 2000, 63.79, 36.431, 0.16, 0.85, 0.4)
-# print(Cnr.Cnr(1, np.deg2rad(2)))
-# Clr = DerivativesDatcom(0, 8, 507, 1.5, 100, 75, np.deg2rad(1) ,60, 6, 2000, 63.79, 36.431, 0.16, 0.85, 0.4)
-# print(Clr.Clr(1, np.deg2rad(2)))
-derivatives = DerivativesDatcom_asym(0, 8, 507, 1.5, 100, 75, np.deg2rad(1), 60, 6, 2000, 63.79, 36.431, 0.16, 0.85, 0.4)
-# print(CyBdot.CyB(1))
-
-
-
-
-
 
 if __name__ == 'main':
     aircraft_data = Data("design3.json")
