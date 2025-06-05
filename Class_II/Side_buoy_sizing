@@ -4,6 +4,7 @@ import numpy as np
 from scipy.optimize import fsolve
 import matplotlib.pyplot as plt
 from scipy.integrate import solve_ivp
+from scipy.signal import TransferFunction
 
 
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
@@ -26,8 +27,13 @@ class side_Buoy_sizing:
 #pendulum supported at hydro force center and CoM at Cg
 #Buoy provides corrective force linearly with submerged volume
 #Basically funcitons as a linear controller in the loop
-#Assuming no corrected moment from hull >> conservative assumption
-#Ignore all damping terms < not important for stability, hull-water interaction should natually provide damping
+#Assuming no corrective moment from hull >> conservative assumption
+#Ignore all damping terms >> not important for stability, only for transient response,
+#hull-water interaction should natually provide damping...i think
+
+#issue is, this assumes infinite buoy height to be available to be sinked into water to provide counter moment. 
+#actual bouy height will be wave height at SS4, which yeilds available buoy depth at worst case consideration 
+# for bank angle on water
 
     def buoy_gain(self):
         b = self.b/2
@@ -35,8 +41,8 @@ class side_Buoy_sizing:
         l_bouy = 4.5
         g = 9.80665
         rho = 1000
-        k = b**2/4*l_bouy*w_buoy*g*rho
-        #print(k)
+        k = b**2/4*l_bouy*w_buoy*g*rho          #Nm/rad
+        print(k)
         return k
         
 
@@ -56,6 +62,52 @@ class side_Buoy_sizing:
             dtheta_dt = theta_dot
             dtheta_dot_dt = Mg + Mb
             return [dtheta_dt, dtheta_dot_dt]
+        
+        def root_locus_plot():
+            k_vals = np.linspace(5e6, 5e9, 1000)
+            poles = []
+            k_map = []
+
+            for k_val in k_vals:
+                a = (g / l) - (k_val / (m * l**2))
+                if a >= 0:
+                    p1 = np.sqrt(a)
+                else:
+                    p1 = 1j * np.sqrt(-a)
+                poles.append([p1, -p1])
+                k_map.append(k_val)
+                k_map.append(k_val)
+
+            poles = np.array(poles).reshape(-1)
+            k_map = np.array(k_map)
+
+            fig, ax = plt.subplots(figsize=(6, 5))
+            ax.plot(poles.real, poles.imag, 'b.', label='Pole path')
+            ax.axvline(0, color='k', linestyle='--', label='Imaginary axis')
+            ax.set_xlabel('Real')
+            ax.set_ylabel('Imaginary')
+            ax.set_title('Root Locus (k from 5e6 to 5e9)')
+            ax.grid(True)
+            ax.legend()
+            plt.tight_layout()
+
+            def on_click(event):
+                if event.inaxes != ax:
+                    return
+
+                click_point = complex(event.xdata, event.ydata)
+                distances = np.abs(poles - click_point)
+                idx = np.argmin(distances)
+
+                selected_pole = poles[idx]
+                selected_k = k_map[idx]
+                print(f"Clicked pole: {selected_pole:.4f}, Gain k = {selected_k:.2e}")
+
+                ax.plot(selected_pole.real, selected_pole.imag, 'ro')
+                fig.canvas.draw()
+
+            fig.canvas.mpl_connect('button_press_event', on_click)
+            plt.show()
 
         # Initial conditions
         theta0 = np.radians(0.5)  # 0.5 degrees from vertical
@@ -78,6 +130,8 @@ class side_Buoy_sizing:
         plt.legend()
         plt.tight_layout()
         plt.show()
+
+        root_locus_plot()
 
 
 
