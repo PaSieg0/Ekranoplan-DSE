@@ -68,6 +68,8 @@ class CGCalculation:
             return self.nose_length
         elif component == "flight_control":
             return self.nose_length
+        elif component == "anchor":
+            return self.nose_length / 2
         else:
             return self.total_fuselage_length / 2
 

@@ -33,7 +33,7 @@ def main():
             print(f"First forebody length where diff <= -0.5: {forebody_length:.2f} (diff={diff:.3f})")
             chosen_length = forebody_length
             aircraft_data.data['outputs']['fuselage_dimensions']['l_forebody'] = round(chosen_length, 2)
-            aircraft_data.data['outputs']['fuselage_dimensions']['l_fuselage'] = aircraft_data.data['outputs']['fuselage_dimensions']['l_nose'] + aircraft_data.data['outputs']['fuselage_dimensions']['l_tailcone'] + aircraft_data.data['outputs']['fuselage_dimensions']['l_forebody'] + aircraft_data.data['outputs']['fuselage_dimensions']['l_afterbody']
+            aircraft_data.data['outputs']['fuselage_dimensions']['l_fuselage'] = aircraft_data.data['outputs']['fuselage_dimensions']['l_nose'] + aircraft_data.data['outputs']['fuselage_dimensions']['l_tailcone'] + forebody_length + aircraft_data.data['outputs']['fuselage_dimensions']['l_afterbody']
             aircraft_data.data['outputs']['fuselage_dimensions']['x_step'] = aircraft_data.data['outputs']['fuselage_dimensions']['l_nose'] + aircraft_data.data['outputs']['fuselage_dimensions']['l_forebody']
             aircraft_data.save_design('design3.json')
             found = True
