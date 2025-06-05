@@ -5,12 +5,12 @@ import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import matplotlib.pyplot as plt
 from utils import Data, MissionType, ISA, AircraftType
-
-
+from aero.lift_curve import lift_curve
 
 class DerivativesDatcom_sym:
     def __init__(self, aircraft_data: Data):
         self.aircraft_data = aircraft_data
+        self.lift_curve = lift_curve()
         self.Delta_c4 = aircraft_data.data['outputs']['wing_design']['sweep_c_4'] #degrees
         self.l_b = aircraft_data.data['outputs']['fuselage_dimensions']['l_fuselage'] # length of body 
         self.dihedral = aircraft_data.data['outputs']['wing_design']['dihedral'] #degrees
@@ -23,18 +23,19 @@ class DerivativesDatcom_sym:
         self.V_b = aircraft_data.data['outputs']['fuselage_dimensions']['total_volume'] # total body volume [m3]: 20000
         self.b = aircraft_data.data['outputs']['design']['b']
         self.lp = 1 # 36.431
-        self.Cl_alpha = 1 # Lift curve slope of the wing, in rad: 9.167
+        self.Cl_alpha = self.lift_curve.dcl_dalpha()[0] # Lift curve slope of the wing, in rad: 9.167
         self.e = aircraft_data.data['inputs']['oswald_factor'] # Oswald efficiency factor of the wing : 0.85 (guessed, typical value for a subsonic aircraft)
         self.taper = aircraft_data.data['outputs']['wing_design']['taper_ratio'] # Taper ratio of the wing: 0.4
         self.MAC = aircraft_data.data['outputs']['wing_design']['MAC']  # Mean Aerodynamic Chord: 8.456
-        self.x_bar = (aircraft_data.data['outputs']['wing_design']['X_LEMAC'] + (0.25*aircraft_data.data['outputs']['wing_design']['MAC'])) - aircraft_data.data['outputs']['cg_range']['most_aft_cg'] # x_ac - x_cg # Distance from the leading edge of the wing to the center of gravity: 31.5(from excel)
+        self.x_cg = 1/2 * (aircraft_data.data['outputs']['cg_range']['most_aft_cg'] + aircraft_data.data['outputs']['cg_range']['most_forward_cg'])
+        self.x_ac = aircraft_data.data['outputs']['wing_design']['X_LEMAC'] +  aircraft_data.data['outputs']['wing_design']['MAC']/2 # Aerodynamic center of the wing: 0.25 * MAC
+        self.x_bar = self.x_ac - self.x_cg # Distance from the leading edge of the wing to the center of gravity: 31.5(from excel)
         self.Cd0 = aircraft_data.data['inputs']['Cd0'] # Zero-lift drag coefficient of the wing
         self.c_h = aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['MAC'] # Mean aerodynamic chord of the horizontal tail
         self.Cm_alpha = 1
         self.x_h = aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['l_h']
-        self.Cl_alpha_h = 0.119 # Lift curve slope of the horizontal tail
+        self.Cl_alpha_h = aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['Cl_alpha']
         self.x_w = 1
-        self.x_cg = 1
         isa = ISA(self.aircraft_data.data['inputs']['cruise_altitude'])
         self.M = isa.Mach(self.aircraft_data.data['requirements']['cruise_speed'])
         self.theta_0 = 0
