@@ -30,6 +30,8 @@ class DerivativesDatcom_asym:
         self.c_h = c_h
         self.alpha = 5.0 # Angle of attack in degrees, TODO: UPDATE!!
         self.Cl = 0.5   # Lift coefficient at the angle of attack, TODO: UPDATE!!
+        self.alpha_f = 5.0 # Fuselage AoA in degrees, TODO: UPDATE!!
+        self.h_b = 0.05
 
 
     def CyB(self):
@@ -103,14 +105,14 @@ class DerivativesDatcom_asym:
         CnB_Vtail = -dcyB_Vtail * (self.lp / self.b)
         return CnB_wb + CnB_Vtail, CnB_wb, CnB_Vtail
     
-    def Cyp(self, h_b):
+    def Cyp(self):
         """
         Calculate the side force coefficient due to the roll rate.
 
         Returns:
         float: Side force coefficient.
         """
-        sigma=np.exp(-2.48*(h_b)**(0.768))
+        sigma=np.exp(-2.48*(self.h_b)**(0.768))
         zp = 7 # Guessed, distance from the centerline of the body to the centerline of the vertical tail
         z = zp * np.cos(np.radians(self.alpha)) - self.lp * np.sin(np.radians(self.alpha)) # distance from the centerline of the body to the centerline of the wing
         K =  (self.Cl_alpha * np.tan(np.radians(self.alpha)) + self.Cl / (np.cos(np.radians(self.alpha)))**2 - 2 * self.Cl / (np.pi * self.A * self.e) * (1 - sigma) * self.Cl_alpha) / (self.Cl_alpha * np.tan(np.radians(self.alpha)) + self.Cl / (np.cos(np.radians(self.alpha)))**2 - 2 * self.Cl / (np.pi * self.A * self.e) * self.Cl_alpha)
@@ -187,23 +189,23 @@ class DerivativesDatcom_asym:
         Clr_tail = 2 / self.b**2 * (self.lp * np.cos(np.radians(self.alpha)) + zp * np.sin(np.radians(self.alpha))*(zp*np.cos(np.radians(self.alpha) - self.lp * np.sin(np.radians(self.alpha)))) * self.CyB(self.Cl)[1]) #p.2802
         return Clr_wb - Clr_tail
     
-    def Cnr(self, Cl, alpha):
+    def Cnr(self):
         """
         Calculate the yaw moment coefficient due to the yaw rate.
 
         Returns:
         float: Yaw moment coefficient.
         """
-        Cnr__Cl2 = -.015
-        Cnr__Cd0 = -.3
-        Cnr_wb = Cnr__Cl2 * Cl**2 + Cnr__Cd0 * self.Cd0
+        Cnr__Cl2 = -0.015
+        Cnr__Cd0 = -0.3
+        Cnr_wb = Cnr__Cl2 * self.Cl**2 + Cnr__Cd0 * self.Cd0
 
         zp = 7 # Guessed, distance from the centerline of the body to the centerline of the vertical tail
-        Cnr_tail = 2 / self.b**2 * (self.lp * np.cos(alpha) + zp * np.sin(alpha))**2 * self.CyB(Cl)[1]
+        Cnr_tail = 2 / self.b**2 * (self.lp * np.cos(np.radians(self.alpha)) + zp * np.sin(np.radians(self.alpha)))**2 * self.CyB(self.Cl)[1]
 
         return Cnr_wb + Cnr_tail
     
-    def CyBdot(self, Cl, alpha):
+    def CyBdot(self):
         """
         Calculate the side force coefficient due to the rate of change of the roll angle.
         !!!!!!THIS IS THE MOST SKETCHY ONE, IT SHOULD BE VERY SMALL BUT IT IS NOT. HOWEVER CLBDOT DEPENDS ON THIS AND LOOKS FINE!!!!!
@@ -214,16 +216,17 @@ class DerivativesDatcom_asym:
         # p.2825
         zp = 7
         C_L_alpha_V = 0.124
-        sigma_B_alpha = -.001 # p.2834
+        sigma_B_alpha = -0.001 # p.2834
         sigma_B_dihedral = np.rad2deg(-0.93) # p.2846
         sigma_B_WB = 0.135 # p.2867
-        sigma_B = sigma_B_alpha * alpha + sigma_B_dihedral / 57.3 * self.dihedral + sigma_B_WB
-        CyBdot = 2*C_L_alpha_V * sigma_B * self.Sv / self.S * (self.lp * np.cos(alpha) + zp * np.sin(alpha) / self.b) 
+        #TODO: Check the units of the angles. Alpha and dihedral are in degrees
+        sigma_B = sigma_B_alpha * np.radians(self.alpha) + sigma_B_dihedral / 57.3 * np.radians(self.dihedral) + sigma_B_WB
+        CyBdot = 2*C_L_alpha_V * sigma_B * self.Sv / self.S * (self.lp * np.cos(np.radians(self.alpha)) + zp * np.sin(np.radians(self.alpha)) / self.b) 
         return CyBdot
     
-    def ClBdot(self, Cl, alpha_f):
+    def ClBdot(self):
         zp = 7
-        ClB_dot = self.CyBdot(Cl,alpha_f) * (zp * np.cos(alpha_f) - self.lp * np.sin(alpha_f)) / self.b
+        ClB_dot = self.CyBdot(self.Cl,self.alpha_f) * (zp * np.cos(np.radians(self.alpha_f)) - self.lp * np.sin(np.radians(np.radians(self.alpha_f)))) / self.b
         return ClB_dot
 
 
@@ -249,17 +252,17 @@ derivatives = DerivativesDatcom_asym(0, 8, 507, 1.5, 100, 75, np.deg2rad(1), 60,
 # Run the functions you want to store
 # Note, sometimes the [0] entry is used. THis is due to some function outputs being used in other functions. The main coefficient is always the first one
 aero_stability_outputs = {
-    'CyB': derivatives.CyB(0.5)[0],  # Example usage with Cl = 0.5
-    'ClB': derivatives.ClB(0.5, np.deg2rad(5)),  # Example usage with Cl = 0.5 and alpha = 5 degrees
+    'CyB': derivatives.CyB()[0],  # Example usage with Cl = 0.5
+    'ClB': derivatives.ClB(),  # Example usage with Cl = 0.5 and alpha = 5 degrees
     'CnB': derivatives.CnB()[0],  # Example usage
-    'Cyp': derivatives.Cyp(0.5, np.deg2rad(5), 0.05)[0],  # Example usage with Cl = 0.5, alpha = 5 degrees, h_b = 0.05
+    'Cyp': derivatives.Cyp()[0],  # Example usage with Cl = 0.5, alpha = 5 degrees, h_b = 0.05
     'Clp': derivatives.Clp(),  # Example usage
-    'Cnp': derivatives.Cnp(0.5, np.deg2rad(5))[0],  # Example usage with Cl = 0.5, alpha = 5 degrees
+    'Cnp': derivatives.Cnp()[0],  # Example usage with Cl = 0.5, alpha = 5 degrees
     'Cyr': derivatives.Cyr(),  # Example usage with Cl = 0.5, alpha = 5 degrees
-    'Clr': derivatives.Clr(0.5, np.deg2rad(5)),  # Example usage with Cl = 0.5, alpha = 5 degrees
-    'Cnr': derivatives.Cnr(0.5, np.deg2rad(5)),  # Example usage with Cl = 0.5, alpha = 5 degrees
-    'CyBdot': derivatives.CyBdot(0.5, np.deg2rad(5)),  # Example usage with Cl = 0.5, alpha = 5 degrees
-    'ClBdot': derivatives.ClBdot(0.5, np.deg2rad(5)),  # Example usage with Cl = 0.5, alpha = 5 degrees
+    'Clr': derivatives.Clr(),  # Example usage with Cl = 0.5, alpha = 5 degrees
+    'Cnr': derivatives.Cnr(),  # Example usage with Cl = 0.5, alpha = 5 degrees
+    'CyBdot': derivatives.CyBdot(),  # Example usage with Cl = 0.5, alpha = 5 degrees
+    'ClBdot': derivatives.ClBdot(),  # Example usage with Cl = 0.5, alpha = 5 degrees
 
     # Add more functions here if needed
 }
