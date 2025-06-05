@@ -87,6 +87,17 @@ class Materials(Enum):
     Rene_41 = auto()
     HASTELLOY_X = auto()
 
+class EigenMotion(Enum):
+    PHUGOID = auto()
+    SHORT_PERIOD = auto()
+    DUTCH_ROLL = auto()
+    DUTCH_ROLL_DAMPED = auto()
+    ROLL = auto()
+    SPIRAL = auto()
+
+class EigenMotionType(Enum):
+    SYMMETRIC = auto()
+    ASYMMETRIC = auto()
 class EnumEncoder(json.JSONEncoder):
     """
     Makes sure that enums are saved as strings correctly in the json file
