@@ -30,8 +30,8 @@ class WingLoading:
         self.stall_speed_landing = self.aircraft_data.data['requirements']['stall_speed_landing']
         self.stall_speed_high = self.aircraft_data.data['requirements']['stall_speed_high']
         self.V_lof = 1.05*self.stall_speed_takeoff
-        self.L = self.aircraft_data.data['outputs']['general']['l_fuselage']
-        self.tail_length = self.aircraft_data.data['outputs']['general']['l_tailcone']
+        self.L = self.aircraft_data.data['outputs']['fuselage_dimensions']['l_fuselage']
+        self.tail_length = self.aircraft_data.data['outputs']['fuselage_dimensions']['l_tailcone']
         self.r_float = self.aircraft_data.data['inputs']['r_float']
         self.cruise_altitude = self.aircraft_data.data['inputs']['cruise_altitude']
         self.high_altitude = self.aircraft_data.data['requirements']['high_altitude']
@@ -45,7 +45,7 @@ class WingLoading:
         self.prop_efficiency = self.aircraft_data.data['inputs']['prop_efficiency']
         self.CL_hydro = self.aircraft_data.data['inputs']['CL_hydro']
         self.upsweep = self.aircraft_data.data['inputs']['upsweep']
-        self.d_fuselage = self.aircraft_data.data['outputs']['general']['d_fuselage']
+        self.d_fuselage = self.aircraft_data.data['outputs']['fuselage_dimensions']['d_fuselage_equivalent_station2']
         self.hull_surface = self.calculate_hull_surface()
         self.TW = None
         self.WP = None
@@ -93,11 +93,11 @@ class WingLoading:
 
         rho_water = self.aircraft_data.data['rho_water']
         V_disp = self.aircraft_data.data['outputs']['max']['MTOM'] / rho_water
-        A_disp = V_disp / (self.aircraft_data.data['outputs']['general']['l_fuselage'] - self.aircraft_data.data['outputs']['general']['l_tailcone'])
+        A_disp = V_disp / (self.aircraft_data.data['outputs']['fuselage_dimensions']['l_fuselage'] - self.aircraft_data.data['outputs']['fuselage_dimensions']['l_tailcone'])
         depth = self.solve_piecewise(A_disp)
         self.aircraft_data.data['outputs']['general']['resting_depth'] = depth
         L = np.sqrt(1 + ((self.w_fuselage/2) / self.t_fuselage)**2)
-        A_hull = 2* (self.aircraft_data.data['outputs']['general']['l_fuselage'] - self.aircraft_data.data['outputs']['general']['l_tailcone']) * depth * L
+        A_hull = 2* (self.aircraft_data.data['outputs']['fuselage_dimensions']['l_fuselage'] - self.aircraft_data.data['outputs']['fuselage_dimensions']['l_tailcone']) * depth * L
         return A_hull
     
     def take_off_requirement(self):

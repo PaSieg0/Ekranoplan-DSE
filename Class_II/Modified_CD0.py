@@ -189,7 +189,8 @@ if __name__ == '__main__':
     data = Data('design3.json')
     est = Cd0Estimation(
         aircraft_data=data,
-        mission_type=MissionType.DESIGN
+        mission_type=MissionType.DESIGN,
+        class_ii_OEW=data.data['outputs']['design']['OEW']/9.81
     )
 
     est.mainloop()

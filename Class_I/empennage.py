@@ -14,7 +14,7 @@ class Empennage:
         if self.tail_type == EmpType.NONE:
             return
 
-        self.d_fuselage = self.aircraft_data.data['outputs']['general']['d_fuselage']
+        self.d_fuselage = self.aircraft_data.data['outputs']['fuselage_dimensions']['d_fuselage_equivalent_station2']
         self.aspect_h = self.aircraft_data.data['inputs']['aspect_h']
         self.aspect_v = self.aircraft_data.data['inputs']['aspect_v']
         self.sweep_hc4 = self.aircraft_data.data['inputs']['sweep_hc4']
@@ -26,7 +26,7 @@ class Empennage:
 
         self.v_position = self.aircraft_data.data['inputs']['v_position']
         self.h_position = self.aircraft_data.data['inputs']['h_position']
-        self.l_fuselage = self.aircraft_data.data['outputs']['general']['l_fuselage']
+        self.l_fuselage = self.aircraft_data.data['outputs']['fuselage_dimensions']['l_fuselage']
         self.aft_cg = self.aircraft_data.data['outputs']['cg_range']['most_aft_cg']
 
         self.S = self.aircraft_data.data['outputs']['max']['S']
@@ -72,6 +72,7 @@ class Empennage:
         self.taper_v = 0.2*(2-self.sweep_vc4*np.pi/180)
 
         self.b_h = np.sqrt(self.S_h * self.aspect_h)
+        print(f"S_h: {self.S_v}, aspect_h: {self.aspect_v}")
         self.b_v = np.sqrt(self.S_v * self.aspect_v)
 
         self.chord_root_h = 2 * self.S_h / (self.b_h * (1 + self.taper_h))

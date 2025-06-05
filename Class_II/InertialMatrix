@@ -1,0 +1,106 @@
+import sys
+import os
+import control as ctrl
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.append(project_root)
+
+from utils import Data
+import pandas as pd
+import numpy as np
+from enum import Enum, auto
+import matplotlib.pyplot as plt
+
+class EmpType(Enum):
+    CRUCIFORM = auto()
+    T_TAIL = auto()
+    CONVENTIONAL = auto()
+    H_TAIL = auto()
+    NONE = auto()
+
+class InertiaMatrix:
+    def __init__(self, aircraft_data: Data,I: np.ndarray):
+        assert I.shape == (3, 3), "Inertia matrix must be 3x3"
+        self.I = I
+
+        #hard-coded global location in 3D taken from start of nose, bottom of hull, and center plane
+        self.step_location = np.array([40,0,0])
+        self.left_wing_CoM = np.array([30,-15,8])
+        self.right_wing_CoM = np.array([30,15,8])
+                                    # X, Y, Z
+        self.engine1_CoM = np.array([27,22,8])
+        self.engine2_CoM = np.array([27,16,8])
+        self.engine3_CoM = np.array([27,10,8])
+        self.engine4_CoM = np.array([27,-10,8])
+        self.engine5_CoM = np.array([27,-16,8])
+        self.engine6_CoM = np.array([27,-22,8])
+
+        self.vertical_tail_CoM = np.array([58,0,13])
+        self.horizontal_tail_CoM = np.array([57,0,8])
+        self.Fuselage_CoM = np.array([27,0,4])
+        self.left_floater_CoM = np.array([])
+        
+        self.Cargo_CoM = np.array([31,0,4])
+        self.Fuel_CoM = np.array([29,0,8])
+
+
+        #fuselage, wing, cargo, fuel are considered rigidbody with evenly distributed weight
+        #engines, empennage,floaters are considered point mass
+
+        #hard-coded mass of each subsystem emelemt, change when merge is fixed
+        self.wing_weight = 32174
+        self.handling_gear = 78
+        self.hydraulics = 120
+        self.starter_pneumatic = 148
+        self.flight_control = 191
+        self.engine_controls = 212
+        self.fuel_system = 240
+        self.anchor = 250
+        self.instruments = 398
+        self.anti_ice = 521
+        self.apu_installed = 699
+        self.electrical = 846
+        self.avionics = 971
+        self.floater = 1907
+        self.horizontal_tail = 2917
+        self.door = 3100
+        self.vertical_tail = 3273
+        self.military_cargo_handling_system = 3662
+        self.nacelle_group = 4827
+        self.furnishings = 8148
+        self.engine = 19726
+        self.wing = 32174
+        self.fuselage = 38980
+        self.fuel = 36551.9829
+
+    def coordinate_transfer(self):
+        #transfer from global position of component to hull step location
+        return
+
+    def getIxx(self):
+        return self.I[0, 0]
+
+    def getIyy(self):
+        return self.I[1, 1]
+
+    def getIzz(self):
+        return self.I[2, 2]
+
+    def getIxy(self):
+        return self.I[0, 1]
+
+    def getIyx(self):
+        return self.I[1, 0]
+
+    def getIxz(self):
+        return self.I[0, 2]
+
+    def getIzx(self):
+        return self.I[2, 0]
+
+    def getIyz(self):
+        return self.I[1, 2]
+
+    def getIzy(self):
+        return self.I[2, 1]
+    
+    
