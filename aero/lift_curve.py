@@ -297,6 +297,8 @@ if __name__ == "__main__":  #if run seperately
     CL = 1.8
     span = np.arange(-35, 35, 0.01)
     Cl_array_span = CL * np.ones(np.shape(span))
+    ax[0][1].set_title('lift spanwise')
+    ax[1][1].plot(span, Cl_array_span)
 
 
     
