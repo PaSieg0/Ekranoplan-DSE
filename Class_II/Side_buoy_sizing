@@ -1,0 +1,89 @@
+import sys
+import os
+import numpy as np
+from scipy.optimize import fsolve
+import matplotlib.pyplot as plt
+from scipy.integrate import solve_ivp
+
+
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.append(project_root)
+
+from utils import Data
+import pandas as pd
+import numpy as np
+from enum import Enum, auto
+import matplotlib.pyplot as plt
+
+class side_Buoy_sizing:
+    def __init__(self, aircraft_data: Data):
+        self.aircraft_data = aircraft_data
+        self.MTOW = self.aircraft_data.data['outputs']['max']['MTOW']
+        self.b = self.aircraft_data.data['outputs']['design']['b']
+        self.MTOM = self.aircraft_data.data['outputs']['max']['MTOM']
+
+#Taking in hydroynamic center and Cg height, forming a linearly inverted pendulum model (assume small angle)
+#Buoy provides corrective force linearly with submerged volume
+#Basically funcitons as a linear controller in the loop
+#Assuming no corrected force from hull >> conservative assumption
+
+    def buoy_gain(self):
+        b = self.b/2
+        w_buoy = 1
+        l_bouy = 4.5
+        g = 9.80665
+        rho = 1000
+        k = b**2/4*l_bouy*w_buoy*g*rho
+        #print(k)
+        return k
+        
+
+    #linearly inverted pendulum model
+    def LIPM(self):
+
+        # Constants
+        g = 9.81      # gravity (m/s^2)
+        l = 5       # pendulum length (m)  #from hydro force center to Cg (height)
+        m = self.MTOM       # mass (kg)
+        k = self.buoy_gain()
+
+        def lip_dynamics(t, y):
+            theta, theta_dot = y
+            torque_gravity = (g / l) * theta               # unstable term
+            torque_correction = -(k / (m * l**2)) * theta  # stabilizing term
+            dtheta_dt = theta_dot
+            dtheta_dot_dt = torque_gravity + torque_correction
+            return [dtheta_dt, dtheta_dot_dt]
+
+        # Initial conditions
+        theta0 = np.radians(0.5)  # 5 degrees from vertical
+        y0 = [theta0, 0.0]
+
+        # Time span
+        t_span = (0, 60)
+        t_eval = np.linspace(*t_span, 1000)
+
+        # Solve ODE
+        sol = solve_ivp(lip_dynamics, t_span, y0, t_eval=t_eval)
+
+        # Plot
+        plt.figure(figsize=(8, 4))
+        plt.plot(sol.t, np.degrees(sol.y[0]), label='Pitch angle (deg)')
+        plt.xlabel('Time (s)')
+        plt.ylabel('Pitch angle (degrees)')
+        plt.title('Linear Inverted Pendulum with Corrective Force')
+        plt.grid(True)
+        plt.legend()
+        plt.tight_layout()
+        plt.show()
+
+
+
+if __name__ == "__main__":
+    # Load the aircraft data
+    aircraft = "design3.json"
+    aircraft_data = Data(aircraft)
+    buoy = side_Buoy_sizing(aircraft_data)
+    LIPM_mod = buoy.LIPM()
+    #bouy_depth =  buoy.get_buoys(0.1,6,4,4) #percentage of weight supported by buoys, length of buoy, diameter, number of buoys
+
