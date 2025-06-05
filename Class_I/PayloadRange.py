@@ -80,7 +80,6 @@ class RangeCalculator:
 
         if self.aircraft_type == "PROP":
             R = (self.eta_p * self.L_D * np.log(W4_W5)) / (self.g * self.cp)
-            print(self.L_D, np.log(W4_W5))
         elif self.aircraft_type == "JET":
             R = (self.V_cruise * self.L_D * np.log(W4_W5)) / (self.g * self.cj)
         else:
@@ -303,6 +302,34 @@ class RangeCalculator:
         
         return ranges_nm, points
     
+    def calculate_fuel_per_ton_km(self, mass_fractions, ranges_m):
+            """
+            Calculate fuel consumption in kg/ton/km for each scenario except ferry.
+
+            Args:
+            mass_fractions (dict): Mass fractions for each scenario.
+            ranges_m (dict): Ranges in meters for each scenario.
+
+            Returns:
+            dict: Fuel consumption in kg/ton/km for each scenario.
+            """
+            fuel_per_ton_km = {}
+            for key in ['harmonic', 'design', 'maxrange']:
+                payload_ton = {
+                    'harmonic': self.max_payload / 1000,
+                    'design': self.design_payload / 1000,
+                    'maxrange': (self.design_payload - (self.fuel_max - self.fuel_design) / self.g) / 1000,
+                }[key]
+                range_km = ranges_m[key] / 1000
+                # Fuel used is (1 - mass_fraction) * MTOW
+                fuel_used = (1 - mass_fractions[key]) * self.MTOW / self.g / 0.82
+                if range_km > 0 and payload_ton > 0:
+                    fuel_per_ton_km[key] = fuel_used / (payload_ton * range_km * 2)
+                else:
+                    fuel_per_ton_km[key] = float('nan')
+
+            return fuel_per_ton_km
+            
     def get_results_summary(self):
         """
         Get a formatted summary of the calculation results.
@@ -330,7 +357,15 @@ class RangeCalculator:
         summary += f"  - Harmonic: {ranges_nm['harmonic']:.2f} nm ({ranges_m['harmonic']/1000:.2f} km)\n"
         summary += f"  - Design: {ranges_nm['design']:.2f} nm ({ranges_m['design']/1000:.2f} km)\n"
         summary += f"  - Max Range: {ranges_nm['maxrange']:.2f} nm ({ranges_m['maxrange']/1000:.2f} km)\n"
-        summary += f"  - Ferry: {ranges_nm['ferry']:.2f} nm ({ranges_m['ferry']/1000:.2f} km)\n"
+        summary += f"  - Ferry: {ranges_nm['ferry']:.2f} nm ({ranges_m['ferry']/1000:.2f} km)\n\n"
+
+        summary += f"Fuel Consumption:\n"
+
+        fuel_per_ton_km = self.calculate_fuel_per_ton_km(mass_fractions, ranges_m)
+
+        summary += f"  - Harmonic: {fuel_per_ton_km['harmonic']:.4f} L/ton/km\n"
+        summary += f"  - Design: {fuel_per_ton_km['design']:.4f} L/ton/km\n"
+        summary += f"  - Max Range: {fuel_per_ton_km['maxrange']:.4f} L/ton/km\n"
         
         return summary
     
