@@ -183,6 +183,32 @@ class lift_curve():
     def calc_moment_ac(self):
         pass
     
+    def dcl_dalpha(self):
+    # Convert alpha to numpy array if it's not already
+        alpha_arr = np.array(self.alpha)
+        cl_arr = np.array(self.cl_lst)
+
+        # Find index where alpha is closest to 5
+        idx = np.argmin(np.abs(alpha_arr - 3))
+        
+        # Slice arrays up to and including that index
+        alpha_fit = alpha_arr[:idx+1]
+        cl_fit = cl_arr[:idx+1]
+        
+        # Perform linear fit
+        slope, intercept = np.polyfit(alpha_fit, cl_fit, 1)
+
+        # Plot original data and linear fit
+        # plt.plot(alpha_arr, cl_arr, label='Lift Curve')
+        # plt.plot(alpha_fit, slope * alpha_fit + intercept, label='Linear Fit', linestyle='--')
+        # plt.xlabel("Angle of Attack (alpha)")
+        # plt.ylabel("Lift Coefficient (Cl)")
+        # plt.legend()
+        # plt.grid(True)
+        # plt.tight_layout()
+        # plt.show()
+
+        return slope
 
 
 
