@@ -296,6 +296,13 @@ class FuselageThickness:
             self.shear_flow_dicts.append(shear_flow_dict)
         print(self.shear_flow_dicts)
 
+    def calculate_minimum_thickness(self):
+        tau = self.sigma_y*0.577
+        t_fus_shear_list = []
+        for i in self.tot_shear_flow:
+            t_fus_shear = np.array(i) / tau
+            t_fus_shear_list.append(abs(t_fus_shear*1000))
+        print(f'Min thickness due to shear is[mm]: {t_fus_shear_list}')
 
     def main(self):
         M_x = 20e6  # Nm # TODO: Replace with actual bending moment
@@ -304,6 +311,7 @@ class FuselageThickness:
         self.iterate_booms_per_station(M_x, M_y)
 
         self.calculate_shear_flow_distribution()
+        fuselage.calculate_minimum_thickness()
 
 
 if __name__ == '__main__':
