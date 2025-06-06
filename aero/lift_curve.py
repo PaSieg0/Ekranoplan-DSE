@@ -1,10 +1,21 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import sys
-
+import json
+import os
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from utils import Data, MissionType, ISA, AircraftType
 
 class lift_curve():
     def __init__(self):
+        self.aircraft_data = Data("design3.json")
+
+        self.AR=self.aircraft_data.data['outputs']['wing_design']['aspect_ratio']
+        self.taper=self.aircraft_data.data['outputs']['wing_design']['taper_ratio']
+        self.cD_0=self.aircraft_data.data['inputs']['Cd0']
+        self.e=self.aircraft_data.data['inputs']['oswald_factor']
+
         #importing lift curve data which is generated from xfoil without WIG
         self.data=np.loadtxt('aero\\lift curve no WIG.txt')
         self.data_span = np.loadtxt('aero\\spanwise curves.txt')
@@ -19,6 +30,7 @@ class lift_curve():
         self.cl_lst=self.data[:,1]
         self.cd_lst=self.data[:,2]
         self.cm_lst=self.data[:,3]
+   
         self.cl_lst_tail = self.data_tail_NACA0012[:,1]
 
         self.y_spanwise = self.data_span[:0]
@@ -56,10 +68,10 @@ class lift_curve():
         #returns cl
         return cl
     
-    def Cl_correction_GE(self,h_b=0.050, AR=8, taper = 0.4):
+    def Cl_correction_GE(self,h_b=0.050):
         Cl_arr = self.cl_lst
-        delta_L = 1 - 2.25 * (taper**0.00273 - 0.997)*(AR*0.717 + 13.6)
-        Cl_arr_GE = (1 + delta_L * (288*(h_b)**0.787 * np.exp(-9.14*h_b**0.327))/(AR*0.882)) * Cl_arr
+        delta_L = 1 - 2.25 * (self.taper**0.00273 - 0.997)*(self.AR*0.717 + 13.6)
+        Cl_arr_GE = (1 + delta_L * (288*(h_b)**0.787 * np.exp(-9.14*h_b**0.327))/(self.AR*0.882)) * Cl_arr
         return Cl_arr_GE
 
 
@@ -119,7 +131,7 @@ class lift_curve():
         #returns cl
         return cm
     
-    def calc_drag(self,h_b='no',AR=8,e=0.85,alpha='n',cl='n',CD_0=0.0169):   #calculates the drag for only the wing using method from paper the values still need to be updated
+    def calc_drag(self,h_b='no',alpha='n',cl='n'):   #calculates the drag for only the wing using method from paper the values still need to be updated
         
         #correction factor
         if h_b =='no':
@@ -132,18 +144,17 @@ class lift_curve():
             cl=self.interpolate_Cl(alpha)
 
         #calculates induced drag with correction
-        CD_i=cl**2/(np.pi*AR*e)*(1-sigma)
+        CD_i=cl**2/(np.pi*self.AR*self.e)*(1-sigma)
 
         #adds up drag
-        CD=CD_0+CD_i
+        CD=self.cD_0+CD_i
 
         #returns drag coeff
         return CD
     
-    def calc_drag_butbetter(self,h_b='no',AR=8,e=0.85,alpha='n',cl='n',CD_0=0.0169):   #calculates the drag for only the wing using method from paper the values still need to be updated
+    def calc_drag_butbetter(self,h_b='no',alpha='n',cl='n'):   #calculates the drag for only the wing using method from paper the values still need to be updated
         
-        taper = 0.4
-        delta_D = 1 - 0.157 * (taper**0.775 - 0.373)*(AR**0.417)
+        delta_D = 1 - 0.157 * (self.taper**0.775 - 0.373)*(self.AR**0.417)
         #correction factor
         if h_b=='no':
             sigma = 0
@@ -155,10 +166,10 @@ class lift_curve():
             cl=self.interpolate_Cl(alpha)
 
         #calculates induced drag with correction
-        CD_i=cl**2/(np.pi*AR*e)*(1-sigma)
+        CD_i=cl**2/(np.pi*self.AR*self.e)*(1-sigma)
 
         #adds up drag
-        CD=CD_0+CD_i
+        CD=self.cD_0+CD_i
 
         #returns drag coeff
         return CD
@@ -190,12 +201,12 @@ class lift_curve():
         self.xac=np.array([])
 
 
-        seg1=[-4.5,3]   #alpha
+        self.seg1=[-4.5,3]   #alpha
         self.cmac_seg1=np.array([])
         self.alpha_seg1=np.array([])
         self.xac_seg1=np.array([])
         
-        seg2=[6,11]  #alpha
+        self.seg2=[6,11]  #alpha
         self.cmac_seg2=np.array([])
         self.alpha_seg2=np.array([])
         self.xac_seg2=np.array([])
@@ -223,10 +234,10 @@ class lift_curve():
 
 
             #extracts xacs for segments
-            if self.alpha[i]>=seg1[0] and self.alpha[i]<=seg1[1]:
+            if self.alpha[i]>=self.seg1[0] and self.alpha[i]<=self.seg1[1]:
                 self.xac_seg1=np.append(self.xac_seg1,xac)
 
-            if self.alpha[i]>=seg2[0] and self.alpha[i]<=seg2[1]:
+            if self.alpha[i]>=self.seg2[0] and self.alpha[i]<=self.seg2[1]:
                 self.xac_seg2=np.append(self.xac_seg2,xac)
 
         #calculates xac for certain segment
@@ -236,12 +247,12 @@ class lift_curve():
 
         #calc cmac for segments
         for i in range(len(self.cm_lst)):
-            if self.alpha[i]<=seg1[1] and self.alpha[i]>=seg1[0]:
+            if self.alpha[i]<=self.seg1[1] and self.alpha[i]>=self.seg1[0]:
                 cmac=self.cl_lst[i]*(0.25-self.xac_segm1)+self.cm_lst[i]
                 self.cmac_seg1=np.append(self.cmac_seg1,cmac)
                 self.alpha_seg1=np.append(self.alpha_seg1,self.alpha[i])
 
-            if self.alpha[i]<=seg2[1] and self.alpha[i]>=seg2[0]:
+            if self.alpha[i]<=self.seg2[1] and self.alpha[i]>=self.seg2[0]:
                 cmac=self.cl_lst[i]*(0.25-self.xac_segm2)+self.cm_lst[i]
                 self.cmac_seg2=np.append(self.cmac_seg2,cmac)
                 self.alpha_seg2=np.append(self.alpha_seg2,self.alpha[i])
@@ -253,8 +264,8 @@ class lift_curve():
 
         #print
         print('--------cmac-------')
-        print(f'cmac for {seg1[0]} < α < {seg1[1]} = {round(self.cmac_segm1,4)} and xac = {round(self.xac_segm1,3)}.')
-        print(f'cmac for {seg2[0]} < α < {seg2[1]} = {round(self.cmac_segm2,4)} and xac = {round(self.xac_segm2,3)}.')
+        print(f'cmac for {self.seg1[0]} < α < {self.seg1[1]} = {round(self.cmac_segm1,4)} and xac = {round(self.xac_segm1,3)}.')
+        print(f'cmac for {self.seg2[0]} < α < {self.seg2[1]} = {round(self.cmac_segm2,4)} and xac = {round(self.xac_segm2,3)}.')
         print('\t')
     
 
@@ -312,9 +323,9 @@ class lift_curve():
         cl_fit = cl_arr[:idx+1]
         
         # Perform linear fit
-        slope, intercept = np.polyfit(alpha_fit, cl_fit, 1)
+        self.slope, intercept = np.polyfit(alpha_fit, cl_fit, 1)
 
-        return slope, intercept
+        return self.slope, intercept
 
     def dcl_dalpha_tail(self):
         NACA0012_data = self.cl_lst_tail
@@ -339,11 +350,11 @@ class lift_curve():
         #iteration over all alpha
         for i in range(len(self.alpha)):
             #calculation of drag 
-            self.ind_lst.append(self.calc_drag(AR=8,e=0.85,h_b=0.050,alpha=self.alpha[i]))
-            self.ind_lst2.append(self.calc_drag(AR=8,e=0.85,h_b='no',alpha=self.alpha[i]))
+            self.ind_lst.append(self.calc_drag(h_b=0.050,alpha=self.alpha[i]))
+            self.ind_lst2.append(self.calc_drag(h_b='no',alpha=self.alpha[i]))
 
-            self.ind_lst3.append(self.calc_drag_butbetter(AR=8,e=0.85,h_b=0.050,alpha=self.alpha[i]))
-            self.ind_lst4.append(self.calc_drag_butbetter(AR=8,e=0.85,h_b='no',alpha=self.alpha[i]))
+            self.ind_lst3.append(self.calc_drag_butbetter(h_b=0.050,alpha=self.alpha[i]))
+            self.ind_lst4.append(self.calc_drag_butbetter(h_b='no',alpha=self.alpha[i]))
         
 
         #cl curve
@@ -357,7 +368,8 @@ class lift_curve():
 
         #spanwise distr
         CL = 1.8
-        self.span = np.arange(-35, 35, 0.01)
+        b=self.aircraft_data.data['outputs']['wing_design']['b']/2
+        self.span = np.arange(-b, b, 0.01)
         self.Cl_array_span = CL * np.ones(np.shape(self.span))
 
 
@@ -408,6 +420,7 @@ class lift_curve():
         for i, cl in enumerate(self.cl_lst_GE):
             if cl == max(self.cl_lst_GE):
                 print(f'alpha for Clmax: {self.alpha[i]}')
+                self.cL_max=cl
                 break
         print('\t')
 
@@ -416,8 +429,27 @@ class lift_curve():
         for i, cl in enumerate(self.L_D_GE_lst):
             if cl == max(self.L_D_GE_lst):
                 print(f'alpha for max L/D: {self.alpha[i]} degrees')
+                
                 break
         print('\t')
+    
+    def inp_json(self):
+        
+        aerodynamics = {
+            'Cl_alpha': self.slope,
+            'Cl_max': self.cL_max,
+            't/c': 0.1426,
+            'seg1_alpha': self.seg1,
+            'cmac_seg1': self.cmac_segm1,
+            'xac_seg1': self.xac_segm1,
+            'seg2_alpha': self.seg2,
+            'cmac_seg2': self.cmac_segm2,
+            'xac_seg2': self.xac_segm2}
+        self.aircraft_data.data['outputs']['aerodynamics']=aerodynamics
+
+
+        self.aircraft_data.save_design('design3.json')
+        
 
 
 
@@ -425,10 +457,12 @@ class lift_curve():
 
 if __name__ == "__main__":  #if run seperately  
     #defines instance
+    
     curves=lift_curve()
     curves.plot_moment_ac()
     curves.plotting()
     curves.printing()
+    curves.inp_json()
 
     
     
