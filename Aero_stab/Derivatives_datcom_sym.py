@@ -32,8 +32,8 @@ class DerivativesDatcom_sym:
         self.x_bar = self.x_ac - self.x_cg # Distance from the leading edge of the wing to the center of gravity: 31.5(from excel)
         self.Cd0 = aircraft_data.data['inputs']['Cd0'] # Zero-lift drag coefficient of the wing
         self.c_h = aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['MAC'] # Mean aerodynamic chord of the horizontal tail
-        self.x_h = aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['l_h']
-        self.Cl_alpha_h = aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['Cl_alpha']
+        self.l_h = aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['l_h']
+        self.Cl_alpha_h = aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['Cl_alpha'] * (180 / np.pi)
         self.x_w = self.x_ac
         isa = ISA(self.aircraft_data.data['inputs']['cruise_altitude'])
         self.M = isa.Mach(self.aircraft_data.data['requirements']['cruise_speed'])
@@ -42,6 +42,7 @@ class DerivativesDatcom_sym:
         self.d_fusel = aircraft_data.data['outputs']['fuselage_dimensions']['d_fuselage_equivalent_station2']  # Diameter of the fuselage, assumed to be 0 for now
         self.S_b = aircraft_data.data['outputs']['fuselage_dimensions']['body_base_area'] # body base area
         self.C_r = aircraft_data.data['outputs']['wing_design']['chord_root']
+        self.x_h=self.x_cg+self.l_h
 
         self.Cl = 0.5
         self.alpha = np.deg2rad(2)  # Example angle of attack in radians
@@ -77,8 +78,10 @@ class DerivativesDatcom_sym:
     def Cmalpha(self):
         # From FD
         downwash_gradient = 2 * self.Cl_alpha / (np.pi * self.A)
-        l_h = self.x_h - self.x_cg
-        Cmalpha = self.Cl_alpha * (self.x_cg - self.x_w)/self.MAC - self.Cl_alpha_h*(1-downwash_gradient)*self.Sh*l_h / (self.S * self.MAC)
+        # downwash_gradient=0
+        # l_h = self.x_h - self.x_cg
+        Cmalpha = self.Cl_alpha * (self.x_cg - self.x_w)/self.MAC - self.Cl_alpha_h*(1-downwash_gradient)*self.Sh*self.l_h / (self.S * self.MAC)
+        # print(self.Cl_alpha * (self.x_cg - self.x_w)/self.MAC, self.Cl_alpha_h*(1-downwash_gradient)*self.Sh*l_h / (self.S * self.MAC))
         return Cmalpha
     
     def C_Z_u(self):
@@ -107,17 +110,16 @@ class DerivativesDatcom_sym:
         x_c = 0.5 * self.l_b
         x_m = self.x_cg
         S_b = self.S_b
-        #The Cm_alpha_body is the one we discussed Jaime
 
         Cm_alphadot_B = 2 * self.Cmalpha() * ((self.V_b / (S_b * self.l_b)) * ((x_c / self.l_b) - (x_m / self.l_b)) / (((1 - (x_m / self.l_b)) * self.V_b / (S_b * self.l_b))))
         Cm_alphadot_wb = (K_bw + K_wb) * (self.Sh/self.S)*(self.c_h/self.MAC)**2 * Cm_alphadot_e + Cm_alphadot_B * ((S_b / self.S)*(self.l_b/self.MAC)**2)
+        # print((K_bw + K_wb) * (self.Sh/self.S)*(self.c_h/self.MAC)**2 * Cm_alphadot_e, Cm_alphadot_B * ((S_b / self.S)*(self.l_b/self.MAC)**2))
+        # print(Cm_alphadot_B, S_b / self.S,(self.l_b/self.MAC)**2)
         
         l_h = self.x_h - self.x_cg
         downwash_gradient = (2 * self.Cl_alpha / (np.pi * self.A))
         Cm_alphadot_tail = -(self.Cl_alpha * 1 * downwash_gradient * self.Sh*l_h**2) / (self.S * self.MAC**2)
-        print(Cm_alphadot_wb, Cm_alphadot_tail)
-        print(Cm_alphadot_wb + Cm_alphadot_tail)
-        return Cm_alphadot_wb + Cm_alphadot_tail
+        return Cm_alphadot_tail #No body contribution, see FD
     
     def update_json(self):
         # Run the functions you want to store

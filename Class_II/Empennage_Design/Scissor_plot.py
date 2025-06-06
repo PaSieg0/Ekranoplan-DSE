@@ -27,7 +27,7 @@ class Tail_area:
 
     def get_downwash(self):
         if self.tail_type == "T_TAIL":
-            downwash = 0
+            downwash = 0.46
             return downwash
         else:
             downwash = 4/(self.A+2)
