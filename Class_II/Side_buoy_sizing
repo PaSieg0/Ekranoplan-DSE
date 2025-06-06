@@ -22,6 +22,7 @@ class side_Buoy_sizing:
         self.MTOW = self.aircraft_data.data['outputs']['max']['MTOW']
         self.b = self.aircraft_data.data['outputs']['design']['b']
         self.MTOM = self.aircraft_data.data['outputs']['max']['MTOM']
+        self.OEW = self.aircraft_data.data['outputs']['design']['OEW']
 
     def buoy_gain(self):
         b = self.b/2
@@ -120,11 +121,11 @@ class side_Buoy_sizing:
 
         root_locus_plot()
 
-    #complete model, considering both parallel axis terms (point mass) and inertial term (distributed mass)
+    #complete dynamic model, considering both parallel axis terms (point mass) and inertial term (distributed mass)
     def Model(self):
         g = 9.81      
         l = 4.5                 # Vertical distance from pivot to CG
-        m = self.MTOM         # Mass of the vehicle
+        m = 2*self.OEW/g       # Mass of the vehicle
         k = self.buoy_gain()  # Buoyancy restoring gain (external function)
         I_xx = 4*10**7      # Rotational inertia around pitch axis (must be defined)
 
