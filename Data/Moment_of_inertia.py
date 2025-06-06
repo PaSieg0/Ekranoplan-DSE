@@ -52,9 +52,11 @@ class MomentOfInertia:
 
 if __name__ == "__main__":
     aircraft_data = Data("design3.json")
-    print(f"Ixx:{self.calculate_Ixx()}")    
+    moment_of_inertia = MomentOfInertia(aircraft_data)
+    Ixx = moment_of_inertia.calculate_Ixx()
+    print(Ixx)    
 
-    
+    #QIHAO the goat
     
 
 
