@@ -578,7 +578,7 @@
             "door": 30411.0,
             "anchor": 2452.5,
             "floater": 90546.06272315978,
-            "total_OEW": 1109599.1882895
+            "total_OEW": 1254208.6199806586
         },
         "component_positions": {
             "air_conditioning": [
@@ -710,8 +710,8 @@
             ]
         },
         "cg_positions": {
-            "OEW_CG": 25.403043258715954,
-            "MTOW_CG": 25.158860674715893
+            "OEW_CG": 25.50755160749754,
+            "MTOW_CG": 25.185658547165854
         }
     },
     "kinematic_viscosity": 1.006e-06,
