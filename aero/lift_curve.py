@@ -18,7 +18,11 @@ class lift_curve():
         self.taper=self.aircraft_data.data['outputs']['wing_design']['taper_ratio']
         self.cD_0=self.aircraft_data.data['inputs']['Cd0']
         self.e=self.aircraft_data.data['inputs']['oswald_factor']
-
+        self.sweep_c4=self.aircraft_data.data['outputs']['wing_design']['sweep_c_4']
+        self.b=self.aircraft_data.data['outputs']['wing_design']['b']
+        self.lh=self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['l_h']
+        self.zh=self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['tail_height']
+        
         #importing lift curve data which is generated from xfoil without WIG
         self.data=np.loadtxt('aero\\lift curve no WIG.txt')
         self.data_span = np.loadtxt('aero\\spanwise curves.txt')
@@ -450,6 +454,18 @@ class lift_curve():
         obj.run()
         self.e_n=obj.e
 
+    def downwash_gradient(self):
+        M=0.3
+        beta=np.sqrt(1-M**2)
+        sweep50=np.atan(np.tan(self.sweep_c4*np.pi/180)-4/self.AR*(0.5-0.25)*(1-self.taper)/(1+self.taper))
+        k=1
+        clM=2*np.pi*self.AR/(2+np.sqrt(self.AR**2*beta/k*(1+np.tan(sweep50)**2/beta**2)+4))
+        cl0=2*np.pi*self.AR/(2+np.sqrt(self.AR**2/k*(1+np.tan(sweep50)**2)+4))
+        clM__cl0= clM/cl0
+        kA=1/self.AR-1/(1+self.AR**1.7)
+        klam=(10-3*self.taper)/7
+        kh=(1-abs(self.zh/self.b))/((2*self.lh/self.b)**(1/3))
+        self.downwash_gr=4.44*(kA*klam*kh*np.sqrt(np.cos(self.sweep_c4*np.pi/180)))**(1.19)*clM__cl0
 
     def inp_json(self):
         
@@ -464,7 +480,8 @@ class lift_curve():
             'cmac_seg2': self.cmac_segm2,
             'xac_seg2': self.xac_segm2,
             'oswald_factor': self.e_n,
-            'vertical/horizontal stab cl_alpha': self.slope_tail}
+            'vertical/horizontal stab cl_alpha': self.slope_tail,
+            'downwash_grad': self.downwash_gr}
         self.aircraft_data.data['outputs']['aerodynamics']=aerodynamics
 
 
@@ -481,10 +498,11 @@ if __name__ == "__main__":  #if run seperately
     curves=lift_curve()
     curves.plot_moment_ac()
     curves.printing()
-    print(curves.interpolate_Cl(5))
+    # print(curves.interpolate_Cl(5))
     curves.plotting()
     curves.calc_e()
     curves.dcl_dalpha_tail()
+    curves.downwash_gradient()
     curves.inp_json()
 
     

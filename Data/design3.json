@@ -696,7 +696,8 @@
             "cmac_seg2": -0.25008508852123634,
             "xac_seg2": 0.3858449337959915,
             "oswald_factor": 0.7567736787197153,
-            "vertical/horizontal stab cl_alpha": 0.1187476190476189
+            "vertical/horizontal stab cl_alpha": 0.1187476190476189,
+            "downwash_grad": 0.26077959232794995
         }
     },
     "kinematic_viscosity": 1.006e-06,
