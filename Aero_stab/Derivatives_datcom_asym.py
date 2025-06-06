@@ -25,8 +25,9 @@ class DerivativesDatcom_asym:
         self.V_b = aircraft_data.data['outputs']['fuselage_dimensions']['total_volume'] # total body volume [m3]
         self.b = aircraft_data.data['outputs']['design']['b']
 
-        self.lp = (aircraft_data.data['outputs']['fuselage_dimensions']['d_fuselage_equivalent_station3'] / 2) + (aircraft_data.data['outputs']['empennage_design']['vertical_tail']['z_MAC_v'])  # ℓₚ is the distance parallel to the longitudinal body axis between the vehicle moment center and the quarter-chord point of the MAC of the vertical panel, positive for the panel aft of the vehicle moment center.
-        self.Cl_alpha = self.lift_curve.dcl_dalpha()[0] # Lift curve slope of the wing in deg
+        self.lp = aircraft_data.data['outputs']['empennage_design']['vertical_tail']['l_v']# ℓₚ is the distance parallel to the longitudinal body axis between the vehicle moment center and the quarter-chord point of the MAC of the vertical panel, positive for the panel aft of the vehicle moment center.
+        self.zp = (aircraft_data.data['outputs']['fuselage_dimensions']['d_fuselage_equivalent_station3'] / 2) + (aircraft_data.data['outputs']['empennage_design']['vertical_tail']['z_MAC_v'])  
+        self.Cl_alpha = self.lift_curve.dcl_dalpha()[0]*(180*np.pi) # Lift curve slope of the wing in deg
         self.e = aircraft_data.data['inputs']['oswald_factor'] # Oswald efficiency factor of the wing : 0.85 (guessed, typical value for a subsonic aircraft)
         self.taper = aircraft_data.data['outputs']['wing_design']['taper_ratio'] # Taper ratio of the wing: 0.4
         self.MAC =  aircraft_data.data['outputs']['wing_design']['MAC']  # Mean Aerodynamic Chord
@@ -36,7 +37,7 @@ class DerivativesDatcom_asym:
         self.c_h = aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['MAC']
         self.alpha = aircraft_data.data['inputs']['alpha_cruise'] # Angle of attack in degrees, TODO: UPDATE!!
         self.Cl = 0.5   # Lift coefficient at the angle of attack, TODO: UPDATE!!
-        self.alpha_f = aircraft_data.data['inputs']['alpha_fuselage'] # Fuselage AoA in degrees, TODO: UPDATE!!
+        self.alpha_f = aircraft_data.data['inputs']['alpha_fuselage']*(180*np.pi) # Fuselage AoA in degrees, TODO: UPDATE!!
         self.h_b = aircraft_data.data['inputs']['cruise_altitude'] / self.b 
 
 
@@ -50,13 +51,14 @@ class DerivativesDatcom_asym:
         Returns:
         tuple(float: total Side force coefficient, side force due to tail(needed for Cyp).
         """
-        z_w = 2 #TODO #distance from centerline wing to centerline body
-        d = 6 #max body height at wing intersection
+        z_w = self.d_fusel / 2 #TODO #distance from centerline wing to centerline body
+        d = self.d_fusel #max body height at wing intersection
         K = -2*1.85*(z_w / d)# from plot
 
-        delta_CyB_dihedral = -0.0001* self.dihedral
+        delta_CyB_dihedral = -0.0001* np.radians(self.dihedral)
         k2__k1 = 0.9 # determined from plot page 834 DATCOM
-        S0 = 30 # Cross sectional area of the body at the wing intersection [m2]
+
+        S0 = aircraft_data.data['outputs']['fuselage_dimensions']['cross_sectional_area_2'] # Cross sectional area of the body at the wing intersection [m2]
         Cl_alpha_body = 2*(k2__k1)* S0 / (self.V_b ** (2/3)) # body lift curve slope [1/rad]
 
         CyB_body = -Cl_alpha_body
@@ -83,18 +85,18 @@ class DerivativesDatcom_asym:
         Km_s = 1.03 #from plot p1564
         kf = 0.95 # from plot p1625
         clB__Cl_A = 0 #from plot
-        clB__dihedral = -0.00024 #p1565
+        clB__dihedral = -0.00024 #1/deg^2 #p1565
         Km_d = 1 #p1566
         dclB__dihedral = -0.0005 * np.sqrt(self.A)*(self.d_fusel / self.b)**2
         dclB_zw = 1.2 * np.sqrt(self.A) / 57.3 * (2/self.b) * (2 * self.d_fusel / self.b)
 
-        #TODO: check if dihedral should indeed be in degrees for this formula
+        #Dihedral is in degrees
         ClB_wb = self.Cl *(clB__cl_s*Km_s*kf+clB__Cl_A) + self.dihedral * (clB__dihedral * Km_d + dclB__dihedral) + dclB_zw + 0
 
         K = 1.4 #p.1600 smthng
         cl_alpha_V_tail = 0.16 #p.1600 smthng
         dcyB_Vtail = -K * cl_alpha_V_tail * self.Sv / self.S
-        zp = 7 #Guessed
+        zp = self.zp
         dclB_Vtail = dcyB_Vtail * (zp * np.cos(np.radians(self.alpha)) - self.lp*np.sin((self.alpha))) / self.b
 
         return ClB_wb + dclB_Vtail
