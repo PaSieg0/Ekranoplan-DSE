@@ -9,9 +9,9 @@ from utils import Data
 class MomentOfInertia:
     def __init__(self, aircraft_data: Data):
         self.aircraft_data = aircraft_data
-        self.fuselage_weight = self.aircraft_data.data['outputs']['component_weights']['fuselage']
-        self.wing_weight = self.aircraft_data.data['outputs']['component_weights']['wing']
-        self.engine_weight = self.aircraft_data.data['outputs']['component_weights']['engine']
+        self.fuselage_weight = self.aircraft_data.data['outputs']['component_weights']['fuselage'] / 9.81
+        self.wing_weight = self.aircraft_data.data['outputs']['component_weights']['wing'] / 9.81
+        self.engine_weight = self.aircraft_data.data['outputs']['component_weights']['engine'] / 9.81
         self.cargo_weight = 90000
 
         self.fuselage_diameter = self.aircraft_data.data['outputs']['fuselage_dimensions']['d_fuselage_equivalent_station1']
