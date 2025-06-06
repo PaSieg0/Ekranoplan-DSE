@@ -27,7 +27,7 @@ class side_Buoy_sizing:
     def buoy_gain(self):
         b = self.b/2
         w_buoy = 1
-        l_bouy = 3.5
+        l_bouy = 4
         g = 9.80665
         rho = 1000
         k = b**2/4*l_bouy*w_buoy*g*rho          #Nm/rad
@@ -104,7 +104,7 @@ class side_Buoy_sizing:
         y0 = [theta0, 0.0]
 
         # Time span
-        t_span = (0, 60)
+        t_span = (0, 300)
         t_eval = np.linspace(*t_span, 1000)
 
         # Solve ODE
@@ -124,6 +124,9 @@ class side_Buoy_sizing:
         root_locus_plot()
 
     #complete dynamic model, considering both parallel axis terms (point mass) and inertial term (distributed mass)
+    #complete model, as in, no restoring moment from hydro forces are considered, no damping terms are considered
+    #obtaining an oscillatory response is enough to demonstrate stability, hydro forces will provide natural damping (not modeled)
+    #which returns sytem to zero anyway.....not modeled to save time
     def Model(self):
         g = 9.81      
         l = 4.5                 #Distance from center of hydro force center (pivot) to CG height
@@ -194,7 +197,7 @@ class side_Buoy_sizing:
         y0 = [theta0, 0.0]
 
         # Time span
-        t_span = (0, 60)
+        t_span = (0, 300)
         t_eval = np.linspace(*t_span, 1000)
 
         # Solve ODE
