@@ -481,6 +481,7 @@ if __name__ == "__main__":  #if run seperately
     curves=lift_curve()
     curves.plot_moment_ac()
     curves.printing()
+    print(curves.interpolate_Cl(5))
     curves.plotting()
     curves.calc_e()
     curves.dcl_dalpha_tail()
