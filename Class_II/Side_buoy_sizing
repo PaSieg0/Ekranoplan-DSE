@@ -27,7 +27,7 @@ class side_Buoy_sizing:
     def buoy_gain(self):
         b = self.b/2
         w_buoy = 1
-        l_bouy = 4.5
+        l_bouy = 3.5
         g = 9.80665
         rho = 1000
         k = b**2/4*l_bouy*w_buoy*g*rho          #Nm/rad
@@ -36,6 +36,8 @@ class side_Buoy_sizing:
         
 
     #linearly inverted pendulum model
+    ######################!!!!!!!!!!!! Not use anymore but it looks nice here so i kept it lolllllllllllllllllllllll
+    ######################Call complete model to simulate a more accurate time domain response!!!!!!!!!!!!!!!!!
     def LIPM(self):
 
         g = 9.81      
@@ -124,10 +126,10 @@ class side_Buoy_sizing:
     #complete dynamic model, considering both parallel axis terms (point mass) and inertial term (distributed mass)
     def Model(self):
         g = 9.81      
-        l = 4.5                 # Vertical distance from pivot to CG
-        m = 2*self.OEW/g       # Mass of the vehicle
-        k = self.buoy_gain()  # Buoyancy restoring gain (external function)
-        I_xx = 4*10**7      # Rotational inertia around pitch axis (must be defined)
+        l = 4.5                 #Distance from center of hydro force center (pivot) to CG height
+        m = 2*self.OEW/g       # most unstable case is OEW as one bouy gets lifted out of water, both bouy under water at MTOW
+        k = self.buoy_gain()  # Buoy gain 
+        I_xx = 4*10**7      # only the aircraft, parallel axis terms considered later
 
         def get_inertia():
             I = I_xx + l**2*m
@@ -137,8 +139,8 @@ class side_Buoy_sizing:
         def dynamics(t, y):
             I = get_inertia()
             theta, theta_dot = y
-            Mg = m * g * l * theta             # Gravitational moment (destabilizing)
-            Mb = -k * theta                      # Buoyancy moment (restoring)
+            Mg = m * g * l * theta             # Gravitational moment 
+            Mb = -k * theta                      # Buoyancy moment 
             dtheta_dt = theta_dot
             dtheta_dot_dt = (Mg + Mb) / I
             return [dtheta_dt, dtheta_dot_dt]
