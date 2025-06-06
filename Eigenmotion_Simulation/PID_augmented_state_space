@@ -1,0 +1,11 @@
+from control.matlab import *
+import numpy as np
+import matplotlib.pyplot as plt
+import os
+import sys
+#from termcolor import colored
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from utils import Data, EigenMotion, EigenMotionType, ISA
+
+from Eigenmotion_Simulation.setup_state_space import StateSpaceModel
