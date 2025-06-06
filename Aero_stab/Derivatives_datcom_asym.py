@@ -183,8 +183,8 @@ class DerivativesDatcom_asym:
         Clr__Cl = (1 + (self.A*(1-B**2))/(2*B*(self.A*B + 2*np.cos(np.radians(self.Delta_c4)))) + (self.A*B+2*np.cos(np.radians(self.Delta_c4)))/(self.A*B+4*np.cos(np.radians(self.Delta_c4))) * np.tan(np.radians(self.Delta_c4))**2 / 8 * Clr__cl_M0) / (1 + (self.A + 2 * np.cos(np.radians(self.Delta_c4))) / (self.A + 4 * np.cos(np.radians(self.Delta_c4))) * np.tan(np.radians(self.Delta_c4))**2 / 8) #p.2581
 
         clB__cl_s = -0.002/5 # from plot->p1563
-        Km_s = 1.03 #from plot p1564
-        kf = 0.95 # from plot p1625
+        Km_s = 1.06 #from plot p1564
+        kf = 0.87 # from plot p1625
         clB__Cl_A = 0 #from plot
         ClB__Cl = clB__cl_s*Km_s*kf+clB__Cl_A
         dClr_Cl = self.Cl * ClB__Cl - self.ClB()
