@@ -197,7 +197,7 @@ class ElevatorRudder:
         self.aircraft_data.data['outputs']['aerodynamic_stability_coefficients_asym']['C_y_delta_r'] = self.rudder_normal_force / (-np.deg2rad(self.rudder_deflection) * 0.5 * self.rho * self.V**2 * self.S * self.b)
         self.rudder_height = self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['b'] / 2 + self.aircraft_data.data['outputs']['fuselage_dimensions']['h_fuselage']
         # TODO: UPDATE THIS AFTER CG HEIGHT IS DETERMINED
-        self.high_cg = self.aircraft_data.data['outputs']['cg_range']['most_high_cg']
+        self.high_cg = self.aircraft_data.data['outputs']['cg_range']['highest_cg']
         self.aircraft_data.data['outputs']['aerodynamic_stability_coefficients_asym']['C_l_delta_r'] = (self.rudder_height-self.high_cg) * self.rudder_normal_force / (np.deg2rad(self.rudder_deflection) * 0.5 * self.rho * self.V**2 * self.S * self.b)
         self.aircraft_data.data['outputs']['aerodynamic_stability_coefficients_asym']['C_n_delta_r'] = self.cndr
 
