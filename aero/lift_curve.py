@@ -34,7 +34,7 @@ class lift_curve():
         self.alpha_tail = self.data_tail_NACA0012[:,0]
 
         #lift coefficient data
-        self.cl_lst=self.data[:,1]
+        self.cl_lst=self.data[:,1] / (1+ self.data[:,1]/(np.pi * self.AR))
         self.cd_lst=self.data[:,2]
         self.cm_lst=self.data[:,3]
    
