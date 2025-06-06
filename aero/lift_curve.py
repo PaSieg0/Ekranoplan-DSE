@@ -331,17 +331,23 @@ class lift_curve():
         return self.slope, intercept
 
     def dcl_dalpha_tail(self):
-        NACA0012_data = self.cl_lst_tail
-        slope_tail = self.dcl_dalpha(NACA0012_data)
-        print(slope_tail)
-        return slope_tail
+        # NACA0012_data = self.cl_lst_tail
+        # self.slope_tail = self.dcl_dalpha(NACA0012_data)
+        alpha=self.data_tail_NACA0012[:,0]
+        cl=self.data_tail_NACA0012[:,1]
+        cd=self.data_tail_NACA0012[:,2]
 
-    def dcl_dalpha_tail(self):
-        NACA0012_data = self.cl_lst_tail
-        slope_tail = self.dcl_dalpha(NACA0012_data)
-        print(slope_tail)
-        return slope_tail
+        idx = 7
 
+        # Slice arrays up to and including that index
+        alpha_fit = alpha[:idx+1]
+        cl_fit = cl[:idx+1]
+        
+        # Perform linear fit
+        self.slope_tail, self.intercept_tail = np.polyfit(alpha_fit, cl_fit, 1)
+
+        # print(self.slope_tail)
+        return self.slope_tail
 
     def make_plot_data(self):
         #drag polar
@@ -457,7 +463,8 @@ class lift_curve():
             'seg2_alpha': self.seg2,
             'cmac_seg2': self.cmac_segm2,
             'xac_seg2': self.xac_segm2,
-            'oswald_factor': self.e_n}
+            'oswald_factor': self.e_n,
+            'vertical/horizontal stab cl_alpha': self.slope_tail}
         self.aircraft_data.data['outputs']['aerodynamics']=aerodynamics
 
 
@@ -476,6 +483,7 @@ if __name__ == "__main__":  #if run seperately
     curves.printing()
     curves.plotting()
     curves.calc_e()
+    curves.dcl_dalpha_tail()
     curves.inp_json()
 
     
