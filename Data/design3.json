@@ -281,7 +281,8 @@
             "w_fuselage_3_4": 5.7,
             "cross_sectional_area_1": 29.4,
             "cross_sectional_area_2": 37.99,
-            "cross_sectional_area_3": 29.4
+            "cross_sectional_area_3": 29.4,
+            "body_base_area": 285.08
         },
         "ferry": {
             "MTOW": 1028732.8406668218,
