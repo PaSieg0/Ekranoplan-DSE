@@ -299,14 +299,14 @@ class lift_curve():
         #cmac1
         ax[1][0].plot(self.alpha_seg1,self.cmac_seg1)
         ax[1][0].set_title('cm at first range angle of attack')
-        ax[1][0].set_ylim(-0.08,-0.1)
+        ax[1][0].set_ylim(-0.09,-0.1)
         ax[1][0].set_xlim(-7,22)
         ax[1][0].set_ylabel('cm')
         ax[1][0].set_xlabel('alpha')
 
         #cmac2
         ax[1][1].plot(self.alpha_seg2,self.cmac_seg2)
-        ax[1][1].set_ylim(-0.24,-0.27)
+        ax[1][1].set_ylim(-0.25,-0.27)
         ax[1][1].set_xlim(-7,22)
         ax[1][1].set_title('cm at second range angle of attack')
         ax[1][1].set_ylabel('cm')
