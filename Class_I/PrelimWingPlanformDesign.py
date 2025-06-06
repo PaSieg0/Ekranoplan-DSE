@@ -19,14 +19,14 @@ class WingPlanform:
         self.aspect_ratio = aircraft_data.data['inputs']['aspect_ratio']
         self.count = count
 
-        self.fuselage_length = self.aircraft_data.data['outputs']['general']['l_fuselage']
+        self.fuselage_length = self.aircraft_data.data['outputs']['fuselage_dimensions']['l_fuselage']
         self.x_c = 0 #Where along the wing we want to look, so in this case 0 is the leading edge of the wing
         self.x_c_OEW_cg = self.aircraft_data.data['inputs']['xc_OEW'] # x/c OEW CG position
         self.x_c_wing_cg = self.aircraft_data.data['inputs']['xc_wing'] # x/c wing CG position
         self.fuse_x_cg = self.aircraft_data.data['inputs']['xc_fuselage']  # normalized CG position
         self.mass_fraction_wing = self.aircraft_data.data['outputs']['component_weights']['wing'] / self.aircraft_data.data['outputs']['component_weights']['total_OEW'] # mass fraction of the wing
         self.mass_fraction_fuse = self.aircraft_data.data['outputs']['component_weights']['fuselage'] / self.aircraft_data.data['outputs']['component_weights']['total_OEW'] # mass fraction of the fuselage
-        self.d_fuselage = self.aircraft_data.data['outputs']['general']['d_fuselage']
+        self.d_fuselage = self.aircraft_data.data['outputs']['fuselage_dimensions']['d_fuselage_equivalent_station2']
 
     def calculate(self):
         self.mach = ISA(self.aircraft_data.data['inputs']['cruise_altitude']).Mach(self.aircraft_data.data['requirements']['cruise_speed'])
@@ -82,6 +82,7 @@ class WingPlanform:
         self.aircraft_data.data['outputs']['wing_design']['S'] = self.S
         self.aircraft_data.data['outputs']['wing_design']['b'] = self.b
         self.aircraft_data.data['outputs']['wing_design']['aspect_ratio'] = self.aspect_ratio
+        self.aircraft_data.data['outputs']['wing_design']['ac_mac'] = self.aircraft_data.data['outputs']['wing_design']['X_LEMAC'] + self.aircraft_data.data['outputs']['wing_design']['MAC']*0.277
         #self.aircraft_data.data['inputs']['oswald_factor'] = self.oswald
 
     def get_half_span_points(self):
@@ -137,7 +138,7 @@ if __name__ == "__main__":
     # print(f"sweep_x_c: {wing.sweep_x_c}")
     fig, ax = plt.subplots()
 
-    for i in range(1, 4):
+    for i in range(3, 4):
         data = Data(f'design{i}.json')
         wing = WingPlanform(data, count=i)
         wing.calculate()

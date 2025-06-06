@@ -210,10 +210,10 @@
             "aspect_ratio": 10
         },
         "cg_range": {
-            "most_aft_cg": 21.75052005130982,
-            "most_aft_mission": "ALTITUDE_OEW_FUEL",
-            "most_forward_cg": 20.371503984362366,
-            "most_forward_mission": "DESIGN_OEW_PAYLOAD"
+            "most_aft_cg": 30.031268435106355,
+            "most_aft_mission": "DESIGN_OEW",
+            "most_forward_cg": 28.15533176599252,
+            "most_forward_mission": "ALTITUDE_OEW_PAYLOAD_FUEL"
         },
         "empennage_design": {
             "vertical_tail": {

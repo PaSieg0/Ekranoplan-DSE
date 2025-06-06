@@ -29,7 +29,7 @@ import matplotlib.pyplot as plt
 
 def point_determination(aircraft_data, h):
     # Example usage
-    g = aircraft_data.data["gravitational_acceleration"]
+    g = 9.81
     W_final = aircraft_data.data["design"]["MTOM"] * g  # Weight in N
     U_ref = Calculate_U_ref(h/0.3048)  # Reference speed in m/s
     S = aircraft_data.data["design"]["MTOM"] * g / aircraft_data.data["design"]["WS"]  # Wing area in m^2   
