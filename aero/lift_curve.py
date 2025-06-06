@@ -306,7 +306,7 @@ class lift_curve():
 
         #cmac2
         ax[1][1].plot(self.alpha_seg2,self.cmac_seg2)
-        ax[1][1].set_ylim(-0.24,-0.26)
+        ax[1][1].set_ylim(-0.24,-0.27)
         ax[1][1].set_xlim(-7,22)
         ax[1][1].set_title('cm at second range angle of attack')
         ax[1][1].set_ylabel('cm')
@@ -379,11 +379,7 @@ class lift_curve():
         self.L_D_lst=self.cl_lst/self.ind_lst
         self.L_D_GE_lst=self.cl_lst_GE/self.ind_lst3
 
-        #spanwise distr
-        CL = 1.8
-        b=self.aircraft_data.data['outputs']['wing_design']['b']/2
-        self.span = np.arange(-b, b, 0.01)
-        self.Cl_array_span = CL * np.ones(np.shape(self.span))
+        
 
 
     def plotting(self):
@@ -447,6 +443,12 @@ class lift_curve():
                 
                 break
         print('\t')
+
+        #spanwise distr this is not prety but well coding
+        CL = self.cL_max
+        b=self.aircraft_data.data['outputs']['wing_design']['b']/2
+        self.span = np.arange(-b, b, 0.01)
+        self.Cl_array_span = CL * np.ones(np.shape(self.span))
     
 
     def calc_e(self):
