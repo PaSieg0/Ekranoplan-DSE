@@ -40,7 +40,7 @@ class DerivativesDatcom_sym:
         self.theta_0 = 0
         self.Cl_0 = 0
         self.d_fusel = aircraft_data.data['outputs']['fuselage_dimensions']['d_fuselage_equivalent_station2']  # Diameter of the fuselage, assumed to be 0 for now
-        self.S_b = aircraft_data.data['outputs']['fuselage_dimensions']['body_base_volume'] # body base area
+        self.S_b = aircraft_data.data['outputs']['fuselage_dimensions']['body_base_area'] # body base area
         self.C_r = aircraft_data.data['outputs']['wing_design']['chord_root']
 
         self.Cl = 0.5
