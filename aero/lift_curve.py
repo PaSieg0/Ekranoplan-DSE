@@ -6,7 +6,7 @@ import os
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from utils import Data, MissionType, ISA, AircraftType
-from lateral_centre import lateral_centre as la
+from aero.lateral_centre import lateral_centre as la
 
 
 
@@ -479,7 +479,6 @@ if __name__ == "__main__":  #if run seperately
     #defines instance
     
     curves=lift_curve()
-    curves.alpha_tail()
     curves.plot_moment_ac()
     curves.printing()
     curves.plotting()
