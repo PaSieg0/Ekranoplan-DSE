@@ -113,7 +113,7 @@ class DerivativesDatcom_sym:
         Cm_alphadot_wb = (K_bw + K_wb) * (self.Sh/self.S)*(self.c_h/self.MAC)**2 * Cm_alphadot_e + Cm_alphadot_B * ((S_b / self.S)*(self.l_b/self.MAC)**2)
         
         l_h = self.x_h - self.x_cg
-        downwash_gradient = (2 * self.Cl_alpha / (np.pi * self.A))*(180/np.pi)
+        downwash_gradient = (2 * self.Cl_alpha / (np.pi * self.A))
         Cm_alphadot_tail = -(self.Cl_alpha * 1 * downwash_gradient * self.Sh*l_h**2) / (self.S * self.MAC**2)
         return Cm_alphadot_wb - Cm_alphadot_tail
     

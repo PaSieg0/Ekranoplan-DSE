@@ -178,8 +178,8 @@ class DerivativesDatcom_asym:
         float: Roll moment coefficient.
         """
         # p2580
-        B = np.sqrt(1 - 0.34**2 * np.cos(np.radians(self.Delta_c4))**2) # p.2522
-        Clr__cl_M0 = .24 #p.2589
+        B = np.sqrt(1 - self.M**2 * np.cos(np.radians(self.Delta_c4))**2) # p.2522
+        Clr__cl_M0 = 0.24 #p.2589
         Clr__Cl = (1 + (self.A*(1-B**2))/(2*B*(self.A*B + 2*np.cos(np.radians(self.Delta_c4)))) + (self.A*B+2*np.cos(np.radians(self.Delta_c4)))/(self.A*B+4*np.cos(np.radians(self.Delta_c4))) * np.tan(np.radians(self.Delta_c4))**2 / 8 * Clr__cl_M0) / (1 + (self.A + 2 * np.cos(np.radians(self.Delta_c4))) / (self.A + 4 * np.cos(np.radians(self.Delta_c4))) * np.tan(np.radians(self.Delta_c4))**2 / 8) #p.2581
 
         clB__cl_s = -0.002/5 # from plot->p1563
