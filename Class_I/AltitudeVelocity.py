@@ -55,17 +55,20 @@ class AltitudeVelocity:
         rho = self._get_density(h)
         return V_ias * np.sqrt(self._sea_level_density/rho)
 
-    def calculate_power_required(self, V: float, h: float, RoC: float=0) -> float:
+    def calculate_power_required(self, V: float, h: float, RoC: float=0, W=None) -> float:
         """
         Calculate the power required for the aircraft at different velocities.
         """
+        if W is None:
+            W = self._current_weight
+
         rho = self._get_density(h)
         q = 0.5 * rho * V**2
         qS = q * self._S
-        Cl = self._current_weight / qS
+        Cl = W / qS
         Cd = self._Cd0 + Cl**2 * self._k
         
-        return Cd * qS * V + self._current_weight * RoC
+        return Cd * qS * V + W * RoC
 
     def calculate_power_available(self, h: float) -> float:
         """
@@ -74,8 +77,8 @@ class AltitudeVelocity:
         """
         return self._engine_power * (self._get_density(h) / self._sea_level_density)**0.70 * 4 * self._prop_efficiency
     
-    def calculate_drag(self, V: float, h: float) -> float:
-        return self.calculate_power_required(V, h)/V
+    def calculate_drag(self, V: float, h: float, W: float) -> float:
+        return self.calculate_power_required(V, h, W=W)/V
 
     def calculate_thust(self, V: float, h: float) -> float:
         return self.calculate_power_available(h)/V
@@ -210,7 +213,7 @@ class AltitudeVelocity:
         elif V_opt > self.dive_speed:
             V_opt = self.dive_speed
            
-        RoD = -self.calculate_power_required(V_opt, h, 0)/self._current_weight
+        RoD = -self.calculate_power_required(V_opt, h, RoC=0)/self._current_weight
         
         return RoD, V_opt
     
@@ -219,7 +222,7 @@ class AltitudeVelocity:
         V_stall = self.calculate_stall_speed(h)
         velocity_range = np.linspace(V_stall, self.dive_speed, self.velocity_steps)
         
-        AoD_values = [np.arcsin(-self.calculate_power_required(V, h, 0)/V/self._current_weight) for V in velocity_range]
+        AoD_values = [np.arcsin(-self.calculate_power_required(V, h, RoC=0)/V/self._current_weight) for V in velocity_range]
         max_aoc_idx = np.argmax(AoD_values)
         
         return AoD_values[max_aoc_idx], velocity_range[max_aoc_idx]
@@ -645,7 +648,7 @@ if __name__ == "__main__":
     # altitude_velocity.plot_RoC_line(h)
     
     cruise_speed = aircraft_data.data['requirements']['cruise_speed']
-    power_required_cruise = altitude_velocity.calculate_power_required(cruise_speed, 0)
+    power_required_cruise = altitude_velocity.calculate_power_required(cruise_speed, h=0)
     print(f"Power required to cruise at h=0 and V={cruise_speed} m/s: {power_required_cruise/10**6:.2f} MW")
 
     print(f"Max RoC at h = 0 is {altitude_velocity.calculate_max_RoC(0)[0] * 196.85} ft/min")
