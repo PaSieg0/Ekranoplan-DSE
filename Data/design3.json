@@ -11,8 +11,8 @@
         "jet_consumption": 2.7e-05,
         "prop_consumption": 2.1e-08,
         "prop_efficiency": 0.85,
-        "Cd0": 0.017688496763954047,
-        "oswald_factor": 0.62460823443504,
+        "Cd0": 0.01859781698103553,
+        "oswald_factor": 0.7567736787197153,
         "aspect_ratio": 8,
         "aspect_h": 4.5,
         "aspect_v": 1.5,
@@ -680,7 +680,7 @@
             "I_yz": 0.0
         },
         "aerodynamics": {
-            "Cl_alpha": 0.10126190476190472,
+            "Cl_alpha": 0.10126190476190478,
             "Cl_max": 1.7971582831805242,
             "t/c": 0.1426,
             "seg1_alpha": [
@@ -694,7 +694,9 @@
                 11
             ],
             "cmac_seg2": -0.25008508852123634,
-            "xac_seg2": 0.3858449337959915
+            "xac_seg2": 0.3858449337959915,
+            "oswald_factor": 0.7567736787197153,
+            "vertical/horizontal stab cl_alpha": 0.1187476190476189
         }
     },
     "kinematic_viscosity": 1.006e-06,
