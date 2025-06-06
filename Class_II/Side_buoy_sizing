@@ -23,18 +23,6 @@ class side_Buoy_sizing:
         self.b = self.aircraft_data.data['outputs']['design']['b']
         self.MTOM = self.aircraft_data.data['outputs']['max']['MTOM']
 
-#Taking in hydro force center and Cg height, forming a linearly inverted pendulum model (assume small angle)
-#pendulum supported at hydro force center and CoM at Cg
-#Buoy provides corrective force linearly with submerged volume
-#Basically funcitons as a linear controller in the loop
-#Assuming no corrective moment from hull >> conservative assumption
-#Ignore all damping terms >> not important for stability, only for transient response,
-#hull-water interaction should natually provide damping...i think
-
-#issue is, this assumes infinite buoy height to be available to be sinked into water to provide counter moment. 
-#actual bouy height will be wave height at SS4, which yeilds available buoy depth at worst case consideration 
-# for bank angle on water
-
     def buoy_gain(self):
         b = self.b/2
         w_buoy = 1
@@ -49,7 +37,6 @@ class side_Buoy_sizing:
     #linearly inverted pendulum model
     def LIPM(self):
 
-        # Constants
         g = 9.81      
         l = 5       # pendulum length (m)  #from hydro force center to Cg (height) HARDCODED OUT OF MY A**!!!!!!!!!!!
         m = self.MTOM       
@@ -133,13 +120,104 @@ class side_Buoy_sizing:
 
         root_locus_plot()
 
+    #complete model, considering both parallel axis terms (point mass) and inertial term (distributed mass)
+    def Model(self):
+        g = 9.81      
+        l = 4.5                 # Vertical distance from pivot to CG
+        m = self.MTOM         # Mass of the vehicle
+        k = self.buoy_gain()  # Buoyancy restoring gain (external function)
+        I_xx = 4*10**7      # Rotational inertia around pitch axis (must be defined)
 
+        def get_inertia():
+            I = I_xx + l**2*m
+            #print(I)
+            return I
+
+        def dynamics(t, y):
+            I = get_inertia()
+            theta, theta_dot = y
+            Mg = m * g * l * theta             # Gravitational moment (destabilizing)
+            Mb = -k * theta                      # Buoyancy moment (restoring)
+            dtheta_dt = theta_dot
+            dtheta_dot_dt = (Mg + Mb) / I
+            return [dtheta_dt, dtheta_dot_dt]
+
+        def root_locus_plot():
+            I = get_inertia()
+            k_vals = np.linspace(5e6, 5e8, 5000)
+            poles = []
+            k_map = []
+
+            for k_val in k_vals:
+                a = (m * g * l - k_val) / I
+                if a >= 0:
+                    p1 = np.sqrt(a)
+                else:
+                    p1 = 1j * np.sqrt(-a)
+                poles.append([p1, -p1])
+                k_map.append(k_val)
+                k_map.append(k_val)
+
+            poles = np.array(poles).reshape(-1)
+            k_map = np.array(k_map)
+
+            fig, ax = plt.subplots(figsize=(6, 5))
+            ax.plot(poles.real, poles.imag, 'b.', label='Pole path')
+            ax.axvline(0, color='k', linestyle='--', label='Imaginary axis')
+            ax.set_xlabel('Real')
+            ax.set_ylabel('Imaginary')
+            ax.set_title('Root Locus (k from 5e6 to 5e9)')
+            ax.grid(True)
+            ax.legend()
+            plt.tight_layout()
+
+            def on_click(event):
+                if event.inaxes != ax:
+                    return
+                click_point = complex(event.xdata, event.ydata)
+                distances = np.abs(poles - click_point)
+                idx = np.argmin(distances)
+                selected_pole = poles[idx]
+                selected_k = k_map[idx]
+                print(f"Clicked pole: {selected_pole:.4f}, Gain k = {selected_k:.2e}")
+                ax.plot(selected_pole.real, selected_pole.imag, 'ro')
+                fig.canvas.draw()
+
+            fig.canvas.mpl_connect('button_press_event', on_click)
+            plt.show()
+
+        # Initial conditions
+        theta0 = np.radians(0.5)
+        y0 = [theta0, 0.0]
+
+        # Time span
+        t_span = (0, 60)
+        t_eval = np.linspace(*t_span, 1000)
+
+        # Solve ODE
+        sol = solve_ivp(dynamics, t_span, y0, t_eval=t_eval)
+
+        # Plot response
+        plt.figure(figsize=(8, 4))
+        plt.plot(sol.t, np.degrees(sol.y[0]), label='Pitch angle (deg)')
+        plt.xlabel('Time (s)')
+        plt.ylabel('Pitch angle (degrees)')
+        plt.title('Roll axis dynamic response on water')
+        plt.grid(True)
+        plt.legend()
+        plt.tight_layout()
+        plt.show()
+
+        # Root locus plot
+        root_locus_plot()
+
+            
 
 if __name__ == "__main__":
     # Load the aircraft data
     aircraft = "design3.json"
     aircraft_data = Data(aircraft)
     buoy = side_Buoy_sizing(aircraft_data)
-    LIPM_mod = buoy.LIPM()
+    LIPM_mod = buoy.Model()
     #bouy_depth =  buoy.get_buoys(0.1,6,4,4) #percentage of weight supported by buoys, length of buoy, diameter, number of buoys
 
