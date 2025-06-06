@@ -14,6 +14,7 @@ class DerivativesDatcom_asym:
         self.Delta_c4 = aircraft_data.data['outputs']['wing_design']['sweep_c_4'] #degrees
         self.l_b = aircraft_data.data['outputs']['fuselage_dimensions']['l_fuselage'] # length of body 
         self.dihedral = aircraft_data.data['outputs']['wing_design']['dihedral'] #degrees
+
         self.A = aircraft_data.data['outputs']['wing_design']['aspect_ratio'] 
         self.S = aircraft_data.data['outputs']['wing_design']['S'] 
         self.Av = aircraft_data.data['outputs']['empennage_design']['vertical_tail']['aspect_ratio'] # Aspect ratio of the vertical tail
@@ -21,20 +22,25 @@ class DerivativesDatcom_asym:
         self.Sh = aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['S'] # Surface area of the horizontal tail: 100
         self.Sv = aircraft_data.data['outputs']['empennage_design']['vertical_tail']['S'] # Surface area of the vertical tail: 75
         self.d_fusel = aircraft_data.data['outputs']['fuselage_dimensions']['d_fuselage_equivalent_station2'] # Diameter of the fuselage
-        self.V_b = aircraft_data.data['outputs']['fuselage_dimensions']['total_volume'] # total body volume [m3]: 20000
+        self.V_b = aircraft_data.data['outputs']['fuselage_dimensions']['total_volume'] # total body volume [m3]
         self.b = aircraft_data.data['outputs']['design']['b']
-        self.lp = 1 # 36.431 # ℓₚ is the distance parallel to the longitudinal body axis between the vehicle moment center and the quarter-chord point of the MAC of the vertical panel, positive for the panel aft of the vehicle moment center.
-        self.Cl_alpha = self.lift_curve.dcl_dalpha()[0] # Lift curve slope of the wing, in rad: 9.167
+
+        self.lp = aircraft_data.data['outputs']['empennage_design']['vertical_tail']['l_v']
+        self.zp = (aircraft_data.data['outputs']['fuselage_dimensions']['d_fuselage_equivalent_station3'] / 2) + (aircraft_data.data['outputs']['empennage_design']['vertical_tail']['z_MAC_v'])  
+        self.Cl_alpha = self.lift_curve.dcl_dalpha()[0]*(180*np.pi) # Lift curve slope of the wing in deg
         self.e = aircraft_data.data['inputs']['oswald_factor'] # Oswald efficiency factor of the wing : 0.85 (guessed, typical value for a subsonic aircraft)
         self.taper = aircraft_data.data['outputs']['wing_design']['taper_ratio'] # Taper ratio of the wing: 0.4
-        self.MAC = aircraft_data.data['outputs']['wing_design']['MAC']  # Mean Aerodynamic Chord: 8.456
-        self.x_bar = 1 #x_ac - x_cg # Distance from the leading edge of the wing to the center of gravity: 31.5(from excel)
+        self.MAC =  aircraft_data.data['outputs']['wing_design']['MAC']  # Mean Aerodynamic Chord
+        self.x_bar = aircraft_data.data['outputs']['wing_design']['X_LEMAC']  - aircraft_data.data['outputs']['cg_range']['most_aft_cg'] #x_ac - x_cg # Distance from the leading edge of the wing to the center of gravity: 31.5(from excel)
         self.Cd0 = aircraft_data.data['inputs']['Cd0'] # Zero-lift drag coefficient of the wing
+
         self.c_h = aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['MAC']
-        self.alpha = 5.0 # Angle of attack in degrees, TODO: UPDATE!!
+        self.alpha = aircraft_data.data['inputs']['alpha_cruise'] # Angle of attack in degrees, TODO: UPDATE!!
         self.Cl = 0.5   # Lift coefficient at the angle of attack, TODO: UPDATE!!
-        self.alpha_f = 5.0 # Fuselage AoA in degrees, TODO: UPDATE!!
-        self.h_b = 0.05
+        self.alpha_f = aircraft_data.data['inputs']['alpha_fuselage']*(180*np.pi) # Fuselage AoA in degrees, TODO: UPDATE!!
+        self.h_b = aircraft_data.data['inputs']['cruise_altitude'] / self.b 
+        isa = ISA(self.aircraft_data.data['inputs']['cruise_altitude'])
+        self.M = isa.Mach(self.aircraft_data.data['requirements']['cruise_speed'])
 
 
     def CyB(self):
@@ -47,13 +53,14 @@ class DerivativesDatcom_asym:
         Returns:
         tuple(float: total Side force coefficient, side force due to tail(needed for Cyp).
         """
-        z_w = 2 #TODO #distance from centerline wing to centerline body
-        d = 6 #max body height at wing intersection
+        z_w = self.d_fusel / 2 #TODO #distance from centerline wing to centerline body
+        d = self.d_fusel #max body height at wing intersection
         K = -2*1.85*(z_w / d)# from plot
 
-        delta_CyB_dihedral = -0.0001* self.dihedral
+        delta_CyB_dihedral = -0.0001* np.radians(self.dihedral)
         k2__k1 = 0.9 # determined from plot page 834 DATCOM
-        S0 = 30 # Cross sectional area of the body at the wing intersection [m2]
+
+        S0 = aircraft_data.data['outputs']['fuselage_dimensions']['cross_sectional_area_2'] # Cross sectional area of the body at the wing intersection [m2]
         Cl_alpha_body = 2*(k2__k1)* S0 / (self.V_b ** (2/3)) # body lift curve slope [1/rad]
 
         CyB_body = -Cl_alpha_body
@@ -80,18 +87,18 @@ class DerivativesDatcom_asym:
         Km_s = 1.03 #from plot p1564
         kf = 0.95 # from plot p1625
         clB__Cl_A = 0 #from plot
-        clB__dihedral = -0.00024 #p1565
+        clB__dihedral = -0.00024 #1/deg^2 #p1565
         Km_d = 1 #p1566
         dclB__dihedral = -0.0005 * np.sqrt(self.A)*(self.d_fusel / self.b)**2
         dclB_zw = 1.2 * np.sqrt(self.A) / 57.3 * (2/self.b) * (2 * self.d_fusel / self.b)
 
-        #TODO: check if dihedral should indeed be in degrees for this formula
+        #Dihedral is in degrees
         ClB_wb = self.Cl *(clB__cl_s*Km_s*kf+clB__Cl_A) + self.dihedral * (clB__dihedral * Km_d + dclB__dihedral) + dclB_zw + 0
 
         K = 1.4 #p.1600 smthng
         cl_alpha_V_tail = 0.16 #p.1600 smthng
         dcyB_Vtail = -K * cl_alpha_V_tail * self.Sv / self.S
-        zp = 7 #Guessed
+        zp = self.zp
         dclB_Vtail = dcyB_Vtail * (zp * np.cos(np.radians(self.alpha)) - self.lp*np.sin((self.alpha))) / self.b
 
         return ClB_wb + dclB_Vtail
@@ -100,7 +107,7 @@ class DerivativesDatcom_asym:
         K_N = 0.0018 #p.1633
         K_R_l = 1.65 #p.1634
         S_B_s = self.d_fusel * self.l_b # Cross sectional area of the body at the wing intersection [m2]
-        CnB_wb = -K_N * K_R_l * S_B_s / self.S * self.l_b / self.b
+        CnB_wb = -K_N * K_R_l * (S_B_s / self.S) * (self.l_b / self.b)
 
         K = 1.4 #p.1600 smthng
         cl_alpha_V_tail = 0.16 #p.1600 smthng
@@ -116,16 +123,16 @@ class DerivativesDatcom_asym:
         float: Side force coefficient.
         """
         sigma=np.exp(-2.48*(self.h_b)**(0.768))
-        zp = 7 # Guessed, distance from the centerline of the body to the centerline of the vertical tail
+        zp = self.zp # Distance from the centerline of the body to the centerline of the vertical tail
         z = zp * np.cos(np.radians(self.alpha)) - self.lp * np.sin(np.radians(self.alpha)) # distance from the centerline of the body to the centerline of the wing
         K =  (self.Cl_alpha * np.tan(np.radians(self.alpha)) + self.Cl / (np.cos(np.radians(self.alpha)))**2 - 2 * self.Cl / (np.pi * self.A * self.e) * (1 - sigma) * self.Cl_alpha) / (self.Cl_alpha * np.tan(np.radians(self.alpha)) + self.Cl / (np.cos(np.radians(self.alpha)))**2 - 2 * self.Cl / (np.pi * self.A * self.e) * self.Cl_alpha)
-        B = np.sqrt(1 - 0.34**2 * np.cos(np.radians(self.Delta_c4))**2) # p.2522
+        B = np.sqrt(1 - self.M**2 * np.cos(np.radians(self.Delta_c4))**2) # p.2522
         Cyp__Cl_0 = -0.18 #p2529
         Cyp__Cl = ((self.A + 4 * np.cos(np.radians(self.Delta_c4))) * (self.A * B + np.cos(np.radians(self.Delta_c4))) * Cyp__Cl_0) / (self.A * B + 4 * np.cos(np.radians(self.Delta_c4)) * (self.A + np.cos(np.radians(self.Delta_c4))))
 
         clp_cl0 =  0 # p2526
         dCyp_dihedral = (3 * np.sin(np.radians(self.dihedral) * (1 - 2 * z / (self.b / 2)) * np.sin(np.radians(self.dihedral)))) * clp_cl0
-        Cyp_wb = K*((Cyp__Cl * self.Cl)) + dCyp_dihedral
+        Cyp_wb = K*((Cyp__Cl * self.Cl)) + dCyp_dihedral #p2522
 
         dCyB_VWBH = self.CyB()[1]
         Cyp_Vtail = Cyp_wb + 2 * ((z - zp) / self.b) * dCyB_VWBH
@@ -149,21 +156,19 @@ class DerivativesDatcom_asym:
         float: Yaw moment coefficient.
         """
         x__c = self.x_bar / self.MAC # Distance from the leading edge of the wing to the center of gravity, normalized by the mean aerodynamic chord
-        print(x__c)
-        print(f"x__c: {x__c}")
-        B = np.sqrt(1 - 0.34**2 * np.cos(np.radians(self.Delta_c4))**2) # p.2522
-        Cnp__Cl_M0 = (-(1 / 6) * (self.A + 6 * (self.A + np.cos(np.radians(self.Delta_c4))))*(x__c * np.tan(np.radians(self.Delta_c4)) / self.A  + (np.tan(np.radians(self.Delta_c4)))**2 / 12)) / (self.A + 4 * np.cos(np.radians(self.Delta_c4)))
-        Cnp__Cl = ((self.A + 4 * np.cos(np.radians(self.Delta_c4))) / (self.A * B + 4 * np.cos(np.radians(self.Delta_c4)))) * ((self.A * B + 0.5 * (self.A * B + np.cos(np.radians(self.Delta_c4)) * (np.tan(np.radians(self.Delta_c4)))**2)) / (self.A + 0.5 * (self.A + np.cos(np.radians(self.Delta_c4)) * (np.tan(np.radians(self.Delta_c4)))**2))) * Cnp__Cl_M0
+        B = np.sqrt(1 - self.M**2 * np.cos(np.radians(self.Delta_c4))**2) # p.2522
+        Cnp__Cl_M0 = (-(1 / 6) * (self.A + 6 * (self.A + np.cos(np.radians(self.Delta_c4))))*(x__c * np.tan(np.radians(self.Delta_c4)) / self.A  + (np.tan(np.radians(self.Delta_c4)))**2 / 12)) / (self.A + 4 * np.cos(np.radians(self.Delta_c4))) #p2559
+        Cnp__Cl = ((self.A + 4 * np.cos(np.radians(self.Delta_c4))) / (self.A * B + 4 * np.cos(np.radians(self.Delta_c4)))) * ((self.A * B + 0.5 * (self.A * B + np.cos(np.radians(self.Delta_c4)) * (np.tan(np.radians(self.Delta_c4)))**2)) / (self.A + 0.5 * (self.A + np.cos(np.radians(self.Delta_c4)) * (np.tan(np.radians(self.Delta_c4)))**2))) * Cnp__Cl_M0 #p2559
         Cnp_w = -self.Clp() * np.tan(np.radians(self.alpha)) - self.Cyp()[1] * (-self.Clp() * np.tan(np.radians(self.alpha)) - Cnp__Cl * self.Cl) # p.2559 
 
-        zp = 7 # Guessed, distance from the centerline of the body to the centerline of the vertical tail
+        zp = self.zp # Distance from the centerline of the body to the centerline of the vertical tail
         z = zp * np.cos(np.radians(self.alpha)) - self.lp * np.sin(np.radians(self.alpha)) # distance from the centerline of the body to the centerline of the wing
         Cnp_tail = 2 / self.b * (self.lp * np.cos(np.radians(self.alpha)) + zp * np.sin(np.radians(self.alpha)) * (z - zp) / self.b * self.CyB()[1])
+        Cnp_tail = 0 # Tail contribution is very small, so we can ignore it for now
         return Cnp_w - Cnp_tail, Cnp_w, Cnp_tail
     
     def Cyr(self):
-        print('Cyr is very very vry very very very very small, Sam said so, thereby it is true')
-        return 0
+        return 0 # It is very small, so we can ignore it for now
 
     def Clr(self):
         """
@@ -173,8 +178,8 @@ class DerivativesDatcom_asym:
         float: Roll moment coefficient.
         """
         # p2580
-        B = np.sqrt(1 - 0.34**2 * np.cos(np.radians(self.Delta_c4))**2) # p.2522
-        Clr__cl_M0 = .24 #p.2589
+        B = np.sqrt(1 - self.M**2 * np.cos(np.radians(self.Delta_c4))**2) # p.2522
+        Clr__cl_M0 = 0.24 #p.2589
         Clr__Cl = (1 + (self.A*(1-B**2))/(2*B*(self.A*B + 2*np.cos(np.radians(self.Delta_c4)))) + (self.A*B+2*np.cos(np.radians(self.Delta_c4)))/(self.A*B+4*np.cos(np.radians(self.Delta_c4))) * np.tan(np.radians(self.Delta_c4))**2 / 8 * Clr__cl_M0) / (1 + (self.A + 2 * np.cos(np.radians(self.Delta_c4))) / (self.A + 4 * np.cos(np.radians(self.Delta_c4))) * np.tan(np.radians(self.Delta_c4))**2 / 8) #p.2581
 
         clB__cl_s = -0.002/5 # from plot->p1563
@@ -188,7 +193,7 @@ class DerivativesDatcom_asym:
         #TODO: Check if dihedral should indeed be in degrees for this formula
         Clr_wb = self.Cl * Clr__Cl + dClr_Cl + dClr__dihedral * self.dihedral
 
-        zp = 7 # Guessed, distance from the centerline of the body to the centerline of the vertical tail
+        zp = self.zp # Dstance from the centerline of the body to the centerline of the vertical tail
         Clr_tail = 2 / self.b**2 * (self.lp * np.cos(np.radians(self.alpha)) + zp * np.sin(np.radians(self.alpha))*(zp*np.cos(np.radians(self.alpha) - self.lp * np.sin(np.radians(self.alpha)))) * self.CyB()[1]) #p.2802
         return Clr_wb - Clr_tail
     
@@ -203,7 +208,7 @@ class DerivativesDatcom_asym:
         Cnr__Cd0 = -0.3
         Cnr_wb = Cnr__Cl2 * self.Cl**2 + Cnr__Cd0 * self.Cd0
 
-        zp = 7 # Guessed, distance from the centerline of the body to the centerline of the vertical tail
+        zp = self.zp # Distance from the centerline of the body to the centerline of the vertical tail
         Cnr_tail = 2 / self.b**2 * (self.lp * np.cos(np.radians(self.alpha)) + zp * np.sin(np.radians(self.alpha)))**2 * self.CyB()[1]
 
         return Cnr_wb + Cnr_tail
@@ -217,7 +222,7 @@ class DerivativesDatcom_asym:
         float: Side force coefficient.
         """
         # p.2825
-        zp = 7
+        zp = self.zp
         C_L_alpha_V = 0.124
         sigma_B_alpha = -0.001 # p.2834
         sigma_B_dihedral = np.rad2deg(-0.93) # p.2846
@@ -228,9 +233,14 @@ class DerivativesDatcom_asym:
         return CyBdot
     
     def ClBdot(self):
-        zp = 7
+        zp = self.zp
         ClB_dot = self.CyBdot() * (zp * np.cos(np.radians(self.alpha_f)) - self.lp * np.sin(np.radians(np.radians(self.alpha_f)))) / self.b
         return ClB_dot
+    
+    def CnBdot(self):
+        zp = self.zp
+        CnB_dot = -self.CyBdot() * (self.lp * np.cos(self.alpha_f) + zp * np.sin(self.alpha_f)) / self.b
+        return CnB_dot
     
     def update_json(self):
         # Run the functions you want to store
@@ -248,15 +258,16 @@ class DerivativesDatcom_asym:
             'Cnr': derivatives.Cnr(),  # Example usage with Cl = 0.5, alpha = 5 degrees
             'CyBdot': derivatives.CyBdot(),  # Example usage with Cl = 0.5, alpha = 5 degrees
             'ClBdot': derivatives.ClBdot(),  # Example usage with Cl = 0.5, alpha = 5 degrees
+            'CnBdot': derivatives.CnBdot(),
             # Add more functions here if needed
         }
 
         lift_curve_slope = {
-            'Cl_alpha': self.lift_curve.dcl_dalpha()  # Lift curve slope of the wing, in deg
+            'Cl_alpha': self.lift_curve.dcl_dalpha()[0]  # Lift curve slope of the wing, in deg
         }
 
         self.aircraft_data.data['outputs']['aerodynamic_stability_coefficients_asym'] = aero_stability_outputs
-        self.aircraft_data.data['outputs']['general']['Cl_alpha'] = lift_curve_slope
+        self.aircraft_data.data['outputs']['aerodynamics'] = lift_curve_slope
         self.aircraft_data.save_design('design3.json')
 
 if __name__ == '__main__':

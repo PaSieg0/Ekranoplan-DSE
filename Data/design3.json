@@ -47,6 +47,8 @@
         "t_fuselage": 3,
         "fuel_tank": 0.4,
         "fuel_tank_thickness": 2,
+        "alpha_cruise": 5.0,
+        "alpha_fuselage": 5.0,
         "control_surfaces": {
             "aileron_end": 0.985,
             "LE_flap_chord": 0.1,
@@ -218,10 +220,7 @@
             "resting_depth": 1.7040723055538578,
             "hull_surface": 176.5105052136306,
             "Cl_alpha": {
-                "Cl_alpha": [
-                    0.10126190476190478,
-                    0.5384678571428573
-                ]
+                "Cl_alpha": 0.10126190476190478
             }
         },
         "design": {
@@ -273,6 +272,7 @@
             "l_fuselage": 43.705,
             "l_tailcone": 10,
             "l_afterbody": 14.805,
+            "total_volume": 1671.0,
             "l_nose": 5.5,
             "l_forebody": 13.4,
             "x_step": 18.9,
@@ -284,7 +284,11 @@
             "w_fuselage_3_4": 5.7,
             "wing_height": 8.4,
             "cargo_bottom": 3.2,
-            "endplate_height": 3.7
+            "endplate_height": 3.7,
+            "cross_sectional_area_1": 29.4,
+            "cross_sectional_area_2": 37.99,
+            "cross_sectional_area_3": 29.4,
+            "body_base_area": 285.08
         },
         "ferry": {
             "MTOW": 1011176.4434004144,
@@ -412,8 +416,9 @@
                 "relative_pos_mac/4": 0.8395325980217172,
                 "MAC": 7.3621087486863415,
                 "sweep_c_4": 15,
-                "quarter_tip": 42.43210295870347,
-                "attachement_angle": 1.2367701386684258
+                "z_MAC_v": 0.5,
+                "quarter_tip": 43.613102123822166,
+                "attachement_angle": 0.36473900598754433
             },
             "horizontal_tail": {
                 "S": 76.30938237456931,
@@ -426,9 +431,10 @@
                 "MAC": 4.2528624447223375,
                 "sweep_c_4": 10,
                 "aspect_ratio": 4.5,
-                "tail_height": 18.417792447049315,
-                "LE_pos": 41.09813177615903,
-                "relative_pos_mac/4": 0.9506166930472658
+                "tail_height": 18.579272190813324,
+                "LE_pos": 42.24047607168201,
+                "relative_pos_mac/4": 0.9506166930472658,
+                "Cl_alpha": 0.119
             }
         },
         "control_surfaces": {
@@ -665,41 +671,28 @@
             ]
         },
         "aerodynamic_stability_coefficients_sym": {
-            "C_m_q": 0.8722565985616794,
-            "C_z_alpha": -1,
-            "C_x_alpha": 0.43212944557214633,
-            "C_m_alpha": -0.8074694530176071,
+            "C_m_q": 29.263192692804136,
+            "C_z_alpha": -5.801879768312837,
+            "C_x_alpha": 0.13040919353750408,
+            "C_m_alpha": 2.1567620087850576,
             "C_Z_u": -1.0,
-            "C_X_u": -4.728016624907813,
+            "C_X_u": -0.05306549029186214,
             "C_m_u": 0,
-            "C_m_alphadot": -0.00606404439076621,
-            "C_Z_alphadot": 0.0,
-            "C_z_q": 0.0,
-            "CL": 0.6,
-            "C_y_delta_e": 0,
-            "C_m_delta_e": -0.025029660495883004,
-            "C_x_delta_e": 0.0014,
-            "C_z_delta_e": -0.0007669586665133704
+            "C_m_alphadot": 15.805924265815737
         },
         "aerodynamic_stability_coefficients_asym": {
-            "CyB": -0.026595232130045773,
-            "ClB": -0.004417648457879081,
-            "CnB": -0.001385059237159807,
-            "Cyp": -0.42738321616819963,
+            "CyB": -0.035352597268454036,
+            "ClB": -0.012334351145823508,
+            "CnB": 0.009033695188400049,
+            "Cyp": -0.8650569352546229,
             "Clp": -0.46,
-            "Cnp": -0.034491354134616625,
+            "Cnp": -0.042266950001015026,
             "Cyr": 0,
-            "Clr": 0.5295208181156086,
-            "Cnr": -0.009369404702018622,
-            "CyBdot": 0.0043322370086752915,
-            "ClBdot": 0.0005163900983457461,
-            "C_y_delta_r": 0.00012188832433797217,
-            "C_y_delta_a": 0,
-            "C_l_delta_r": -0.0011079205125110658,
-            "C_l_delta_a": -0.18089955270988464,
-            "C_n_delta_r": -0.0019854664221128806,
-            "C_n_delta_a": 0,
-            "C_nBdot": 0.001463
+            "Clr": 0.5291310813412924,
+            "Cnr": -0.014311185888276486,
+            "CyBdot": 0.0835439802825826,
+            "ClBdot": -0.014117229900973801,
+            "CnBdot": -0.022443581655298202
         },
         "inertia": {
             "I_xx": 1000000.0,
@@ -709,9 +702,8 @@
             "I_xz": 0.0,
             "I_yz": 0.0
         },
-        "cg_positions": {
-            "OEW_CG": 19.134779950248006,
-            "MTOW_CG": 19.017554272842776
+        "aerodynamics": {
+            "Cl_alpha": 0.10126190476190478
         }
     },
     "kinematic_viscosity": 1.006e-06,
