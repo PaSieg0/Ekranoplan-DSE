@@ -115,7 +115,9 @@ class DerivativesDatcom_sym:
         l_h = self.x_h - self.x_cg
         downwash_gradient = (2 * self.Cl_alpha / (np.pi * self.A))
         Cm_alphadot_tail = -(self.Cl_alpha * 1 * downwash_gradient * self.Sh*l_h**2) / (self.S * self.MAC**2)
-        return Cm_alphadot_wb - Cm_alphadot_tail
+        print(Cm_alphadot_wb, Cm_alphadot_tail)
+        print(Cm_alphadot_wb + Cm_alphadot_tail)
+        return Cm_alphadot_wb + Cm_alphadot_tail
     
     def update_json(self):
         # Run the functions you want to store
