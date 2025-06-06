@@ -20,8 +20,8 @@ class ElevatorRudder:
         self.plot = plot
 
         self.lift_curve = lift_curve()
-        self.airfoil_cl_alpha = self.lift_curve.dcl_dalpha()
-        self.tail_lift_slope = self.lift_curve.dcl_dalpha()
+        self.airfoil_cl_alpha = self.lift_curve.dcl_dalpha()[0]
+        self.tail_lift_slope = self.lift_curve.dcl_dalpha()[0]
 
         self.rudder_chord_ratio = self.aircraft_data.data['inputs']['control_surfaces']['rudder_chord']
         self.elevator_chord_ratio = self.aircraft_data.data['inputs']['control_surfaces']['elevator_chord']
@@ -29,7 +29,7 @@ class ElevatorRudder:
         self.rudder_deflection = self.aircraft_data.data['inputs']['control_surfaces']['rudder_deflection']
         self.elevator_deflection = self.aircraft_data.data['inputs']['control_surfaces']['elevator_deflection']
 
-        self.engine_power = self.aircraft_data.data['inputs']['engine_power']
+        self.engine_power = self.aircraft_data.data['inputs']['engine']['engine_power']
         self.prop_efficiency = self.aircraft_data.data['inputs']['prop_efficiency']
         self.V = self.aircraft_data.data['requirements']['cruise_speed']
         self.S = self.aircraft_data.data['outputs']['wing_design']['S']
@@ -58,7 +58,7 @@ class ElevatorRudder:
         self.nmax = self.aircraft_data.data['outputs']['general']['nmax']
         self.climb_rate = self.aircraft_data.data['requirements']['climb_rate']
 
-        self.engine_thrust = 0.75*self.engine_power * self.prop_efficiency / self.V
+        self.engine_thrust = 0.3*self.engine_power * self.prop_efficiency / self.V
 
         self.prop_diameter = self.aircraft_data.data['inputs']['engine']['prop_diameter'] 
         high_altitude = self.aircraft_data.data['requirements']['high_altitude']
@@ -116,7 +116,7 @@ class ElevatorRudder:
 
     def calculate_pitch_rate(self):
 
-        pitch_rate = (self.nmax-1)*9.81/self.V*0.5
+        pitch_rate = (self.nmax-1)*9.81/self.V
         return pitch_rate
     
     def calculate_Cmde_Cmq(self,b):
@@ -191,7 +191,15 @@ class ElevatorRudder:
         self.aircraft_data.data['outputs']['control_surfaces']['rudder']['cndr'] = self.cndr
         self.aircraft_data.data['outputs']['control_surfaces']['elevator']['CMde'] = 2*self.CMde
         self.aircraft_data.data['outputs']['control_surfaces']['elevator']['elevator_lift'] = self.elevator_lift
+        self.aircraft_data.data['outputs']['aerodynamic_stability_coefficients_sym']['C_z_delta_e'] = 2*self.elevator_lift / (np.deg2rad(self.elevator_deflection) * 0.5 * self.rho * self.V**2 * self.S * self.MAC)
+        self.aircraft_data.data['outputs']['aerodynamic_stability_coefficients_sym']['C_m_delta_e'] = 2*self.CMde
         self.aircraft_data.data['outputs']['control_surfaces']['rudder']['rudder_lift'] = self.rudder_normal_force
+        self.aircraft_data.data['outputs']['aerodynamic_stability_coefficients_asym']['C_y_delta_r'] = self.rudder_normal_force / (-np.deg2rad(self.rudder_deflection) * 0.5 * self.rho * self.V**2 * self.S * self.b)
+        self.rudder_height = self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['b'] / 2 + self.aircraft_data.data['outputs']['fuselage_dimensions']['h_fuselage']
+        # TODO: UPDATE THIS AFTER CG HEIGHT IS DETERMINED
+        self.high_cg = self.aircraft_data.data['outputs']['cg_range']['most_high_cg']
+        self.aircraft_data.data['outputs']['aerodynamic_stability_coefficients_asym']['C_l_delta_r'] = (self.rudder_height-self.high_cg) * self.rudder_normal_force / (np.deg2rad(self.rudder_deflection) * 0.5 * self.rho * self.V**2 * self.S * self.b)
+        self.aircraft_data.data['outputs']['aerodynamic_stability_coefficients_asym']['C_n_delta_r'] = self.cndr
 
 
     def plot_horizontal_tail(self):

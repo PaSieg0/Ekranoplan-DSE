@@ -25,7 +25,7 @@ class AltitudeVelocity:
         self._AR = self.data.data['inputs']['aspect_ratio']
         self._e = self.data.data['inputs']['oswald_factor']
         self._CLmax = self.data.data['inputs']['CLmax_clean']
-        self._engine_power = self.data.data['inputs']['engine_power']
+        self._engine_power = self.data.data['inputs']['engine']['engine_power']
         self._prop_efficiency = self.data.data['inputs']['prop_efficiency']
         self._sea_level_density = ISA(0).rho
         self._k = 1 / (np.pi * self._AR * self._e)  # Induced drag factor
