@@ -1,0 +1,41 @@
+import os
+import sys
+import numpy as np
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from utils import *
+
+class MomentOfInertia:
+    def __init__(self, aircraft_data: Data):
+        self.aircraft_data = aircraft_data
+        self.fuselage_weight = self.aircraft_data.data['outputs']['component_weights']['fuselage']
+        self.wing_weight = self.aircraft_data.data['outputs']['component_weights']['wing']
+        self.engine_weight = self.aircraft_data.data['outputs']['component_weights']['engine']
+        self.cargo_weight = 90000
+
+        self.fuselage_diameter = self.aircraft_data.data['outputs']['fuselage_dimensions']['d_fuselage_equivalent_station1']
+        self.engine_diameter = self.aircraft_data.data['inputs']['engine']['prop_diameter']
+        self.engine1_y = self.aircraft_data.data['outputs']['engine_positions']['y_engines'][0]
+        self.engine2_y = self.aircraft_data.data['outputs']['engine_positions']['y_engines'][1]
+        self.engine3_y = self.aircraft_data.data['outputs']['engine_positions']['y_engines'][2]
+        self.engine1_z = self.aircraft_data.data['outputs']['engine_positions']['z_engines'][0]
+        self.engine2_z = self.aircraft_data.data['outputs']['engine_positions']['z_engines'][1]
+        self.engine3_z = self.aircraft_data.data['outputs']['engine_positions']['z_engines'][2]
+        self.b_wing = self.aircraft_data.data['outputs']['design']['b']
+        self.h_b_wing = self.aircraft_data.data['outputs']['design']['h_b']
+
+    def calculate_radii(self):
+        self.r_fuselage = self.fuselage_diameter / 2
+        self.r_engine = self.engine_diameter / 2
+    
+    def calculate_distances(self):
+        self.engine1_d = np.sqrt(self.engine1_y**2 + self.engine1_z**2)
+        self.engine2_d = np.sqrt(self.engine2_y**2 + self.engine2_z**2)
+        self.engine3_d = np.sqrt(self.engine3_y**2 + self.engine3_z**2)
+        self.wing_d = self.h_b_wing * self.b_wing
+    
+    
+
+    
+
+
+
