@@ -31,7 +31,7 @@ class DerivativesDatcom_asym:
         self.e = aircraft_data.data['inputs']['oswald_factor'] # Oswald efficiency factor of the wing : 0.85 (guessed, typical value for a subsonic aircraft)
         self.taper = aircraft_data.data['outputs']['wing_design']['taper_ratio'] # Taper ratio of the wing: 0.4
         self.MAC =  aircraft_data.data['outputs']['wing_design']['MAC']  # Mean Aerodynamic Chord
-        self.x_bar = (aircraft_data.data['outputs']['wing_design']['X_LEMAC'] + (0.25*aircraft_data.data['outputs']['wing_design']['MAC'])) - aircraft_data.data['outputs']['cg_range']['most_aft_cg'] #x_ac - x_cg # Distance from the leading edge of the wing to the center of gravity: 31.5(from excel)
+        self.x_bar = aircraft_data.data['outputs']['wing_design']['X_LEMAC']  - aircraft_data.data['outputs']['cg_range']['most_aft_cg'] #x_ac - x_cg # Distance from the leading edge of the wing to the center of gravity: 31.5(from excel)
         self.Cd0 = aircraft_data.data['inputs']['Cd0'] # Zero-lift drag coefficient of the wing
 
         self.c_h = aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['MAC']
@@ -39,6 +39,8 @@ class DerivativesDatcom_asym:
         self.Cl = 0.5   # Lift coefficient at the angle of attack, TODO: UPDATE!!
         self.alpha_f = aircraft_data.data['inputs']['alpha_fuselage']*(180*np.pi) # Fuselage AoA in degrees, TODO: UPDATE!!
         self.h_b = aircraft_data.data['inputs']['cruise_altitude'] / self.b 
+        isa = ISA(self.aircraft_data.data['inputs']['cruise_altitude'])
+        self.M = isa.Mach(self.aircraft_data.data['requirements']['cruise_speed'])
 
 
     def CyB(self):
@@ -105,7 +107,7 @@ class DerivativesDatcom_asym:
         K_N = 0.0018 #p.1633
         K_R_l = 1.65 #p.1634
         S_B_s = self.d_fusel * self.l_b # Cross sectional area of the body at the wing intersection [m2]
-        CnB_wb = -K_N * K_R_l * S_B_s / self.S * self.l_b / self.b
+        CnB_wb = -K_N * K_R_l * (S_B_s / self.S) * (self.l_b / self.b)
 
         K = 1.4 #p.1600 smthng
         cl_alpha_V_tail = 0.16 #p.1600 smthng
@@ -121,16 +123,16 @@ class DerivativesDatcom_asym:
         float: Side force coefficient.
         """
         sigma=np.exp(-2.48*(self.h_b)**(0.768))
-        zp = 7 # Guessed, distance from the centerline of the body to the centerline of the vertical tail
+        zp = self.zp # Distance from the centerline of the body to the centerline of the vertical tail
         z = zp * np.cos(np.radians(self.alpha)) - self.lp * np.sin(np.radians(self.alpha)) # distance from the centerline of the body to the centerline of the wing
         K =  (self.Cl_alpha * np.tan(np.radians(self.alpha)) + self.Cl / (np.cos(np.radians(self.alpha)))**2 - 2 * self.Cl / (np.pi * self.A * self.e) * (1 - sigma) * self.Cl_alpha) / (self.Cl_alpha * np.tan(np.radians(self.alpha)) + self.Cl / (np.cos(np.radians(self.alpha)))**2 - 2 * self.Cl / (np.pi * self.A * self.e) * self.Cl_alpha)
-        B = np.sqrt(1 - 0.34**2 * np.cos(np.radians(self.Delta_c4))**2) # p.2522
+        B = np.sqrt(1 - self.M**2 * np.cos(np.radians(self.Delta_c4))**2) # p.2522
         Cyp__Cl_0 = -0.18 #p2529
         Cyp__Cl = ((self.A + 4 * np.cos(np.radians(self.Delta_c4))) * (self.A * B + np.cos(np.radians(self.Delta_c4))) * Cyp__Cl_0) / (self.A * B + 4 * np.cos(np.radians(self.Delta_c4)) * (self.A + np.cos(np.radians(self.Delta_c4))))
 
         clp_cl0 =  0 # p2526
         dCyp_dihedral = (3 * np.sin(np.radians(self.dihedral) * (1 - 2 * z / (self.b / 2)) * np.sin(np.radians(self.dihedral)))) * clp_cl0
-        Cyp_wb = K*((Cyp__Cl * self.Cl)) + dCyp_dihedral
+        Cyp_wb = K*((Cyp__Cl * self.Cl)) + dCyp_dihedral #p2522
 
         dCyB_VWBH = self.CyB()[1]
         Cyp_Vtail = Cyp_wb + 2 * ((z - zp) / self.b) * dCyB_VWBH
@@ -154,14 +156,12 @@ class DerivativesDatcom_asym:
         float: Yaw moment coefficient.
         """
         x__c = self.x_bar / self.MAC # Distance from the leading edge of the wing to the center of gravity, normalized by the mean aerodynamic chord
-        print(x__c)
-        print(f"x__c: {x__c}")
-        B = np.sqrt(1 - 0.34**2 * np.cos(np.radians(self.Delta_c4))**2) # p.2522
-        Cnp__Cl_M0 = (-(1 / 6) * (self.A + 6 * (self.A + np.cos(np.radians(self.Delta_c4))))*(x__c * np.tan(np.radians(self.Delta_c4)) / self.A  + (np.tan(np.radians(self.Delta_c4)))**2 / 12)) / (self.A + 4 * np.cos(np.radians(self.Delta_c4)))
-        Cnp__Cl = ((self.A + 4 * np.cos(np.radians(self.Delta_c4))) / (self.A * B + 4 * np.cos(np.radians(self.Delta_c4)))) * ((self.A * B + 0.5 * (self.A * B + np.cos(np.radians(self.Delta_c4)) * (np.tan(np.radians(self.Delta_c4)))**2)) / (self.A + 0.5 * (self.A + np.cos(np.radians(self.Delta_c4)) * (np.tan(np.radians(self.Delta_c4)))**2))) * Cnp__Cl_M0
+        B = np.sqrt(1 - self.M**2 * np.cos(np.radians(self.Delta_c4))**2) # p.2522
+        Cnp__Cl_M0 = (-(1 / 6) * (self.A + 6 * (self.A + np.cos(np.radians(self.Delta_c4))))*(x__c * np.tan(np.radians(self.Delta_c4)) / self.A  + (np.tan(np.radians(self.Delta_c4)))**2 / 12)) / (self.A + 4 * np.cos(np.radians(self.Delta_c4))) #p2559
+        Cnp__Cl = ((self.A + 4 * np.cos(np.radians(self.Delta_c4))) / (self.A * B + 4 * np.cos(np.radians(self.Delta_c4)))) * ((self.A * B + 0.5 * (self.A * B + np.cos(np.radians(self.Delta_c4)) * (np.tan(np.radians(self.Delta_c4)))**2)) / (self.A + 0.5 * (self.A + np.cos(np.radians(self.Delta_c4)) * (np.tan(np.radians(self.Delta_c4)))**2))) * Cnp__Cl_M0 #p2559
         Cnp_w = -self.Clp() * np.tan(np.radians(self.alpha)) - self.Cyp()[1] * (-self.Clp() * np.tan(np.radians(self.alpha)) - Cnp__Cl * self.Cl) # p.2559 
 
-        zp = 7 # Guessed, distance from the centerline of the body to the centerline of the vertical tail
+        zp = self.zp # Distance from the centerline of the body to the centerline of the vertical tail
         z = zp * np.cos(np.radians(self.alpha)) - self.lp * np.sin(np.radians(self.alpha)) # distance from the centerline of the body to the centerline of the wing
         Cnp_tail = 2 / self.b * (self.lp * np.cos(np.radians(self.alpha)) + zp * np.sin(np.radians(self.alpha)) * (z - zp) / self.b * self.CyB()[1])
         return Cnp_w - Cnp_tail, Cnp_w, Cnp_tail
@@ -193,7 +193,7 @@ class DerivativesDatcom_asym:
         #TODO: Check if dihedral should indeed be in degrees for this formula
         Clr_wb = self.Cl * Clr__Cl + dClr_Cl + dClr__dihedral * self.dihedral
 
-        zp = 7 # Guessed, distance from the centerline of the body to the centerline of the vertical tail
+        zp = self.zp # Dstance from the centerline of the body to the centerline of the vertical tail
         Clr_tail = 2 / self.b**2 * (self.lp * np.cos(np.radians(self.alpha)) + zp * np.sin(np.radians(self.alpha))*(zp*np.cos(np.radians(self.alpha) - self.lp * np.sin(np.radians(self.alpha)))) * self.CyB()[1]) #p.2802
         return Clr_wb - Clr_tail
     
@@ -208,7 +208,7 @@ class DerivativesDatcom_asym:
         Cnr__Cd0 = -0.3
         Cnr_wb = Cnr__Cl2 * self.Cl**2 + Cnr__Cd0 * self.Cd0
 
-        zp = 7 # Guessed, distance from the centerline of the body to the centerline of the vertical tail
+        zp = self.zp # Distance from the centerline of the body to the centerline of the vertical tail
         Cnr_tail = 2 / self.b**2 * (self.lp * np.cos(np.radians(self.alpha)) + zp * np.sin(np.radians(self.alpha)))**2 * self.CyB()[1]
 
         return Cnr_wb + Cnr_tail
@@ -222,7 +222,7 @@ class DerivativesDatcom_asym:
         float: Side force coefficient.
         """
         # p.2825
-        zp = 7
+        zp = self.zp
         C_L_alpha_V = 0.124
         sigma_B_alpha = -0.001 # p.2834
         sigma_B_dihedral = np.rad2deg(-0.93) # p.2846
@@ -233,12 +233,12 @@ class DerivativesDatcom_asym:
         return CyBdot
     
     def ClBdot(self):
-        zp = 7
+        zp = self.zp
         ClB_dot = self.CyBdot() * (zp * np.cos(np.radians(self.alpha_f)) - self.lp * np.sin(np.radians(np.radians(self.alpha_f)))) / self.b
         return ClB_dot
     
     def CnBdot(self):
-        zp = 7
+        zp = self.zp
         CnB_dot = -self.CyBdot() * (self.lp * np.cos(self.alpha_f) + zp * np.sin(self.alpha_f)) / self.b
         return CnB_dot
     
