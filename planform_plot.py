@@ -60,11 +60,13 @@ class PlanformPlot:
 
     def plot_init(self) -> None:
         self.fig, self.ax = plt.subplots(figsize=(12, 8))
-        # self.ax.set_xlim(-self.l_fuselage - 10, self.l_fuselage + 10)
-        # self.ax.set_ylim(-self.h_fuselage - 5, self.h_fuselage + 5)
-        self.ax.set_xlabel('Lateral [m]')
-        self.ax.set_ylabel('Longitudinal [m]')
+        # self.ax.set_xlabel('Lateral [m]')
+        # self.ax.set_ylabel('Longitudinal [m]')
         self.ax.set_title('Aircraft Planform')
+        self.ax.axes.set_visible(True)
+        self.ax.tick_params(left=False, bottom=False, labelleft=False, labelbottom=False)
+        for spine in self.ax.spines.values():
+            spine.set_visible(False)
 
     def plot_wing(self) -> None:
         sweep_offset = (self.wing_b/2) * np.tan(np.deg2rad(self.wing_sweep_LE))
@@ -146,7 +148,6 @@ class PlanformPlot:
 
 
     def show_plot(self) -> None:
-        self.ax.grid()
         self.ax.legend()
         self.ax.set_aspect('equal', adjustable='box')
         plt.show()
