@@ -11,9 +11,14 @@ class CGCalculation:
         self.design_file = f'design{self.design_number}.json'
         self.aircraft_data = aircraft_data
         
-        # Initialize component masses
-        self._init_component_masses()
         self._init_aircraft_parameters()
+        self.update_component_positions()
+
+        self._init_component_masses()
+        self._init_component_positions()
+
+        self.wing_height = self.aircraft_data.data['outputs']['fuselage_dimensions']['wing_height']
+        self.cargo_bottom = self.aircraft_data.data['outputs']['fuselage_dimensions']['cargo_bottom']
         
     def _init_component_masses(self):
         """Initialize all component masses from the aircraft data"""
@@ -22,6 +27,12 @@ class CGCalculation:
             f"{key}_mass": value for key, value in weights.items()
             if key != "total_OEW"  # Exclude total OEW as it's not a component
         }
+
+    def _init_component_positions(self):
+        positions = self.aircraft_data.data['outputs']['component_positions']
+        self.component_positions = {
+            f"{key}_position": value for key, value in positions.items()
+            }
 
     def _init_aircraft_parameters(self):
         """Initialize aircraft parameters needed for CG calculation"""
@@ -42,6 +53,18 @@ class CGCalculation:
         self.fus_straight_length = self.aircraft_data.data['outputs']['fuselage_dimensions']['l_forebody']
         self.fus_afterbody_length = self.aircraft_data.data['outputs']['fuselage_dimensions']['l_afterbody']
         self.fus_tailcone_length = self.aircraft_data.data['outputs']['fuselage_dimensions']['l_tailcone']
+        self.total_fuselage_length = (self.nose_length + self.fus_straight_length +
+                                    self.fus_afterbody_length + self.fus_tailcone_length)
+        
+        self.cargo_bottom = self.aircraft_data.data['outputs']['fuselage_dimensions']['cargo_bottom']
+        
+        self.fuselage_height = self.aircraft_data.data['outputs']['fuselage_dimensions']['h_fuselage']
+        self.endplate_height = self.aircraft_data.data['outputs']['fuselage_dimensions']['endplate_height']
+
+        self.wing_height = self.aircraft_data.data['outputs']['fuselage_dimensions']['wing_height']
+
+        self.horizontal_tail_height = self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['tail_height']
+        self.vertical_tail_height = self.fuselage_height + self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['b']/2
         
         # Tail parameters
         self.x_LE_vertical_tail = self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['LE_pos']
@@ -51,45 +74,63 @@ class CGCalculation:
         
         self.total_fuselage_length = (self.nose_length + self.fus_straight_length + 
                                     self.fus_afterbody_length + self.fus_tailcone_length)
-
-    def get_component_position(self, component: str, nacelle_length: float = 0.0) -> float:
-        """Get x-position for a given component"""
-        if component == "fuselage_mass":
-            return self.total_fuselage_length * 0.45
-        elif component in ["wing_mass", "floater_mass"]:
-            return self.x_LEMAC_wing + self.MAC_wing / 2
-        elif component in ["engine_mass", "nacelle_group_mass"]:
-            return self.x_LEMAC_wing - nacelle_length/2
-        elif component == "horizontal_tail_mass":
-            return self.x_LE_horizontal_tail + self.x_MAC_horizontal_tail / 2
-        elif component == "vertical_tail_mass":
-            return self.x_LE_vertical_tail + self.x_MAC_vertical_tail / 2
-        elif component in ["door_mass", "flight_control_mass"]:
-            return self.nose_length
-        elif component == "flight_control":
-            return self.nose_length
-        elif component == "anchor":
-            return self.nose_length / 2
-        else:
-            return self.total_fuselage_length / 2
+        
+    def update_component_positions(self):
+        self.aircraft_data.data['outputs']['component_positions']['fuselage'] = [0.45*self.total_fuselage_length, 0, self.fuselage_height/2]
+        self.aircraft_data.data['outputs']['component_positions']['wing'] = [self.x_LEMAC_wing + self.MAC_wing / 2, 0, self.wing_height]
+        # TODO: CHANGE THE Z POSITION OF THE FLOATER
+        self.aircraft_data.data['outputs']['component_positions']['floater'] = [self.x_LEMAC_wing + self.MAC_wing / 2, 0, 0]
+        self.aircraft_data.data['outputs']['component_positions']['floater_endplate'] = [self.x_LEMAC_wing, 0, self.endplate_height]
+        # TODO: MAKE ENGINE POSITION DYNAMIC
+        engine_x = self.x_LEMAC_wing - self.aircraft_data.data['inputs']['engine']['engine_length']/2
+        engine_z = np.mean(self.aircraft_data.data['outputs']['engine_positions']['z_engines'])
+        self.aircraft_data.data['outputs']['component_positions']['engine'] = [engine_x, 0, engine_z]
+        self.aircraft_data.data['outputs']['component_positions']['nacelle_group'] = [engine_x, 0, engine_z]
+        self.aircraft_data.data['outputs']['component_positions']['horizontal_tail'] = [self.x_LE_horizontal_tail + self.x_MAC_horizontal_tail / 2, 0, self.horizontal_tail_height]
+        self.aircraft_data.data['outputs']['component_positions']['vertical_tail'] = [self.x_LE_vertical_tail + self.x_MAC_vertical_tail / 2, 0, self.vertical_tail_height]
+        self.aircraft_data.data['outputs']['component_positions']['door'] = [self.nose_length, 0, self.fuselage_height / 2]
+        self.aircraft_data.data['outputs']['component_positions']['flight_control'] = [self.nose_length, 0, self.fuselage_height / 2]
+        self.aircraft_data.data['outputs']['component_positions']['anchor'] = [self.nose_length / 2, 0, self.fuselage_height / 4]
+        mid_fuse = [self.total_fuselage_length / 2, 0, self.fuselage_height / 2]
+        for comp in ['air_conditioning', 'anti_ice', 'apu_installed', 'avionics', 'electrical', 'furnishings', 'handling_gear', 'instruments', 'starter_pneumatic', 'engine_controls', 'fuel_system']:
+            self.aircraft_data.data['outputs']['component_positions'][comp] = mid_fuse
+        self.aircraft_data.data['outputs']['component_positions']['military_cargo_handling_system'] = [self.cargo_x_start + self.cargo_length / 2, 0, self.cargo_bottom + self.cargo_height / 2]
+        
 
     def calculate_cg(self, nacelle_length: float = 0.0, OEW: bool = False, plot: bool = False) -> float:
         """Calculate center of gravity position"""
-        cg_x = 0.0
+        cg_x = np.array([0.0, 0.0, 0.0])
         if OEW:
             total_mass = sum(self.component_masses.values())
         else:
             total_mass = sum(self.component_masses.values()) + self.fuel_mass + self.cargo_mass
 
+        # print(f"Total mass: {total_mass} kg")
+
         # Calculate component contributions
         for component, mass in self.component_masses.items():
-            x_position = self.get_component_position(component, nacelle_length)
+            component_name = component.replace('_mass', '_position')
+            x_position = np.asarray(self.component_positions[component_name])
+            # print(f"Component: {component_name}, Weight: {mass} N, Position: {x_position} m")
             cg_x += mass * x_position
+            # print(f"cg_x", cg_x)
 
         # Add fuel and cargo if not OEW
         if not OEW:
-            cg_x += self.cargo_mass * (self.cargo_x_start + self.cargo_length / 2)
-            cg_x += self.fuel_mass * (self.x_LEMAC_wing + self.MAC_wing/2)
+            self.fuel_position = np.array([
+                self.x_LEMAC_wing + self.MAC_wing / 2,
+                0,
+                self.wing_height
+            ])
+
+            self.cargo_position = np.array([
+                self.cargo_x_start + self.cargo_length / 2,
+                0,
+                self.cargo_bottom + self.cargo_height / 2
+            ])
+
+            cg_x += self.cargo_mass * self.cargo_position
+            cg_x += self.fuel_mass * self.fuel_position
 
         if plot:
             self._plot_cg(cg_x, total_mass, OEW, nacelle_length)
@@ -154,17 +195,21 @@ class CGCalculation:
 
     def update_json(self):
         """Update the JSON file with calculated CG positions"""
-        oew_cg = self.calculate_cg(OEW=True)
-        mtow_cg = self.calculate_cg(OEW=False)
+        self.oew_cg = self.calculate_cg(OEW=True)
+        self.mtow_cg = self.calculate_cg(OEW=False)
+
+
+        self.aircraft_data.data['outputs']['cg_range']['OEW_cg'] = list(self.oew_cg)
+        self.aircraft_data.data['outputs']['cg_range']['MTOW_cg'] = list(self.mtow_cg)
         
-        # Update CG values in the JSON data
-        if 'cg_positions' not in self.aircraft_data.data['outputs']:
-            self.aircraft_data.data['outputs']['cg_positions'] = {}
+        # # Update CG values in the JSON data
+        # if 'cg_positions' not in self.aircraft_data.data['outputs']:
+        #     self.aircraft_data.data['outputs']['cg_positions'] = {}
             
-        self.aircraft_data.data['outputs']['cg_positions'].update({
-            'OEW_CG': oew_cg,
-            'MTOW_CG': mtow_cg
-        })
+        # self.aircraft_data.data['outputs']['cg_positions'].update({
+        #     'OEW_CG': oew_cg,
+        #     'MTOW_CG': mtow_cg
+        # })
         
         # Save updated data to JSON file
         self.aircraft_data.save_design(self.design_file)
@@ -225,8 +270,8 @@ class CGCalculation:
                    alpha=0.2, color='r', label='Cargo Area')
         
         # Add CG positions
-        mtow_cg = self.calculate_cg(OEW=False)
-        oew_cg = self.calculate_cg(OEW=True)
+        mtow_cg = self.calculate_cg(OEW=False)[0]
+        oew_cg = self.calculate_cg(OEW=True)[0]
         plt.axvline(x=mtow_cg, color='red', linestyle='--', label='MTOW CG')
         plt.axvline(x=oew_cg, color='blue', linestyle='--', label='OEW CG')
         
@@ -246,8 +291,8 @@ def main():
     # Calculate and print CG positions
     mtow_cg = cg_calculator.calculate_cg(OEW=False)
     oew_cg = cg_calculator.calculate_cg(OEW=True)
-    print(f"Total CG position: {mtow_cg:.3f} m")
-    print(f"OEW CG position: {oew_cg:.3f} m")
+    print(f"Total CG position: {mtow_cg} m")
+    print(f"OEW CG position: {oew_cg} m")
     cg_calculator.load_diagram()
 
     # Update JSON with CG positions

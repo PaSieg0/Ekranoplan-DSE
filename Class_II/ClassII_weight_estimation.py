@@ -220,8 +220,13 @@ class ClassII:
         return lbs2kg(W_hull_lbs)*9.81
     
     def floater(self):
-        W_floater_lbs = (0.0365*self.W_dg + 43.5)   # https://www.icas.org/icas_archive/ICAS2012/PAPERS/198.PDF
+        W_floater_lbs = 6/8 * (0.0365*self.W_dg + 43.5)   # https://www.icas.org/icas_archive/ICAS2012/PAPERS/198.PDF
         return lbs2kg(W_floater_lbs)*9.81
+    
+    def floater_endplate(self):
+        W_floater_lbs = 2/8 * (0.0365*self.W_dg + 43.5)   # https://www.icas.org/icas_archive/ICAS2012/PAPERS/198.PDF
+        return lbs2kg(W_floater_lbs)*9.81
+                         
     
     def main(self):
         self.W_wing = self.wing_weight()
@@ -247,6 +252,7 @@ class ClassII:
         self.W_door = self.door()
         self.W_anchor = self.anchor()
         self.W_floater = self.floater()
+        self.W_floater_endplate = self.floater_endplate()
         self.W_hull = self.hull()
 
         self.perc_wing = self.W_wing / (self.aircraft_data.data['outputs']['max']['OEW']) * 100
@@ -272,6 +278,7 @@ class ClassII:
         self.perc_door = self.W_door / (self.aircraft_data.data['outputs']['max']['OEW']) * 100
         self.perc_anchor = self.W_anchor / (self.aircraft_data.data['outputs']['max']['OEW']) * 100
         self.perc_floater = self.W_floater / (self.aircraft_data.data['outputs']['max']['OEW']) * 100
+        self.perc_floater_endplate = self.W_floater_endplate / (self.aircraft_data.data['outputs']['max']['OEW']) * 100
         self.perc_hull = self.W_hull / (self.aircraft_data.data['outputs']['max']['OEW']) * 100
 
         self.OEW = (
@@ -297,7 +304,8 @@ class ClassII:
             self.W_military_cargo_handling_system +
             self.W_door +
             self.W_anchor +
-            self.W_floater
+            self.W_floater +
+            self.W_floater_endplate
             # self.W_hull
         )
 
@@ -324,7 +332,8 @@ class ClassII:
             self.perc_military_cargo_handling_system +
             self.perc_door +
             self.perc_anchor +
-            self.perc_floater
+            self.perc_floater +
+            self.perc_floater_endplate
             # self.perc_hull
         )
         
@@ -352,6 +361,7 @@ class ClassII:
             'Door': self.W_door,
             'Anchor': self.W_anchor,
             'Floater': self.W_floater,
+            'Floater endplate': self.W_floater_endplate,
             # 'Hull': self.W_hull,
             'Total OEW': self.OEW
         }
@@ -379,6 +389,7 @@ class ClassII:
             'Door': self.perc_door,
             'Anchor': self.perc_anchor,
             'Floater': self.perc_floater,
+            'Floater endplate': self.perc_floater_endplate,
             # 'Hull': self.perc_hull,
             'Total OEW': self.perc
         }
@@ -408,6 +419,7 @@ class ClassII:
         self.aircraft_data.data['outputs']['component_weights']['door'] = self.W_door
         self.aircraft_data.data['outputs']['component_weights']['anchor'] = self.W_anchor
         self.aircraft_data.data['outputs']['component_weights']['floater'] = self.W_floater
+        self.aircraft_data.data['outputs']['component_weights']['floater_endplate'] = self.W_floater_endplate
         self.aircraft_data.data['outputs']['component_weights']['total_OEW'] = self.OEW
 
         self.aircraft_data.save_design(self.design_file)
