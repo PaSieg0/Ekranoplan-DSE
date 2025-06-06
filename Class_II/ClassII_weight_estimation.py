@@ -28,8 +28,8 @@ class ClassII:
         self.B_w = m2ft(aircraft_data.data['outputs']['wing_design']['b']) # wing span
         self.D = m2ft(self.aircraft_data.data['outputs']['fuselage_dimensions']['d_fuselage_equivalent_station2']) # fuselage structural depth
         self.D_e = m2ft(5.3) # engine diameter
-        self.F_w = m2ft(aircraft_data.data['outputs']['fuselage_dimensions']['d_fuselage_equivalent_station2']) # fuselage width at horizontal tail
-        self.H_t = m2ft(self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['tail_height']) - m2ft(self.aircraft_data.data['outputs']['fuselage_dimensions']['d_fuselage_equivalent_station2']) # horizontal tail height
+        self.F_w = m2ft(aircraft_data.data['outputs']['fuselage_dimensions']['w_fuselage']) # fuselage width at horizontal tail
+        self.H_t = m2ft(self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['tail_height']) - m2ft(self.aircraft_data.data['outputs']['fuselage_dimensions']['d_fuselage_equivalent_station3']) # horizontal tail height
         self.H_t_H_v = 1
         self.I_y = kgmsq2lbsftsq(10000) # Yawing moment of interia
         # self.K_cb = 1 # landging gear so 0???
@@ -213,14 +213,14 @@ class ClassII:
         return 3100 *9.81    # https://aviator.aero/press/stelia-aerospace-delivers-the-first-belugaxl-cargo-door/
     
     def anchor(self):
-        return 250*9.81
+        return 400*9.81
     
     def hull(self):
         W_hull_lbs = 0.12*self.W_dg   # https://www.icas.org/icas_archive/ICAS2012/PAPERS/198.PDF
         return lbs2kg(W_hull_lbs)*9.81
     
     def floater(self):
-        W_floater_lbs = (0.0365*self.W_dg + 43.5)/5     # https://www.icas.org/icas_archive/ICAS2012/PAPERS/198.PDF
+        W_floater_lbs = (0.0365*self.W_dg + 43.5)   # https://www.icas.org/icas_archive/ICAS2012/PAPERS/198.PDF
         return lbs2kg(W_floater_lbs)*9.81
     
     def main(self):
