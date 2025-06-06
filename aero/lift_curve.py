@@ -459,6 +459,7 @@ if __name__ == "__main__":  #if run seperately
     #defines instance
     
     curves=lift_curve()
+    curves.alpha_tail()
     curves.plot_moment_ac()
     curves.plotting()
     curves.printing()
