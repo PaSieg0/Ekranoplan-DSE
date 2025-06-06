@@ -25,7 +25,7 @@ class DerivativesDatcom_asym:
         self.V_b = aircraft_data.data['outputs']['fuselage_dimensions']['total_volume'] # total body volume [m3]
         self.b = aircraft_data.data['outputs']['design']['b']
 
-        self.lp = aircraft_data.data['outputs']['empennage_design']['vertical_tail']['l_v']# ℓₚ is the distance parallel to the longitudinal body axis between the vehicle moment center and the quarter-chord point of the MAC of the vertical panel, positive for the panel aft of the vehicle moment center.
+        self.lp = aircraft_data.data['outputs']['empennage_design']['vertical_tail']['l_v']
         self.zp = (aircraft_data.data['outputs']['fuselage_dimensions']['d_fuselage_equivalent_station3'] / 2) + (aircraft_data.data['outputs']['empennage_design']['vertical_tail']['z_MAC_v'])  
         self.Cl_alpha = self.lift_curve.dcl_dalpha()[0]*(180*np.pi) # Lift curve slope of the wing in deg
         self.e = aircraft_data.data['inputs']['oswald_factor'] # Oswald efficiency factor of the wing : 0.85 (guessed, typical value for a subsonic aircraft)
@@ -164,11 +164,11 @@ class DerivativesDatcom_asym:
         zp = self.zp # Distance from the centerline of the body to the centerline of the vertical tail
         z = zp * np.cos(np.radians(self.alpha)) - self.lp * np.sin(np.radians(self.alpha)) # distance from the centerline of the body to the centerline of the wing
         Cnp_tail = 2 / self.b * (self.lp * np.cos(np.radians(self.alpha)) + zp * np.sin(np.radians(self.alpha)) * (z - zp) / self.b * self.CyB()[1])
+        Cnp_tail = 0 # Tail contribution is very small, so we can ignore it for now
         return Cnp_w - Cnp_tail, Cnp_w, Cnp_tail
     
     def Cyr(self):
-        print('Cyr is very very vry very very very very small, Sam said so, thereby it is true')
-        return 0
+        return 0 # It is very small, so we can ignore it for now
 
     def Clr(self):
         """
