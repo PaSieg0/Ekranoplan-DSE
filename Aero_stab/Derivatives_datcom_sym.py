@@ -29,7 +29,8 @@ class DerivativesDatcom_sym:
         self.MAC = aircraft_data.data['outputs']['wing_design']['MAC']  # Mean Aerodynamic Chord: 8.456
         self.x_cg = aircraft_data.data['outputs']['cg_range']['most_aft_cg'] 
         self.x_ac = aircraft_data.data['outputs']['wing_design']['X_LEMAC'] +  aircraft_data.data['outputs']['wing_design']['MAC']*0.25 # Aerodynamic center of the wing: 0.25 * MAC
-        self.x_bar = self.x_ac - self.x_cg # Distance from the leading edge of the wing to the center of gravity: 31.5(from excel)
+        self.x_lemac = aircraft_data.data['outputs']['wing_design']['X_LEMAC'] 
+        self.x_bar = self.x_lemac - self.x_cg # Distance from the leading edge of the wing to the center of gravity: 31.5(from excel)
         self.Cd0 = aircraft_data.data['inputs']['Cd0'] # Zero-lift drag coefficient of the wing
         self.c_h = aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['MAC'] # Mean aerodynamic chord of the horizontal tail
         self.x_h = aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['l_h']
