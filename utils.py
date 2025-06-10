@@ -525,7 +525,8 @@ plt.rcParams.update({
     'lines.linewidth': 2,
     'axes.linewidth': 1.2,
     'xtick.major.width': 1.2,
-    'ytick.major.width': 1.2
+    'ytick.major.width': 1.2,
+    'axes.titleweight': 'bold'
 })
 
 class ISA:
