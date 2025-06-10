@@ -308,7 +308,7 @@ if __name__ == "__main__":
     # Example usage
     aircraft_data = Data('design3.json')
     state_space_model = StateSpaceModel(aircraft_data)
-    eigenmotion_type = EigenMotion.PHUGOID
+    eigenmotion_type = EigenMotion.ROLL
 
 
     state_space_model.plot_input(eigenmotion_type)

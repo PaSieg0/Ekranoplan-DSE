@@ -26,35 +26,15 @@ D = [0.00000000, 0.00000000;
 Q = eye(4) * 10; 
 R = [1,0;
      0,1]; 
-
 % Compute LQR controller
 [K, S, P] = lqr(A, B, Q, R);
-%K=[0,0,0,0;0,0,0,0];
+%K=[0,0,0,0];
 disp('get those gainz:')
 disp(K);
-
 % Compute the state-space representation
-sys_asym = ss(A, B, C, D);
-sys_cl_asym = feedback(sys_asym,K);
+sys = ss(A, B, C, D);
+sys_cl = feedback(sys,K);
 
 x0 = [-0.05, 0.05, 0.01, -0.03];
 
-t = 0:0.1:200;
-[y,tOut,x0] = initial(sys_cl_asym,x0,t);
 
-stateNames = {'Sideslip [rad]', 'Roll [rad]', 'Roll rate [rad/s]', 'Yaw Rate [rad/s]'};
-
-figure;
-
-% Get the number of states (columns) in y_
-numStates = size(y, 2);
-
-% Loop through each state and create a subplot
-for i = 1:numStates
-    subplot(numStates, 1, i); % Create a subplot: (rows, columns, current_plot_index)
-    plot(tOut, y(:, i));    % Plot the i-th state (all rows, i-th column)
-    xlabel('Time (s)');      % Label for x-axis
-    ylabel(stateNames{i});   % Use the state name from the stateNames array
-    title([stateNames{i} ]); % Title for each subplot
-    grid on;                 % Enable grid
-end
