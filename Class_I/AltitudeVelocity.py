@@ -6,6 +6,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from utils import Data, ISA, MissionType, plt
 from functools import lru_cache
 from tqdm import tqdm
+from scipy.optimize import minimize_scalar
 
 class AltitudeVelocity:
     def __init__(self, aircraft_data: Data, mission_type: MissionType):
@@ -190,11 +191,19 @@ class AltitudeVelocity:
     
     def calculate_max_AoC(self, h: float) -> tuple:
         """Find the maximum Angle of Climb and corresponding velocity at a given altitude."""
+
         V_stall = self.calculate_stall_speed(h)
-        velocity_range = np.linspace(V_stall, self.dive_speed, self.velocity_steps)
-        
-        AoC_values = self.calculate_AoC_vectorized(velocity_range, h)
-        max_aoc_idx = np.argmax(AoC_values)
+
+        def negative_aoc(V):
+            thrust_available = self.calculate_power_available(h) / V
+            thrust_required = self.calculate_power_required(V, h) / V
+            return -np.arcsin((thrust_available - thrust_required) / self._current_weight)
+
+        result = minimize_scalar(negative_aoc, bounds=(V_stall, self.dive_speed), method='bounded')
+        max_aoc_idx = None  # Not needed with minimize_scalar
+        AoC_values = [-result.fun]  # Convert back to positive value
+        velocity_range = [result.x]  # Optimal velocity
+        max_aoc_idx = 0  # Index for the single optimal point
         
         return AoC_values[max_aoc_idx], velocity_range[max_aoc_idx]
     
@@ -695,4 +704,4 @@ if __name__ == "__main__":
     altitude_velocity.plot_limit_points(zero_points, stall_points, 
                                         airspeed_type='true', 
                                         altitude_units='feet', 
-                                        plot=('thrust_limit', 'stall_limit', 'Vy'))
+                                        plot=('thrust_limit', 'stall_limit', 'Vy', 'Vx'))
