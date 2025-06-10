@@ -125,7 +125,7 @@ class RangeAnalyzer:
         self.opt._current_weight = weight
         angle_of_climb = self.opt.calculate_AoC(V, h)
         
-        if angle_of_climb < 0:
+        if angle_of_climb < 0-1e-6:  # Allow small negative AoC for numerical stability
             print(f"Warning: Cannot fly at V={V:.2f} m/s with weight={weight/9.81:.2f} kg")
             print(f"Angle of climb: {angle_of_climb:.4f} degrees")
             return False
@@ -346,7 +346,7 @@ class RangeAnalyzer:
             raise
 
 
-def main():
+def speed_comparison():
     """Main function to run the range analysis."""
 
     # Configuration
@@ -365,18 +365,14 @@ def main():
         """Example"""
         return opt.v_range(h)*1.25
     
+    def v_max(opt, h):
+        """Use optimal range speed (default)"""
+        return opt.v_max(h)
+    
     # Leg 1
     R_numerical_1, time_1, details_1 = analyzer.calculate_numerical_range(W4_1, W5_1, None, dW=weight_step)
     R_numerical_test_1, time_test_1, details_test_1 = analyzer.calculate_numerical_range(W4_1, W5_1, v_test, dW=weight_step)
-    # Leg 2
-    R_numerical_2, time_2, details_2 = analyzer.calculate_numerical_range(W4_2, W5_2, None, dW=weight_step)
-    R_numerical_test_2, time_test_2, details_test_2 = analyzer.calculate_numerical_range(W4_2, W5_2, v_test, dW=weight_step)
-
-    # Combine ranges and times for total mission
-    R_total = R_numerical_1 + R_numerical_2
-    time_total = time_1 + time_2
-    R_total_test = R_numerical_test_1 + R_numerical_test_2
-    time_total_test = time_test_1 + time_test_2
+    R_numerical_max_1, time_max_1, details_max_1 = analyzer.calculate_numerical_range(W4_1, W5_1, v_max, dW=weight_step)
 
     # details_total = concat_details(details_1, details_2)
     # details_total_test = concat_details(details_test_1, details_test_2)
@@ -384,8 +380,48 @@ def main():
     # plot_speed_vs_time(details_total, "Default Strategy", payload_drop_time=details_1['times'][-1])
     # plot_speed_vs_time(details_total_test, "Test Strategy", payload_drop_time=details_test_1['times'][-1])
 
-    print(f"Total mission range (default strategy): {R_total/analyzer.METERS_TO_NMI:.2f} nmi, time: {time_total/3600:.2f} h")
-    print(f"Total mission range (test strategy):    {R_total_test/analyzer.METERS_TO_NMI:.2f} nmi, time: {time_total_test/3600:.2f} h")
+    print(f"Total mission range (default strategy): {R_numerical_1/analyzer.METERS_TO_NMI:.2f} nmi, time: {time_1/3600:.2f} h")
+    print(f"Total mission range (test strategy):    {R_numerical_test_1/analyzer.METERS_TO_NMI:.2f} nmi, time: {time_test_1/3600:.2f} h")
+    print(f"Total mission range (max speed strategy): {R_numerical_max_1/analyzer.METERS_TO_NMI:.2f} nmi, time: {time_max_1/3600:.2f} h")
+
+    # Create bar chart with dual y-axes for time and range
+    strategies = ['Max Range', 'Test (1.25x)', 'Max Speed']
+    ranges = [R_numerical_1/analyzer.METERS_TO_NMI, R_numerical_test_1/analyzer.METERS_TO_NMI, R_numerical_max_1/analyzer.METERS_TO_NMI]
+    times = [time_1/3600, time_test_1/3600, time_max_1/3600]
+
+    fig, ax1 = plt.subplots(figsize=(10, 6))
+
+    # Bar chart for range
+    color1 = 'tab:blue'
+    ax1.set_xlabel('Strategy')
+    ax1.set_ylabel('Range (nmi)', color=color1)
+    bars1 = ax1.bar([x - 0.2 for x in range(len(strategies))], ranges, width=0.4, 
+                   color=color1, alpha=0.7, label='Range')
+    ax1.tick_params(axis='y', labelcolor=color1)
+
+    # Second y-axis for time
+    ax2 = ax1.twinx()
+    color2 = 'tab:orange'
+    ax2.set_ylabel('Time (hours)', color=color2)
+    bars2 = ax2.bar([x + 0.2 for x in range(len(strategies))], times, width=0.4, 
+                   color=color2, alpha=0.7, label='Time')
+    ax2.tick_params(axis='y', labelcolor=color2)
+
+    # Set x-axis labels
+    ax1.set_xticks(range(len(strategies)))
+    ax1.set_xticklabels(strategies)
+
+    # Add value labels on bars
+    for i, (bar1, bar2, range_val, time_val) in enumerate(zip(bars1, bars2, ranges, times)):
+        ax1.text(bar1.get_x() + bar1.get_width()/2, bar1.get_height() + 5,
+                 f'{range_val:.1f}', ha='center', va='bottom', color=color1, fontweight='bold')
+        ax2.text(bar2.get_x() + bar2.get_width()/2, bar2.get_height() + 0.1,
+                 f'{time_val:.2f}', ha='center', va='bottom', color=color2, fontweight='bold')
+
+    plt.title('Range and Time Comparison by Strategy')
+    plt.grid(True, alpha=0.3)
+    plt.tight_layout()
+    plt.show()
 
 def sea_state_comparison():
     """
@@ -396,7 +432,6 @@ def sea_state_comparison():
     results = {}
 
     for sea_state in sea_states:
-        print(f"Analyzing sea state {sea_state}...")
         analyzer = RangeAnalyzer("design3.json", MissionType.DESIGN, sea_state=sea_state)
         # Calculate and store numerical range for each sea state
         W4, W5 = analyzer.calculate_cruise_weights_leg1()
@@ -434,6 +469,6 @@ if __name__ == "__main__":
     # analyzer = RangeAnalyzer(file_path, mission_type)
     # analyzer.check()
 
-    # main()
+    speed_comparison()
 
     sea_state_comparison()
