@@ -60,9 +60,3 @@ end
 
 % Optional: Adjust overall figure properties if needed
 sgtitle('Longitudinal stability response to non-equilibrium initial state with controller');
-
-
-
-
-
-

@@ -1,3 +1,5 @@
+% Define matrices A, B, C, D
+ 
 A = [8.56146015e-03, -2.10399095e-02,  8.42803062e-02, 0;
      1.61337624e-02,  9.36061499e-01,  0, -1.45380375e+01;
      0, 0, 0, -1.45380375e+01;
@@ -24,43 +26,35 @@ R = 1;
 
 % Compute LQR controller
 [K, S, P] = lqr(A, B, Q, R);
-%K=[0,0,0,0];
+
 disp('get those gainz:')
 disp(K);
 % Compute the state-space representation
 sys = ss(A, B, C, D);
 sys_cl = feedback(sys,K);
 
+%x0 = [0.1,0.05,0.02,0];
+%sys_cl = ss(A-K*B,B,C,D);
+
+
 x0 = [118.4, 0.06, 0.05, 0.01];
 xref = [116.5, 0.05, 0.04, 0];
 
 error0 = x0-xref;
 
-t = 0:0.1:200;
+t = 0:0.1:20;
 [y,tOut,error0] = initial(sys_cl,error0,t);
 y_ = y+xref;
 % Plot the response of the closed-loop system
-stateNames = {'Velocity [m/s]', 'AoA [rad]', 'Pitch [rad]', 'Pitch Rate [rad/s]'};
-
-% Create a new figure
 figure;
-
-% Get the number of states (columns) in y_
-numStates = size(y_, 2);
-
-% Loop through each state and create a subplot
-for i = 1:numStates
-    subplot(numStates, 1, i); % Create a subplot: (rows, columns, current_plot_index)
-    plot(tOut, y_(:, i));    % Plot the i-th state (all rows, i-th column)
-    xlabel('Time (s)');      % Label for x-axis
-    ylabel(stateNames{i});   % Use the state name from the stateNames array
-    title([stateNames{i} ]); % Title for each subplot
-    grid on;                 % Enable grid
+for i = 1:4
+    subplot(1, 4, i); % Create a 1-by-4 grid of subplots
+    plot(tOut, y_(i, :)); % Plot the i-th state
+    xlabel('Time (s)'); % Label for x-axis
+    ylabel('System Response'); % Label for y-axis
+    title(['State ' num2str(i)]); % Title for each subplot
+    grid on; % Enable grid
 end
-
-% Optional: Adjust overall figure properties if needed
-sgtitle('Longitudinal stability response to non-equilibrium initial state with controller');
-
 
 
 
