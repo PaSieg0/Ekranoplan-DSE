@@ -53,7 +53,7 @@ class AileronHLD:
 
         self.airfoil_Cd0 = self.aircraft_data.data['inputs']['airfoils']['cd0_wing']
         self.lift_curve = lift_curve()
-        self.airfoil_Cl_alpha = self.lift_curve.dcl_dalpha()[0]*180/np.pi
+        self.airfoil_Cl_alpha = self.lift_curve.dcl_dalpha()*180/np.pi
 
         self.CLMax_landing = self.aircraft_data.data['inputs']['CLmax_landing']
         self.CLMax_clean = self.aircraft_data.data['inputs']['CLmax_clean']

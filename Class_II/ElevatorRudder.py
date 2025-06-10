@@ -8,6 +8,7 @@ from scipy.integrate import quad
 from utils import ISA
 import matplotlib.pyplot as plt
 from aero.lift_curve import lift_curve
+from AerodynamicForces import AerodynamicForces
 
 class ElevatorRudder:
 
@@ -20,8 +21,10 @@ class ElevatorRudder:
         self.plot = plot
 
         self.lift_curve = lift_curve()
-        self.airfoil_cl_alpha = self.lift_curve.dcl_dalpha()[0]
-        self.tail_lift_slope = self.lift_curve.dcl_dalpha()[0]
+        self.aeroforces = AerodynamicForces(self.aircraft_data)
+        self.aeroforces.get_max_aero_dist()
+        self.airfoil_cl_alpha = self.lift_curve.dcl_dalpha()
+        self.tail_lift_slope = self.lift_curve.dcl_dalpha()
 
         self.rudder_chord_ratio = self.aircraft_data.data['inputs']['control_surfaces']['rudder_chord']
         self.elevator_chord_ratio = self.aircraft_data.data['inputs']['control_surfaces']['elevator_chord']
@@ -56,19 +59,26 @@ class ElevatorRudder:
         self.V_lof = self.aircraft_data.data['requirements']['stall_speed_takeoff']*1.05
 
         self.take_off_drag = self.take_off_power / self.V_lof
+        self.highest_cg = self.aircraft_data.data['outputs']['cg_range']['highest_cg']
 
         self.MAC = self.aircraft_data.data['outputs']['wing_design']['MAC']
 
         self.nmax = self.aircraft_data.data['outputs']['general']['nmax']
         self.climb_rate = self.aircraft_data.data['requirements']['climb_rate']
 
-        self.engine_thrust = 0.3*self.engine_power * self.prop_efficiency / self.V
+        self.engine_thrust = 0.8*self.engine_power * self.prop_efficiency / self.V
 
+        self.engine_zs = np.array(self.aircraft_data.data['outputs']['engine_positions']['z_engines'])
+        self.vertical_engine_arms = self.engine_zs - self.highest_cg
         self.prop_diameter = self.aircraft_data.data['inputs']['engine']['prop_diameter'] 
         high_altitude = self.aircraft_data.data['requirements']['high_altitude']
         self.rho = self.aircraft_data.data['rho_air'] 
         self.isa = ISA(altitude=high_altitude)
         self.rho_high = self.isa.rho
+
+        self.main_lift_moment = np.trapz(self.aeroforces.L_y, self.aeroforces.b_array)*2*self.aeroforces.lift_arm
+        self.main_moment = np.trapz(self.aeroforces.M_y, self.aeroforces.b_array)*2
+        self.engine_moments = sum(self.engine_thrust * np.array(self.vertical_engine_arms))*2
 
     def control_surface_effectiveness(self,r):
         return -6.624*r**4 + 12.07*r**3 - 8.292*r**2 + 3.295*r + 0.004942
@@ -93,7 +103,7 @@ class ElevatorRudder:
             i -= 1/4*self.prop_diameter
             left_yaw_moment += self.engine_thrust * i
         
-        self.CN_OEI = (right_yaw_moment - left_yaw_moment) / (self.S*self.b*0.5*self.rho*self.V**2)*1.5/2
+        self.CN_OEI = (right_yaw_moment - left_yaw_moment) / (self.S*self.b*0.5*self.rho*self.V**2)/2
         return self.CN_OEI
     
     def calculate_required_rudder_surface(self):
@@ -166,8 +176,10 @@ class ElevatorRudder:
         return N
     
     def calculate_pitch_up_performance(self):
-        pass
-
+        print(f'drag: {self.take_off_drag*self.highest_cg}')
+        self.horizontal_tail_lift = (self.main_lift_moment -self.engine_moments + self.main_moment - self.take_off_drag * self.highest_cg) /self.l_h * self.Sh/self.S
+        
+        self.required_elevator_lift = self.horizontal_tail_lift - (self.i_h )
 
     def main(self):
         self.calculate_required_rudder_surface()
@@ -181,6 +193,7 @@ class ElevatorRudder:
         self.elevator_lift = self.calculate_elevator_normal_force()
         print(f"Elevator lift: {self.elevator_lift}")
         print(f"Rudder lift: {self.rudder_normal_force}")
+        self.calculate_pitch_up_performance()
         self.update_attributes()
         self.aircraft_data.save_design(self.design_file)
 
@@ -192,7 +205,7 @@ class ElevatorRudder:
         self.aircraft_data.data['outputs']['control_surfaces']['rudder']['deflection'] = self.rudder_deflection
         self.aircraft_data.data['outputs']['control_surfaces']['rudder']['area'] = self.rudder_area
         self.aircraft_data.data['outputs']['control_surfaces']['rudder']['Sr'] = self.Sr
-        self.aircraft_data.data['outputs']['control_surfaces']['elevator']['end'] = self.elevator_end
+        self.aircraft_data.data['outputs']['control_surfaces']['elevator']['b2'] = self.elevator_end
         self.aircraft_data.data['outputs']['control_surfaces']['elevator']['Se'] = self.Se
         self.aircraft_data.data['outputs']['control_surfaces']['elevator']['area'] = self.elevator_area
         self.aircraft_data.data['outputs']['control_surfaces']['elevator']['b1'] = self.elevator_start
