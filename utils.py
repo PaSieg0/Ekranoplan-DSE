@@ -37,6 +37,7 @@ class StressOutput(Enum):
     SHEAR_STRESS_TOP = auto()
     SHEAR_STRESS_BOTTOM = auto()
     WING_BENDING_STRESS = auto()
+    RESULTANT_TORQUE = auto()
 
 class EvaluateType(Enum):
     VERTICAL = auto()
