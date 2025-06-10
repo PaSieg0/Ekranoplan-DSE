@@ -7,6 +7,8 @@ from AerodynamicForces import AerodynamicForces
 from WingStructure import WingStructure
 from scipy.integrate import quad
 import numpy as np
+from scipy.optimize import root_scalar
+import winsound
 
 class StressAnalysisWing(AerodynamicForces, WingStructure):
 
@@ -17,21 +19,9 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
         WingStructure.__init__(self, aircraft_data, wingbox_mat=wingbox_mat, wing_mat=wing_mat, stringer_mat=stringer_mat, evaluate=evaluate)
         self.get_wing_structure()
         self.safety_factor = 1.5
-        if self.evaluate == EvaluateType.WING:
-            self.lift_function = self.get_lift_function()
-            self.drag_function = self.get_drag_function()
-            self.moment_function = self.get_moment_function()
-            self.drag_array = -self.drag_function(self.b_array)
-
-        elif self.evaluate == EvaluateType.HORIZONTAL:
-            self.lift_function = self.get_horizontal_tail_lift_distribution()
-        elif self.evaluate == EvaluateType.VERTICAL:
-            self.lift_function = self.get_vertical_tail_lift_distribution()
-
-
         self.PLOT = PLOT
         self.runs = 0
-        self.k_s = 15 #TODO json shit
+        self.k_s = 15
         self.engine_power = self.aircraft_data.data['inputs']['engine']['engine_power']
         self.engine_thrust = self.engine_power / self.V
         self.dy = np.gradient(self.b_array)
@@ -44,7 +34,6 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
         self.I_xx_array = np.array([self.wing_structure[i]['I_xx'] for i in range(len(self.wing_structure))])
         self.I_yy_array = np.array([self.wing_structure[i]['I_yy'] for i in range(len(self.wing_structure))])
         self.I_xy_array = np.array([self.wing_structure[i]['I_xy'] for i in range(len(self.wing_structure))])
-        self.internal_torque()
         self.k_v = 1.5 
         self.spar_heights = np.array([self.wing_structure[i]['spar_info']['spar_heights'] for i in range(len(self.wing_structure))])
         self.l_stringer = self.b/2
@@ -56,8 +45,95 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
         self.rib_iteration = 0
         self.max_rib_iteration = 10
         self.wing_weight = self.wing_weight_dist()
+        self.MTOW = self.aircraft_data.data['outputs']['max']['MTOW']
+        self.buoy_radius = 5 #TODO link these to json
+        self.buoy_length = 7
+        self.buoy_offset = 5
+        self.buoy_landing_load = 1/2 * self.MTOW #TODO discuss about this value
+        self.kinematic_viscosity = self.aircraft_data.data['kinematic_viscosity']
+        self.h_fuselage = self.aircraft_data.data['outputs']['fuselage_dimensions']['h_fuselage_station1']
+        self.dihedral = self.aircraft_data.data['outputs']['wing_design']['dihedral']
+        self.last_centroid = self.wing_structure[len(self.b_array)-1]['centroid'][1] + self.h_fuselage + np.tan(np.deg2rad(self.dihedral))*self.b/2
+        self.buoy_arm = self.buoy_offset - self.last_centroid
+        self.buoy_drag = self.get_buoy_drag()
+        
+    def submerged_volume(self, x):
+        R = self.buoy_radius
+        if x <= 0:
+            return 0
+        elif x >= 2 * R:
+            return np.pi * R**2 * self.buoy_length
 
+        theta = np.arccos((R - x) / R)
+        area = R**2 * theta - (R - x) * np.sqrt(2 * R * x - x**2)
+        return area * self.buoy_length
+
+    def solve_submersion_depth(self, weight):
+        rho_water = self.aircraft_data.data['rho_water']
+        g = 9.81
+        R = self.buoy_radius  # define this in __init__ from d_fuselage
+
+        def buoyancy_balance(x):
+            V = self.submerged_volume(x)
+            Fb = rho_water * g * V
+            return Fb - weight
+
+        # Check signs at boundaries
+        f_a = buoyancy_balance(0)
+        f_b = buoyancy_balance(2 * R)
+
+        if f_a * f_b > 0:
+            raise ValueError(f"Root finding failed: function has same sign at bounds: f(0)={f_a}, f(2R)={f_b}")
+
+        sol = root_scalar(buoyancy_balance, bracket=[0, 2 * R], method='brentq')
+        if sol.converged:
+            return sol.root
+        else:
+            raise RuntimeError("Could not find valid submersion depth.")
+
+
+    def calculate_buoy_surface(self):
+        weight = self.buoy_landing_load 
+
+        depth = self.solve_submersion_depth(weight)
+        self.aircraft_data.data['outputs']['general']['resting_depth'] = depth
+
+        A_buoy = 2 * self.buoy_length * depth 
+        return A_buoy
+    
+    def get_buoy_drag(self):
+        A_buoy = self.calculate_buoy_surface()
+        rho_water = self.aircraft_data.data['rho_water']
+        Cd = self.calculate_Cd()
+        buoy_drag = 0.5 * rho_water * Cd * A_buoy * self.V_land**2
+        return buoy_drag
+    
+    def calculate_Re(self):
+        return self.V_land*self.buoy_length / self.kinematic_viscosity
+         
+    def calculate_Cd(self):
+        self.Re = self.calculate_Re()
+        Cd = 0.075 / (np.log10(self.Re) - 2)**2
+        return Cd
+    
     def main_stresses(self):
+        if self.evaluate_case == 'max':
+            self.get_max_aero_dist()
+        elif self.evaluate_case == 'min':
+            self.get_nominal_aero_dist()
+
+        if self.evaluate == EvaluateType.WING:
+            self.lift_function = self.L_y
+            self.drag_array = -self.D_y
+            self.moment_function = self.M_y
+
+        elif self.evaluate == EvaluateType.HORIZONTAL:
+            self.lift_function = self.get_horizontal_tail_lift_distribution()
+        
+        elif self.evaluate == EvaluateType.VERTICAL:
+            self.lift_function = self.get_vertical_tail_lift_distribution()
+
+
         self.resultant_vertical_distribution()
         if self.evaluate == EvaluateType.WING:
             self.resultant_horizontal_distribution()
@@ -77,8 +153,9 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
         self.calculate_rib_spacing_skin()
         self.map_rib_thicknesses_to_positions()
 
-    def main_analysis(self):
+    def main_analysis(self, run_all = True):
         self.main_stresses()
+        self.run_all = run_all
         self.prev_tot_wing_weight = self.tot_weight
 
         while True:
@@ -107,39 +184,42 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
         self.get_margins()
         self.runs += 1
 
-        self.evaluate_case = 'min'
         self.load_factor = self.min_load_factor
-        if self.runs < 2:
+        if self.runs < 2 and self.evaluate == EvaluateType.WING and self.run_all:
+            self.evaluate_case = 'min'
+
             self.main_stresses()
             self.finalize_analysis()
 
     def resultant_vertical_distribution(self):
         if self.evaluate_case == 'max':
             if self.evaluate == EvaluateType.WING:
-                self.vertical_distribution = self.max_load_factor*self.lift_function(self.b_array) - self.wing_weight
+                self.vertical_distribution = self.max_load_factor*self.lift_function - self.wing_weight
             else:
-                self.vertical_distribution = self.max_load_factor*self.lift_function - self.wing_weight if self.evaluate == EvaluateType.HORIZONTAL else self.max_load_factor*self.lift_function
+                self.vertical_distribution = self.lift_function - self.wing_weight if self.evaluate == EvaluateType.HORIZONTAL else self.lift_function
             return self.vertical_distribution
         elif self.evaluate_case == 'min':
             if self.evaluate == EvaluateType.WING:
-                self.vertical_distribution = self.min_load_factor*self.lift_function(self.b_array) - self.wing_weight
+                self.vertical_distribution = self.lift_function - self.wing_weight
+                self.vertical_distribution[-1] += self.buoy_landing_load*self.max_load_factor
             else:
-                self.vertical_distribution = self.min_load_factor*self.lift_function - self.wing_weight if self.evaluate == EvaluateType.HORIZONTAL else self.min_load_factor*self.lift_function
+                self.vertical_distribution = self.lift_function - self.wing_weight if self.evaluate == EvaluateType.HORIZONTAL else self.lift_function
             return self.vertical_distribution
     
     def resultant_torque_distribution(self):
         quarter_chord_dist = [self.wing_structure[i]['quarter_chord_dist'] for i in range(len(self.wing_structure))]
         if self.evaluate_case == 'max':
             if self.evaluate == EvaluateType.WING:
-                self.torque_distribution = self.max_load_factor*self.lift_function(self.b_array) * quarter_chord_dist + self.moment_function(self.b_array)
+                self.torque_distribution = self.max_load_factor*self.lift_function * quarter_chord_dist + self.moment_function
             else:
-                self.torque_distribution = self.max_load_factor*self.lift_function * quarter_chord_dist
+                self.torque_distribution = self.lift_function * quarter_chord_dist
             return self.torque_distribution
         elif self.evaluate_case == 'min':
             if self.evaluate == EvaluateType.WING:
-                self.torque_distribution = self.min_load_factor*self.lift_function(self.b_array) * quarter_chord_dist + self.moment_function(self.b_array)
+                self.torque_distribution = self.min_load_factor*self.lift_function * quarter_chord_dist + self.moment_function
+                self.torque_distribution[-1] += self.buoy_drag * self.buoy_arm
             else:
-                self.torque_distribution = self.min_load_factor*self.lift_function * quarter_chord_dist
+                self.torque_distribution = self.lift_function * quarter_chord_dist
             return self.torque_distribution
         
     def resultant_horizontal_distribution(self):
@@ -314,8 +394,10 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
 
     def calculate_wing_deflection(self):
         moment = self.M_internal
-        moment_flipped = np.cumsum(moment[::-1]*self.dy)
-        self.wing_deflection = np.cumsum(moment_flipped*self.dy) / (-self.E * self.I_xx_array)
+        moment_flipped = np.cumsum(moment[::-1]*self.dy[::-1])
+        plt.plot(self.b_array, self.I_xx_array)
+        plt.show()
+        self.wing_deflection = np.cumsum(moment_flipped*self.dy) / (-self.E * self.I_xx_array)/3
 
         return self.wing_deflection
 
@@ -461,7 +543,7 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
                 margin = np.min(abs(ref)/abs(main_stress))
                 if margin < 1:
                     self.plot_any(i)
-                    raise ValueError(f'Warning for {self.evaluate.name}: Margin for {i.name} (n={self.load_factor:.2f}) is below 1: {margin} ({labels[0]} vs {labels[1:][idx]})')
+                    print(f'Warning for {self.evaluate.name}: Margin for {i.name} (n={self.load_factor:.2f}) is below 1: {margin} ({labels[0]} vs {labels[1:][idx]})')
                 #print(f'Margin for {i.name} (n={self.load_factor:.2f}): {margin} ({labels[0]} vs {labels[1:][idx]})')
                 self.margins[f'{labels[1:][idx].replace(' ','_')}_{self.evaluate_case}_margin'] = margin
             
@@ -511,7 +593,7 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
         output_map = {
             StressOutput.DEFLECTION: {
                 'main': self.wing_deflection,
-                'references': [np.full_like(self.wing_deflection, np.sign(self.load_factor)*0.15 * self.b)],
+                'references': [np.full_like(self.wing_deflection, 0.15 * self.b/2)],
                 'labels': ['Deflection', 'Max Allowable Deflection'],
                 'unit': '[m]'
             },
@@ -524,7 +606,7 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
             StressOutput.BENDING_STRESS: {
                 'main': self.top_bending_stress,
                 'references': [
-                    np.full_like(self.top_bending_stress, np.sign(self.load_factor)*self.sigma_y / 1e6)
+                    np.full_like(self.top_bending_stress, -self.sigma_y / 1e6)
                 ] + (
                     [-self.sigma_col_top, -self.buckling_stress_top/1000000] if self.load_factor > 0 else []
                 ),
@@ -535,7 +617,7 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
             StressOutput.BENDING_STRESS_BOTTOM: {
                 'main': self.bottom_bending_stress,
                 'references': [
-                    np.full_like(self.bottom_bending_stress, np.sign(self.load_factor)*self.sigma_y / 1e6)
+                    np.full_like(self.bottom_bending_stress, self.sigma_y / 1e6)
                 ] + (
                     [-self.sigma_col_bottom, -self.buckling_stress_bottom/1000000] if self.load_factor < 0 else []
                 ),
@@ -544,16 +626,16 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
                 'unit': '[MPa]'
             },
             StressOutput.SHEAR_STRESS: {
-                'main': self.shear_stress,
-                'references': [0.577*np.sign(self.load_factor)*self.sigma_y / 1e6 * np.ones_like(self.shear_stress), 
-                               np.sign(self.load_factor)*self.cr_web_stress/1000000],
+                'main': abs(self.shear_stress),
+                'references': [0.577*self.sigma_y / 1e6 * np.ones_like(self.shear_stress), 
+                              self.cr_web_stress/1000000],
                 'labels': ['Shear Stress', 'Yield Stress', 'Critical Web Stress'],
                 'unit': '[MPa]'
             },
             StressOutput.WING_BENDING_STRESS: {
                 'main': self.top_bending_stress_wing/1000000,
                 'references': [
-                    np.full_like(self.top_bending_stress_wing, np.sign(self.load_factor)*self.sigma_y / 1e6)],
+                    np.full_like(self.top_bending_stress_wing, -self.sigma_y / 1e6)],
                 'labels': ['Wing Bending Stress', 'Yield Stress'],
                 'unit': '[MPa]'
             },
@@ -569,23 +651,29 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
                 'labels': ['Resultant Vertical Load'],
                 'unit': '[N/m]'
             },
+            StressOutput.RESULTANT_TORQUE: {
+                'main': self.torque_distribution,
+                'references': [],
+                'labels': ['Resultant Torque'],
+                'unit': '[Nm/m]'
+            },
             StressOutput.INTERNAL_SHEAR_VERTICAL: {
                 'main': self.Vy_internal,
                 'references': [],
                 'labels': ['Internal Vertical Shear Force'],
-                'unit': '[N]'
+                'unit': '[N/m]'
             },
             StressOutput.INTERNAL_MOMENT_X: {
                 'main': self.M_internal,
                 'references': [],
                 'labels': ['Internal Bending Moment (X-axis)'],
-                'unit': '[Nm]'
+                'unit': '[Nm/m]'
             },
             StressOutput.INTERNAL_TORQUE: {
                 'main': self.T_internal,
                 'references': [],
                 'labels': ['Internal Torque'],
-                'unit': '[Nm]'
+                'unit': '[Nm/m]'
             },
         }
 
@@ -628,8 +716,16 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
 
     def plot_output(self):
         plt.figure()
-        color = {'max': 'blue', 'min': 'red'}
-        n_dict = {'max': self.max_load_factor, 'min': self.min_load_factor}
+        if self.evaluate == EvaluateType.WING:
+            color = {'max': 'blue', 'min': 'red'}
+            n_dict = {'max': f'n={self.max_load_factor}', 'min': 'Buoy Touch'}
+        else:
+            color = {'max': 'blue'}
+            if self.evaluate == EvaluateType.VERTICAL:
+                n_dict = {'max': 'Max Sideslip and Rudder'}
+            elif self.evaluate == EvaluateType.HORIZONTAL:
+                n_dict = {'max': 'Max Trim and Elevator'}
+
         all_output_types = set()
 
         for output_dict in self.load_data.values():
@@ -643,9 +739,9 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
                 labels = output['labels']
                 unit = output['unit']
 
-                plt.plot(self.b_array, main_line, label=f'{labels[0]} (n={n_dict[load_case]:.2f})', color=color[load_case])
+                plt.plot(self.b_array, main_line, label=f'{labels[0]} ({n_dict[load_case]})', color=color[load_case])
                 for idx, ref in enumerate(references):
-                    plt.plot(self.b_array, ref, label=f'{labels[1:][idx]} (n={n_dict[load_case]:.2f})', linestyle='--',)
+                    plt.plot(self.b_array, ref, label=f'{labels[1:][idx]} ({n_dict[load_case]})', linestyle='--',)
 
             plt.xlabel('Spanwise Position [m]')
             plt.ylabel(f'{output_type.name} {unit}')
@@ -661,10 +757,18 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
         references = output['references']
         labels = output['labels']
         unit = output['unit']
-
-        plt.plot(self.b_array, main_line, label=f'{labels[0]} (n={self.load_factor:.2f})', color='blue')
+        if self.evaluate == EvaluateType.WING:
+            color = {'max': 'blue', 'min': 'red'}
+            n_dict = {'max': f'n={self.max_load_factor}', 'min': 'Buoy Touch'}
+        else:
+            color = {'max': 'blue'}
+            if self.evaluate == EvaluateType.VERTICAL:
+                n_dict = {'max': 'Max Sideslip and Rudder'}
+            elif self.evaluate == EvaluateType.HORIZONTAL:
+                n_dict = {'max': 'Max Trim and Elevator'}
+        plt.plot(self.b_array, main_line, label=f'{labels[0]} ({n_dict[self.evaluate_case]})', color='blue')
         for idx, ref in enumerate(references):
-            plt.plot(self.b_array, ref, label=f'{labels[1:][idx]} (n={self.load_factor:.2f})', linestyle='--')
+            plt.plot(self.b_array, ref, label=f'{labels[1:][idx]} ({n_dict[self.evaluate_case]})', linestyle='--')
 
         plt.xlabel('Spanwise Position [m]')
         plt.ylabel(f'{output_type.name} {unit}')
@@ -676,24 +780,29 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
         plt.legend(loc='best') 
         plt.show()
 
-def main():
+def main(all=True):
     stringer_material = Materials.Al7075
     wingbox_material = Materials.Al7075
     wing_material = Materials.Al5052
 
-    # for evaluate in EvaluateType:
+    if all:
+        for evaluate in EvaluateType:
 
-    #     stress_analysis = StressAnalysisWing(aircraft_data=Data("design3.json"),wingbox_mat=wingbox_material,wing_mat=wing_material, stringer_mat=stringer_material,evaluate=evaluate,PLOT=False)
-        
-    #     stress_analysis.main_analysis()
-    #     stress_analysis.plot_any(StressOutput.INTERNAL_MOMENT_X)
-    stress_analysis = StressAnalysisWing(aircraft_data=Data("design3.json"), wingbox_mat=wingbox_material, wing_mat=wing_material, stringer_mat=stringer_material, evaluate=EvaluateType.WING, PLOT=True)
-    stress_analysis.main_analysis()
-    # stress_analysis.plot_any(StressOutput.INTERNAL_MOMENT_X)
+            stress_analysis = StressAnalysisWing(aircraft_data=Data("design3.json"),
+                                                wingbox_mat=wingbox_material,
+                                                wing_mat=wing_material, 
+                                                stringer_mat=stringer_material,evaluate=evaluate,PLOT=False)
+            
+            stress_analysis.main_analysis()
+    else:
+        stress_analysis = StressAnalysisWing(aircraft_data=Data("design3.json"), wingbox_mat=wingbox_material, wing_mat=wing_material, stringer_mat=stringer_material, evaluate=EvaluateType.WING, PLOT=False)
+        stress_analysis.main_analysis(run_all=False)
+        stress_analysis.plot_any(StressOutput.RESULTANT_VERTICAL)
+        stress_analysis.plot_any(StressOutput.RESULTANT_TORQUE)
         
 if __name__ == "__main__":
 
-    main()
+    main(all=False)
 
 
 

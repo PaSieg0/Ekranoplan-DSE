@@ -7,11 +7,11 @@ from utils import Data, EvaluateType
 from AerodynamicForces import AerodynamicForces
 
 class CGCalculation:
-    def __init__(self, aircraft_data: Data) -> None:
+    def __init__(self, aircraft_data: Data,plot=False) -> None:
         self.design_number = aircraft_data.data['design_id']
         self.design_file = f'design{self.design_number}.json'
         self.aircraft_data = aircraft_data
-        
+        self.plot = plot
         # Initialize component masses
         self._init_component_masses()
         self._init_aircraft_parameters()
@@ -170,7 +170,8 @@ class CGCalculation:
         plt.legend()
         plt.grid(True, alpha=0.3)
         plt.tight_layout()
-        plt.show()
+        if self.plot():
+            plt.show()
 
 
     def update_json(self):
@@ -315,7 +316,7 @@ class CGCalculation:
         start_idx = 0
         for end in section_ends:
             end_idx = np.searchsorted(self.x_points, end)
-            section_weight = np.trapezoid(fuselage_loads[start_idx:end_idx], self.x_points[start_idx:end_idx])
+            section_weight = np.trapz(fuselage_loads[start_idx:end_idx], self.x_points[start_idx:end_idx])
             section_weights.append(section_weight)
             start_idx = end_idx
         
@@ -338,7 +339,7 @@ class CGCalculation:
             print(f"Calculated wing load (MTOW×nmax): {wing_load/1000:.2f} kN")
             print(f"Integrated wing load: {total_wing_load/1000:.2f} kN")
             print(f"Error: {abs(wing_load - total_wing_load)/wing_load*100:.2f}%")        # Calculate total loads
-        total_loads = fuselage_loads + cargo_loads + aerodynamic_loads + fuel_loads
+        self.total_loads = fuselage_loads + cargo_loads + aerodynamic_loads + fuel_loads
         
         # Define sections
         sections = [
@@ -357,14 +358,14 @@ class CGCalculation:
         start_idx = 0
         for end in section_ends:
             end_idx = np.searchsorted(self.x_points, end)
-            section_weight = np.trapezoid(fuselage_loads[start_idx:end_idx], self.x_points[start_idx:end_idx])
+            section_weight = np.trapz(fuselage_loads[start_idx:end_idx], self.x_points[start_idx:end_idx])
             section_weights.append(section_weight)
             start_idx = end_idx
         
         # Calculate shear force through integration
         self.shear = np.zeros_like(self.x_points)
         for i in range(1, len(self.x_points)):
-            self.shear[i] = np.trapz(total_loads[:i], self.x_points[:i])
+            self.shear[i] = np.trapz(self.total_loads[:i], self.x_points[:i])
             
         # Calculate bending moment through integration of shear
         self.moment = np.zeros_like(self.x_points)
@@ -378,74 +379,76 @@ class CGCalculation:
     	
         self.moment *= -1
         # Create figure with three subplots
-        fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(15, 15), height_ratios=[1, 1, 1])
+        if self.plot:
+            fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(15, 15), height_ratios=[1, 1, 1])
           # Plot load distribution in top subplot
-        ax1.plot(self.x_points, fuselage_loads/1000, 'b-', label='Fuselage Load Distribution', linewidth=2)
-        ax1.plot(self.x_points, cargo_loads/1000, 'r-', label='Cargo Load Distribution', linewidth=2, alpha=0.6)
-        ax1.plot(self.x_points, aerodynamic_loads/1000, 'g-', label='Wing Load Distribution (MTOW×nmax)', linewidth=2, alpha=0.6)
-        ax1.plot(self.x_points, fuel_loads/1000, 'm-', label='Fuel Load Distribution', linewidth=2, alpha=0.6)
-        ax1.plot(self.x_points, total_loads/1000, 'k-', label='Total Load Distribution', linewidth=3)# Plot shear force in middle subplot
-        ax2.plot(self.x_points, self.shear/1000, 'b-', label='Shear Force', linewidth=2)  # Positive for clockwise rotation        # Plot moment diagram in bottom subplot
-        ax3.plot(self.x_points, self.moment/1000000, 'r-', label='Bending Moment', linewidth=2)  # Positive for upper fiber compression
-        
-        # Add vertical line to bring moment to zero at the end
-        final_moment = -self.moment[-1]/1000000  # Get the final moment value
-        ax3.plot([self.l_fuselage, self.l_fuselage], [final_moment, 0], 'r--', linewidth=2, alpha=0.7,
-                label='End condition (M=0)')
-        
-        # Add vertical line at wing root to show where moment increases
-        wing_root_center = self.wing_x_LE + self.wing_root_chord/2
-        ax3.axvline(x=wing_root_center, color='green', linestyle='--', alpha=0.5,
-                   label=f'Wing Root (Added moment: {self.root_moment/1000000:.2f} MN·m)')
-        
-        # Add section lines and labels to all plots
-        for i, (start, label, end) in enumerate(sections):
-            # Add vertical lines to all plots
-            ax1.axvline(x=start, color='g', linestyle='--', alpha=0.5)
-            ax2.axvline(x=start, color='g', linestyle='--', alpha=0.5)
-            ax3.axvline(x=start, color='g', linestyle='--', alpha=0.5)
+            ax1.plot(self.x_points, fuselage_loads/1000, 'b-', label='Fuselage Load Distribution', linewidth=2)
+            ax1.plot(self.x_points, cargo_loads/1000, 'r-', label='Cargo Load Distribution', linewidth=2, alpha=0.6)
+            ax1.plot(self.x_points, aerodynamic_loads/1000, 'g-', label='Wing Load Distribution (MTOW×nmax)', linewidth=2, alpha=0.6)
+            ax1.plot(self.x_points, fuel_loads/1000, 'm-', label='Fuel Load Distribution', linewidth=2, alpha=0.6)
+            ax1.plot(self.x_points, self.total_loads/1000, 'k-', label='Total Load Distribution', linewidth=3)# Plot shear force in middle subplot
+            ax2.plot(self.x_points, self.shear/1000, 'b-', label='Shear Force', linewidth=2)  # Positive for clockwise rotation        # Plot moment diagram in bottom subplot
+            ax3.plot(self.x_points, self.moment/1000000, 'r-', label='Bending Moment', linewidth=2)  # Positive for upper fiber compression
             
-            # Add section labels
-            mid_x = (start + (end if i < len(sections)-1 else self.l_fuselage)) / 2
-            weight_pct = section_weights[i] / (self.component_weights['fuselage'] * self.nmax*self.safety_factor) * 100
+            # Add vertical line to bring moment to zero at the end
+            final_moment = -self.moment[-1]/1000000  # Get the final moment value
+            ax3.plot([self.l_fuselage, self.l_fuselage], [final_moment, 0], 'r--', linewidth=2, alpha=0.7,
+                    label='End condition (M=0)')
             
-            # Labels for each plot
-            ax1.text(start, ax1.get_ylim()[1], f"{label}", 
-                    ha='right', va='top', rotation=90, fontsize=9)
-            ax2.text(start, ax2.get_ylim()[1], f"{label}", 
-                    ha='right', va='top', rotation=90, fontsize=9)
-            ax3.text(start, ax3.get_ylim()[1], f"{label}", 
-                    ha='right', va='top', rotation=90, fontsize=9)
+            # Add vertical line at wing root to show where moment increases
+            wing_root_center = self.wing_x_LE + self.wing_root_chord/2
+            ax3.axvline(x=wing_root_center, color='green', linestyle='--', alpha=0.5,
+                    label=f'Wing Root (Added moment: {self.root_moment/1000000:.2f} MN·m)')
+            
+            # Add section lines and labels to all plots
+            for i, (start, label, end) in enumerate(sections):
+                # Add vertical lines to all plots
+                ax1.axvline(x=start, color='g', linestyle='--', alpha=0.5)
+                ax2.axvline(x=start, color='g', linestyle='--', alpha=0.5)
+                ax3.axvline(x=start, color='g', linestyle='--', alpha=0.5)
+                
+                # Add section labels
+                mid_x = (start + (end if i < len(sections)-1 else self.l_fuselage)) / 2
+                weight_pct = section_weights[i] / (self.component_weights['fuselage'] * self.nmax*self.safety_factor) * 100
+                
+                # Labels for each plot
+                ax1.text(start, ax1.get_ylim()[1], f"{label}", 
+                        ha='right', va='top', rotation=90, fontsize=9)
+                ax2.text(start, ax2.get_ylim()[1], f"{label}", 
+                        ha='right', va='top', rotation=90, fontsize=9)
+                ax3.text(start, ax3.get_ylim()[1], f"{label}", 
+                        ha='right', va='top', rotation=90, fontsize=9)
 
-        # Add horizontal reference lines
-        ax1.axhline(y=0, color='k', linestyle='-', linewidth=0.5, alpha=0.3)
-        ax2.axhline(y=0, color='k', linestyle='-', linewidth=0.5, alpha=0.3)
-        ax3.axhline(y=0, color='k', linestyle='-', linewidth=0.5, alpha=0.3)
-        
-        # Format plots
-        ax1.set_xlabel("Fuselage Station (m)")
-        ax1.set_ylabel("Load Distribution (kN/m)")
-        ax1.set_title("Fuselage Load Distribution")
-        ax1.grid(True, alpha=0.3, which='both')
-        ax1.legend(loc='center', bbox_to_anchor=(0.5, -0.2), ncol=3)
+            # Add horizontal reference lines
+            ax1.axhline(y=0, color='k', linestyle='-', linewidth=0.5, alpha=0.3)
+            ax2.axhline(y=0, color='k', linestyle='-', linewidth=0.5, alpha=0.3)
+            ax3.axhline(y=0, color='k', linestyle='-', linewidth=0.5, alpha=0.3)
+            
+            # Format plots
+            ax1.set_xlabel("Fuselage Station (m)")
+            ax1.set_ylabel("Load Distribution (kN/m)")
+            ax1.set_title("Fuselage Load Distribution")
+            ax1.grid(True, alpha=0.3, which='both')
+            ax1.legend(loc='center', bbox_to_anchor=(0.5, -0.2), ncol=3)
 
-        ax2.set_xlabel("Fuselage Station (m)")
-        ax2.set_ylabel("Shear Force (kN)")
-        ax2.set_title("Shear Force Diagram")
-        ax2.grid(True, alpha=0.3, which='both')
-        ax2.legend()
+            ax2.set_xlabel("Fuselage Station (m)")
+            ax2.set_ylabel("Shear Force (kN)")
+            ax2.set_title("Shear Force Diagram")
+            ax2.grid(True, alpha=0.3, which='both')
+            ax2.legend()
 
-        ax3.set_xlabel("Fuselage Station (m)")
-        ax3.set_ylabel("Bending Moment (MN·m)")
-        ax3.set_title("Bending Moment Diagram")
-        ax3.grid(True, alpha=0.3, which='both')
-        ax3.legend()
-          # Maximum values calculations
-        max_shear_idx = np.argmax(np.abs(self.shear))
-        max_moment_idx = np.argmax(np.abs(self.moment))
+            ax3.set_xlabel("Fuselage Station (m)")
+            ax3.set_ylabel("Bending Moment (MN·m)")
+            ax3.set_title("Bending Moment Diagram")
+            ax3.grid(True, alpha=0.3, which='both')
+            ax3.legend()
+            # Maximum values calculations
+            max_shear_idx = np.argmax(np.abs(self.shear))
+            max_moment_idx = np.argmax(np.abs(self.moment))
 
-        plt.tight_layout()
-        plt.show()
+            plt.tight_layout()
+
+            plt.show()
 
         self.update_json()    
          
@@ -453,7 +456,7 @@ class CGCalculation:
 
 def main():
     data = Data("design3.json")
-    cg_calculator = CGCalculation(data)
+    cg_calculator = CGCalculation(data,plot=True)
     
     # Calculate and print CG positions
     mtow_cg = cg_calculator.calculate_cg(OEW=False)

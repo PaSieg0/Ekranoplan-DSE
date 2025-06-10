@@ -89,7 +89,7 @@ class ElevatorRudder:
             i -= 1/4*self.prop_diameter
             left_yaw_moment += self.engine_thrust * i
         
-        self.CN_OEI = (right_yaw_moment - left_yaw_moment) / (self.S*self.b*0.5*self.rho*self.V**2)
+        self.CN_OEI = (right_yaw_moment - left_yaw_moment) / (self.S*self.b*0.5*self.rho*self.V**2)*1.5/2
         return self.CN_OEI
     
     def calculate_required_rudder_surface(self):
@@ -116,14 +116,14 @@ class ElevatorRudder:
 
     def calculate_pitch_rate(self):
 
-        pitch_rate = (self.nmax-1)*9.81/self.V*0.9
+        pitch_rate = (self.nmax-1)*9.81/self.V*1.5
         return pitch_rate
     
     def calculate_Cmde_Cmq(self,b):
         self.pitch_rate = self.calculate_pitch_rate()
         integral, _ = quad(self.chord_h, self.elevator_start, b)
         elevator_effectiveness = self.control_surface_effectiveness(self.elevator_chord_ratio)
-        ratio = (self.airfoil_cl_alpha * elevator_effectiveness)/(self.Sh*self.l_h*self.tail_lift_slope)*integral
+        ratio = 2*(self.airfoil_cl_alpha * elevator_effectiveness)/(self.Sh*self.l_h*self.tail_lift_slope)*integral
         return ratio
     
     def calculate_elevator_surface(self):
@@ -134,6 +134,7 @@ class ElevatorRudder:
     def calculate_elevator_position(self):
         self.b_test = np.arange(0, self.b_h/2+0.001, 0.001)
         tolerance = 0.001
+        #TODO account for double vertical tail
         for b in self.b_test:
             ratio = self.calculate_Cmde_Cmq(b)
             # print(ratio, self.required_Cmde_Cmq)
@@ -154,7 +155,7 @@ class ElevatorRudder:
         elevator_effectiveness = self.control_surface_effectiveness(self.elevator_chord_ratio)
         self.CMde = -self.airfoil_cl_alpha * elevator_effectiveness * self.l_h/(self.S * self.MAC)*self.Se
 
-        Cmq = -2*self.Sh*self.l_h**2/self.S/self.MAC * self.tail_lift_slope
+        Cmq = -self.Sh*self.l_h**2/self.S/self.MAC * self.tail_lift_slope
         print(f'cmq: {Cmq}')
 
         N = self.CMde * np.deg2rad(self.elevator_deflection) * 0.5 * self.rho_high * self.V**2 * self.S * self.MAC/self.l_h
