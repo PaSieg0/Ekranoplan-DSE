@@ -459,7 +459,7 @@ class lift_curve():
     def downwash_gradient(self):
         M=0.3
         beta=np.sqrt(1-M**2)
-        sweep50=np.atan(np.tan(self.sweep_c4*np.pi/180)-4/self.AR*(0.5-0.25)*(1-self.taper)/(1+self.taper))
+        sweep50=np.arctan(np.tan(self.sweep_c4*np.pi/180)-4/self.AR*(0.5-0.25)*(1-self.taper)/(1+self.taper))
         k=1
         clM=2*np.pi*self.AR/(2+np.sqrt(self.AR**2*beta/k*(1+np.tan(sweep50)**2/beta**2)+4))
         cl0=2*np.pi*self.AR/(2+np.sqrt(self.AR**2/k*(1+np.tan(sweep50)**2)+4))
