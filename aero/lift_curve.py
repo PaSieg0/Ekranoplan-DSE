@@ -6,6 +6,9 @@ import os
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from utils import Data, MissionType, ISA, AircraftType
+from aero.lateral_centre import lateral_centre as la
+
+
 
 class lift_curve():
     def __init__(self):
@@ -15,7 +18,11 @@ class lift_curve():
         self.taper=self.aircraft_data.data['outputs']['wing_design']['taper_ratio']
         self.cD_0=self.aircraft_data.data['inputs']['Cd0']
         self.e=self.aircraft_data.data['inputs']['oswald_factor']
-
+        self.sweep_c4=self.aircraft_data.data['outputs']['wing_design']['sweep_c_4']
+        self.b=self.aircraft_data.data['outputs']['wing_design']['b']
+        self.lh=self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['l_h']
+        self.zh=self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['tail_height']
+        
         #importing lift curve data which is generated from xfoil without WIG
         self.data=np.loadtxt('aero\\lift curve no WIG.txt')
         self.data_span = np.loadtxt('aero\\spanwise curves.txt')
@@ -27,7 +34,7 @@ class lift_curve():
         self.alpha_tail = self.data_tail_NACA0012[:,0]
 
         #lift coefficient data
-        self.cl_lst=self.data[:,1]
+        self.cl_lst=self.data[:,1] / (1+ self.data[:,1]/(np.pi * self.AR))
         self.cd_lst=self.data[:,2]
         self.cm_lst=self.data[:,3]
    
@@ -292,14 +299,14 @@ class lift_curve():
         #cmac1
         ax[1][0].plot(self.alpha_seg1,self.cmac_seg1)
         ax[1][0].set_title('cm at first range angle of attack')
-        ax[1][0].set_ylim(-0.08,-0.1)
+        ax[1][0].set_ylim(-0.09,-0.1)
         ax[1][0].set_xlim(-7,22)
         ax[1][0].set_ylabel('cm')
         ax[1][0].set_xlabel('alpha')
 
         #cmac2
         ax[1][1].plot(self.alpha_seg2,self.cmac_seg2)
-        ax[1][1].set_ylim(-0.24,-0.26)
+        ax[1][1].set_ylim(-0.25,-0.27)
         ax[1][1].set_xlim(-7,22)
         ax[1][1].set_title('cm at second range angle of attack')
         ax[1][1].set_ylabel('cm')
@@ -328,16 +335,13 @@ class lift_curve():
         return self.slope, intercept
 
     def dcl_dalpha_tail(self):
-        NACA0012_data = self.cl_lst_tail
-        slope_tail = self.dcl_dalpha(NACA0012_data)
-        print(slope_tail)
-        return slope_tail
+        # NACA0012_data = self.cl_lst_tail
+        # self.slope_tail = self.dcl_dalpha(NACA0012_data)
+        alpha=self.data_tail_NACA0012[:,0]
+        cl=self.data_tail_NACA0012[:,1]
+        cd=self.data_tail_NACA0012[:,2]
 
-    def dcl_dalpha_tail(self):
-        NACA0012_data = self.cl_lst_tail
-        slope_tail = self.dcl_dalpha(NACA0012_data)
-        print(slope_tail)
-        return slope_tail
+        idx = 7
 
     def dcl_dalpha(self):
         # Convert alpha to numpy array if it's not already
@@ -382,41 +386,37 @@ class lift_curve():
         self.L_D_lst=self.cl_lst/self.ind_lst
         self.L_D_GE_lst=self.cl_lst_GE/self.ind_lst3
 
-        #spanwise distr
-        CL = 1.8
-        b=self.aircraft_data.data['outputs']['wing_design']['b']/2
-        self.span = np.arange(-b, b, 0.01)
-        self.Cl_array_span = CL * np.ones(np.shape(self.span))
+        
 
     def plotting(self):
-        self.make_plot_data()
+        
 
         fig=plt.figure()
         ax=fig.subplots(2,2)
 
         # drag polar
         ax[0][0].set_title('Drag polar')
-        ax[0][0].plot(self.alpha, self.ind_lst, label='h_b=0.050(old)') # Add a label
-        ax[0][0].plot(self.alpha, self.ind_lst2, label='out GE(old)') # Add a label
-        ax[0][0].plot(self.alpha, self.ind_lst3, label='h_b=0.050') # Add a label
-        ax[0][0].plot(self.alpha, self.ind_lst4, label='out GE') # Add a label
+        ax[0][0].plot(self.alpha[0:self.idx_cl_max], self.ind_lst[:self.idx_cl_max], label='h_b=0.050(old)') # Add a label
+        ax[0][0].plot(self.alpha[0:self.idx_cl_max], self.ind_lst2[:self.idx_cl_max], label='out GE(old)') # Add a label
+        ax[0][0].plot(self.alpha[0:self.idx_cl_max], self.ind_lst3[:self.idx_cl_max], label='h_b=0.050') # Add a label
+        ax[0][0].plot(self.alpha[0:self.idx_cl_max], self.ind_lst4[:self.idx_cl_max], label='out GE') # Add a label
         ax[0][0].legend() # Call legend() to display the labels
 
 
         #lift curve
         ax[0][1].set_title('lift curve')
-        ax[0][1].plot(self.alpha,self.cl_lst, label='no GE')
-        ax[0][1].plot(self.alpha,self.cl_lst_GE, label='GE')
-        ax[0][1].plot(self.alpha,self.cl_fit_no_WIG, '--r', label='no GE fit')
+        ax[0][1].plot(self.alpha[:self.idx_cl_max],self.cl_lst[:self.idx_cl_max], label='no GE')
+        ax[0][1].plot(self.alpha[:self.idx_cl_max],self.cl_lst_GE[:self.idx_cl_max], label='GE')
+        ax[0][1].plot(self.alpha[:self.idx_cl_max],self.cl_fit_no_WIG[:self.idx_cl_max], '--r', label='no GE fit')
         ax[0][1].legend()
 
         #L/D
         ax[1][0].set_title('L/D')
         ax[1][0].set_ylim(0,70)
-        ax[1][0].plot(self.alpha,self.L_D_lst, label='old')
+        ax[1][0].plot(self.alpha[:self.idx_cl_max],self.L_D_lst[:self.idx_cl_max], label='old')
 
         #L/D WIG
-        ax[1][0].plot(self.alpha,self.L_D_GE_lst, label='new')
+        ax[1][0].plot(self.alpha[:self.idx_cl_max],self.L_D_GE_lst[:self.idx_cl_max], label='new')
         ax[1][0].legend()
 
 
@@ -430,12 +430,14 @@ class lift_curve():
         plt.show()
 
     def printing(self):
+        self.make_plot_data()
         print('---------clmax----------')
         print(f'Cl_max_GE: {round(max(self.cl_lst_GE),3)}')
         for i, cl in enumerate(self.cl_lst_GE):
             if cl == max(self.cl_lst_GE):
                 print(f'alpha for Clmax: {self.alpha[i]}')
                 self.cL_max=cl
+                self.idx_cl_max=i
                 break
         print('\t')
 
@@ -447,7 +449,32 @@ class lift_curve():
                 
                 break
         print('\t')
+
+        #spanwise distr this is not prety but well coding
+        CL = self.cL_max
+        b=self.aircraft_data.data['outputs']['wing_design']['b']/2
+        self.span = np.arange(-b, b, 0.01)
+        self.Cl_array_span = CL * np.ones(np.shape(self.span))
     
+
+    def calc_e(self):
+        obj=la()
+        obj.run()
+        self.e_n=obj.e
+
+    def downwash_gradient(self):
+        M=0.3
+        beta=np.sqrt(1-M**2)
+        sweep50=np.arctan(np.tan(self.sweep_c4*np.pi/180)-4/self.AR*(0.5-0.25)*(1-self.taper)/(1+self.taper))
+        k=1
+        clM=2*np.pi*self.AR/(2+np.sqrt(self.AR**2*beta/k*(1+np.tan(sweep50)**2/beta**2)+4))
+        cl0=2*np.pi*self.AR/(2+np.sqrt(self.AR**2/k*(1+np.tan(sweep50)**2)+4))
+        clM__cl0= clM/cl0
+        kA=1/self.AR-1/(1+self.AR**1.7)
+        klam=(10-3*self.taper)/7
+        kh=(1-abs(self.zh/self.b))/((2*self.lh/self.b)**(1/3))
+        self.downwash_gr=4.44*(kA*klam*kh*np.sqrt(np.cos(self.sweep_c4*np.pi/180)))**(1.19)*clM__cl0
+
     def inp_json(self):
         
         aerodynamics = {
@@ -459,7 +486,10 @@ class lift_curve():
             'xac_seg1': self.xac_segm1,
             'seg2_alpha': self.seg2,
             'cmac_seg2': self.cmac_segm2,
-            'xac_seg2': self.xac_segm2}
+            'xac_seg2': self.xac_segm2,
+            'oswald_factor': self.e_n,
+            'vertical/horizontal stab cl_alpha': self.slope_tail,
+            'downwash_grad': self.downwash_gr}
         self.aircraft_data.data['outputs']['aerodynamics']=aerodynamics
 
 
@@ -475,8 +505,12 @@ if __name__ == "__main__":  #if run seperately
     
     curves=lift_curve()
     curves.plot_moment_ac()
-    curves.plotting()
     curves.printing()
+    # print(curves.interpolate_Cl(5))
+    curves.plotting()
+    curves.calc_e()
+    curves.dcl_dalpha_tail()
+    curves.downwash_gradient()
     curves.inp_json()
 
     
