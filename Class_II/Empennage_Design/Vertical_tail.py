@@ -97,6 +97,7 @@ class vertical_tail_sizing:
 
     def get_Sv_from_fig_9_23(self, y_axis):
         S = self.S
+        # TODO : CHECK IF THIS IS STILL CORRECT
         k_delta_r = 1.1
         k_v = 1.1
         S_r = self.aircraft_data.data['outputs']['control_surfaces']['rudder']['area']
@@ -120,7 +121,8 @@ class vertical_tail_sizing:
     def get_vertical_tail_size(self):
         static_stability = self.get_vertical_tail_size_static_stab()
         one_engine_inoperative = self.get_vertical_tail_size_one_engine_inoperative()
-        fig_23 = self.get_Sv_from_fig_9_23(y_axis=0.18)
+        # TODO: UPDATE y_axis VALUE
+        fig_23 = self.get_Sv_from_fig_9_23(y_axis=0.23)
         tail_volume = self.check_tail_volume()
 
         print(f"Static Stability: {static_stability}, One Engine Inoperative: {one_engine_inoperative}, Fig 9.23: {fig_23}, Tail Volume: {tail_volume}")
@@ -142,6 +144,10 @@ class vertical_tail_sizing:
         self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['l_v'] = self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['LE_pos'] - self.aircraft_data.data['outputs']['cg_range']['most_aft_cg']
         self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['relative_pos_mac/4'] = (self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['LE_pos'] + 0.25*self.aircraft_data.data['outputs']['wing_design']['MAC']) / (self.aircraft_data.data['outputs']['fuselage_dimensions']['l_fuselage'])
         self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['quarter_tip'] = self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['LE_pos'] + self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['b']*np.tan(np.deg2rad(self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['sweep'])) + 0.25 * self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['chord_tip']
+        vertical_attachment = (self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['b'] - self.aircraft_data.data['outputs']['fuselage_dimensions']['w_fuselage']) / 2
+        desired_vertical_attachment = self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['b'] / 3
+        print(vertical_attachment, desired_vertical_attachment)
+        self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['attachement_angle'] = np.rad2deg(np.arctan(vertical_attachment - desired_vertical_attachment) / self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['b'])
 
     
     def calculate_K_beta(self):
@@ -186,8 +192,8 @@ class vertical_tail_sizing:
 
         print("sum of C_n_beta:", C_n_beta_f + C_n_beta_i + C_n_beta_p)
 
-
-        volume = 0.05
+        # UPDATE THIS VALUE 
+        volume = 0.09
 
         min_Sv = volume * self.S * self.b / l_v
         return min_Sv

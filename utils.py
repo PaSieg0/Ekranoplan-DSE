@@ -37,6 +37,7 @@ class StressOutput(Enum):
     SHEAR_STRESS_TOP = auto()
     SHEAR_STRESS_BOTTOM = auto()
     WING_BENDING_STRESS = auto()
+    RESULTANT_TORQUE = auto()
 
 class EvaluateType(Enum):
     VERTICAL = auto()
@@ -87,6 +88,17 @@ class Materials(Enum):
     Rene_41 = auto()
     HASTELLOY_X = auto()
 
+class EigenMotion(Enum):
+    PHUGOID = auto()
+    SHORT_PERIOD = auto()
+    DUTCH_ROLL = auto()
+    DUTCH_ROLL_DAMPED = auto()
+    ROLL = auto()
+    SPIRAL = auto()
+
+class EigenMotionType(Enum):
+    SYMMETRIC = auto()
+    ASYMMETRIC = auto()
 class EnumEncoder(json.JSONEncoder):
     """
     Makes sure that enums are saved as strings correctly in the json file

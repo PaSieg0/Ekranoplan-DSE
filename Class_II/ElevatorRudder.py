@@ -8,6 +8,7 @@ from scipy.integrate import quad
 from utils import ISA
 import matplotlib.pyplot as plt
 from aero.lift_curve import lift_curve
+from AerodynamicForces import AerodynamicForces
 
 class ElevatorRudder:
 
@@ -20,6 +21,8 @@ class ElevatorRudder:
         self.plot = plot
 
         self.lift_curve = lift_curve()
+        self.aeroforces = AerodynamicForces(self.aircraft_data)
+        self.aeroforces.get_max_aero_dist()
         self.airfoil_cl_alpha = self.lift_curve.dcl_dalpha()
         self.tail_lift_slope = self.lift_curve.dcl_dalpha()
 
@@ -49,22 +52,33 @@ class ElevatorRudder:
         self.sweep_v = self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['sweep']
         self.taper_v = self.chord_tip_v / self.chord_root_v
         self.sweep_h = self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['sweep']
+        self.w_fuselage = self.aircraft_data.data['outputs']['fuselage_dimensions']['w_fuselage']
 
         self.vertical_tail_thickness = self.aircraft_data.data['inputs']['airfoils']['vertical_tail']*self.chord_root_v/2
-        self.elevator_start = self.vertical_tail_thickness + self.elevator_start
+        self.take_off_power = self.aircraft_data.data['outputs']['general']['take_off_power']
+        self.V_lof = self.aircraft_data.data['requirements']['stall_speed_takeoff']*1.05
+
+        self.take_off_drag = self.take_off_power / self.V_lof
+        self.highest_cg = self.aircraft_data.data['outputs']['cg_range']['highest_cg']
 
         self.MAC = self.aircraft_data.data['outputs']['wing_design']['MAC']
 
         self.nmax = self.aircraft_data.data['outputs']['general']['nmax']
         self.climb_rate = self.aircraft_data.data['requirements']['climb_rate']
 
-        self.engine_thrust = 0.3*self.engine_power * self.prop_efficiency / self.V
+        self.engine_thrust = 0.8*self.engine_power * self.prop_efficiency / self.V
 
+        self.engine_zs = np.array(self.aircraft_data.data['outputs']['engine_positions']['z_engines'])
+        self.vertical_engine_arms = self.engine_zs - self.highest_cg
         self.prop_diameter = self.aircraft_data.data['inputs']['engine']['prop_diameter'] 
         high_altitude = self.aircraft_data.data['requirements']['high_altitude']
         self.rho = self.aircraft_data.data['rho_air'] 
         self.isa = ISA(altitude=high_altitude)
         self.rho_high = self.isa.rho
+
+        self.main_lift_moment = np.trapz(self.aeroforces.L_y, self.aeroforces.b_array)*2*self.aeroforces.lift_arm
+        self.main_moment = np.trapz(self.aeroforces.M_y, self.aeroforces.b_array)*2
+        self.engine_moments = sum(self.engine_thrust * np.array(self.vertical_engine_arms))*2
 
     def control_surface_effectiveness(self,r):
         return -6.624*r**4 + 12.07*r**3 - 8.292*r**2 + 3.295*r + 0.004942
@@ -89,7 +103,7 @@ class ElevatorRudder:
             i -= 1/4*self.prop_diameter
             left_yaw_moment += self.engine_thrust * i
         
-        self.CN_OEI = (right_yaw_moment - left_yaw_moment) / (self.S*self.b*0.5*self.rho*self.V**2)
+        self.CN_OEI = (right_yaw_moment - left_yaw_moment) / (self.S*self.b*0.5*self.rho*self.V**2)/2
         return self.CN_OEI
     
     def calculate_required_rudder_surface(self):
@@ -110,20 +124,20 @@ class ElevatorRudder:
             raise ValueError("Aint gonna work cuh")
         
         integral, _ = quad(self.chord_v, self.rudder_start, self.rudder_end)
-        self.Sr = integral_test
+        self.Sr = integral
         self.rudder_area = self.rudder_chord_ratio * self.Sr
         self.rudder_normal_force = self.cndr*np.deg2rad(self.rudder_deflection)*0.5*self.rho*self.V**2*self.S*self.b/self.l_v
 
     def calculate_pitch_rate(self):
 
-        pitch_rate = (self.nmax-1)*9.81/self.V*0.5
+        pitch_rate = (self.nmax-1)*9.81/self.V*1.5
         return pitch_rate
     
     def calculate_Cmde_Cmq(self,b):
         self.pitch_rate = self.calculate_pitch_rate()
         integral, _ = quad(self.chord_h, self.elevator_start, b)
         elevator_effectiveness = self.control_surface_effectiveness(self.elevator_chord_ratio)
-        ratio = (self.airfoil_cl_alpha * elevator_effectiveness)/(self.Sh*self.l_h*self.tail_lift_slope)*integral
+        ratio = 2*(self.airfoil_cl_alpha * elevator_effectiveness)/(self.Sh*self.l_h*self.tail_lift_slope)*integral
         return ratio
     
     def calculate_elevator_surface(self):
@@ -134,6 +148,7 @@ class ElevatorRudder:
     def calculate_elevator_position(self):
         self.b_test = np.arange(0, self.b_h/2+0.001, 0.001)
         tolerance = 0.001
+        #TODO account for double vertical tail
         for b in self.b_test:
             ratio = self.calculate_Cmde_Cmq(b)
             # print(ratio, self.required_Cmde_Cmq)
@@ -154,8 +169,17 @@ class ElevatorRudder:
         elevator_effectiveness = self.control_surface_effectiveness(self.elevator_chord_ratio)
         self.CMde = -self.airfoil_cl_alpha * elevator_effectiveness * self.l_h/(self.S * self.MAC)*self.Se
 
+        Cmq = -self.Sh*self.l_h**2/self.S/self.MAC * self.tail_lift_slope
+        print(f'cmq: {Cmq}')
+
         N = self.CMde * np.deg2rad(self.elevator_deflection) * 0.5 * self.rho_high * self.V**2 * self.S * self.MAC/self.l_h
         return N
+    
+    def calculate_pitch_up_performance(self):
+        print(f'drag: {self.take_off_drag*self.highest_cg}')
+        self.horizontal_tail_lift = (self.main_lift_moment -self.engine_moments + self.main_moment - self.take_off_drag * self.highest_cg) /self.l_h * self.Sh/self.S
+        
+        self.required_elevator_lift = self.horizontal_tail_lift - (self.i_h )
 
     def main(self):
         self.calculate_required_rudder_surface()
@@ -169,21 +193,22 @@ class ElevatorRudder:
         self.elevator_lift = self.calculate_elevator_normal_force()
         print(f"Elevator lift: {self.elevator_lift}")
         print(f"Rudder lift: {self.rudder_normal_force}")
+        self.calculate_pitch_up_performance()
         self.update_attributes()
         self.aircraft_data.save_design(self.design_file)
 
     def update_attributes(self):
 
-        self.aircraft_data.data['outputs']['control_surfaces']['rudder']['end'] = self.rudder_end
-        self.aircraft_data.data['outputs']['control_surfaces']['rudder']['start'] = self.rudder_start
+        self.aircraft_data.data['outputs']['control_surfaces']['rudder']['b2'] = self.rudder_end
+        self.aircraft_data.data['outputs']['control_surfaces']['rudder']['b1'] = self.rudder_start
         self.aircraft_data.data['outputs']['control_surfaces']['rudder']['chord_ratio'] = self.rudder_chord_ratio
         self.aircraft_data.data['outputs']['control_surfaces']['rudder']['deflection'] = self.rudder_deflection
         self.aircraft_data.data['outputs']['control_surfaces']['rudder']['area'] = self.rudder_area
         self.aircraft_data.data['outputs']['control_surfaces']['rudder']['Sr'] = self.Sr
-        self.aircraft_data.data['outputs']['control_surfaces']['elevator']['end'] = self.elevator_end
+        self.aircraft_data.data['outputs']['control_surfaces']['elevator']['b2'] = self.elevator_end
         self.aircraft_data.data['outputs']['control_surfaces']['elevator']['Se'] = self.Se
         self.aircraft_data.data['outputs']['control_surfaces']['elevator']['area'] = self.elevator_area
-        self.aircraft_data.data['outputs']['control_surfaces']['elevator']['start'] = self.elevator_start
+        self.aircraft_data.data['outputs']['control_surfaces']['elevator']['b1'] = self.elevator_start
         self.aircraft_data.data['outputs']['control_surfaces']['elevator']['chord_ratio'] = self.elevator_chord_ratio
         self.aircraft_data.data['outputs']['control_surfaces']['elevator']['deflection'] = self.elevator_deflection
         self.aircraft_data.data['outputs']['control_surfaces']['elevator']['pitch_rate'] = np.rad2deg(self.pitch_rate)
@@ -191,16 +216,24 @@ class ElevatorRudder:
         self.aircraft_data.data['outputs']['control_surfaces']['rudder']['cndr'] = self.cndr
         self.aircraft_data.data['outputs']['control_surfaces']['elevator']['CMde'] = 2*self.CMde
         self.aircraft_data.data['outputs']['control_surfaces']['elevator']['elevator_lift'] = self.elevator_lift
+        self.aircraft_data.data['outputs']['aerodynamic_stability_coefficients_sym']['C_z_delta_e'] = 2*self.elevator_lift / (np.deg2rad(self.elevator_deflection) * 0.5 * self.rho * self.V**2 * self.S * self.MAC)
+        self.aircraft_data.data['outputs']['aerodynamic_stability_coefficients_sym']['C_m_delta_e'] = 2*self.CMde
         self.aircraft_data.data['outputs']['control_surfaces']['rudder']['rudder_lift'] = self.rudder_normal_force
+        self.aircraft_data.data['outputs']['aerodynamic_stability_coefficients_asym']['C_y_delta_r'] = self.rudder_normal_force / (-np.deg2rad(self.rudder_deflection) * 0.5 * self.rho * self.V**2 * self.S * self.b)
+        self.rudder_height = self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['b'] / 2 + self.aircraft_data.data['outputs']['fuselage_dimensions']['h_fuselage']
+        # TODO: UPDATE THIS AFTER CG HEIGHT IS DETERMINED
+        self.high_cg = self.aircraft_data.data['outputs']['cg_range']['highest_cg']
+        self.aircraft_data.data['outputs']['aerodynamic_stability_coefficients_asym']['C_l_delta_r'] = (self.rudder_height-self.high_cg) * self.rudder_normal_force / (np.deg2rad(self.rudder_deflection) * 0.5 * self.rho * self.V**2 * self.S * self.b)
+        self.aircraft_data.data['outputs']['aerodynamic_stability_coefficients_asym']['C_n_delta_r'] = self.cndr
 
 
     def plot_horizontal_tail(self):
-        b_half = np.arange(0, self.b_h/2 + 0.001, 0.001)
+        b_half = np.arange(0, self.b_h / 2 + 0.001, 0.001)
 
         # Main tail
         y_root_LE = self.chord_root_h / 2
-        leading_edge_h = y_root_LE - np.tan(np.deg2rad(self.sweep_h)) * b_half
-        trailing_edge_h = leading_edge_h - self.chord_h(b_half)
+        leading_edge = y_root_LE - np.tan(np.deg2rad(self.sweep_h)) * b_half
+        trailing_edge = leading_edge - self.chord_h(b_half)
 
         # Elevator
         b_elevator = np.array([self.elevator_start, self.elevator_end])
@@ -208,51 +241,67 @@ class ElevatorRudder:
         te_elevator = le_elevator - self.chord_h(b_elevator)
         le_elevator_actual = te_elevator + self.chord_h(b_elevator) * self.elevator_chord_ratio
 
-        # Mirror for left side
-        b_half_mirror = -b_half
-        leading_edge_h_mirror = leading_edge_h
-        trailing_edge_h_mirror = trailing_edge_h
-
-        b_elevator_mirror = -b_elevator
-        le_elevator_mirror = le_elevator
-        te_elevator_mirror = te_elevator
-        le_elevator_actual_mirror = le_elevator_actual
-
-        # Plotting
+        # Plot setup
         plt.figure(figsize=(10, 5))
 
-        # Horizontal tail (right and left)
-        plt.plot(b_half, leading_edge_h, color='green', label='Horizontal Tail LE')
-        plt.plot(b_half, trailing_edge_h, color='green', label='Horizontal Tail TE')
-        plt.plot(b_half_mirror, leading_edge_h_mirror, color='green')
-        plt.plot(b_half_mirror, trailing_edge_h_mirror, color='green')
-        plt.plot([0, 0], [y_root_LE, trailing_edge_h[0]], color='green')  # Root vertical line
+        # Plot right horizontal tail
+        plt.plot(b_half, leading_edge, color='green', label='Horizontal Tail LE')
+        plt.plot(b_half, trailing_edge, color='green', label='Horizontal Tail TE')
+        plt.plot([0, 0], [y_root_LE, trailing_edge[0]], color='green')
+        plt.plot([self.b_h/2, self.b_h/2], [leading_edge[-1], trailing_edge[-1]], color='green')
 
-        # Tip vertical lines
-        plt.plot([self.b_h/2, self.b_h/2], [leading_edge_h[-1], trailing_edge_h[-1]], color='green')
-        plt.plot([-self.b_h/2, -self.b_h/2], [leading_edge_h[-1], trailing_edge_h[-1]], color='green')
-
-        # Elevator (right and left)
-        # Right
+        # Plot elevator - right
         plt.plot(b_elevator, le_elevator_actual, color='red', label='Elevator LE')
         plt.plot(b_elevator, te_elevator, color='red', label='Elevator TE')
-        plt.plot([b_elevator[0], b_elevator[0]], [le_elevator_actual[0], te_elevator[0]], color='red')
-        plt.plot([b_elevator[1], b_elevator[1]], [le_elevator_actual[1], te_elevator[1]], color='red')
-        # Left (mirror)
-        plt.plot(b_elevator_mirror, le_elevator_actual_mirror, color='red')
-        plt.plot(b_elevator_mirror, te_elevator_mirror, color='red')
-        plt.plot([b_elevator_mirror[0], b_elevator_mirror[0]], [le_elevator_actual_mirror[0], te_elevator_mirror[0]], color='red')
-        plt.plot([b_elevator_mirror[1], b_elevator_mirror[1]], [le_elevator_actual_mirror[1], te_elevator_mirror[1]], color='red')
+        for i in range(2):
+            plt.plot([b_elevator[i], b_elevator[i]], [le_elevator_actual[i], te_elevator[i]], color='red')
 
-        # Final touches
-        plt.title('Horizontal Tail and Elevator Planform')
+        # Mirror left side (x → -x, y stays the same)
+        plt.plot(-b_half, leading_edge, color='green')
+        plt.plot(-b_half, trailing_edge, color='green')
+        plt.plot([-self.b_h/2, -self.b_h/2], [leading_edge[-1], trailing_edge[-1]], color='green')
+        plt.plot(-b_elevator, le_elevator_actual, color='red')
+        plt.plot(-b_elevator, te_elevator, color='red')
+        for i in range(2):
+            plt.plot([-b_elevator[i], -b_elevator[i]], [le_elevator_actual[i], te_elevator[i]], color='red')
+
+        # Vertical tail clipping
+        for pos in [self.w_fuselage/2, -self.w_fuselage/2]:
+            inner = pos - self.vertical_tail_thickness
+            outer = pos + self.vertical_tail_thickness
+
+            # Interpolate elevator or fall back to main tail
+            le_interp = np.interp([inner, outer], b_elevator, le_elevator_actual) \
+                if b_elevator[0] <= abs(pos) <= b_elevator[1] else \
+                np.interp([inner, outer], b_half, leading_edge)
+
+            te_interp = np.interp([inner, outer], b_elevator, te_elevator) \
+                if b_elevator[0] <= abs(pos) <= b_elevator[1] else \
+                np.interp([inner, outer], b_half, trailing_edge)
+
+            # Plot clipping lines
+            plt.plot([inner, inner], [le_interp[0], te_interp[0]], color='red', linewidth=2)
+            plt.plot([outer, outer], [le_interp[1], te_interp[1]], color='red', linewidth=2)
+
+            # Draw vertical tail box
+            idx = np.abs(b_half - abs(pos)).argmin()
+            le = leading_edge[idx]
+            te = trailing_edge[idx]
+
+            plt.fill([inner, outer, outer, inner], [le, le, te, te], color='blue', alpha=0.7)
+            plt.plot([inner, inner], [le, te], color='blue', linewidth=1.5)
+            plt.plot([outer, outer], [le, te], color='blue', linewidth=1.5)
+
+        plt.title('Horizontal Tail and Elevator Planform with Vertical Tail Positions')
         plt.xlabel('Spanwise Position (m)')
         plt.ylabel('Chordwise Position (m)')
         plt.ylim(-5, 5)
         plt.xlim(-self.b_h/2 - 1, self.b_h/2 + 1)
         plt.gca().set_aspect('equal')
         plt.grid(True)
+        plt.legend()
         plt.show()
+
 
 
     def plot_vertical_tail(self):
@@ -313,4 +362,3 @@ if __name__ == "__main__":
     print(f"pitch rate: {np.rad2deg(elevator_rudder.pitch_rate)}")
     print(f"Elevator end: {elevator_rudder.elevator_end}")
     print(f"Elevator area: {elevator_rudder.elevator_area}")
-    

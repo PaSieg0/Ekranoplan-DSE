@@ -25,9 +25,10 @@
         "fuel_fuselage": 0,
         "n_engines": 7.0,
         "endplate_height": 0,
-        "CLmax_clean": 1.797,
-        "CLmax_takeoff": 2.08,
-        "CLmax_landing": 2.4,
+        "CLmax_clean": 1.75,
+        "CLmax_takeoff": 2.1550000000000002,
+        "CLmax_landing": 2.2,
+        "max_sideslip": 7,
         "CL_hydro": 0.5,
         "r_float": 4.416363005162699,
         "upsweep": 11,
@@ -44,22 +45,23 @@
         "lfd": 8.5,
         "w_fuselage": 7,
         "h_fuselage": 6,
-        "t_fuselage": 3,
         "fuel_tank": 0.4,
         "fuel_tank_thickness": 2,
+        "alpha_cruise": 5.0,
+        "alpha_fuselage": 5.0,
         "control_surfaces": {
             "aileron_end": 0.985,
             "LE_flap_chord": 0.1,
             "flap_chord": 0.3,
-            "flap_type": "DOUBLE_SLOT",
-            "aileron_deflection": 25,
-            "aileron_chord": 0.25,
-            "rudder_chord": 0.38,
-            "rudder_deflection": 37,
-            "rudder_start": 0.08,
-            "elevator_start": 0.1,
+            "flap_type": "SLOT",
+            "aileron_deflection": 30,
+            "aileron_chord": 0.3,
+            "rudder_chord": 0.4,
+            "rudder_deflection": 40,
+            "rudder_start": 0.05,
+            "elevator_start": 0,
             "elevator_chord": 0.35,
-            "elevator_deflection": 40
+            "elevator_deflection": 35
         },
         "airfoils": {
             "wing": 0.14,
@@ -68,20 +70,84 @@
             "vertical_tail": 0.12
         },
         "structures": {
+            "fuselage": {
+                "C_fus": 6.98,
+                "t_fuselage": 3,
+                "k_s": 15,
+                "station_1": {
+                    "B1": 2000,
+                    "B2": 2000,
+                    "B3": 2000,
+                    "B4": 2000,
+                    "B5": 1000,
+                    "n_stringers": 10,
+                    "stringer_area": 200
+                },
+                "station_2": {
+                    "B1": 6000,
+                    "B2": 6000,
+                    "B3": 6000,
+                    "B4": 6000,
+                    "B5": 1000,
+                    "n_stringers": 10,
+                    "stringer_area": 400
+                },
+                "station_3": {
+                    "B1": 5000,
+                    "B2": 5000,
+                    "B3": 4000,
+                    "B4": 4000,
+                    "B5": 1000,
+                    "n_stringers": 10,
+                    "stringer_area": 400
+                }
+            },
             "wing_box": {
                 "front_spar": 0.15,
                 "rear_spar": 0.65,
-                "t_skin": 14,
-                "t_spar": 18,
-                "t_wing": 5,
+                "t_skin": 13,
+                "t_spar": 17,
+                "t_wing": 3,
                 "stringer_area": 1500,
                 "n_stringers": 30,
                 "n_cells": 3,
                 "C": 4,
-                "L_stringer": 150,
+                "L_stringer": 200,
                 "min_skin_thickness": 4,
-                "min_spar_thickness": 4,
-                "thickness_threshold": 0.25,
+                "min_spar_thickness": 10,
+                "thickness_threshold": 0.35,
+                "cutout_spacing": 0.3
+            },
+            "horizontal_wing_box": {
+                "front_spar": 0.15,
+                "rear_spar": 0.6,
+                "t_skin": 5,
+                "t_spar": 8,
+                "t_wing": 1,
+                "stringer_area": 200,
+                "n_stringers": 25,
+                "n_cells": 1,
+                "C": 4,
+                "L_stringer": 130,
+                "min_skin_thickness": 3,
+                "min_spar_thickness": 3,
+                "thickness_threshold": 0.4,
+                "cutout_spacing": 0.3
+            },
+            "vertical_wing_box": {
+                "front_spar": 0.15,
+                "rear_spar": 0.65,
+                "t_skin": 1,
+                "t_spar": 4,
+                "t_wing": 1,
+                "stringer_area": 400,
+                "n_stringers": 15,
+                "n_cells": 1,
+                "C": 4,
+                "L_stringer": 100,
+                "min_skin_thickness": 1,
+                "min_spar_thickness": 3,
+                "thickness_threshold": 0.35,
                 "cutout_spacing": 0.3
             },
             "materials": {
@@ -259,6 +325,7 @@
             "hull_nose_surface": 25.348,
             "hull_afterbody_surface": 94.568,
             "hull_forebody_surface": 90.246,
+            "hull_angle": 25,
             "cargo_distance_from_nose": 0,
             "cargo_length": 28.125,
             "cargo_width": 5.2,
@@ -272,18 +339,26 @@
             "h_fuselage_station3": 4.5,
             "step_depth": 0.4,
             "h_afterbody": 4.5,
-            "l_fuselage": 45.004999999999995,
+            "l_fuselage": 43.605,
             "l_tailcone": 10,
             "l_afterbody": 14.805,
+            "total_volume": 1671.0,
             "l_nose": 5.5,
-            "l_forebody": 14.7,
-            "x_step": 20.2,
+            "l_forebody": 13.3,
+            "x_step": 18.8,
             "h_fuselage": 7.6,
-            "S_sideview": 100,
-            "h_fuselage_1_4": 7.6,
-            "h_fuselage_3_4": 7.6,
+            "S_sideview": 293.242,
+            "h_fuselage_1_4": 7.542,
+            "h_fuselage_3_4": 5.645,
             "w_fuselage_1_4": 5.7,
-            "w_fuselage_3_4": 5.7
+            "w_fuselage_3_4": 5.7,
+            "wing_height": 8.4,
+            "cargo_bottom": 3.2,
+            "endplate_height": 3.7,
+            "cross_sectional_area_1": 29.4,
+            "cross_sectional_area_2": 37.99,
+            "cross_sectional_area_3": 29.4,
+            "body_base_area": 285.08
         },
         "ferry": {
             "MTOW": 1510332.3056983892,
@@ -366,122 +441,231 @@
             "sweep_c_4": 0,
             "dihedral": 1,
             "sweep_x_c": 3.066485501125894,
-            "chord_root": 11.953133207320654,
-            "chord_tip": 4.781253282928262,
-            "y_MAC": 14.343759848784783,
-            "X_LEMAC": 14.176575000000003,
-            "X_LE": 13.408159293815103,
-            "MAC": 8.879470382581058,
-            "S": 560.0793824100507,
-            "b": 66.93754596099565,
+            "chord_root": 10.777842038637235,
+            "chord_tip": 4.311136815454894,
+            "y_MAC": 12.933410446364682,
+            "X_LEMAC": 13.822785000000003,
+            "X_LE": 13.12992372608761,
+            "MAC": 8.00639694298766,
+            "S": 455.3545657184788,
+            "b": 60.35591541636851,
             "aspect_ratio": 8,
-            "ac_mac": 21.074651217854203
+            "ac_mac": 19.920675305160135
         },
         "cg_range": {
-            "most_aft_cg": 19.340330549579214,
-            "most_aft_mission": "DESIGN_OEW_PAYLOAD_FUEL",
-            "most_forward_cg": 16.573991506665585,
-            "most_forward_mission": "DESIGN_OEW",
-            "most_aft_cg_mac": 0.581538687229477,
-            "most_forward_cg_mac": 0.2699954392965394
+            "most_aft_cg": 18.574038066054015,
+            "most_forward_cg": 15.070047520169862,
+            "most_aft_cg_mac": 0.5934321143314485,
+            "most_forward_cg_mac": 0.15578324795178475,
+            "highest_cg": 7.038343673770502,
+            "lowest_cg": 2.9609913037262676,
+            "most_right_cg": 0.0,
+            "most_left_cg": 0.0,
+            "MTOW_cg": [
+                18.309032136970888,
+                0.0,
+                6.908200112814766
+            ],
+            "OEW_cg": [
+                17.84049910713542,
+                0.0,
+                6.546307101850197
+            ]
         },
         "empennage_design": {
             "vertical_tail": {
-                "S": 64.46038158637683,
-                "l_v": 16.85194261993725,
-                "b": 9.83313644670739,
-                "chord_root": 8.194280372256157,
-                "chord_tip": 4.9165682233536945,
+                "S": 75.77717841089206,
+                "l_v": 16.442282873104077,
+                "b": 10.661414897486079,
+                "chord_root": 8.884512414571732,
+                "chord_tip": 5.3307074487430395,
                 "sweep": 30.568917073525085,
                 "taper": 0.6,
                 "aspect_ratio": 1.5,
-                "LE_pos": 36.810719627743836,
-                "relative_pos_mac/4": 0.8672500216284658,
-                "MAC": 6.691995637342528,
+                "LE_pos": 34.720487585428266,
+                "relative_pos_mac/4": 0.8421531205406533,
+                "MAC": 7.255685138566914,
                 "sweep_c_4": 15,
-                "quarter_tip": 43.84796446331867
+                "z_MAC_v": 0.5,
+                "quarter_tip": 42.35050343376698,
+                "attachement_angle": 0.2520038205757499
             },
             "horizontal_tail": {
-                "S": 82.18985056886176,
-                "l_h": 24.507633913739454,
-                "b": 19.23159711412128,
-                "chord_root": 4.9165682233536945,
-                "chord_tip": 3.6308082718113184,
+                "S": 100.76388975093803,
+                "l_h": 23.776465367712966,
+                "b": 21.29407203611421,
+                "chord_root": 5.3307074487430395,
+                "chord_tip": 4.133324567307721,
                 "sweep": 15.62539227213675,
-                "taper": 0.7384842652167385,
-                "MAC": 4.305923843575527,
+                "taper": 0.7753801173767927,
+                "MAC": 4.757264685726435,
                 "sweep_c_4": 10,
                 "aspect_ratio": 4.5,
-                "tail_height": 26.87680081770209,
-                "LE_pos": 42.620818673619475,
-                "relative_pos_mac/4": 0.9506166930472658
+                "tail_height": 18.261414897486077,
+                "LE_pos": 41.017826571581224,
+                "relative_pos_mac/4": 0.9506166930472658,
+                "Cl_alpha": 0.119
             }
         },
         "control_surfaces": {
             "aileron": {
-                "b1": 25.482,
-                "b2": 34.53903433091316,
-                "area_single": 26.15857440619905,
-                "roll_rate": 15.505421812181243,
+                "b1": 22.086000000000002,
+                "b2": 29.72528834256149,
+                "area_single": 22.824696708022167,
+                "roll_rate": 23.258132718271867,
                 "bank_angle": 54.163086327842564,
                 "turn_radius": 460.4124952686556,
                 "object_distance": 736.659992429849,
-                "Swa": 55.17900859186854,
-                "aileron_lift": 317598.4578386115
+                "Swa": 39.927753288542505,
+                "aileron_lift": 3571.691759027178,
+                "Clda": -12.859681260319945,
+                "Clp": -15.130932389956765
             },
             "rudder": {
                 "end": 9.93268059234261,
                 "start": 0.8286805923426022,
-                "chord_ratio": 0.38,
-                "deflection": 37,
-                "area": 23.440544350957367,
-                "CN_OEI": 0.0038670673397937145,
-                "cndr": -0.005987297502255649,
-                "rudder_lift": -22251.730230763245,
-                "Sr": 61.68564302883517
+                "chord_ratio": 0.4,
+                "deflection": 40,
+                "area": 25.181672477126913,
+                "CN_OEI": 0.0015913796548778479,
+                "cndr": -0.002278490896931831,
+                "rudder_lift": -22063.98613808214,
+                "Sr": 62.95418119281728,
+                "b2": 9.202070744874312,
+                "b1": 0.533070744874304
             },
             "elevator": {
-                "end": 7.4830000000000005,
-                "area": 13.13083114158412,
+                "b2": 8.545,
+                "area": 15.224297194323634,
                 "start": 0.7149123779738104,
                 "chord_ratio": 0.35,
-                "deflection": 40,
-                "pitch_rate": 3.877120671370963,
-                "CMde": -0.05841744957870493,
-                "elevator_lift": -10372.53183511474,
-                "Se": 37.51666040452606
+                "deflection": 35,
+                "pitch_rate": 10.86503814529395,
+                "CMde": -0.0321116811602233,
+                "elevator_lift": -9216.177016838223,
+                "Se": 43.497991983781816,
+                "b1": 0
             }
         },
         "HLD": {
-            "b1": 4.215,
-            "b2": 22.760071976783536,
+            "b1": 3.85,
+            "b2": 19.778868599026932,
             "flapped_area_single": 170.34351328250182,
-            "flap_area": 68.38840201953882,
-            "Swf_single": 178.64526040250894,
-            "LE_flap_area": 2.3807771618301774,
-            "Swf_LE_single": 21.87596385171457
+            "flap_area": 43.34807855005062,
+            "Swf_single": 131.35227857263814,
+            "LE_flap_area": 1.1414519443568518,
+            "Swf_LE_single": 10.628008845028903
         },
-        "wing_stresses": {
-            "bending_stress_max_margin": 1.1393819838587615,
-            "bending_stress_bottom_max_margin": 1.6441747264759952,
-            "shear_stress_max_margin": 1.8549268866402266,
-            "wing_bending_stress_max_margin": 1.098554862524398,
-            "max_bending_stress": -444.51376556570966,
-            "max_bending_stress_bottom": 305.92855607146674,
-            "max_shear_stress": -70.51289572750363,
-            "max_wing_bending_stress": -457.87426478104436,
-            "max_moment_x": -57249822.512195796,
-            "max_moment_y": 1701226.309900394,
-            "max_torque": 4855986.282588747,
-            "max_vertical_shearforce": -4290607.446738046,
-            "bending_stress_min_margin": 2.3365969346502005,
-            "bending_stress_bottom_min_margin": 3.4534232416593262,
-            "shear_stress_min_margin": 4.830228159963336,
-            "wing_bending_stress_min_margin": 2.2745880160658913,
-            "min_moment_x": 27597703.99519368,
-            "min_moment_y": 1701226.309900394,
-            "min_torque": -4144211.608247595,
-            "min_vertical_shearforce": 2082170.443417112
+        "wing_stress": {
+            "Yield_Stress_max_margin": 0.5144608153919507,
+            "Column_Buckling_Stress_max_margin": 2.258414920100206,
+            "Buckling_Stress_max_margin": 0.5741641352138467,
+            "Critical_Web_Stress_max_margin": 0.5309210242141246,
+            "max_bending_stress": -953.6819783859379,
+            "max_bending_stress_bottom": 647.1093150172135,
+            "max_shear_stress": 138.35402833232956,
+            "max_wing_bending_stress": -977.7226660436343,
+            "max_internal_moment_x": -112936872.71538827,
+            "max_moment_x": -112936872.71538827,
+            "max_moment_y": 5064490.649130626,
+            "max_torque": 11997681.902912227,
+            "max_vertical_shearforce": -7852186.717139283,
+            "max_deflection": 21.09600049207142,
+            "max_twist": 2.988554991611928,
+            "Yield_Stress_min_margin": 3.727439714502024,
+            "Column_Buckling_Stress_min_margin": 21.443723918258645,
+            "Buckling_Stress_min_margin": 6.120047018420418,
+            "Critical_Web_Stress_min_margin": 1.8379234947306706,
+            "min_moment_x": -15594656.540750932,
+            "min_moment_y": 983202.478678842,
+            "min_torque": -2096314.16310145,
+            "min_vertical_shearforce": -1030101.3412919005,
+            "min_deflection": 3.2003717116972563,
+            "min_twist": -0.5081835828612496
+        },
+        "horizontal_tail_stress": {
+            "Yield_Stress_max_margin": 1.9173700663557158,
+            "Column_Buckling_Stress_max_margin": 8.028757163170638,
+            "Buckling_Stress_max_margin": 1.0629387482833594,
+            "Critical_Web_Stress_max_margin": 1.1327706661184207,
+            "max_bending_stress": 223.00090193723113,
+            "max_bending_stress_bottom": -209.12167616233265,
+            "max_shear_stress": 118.62310869369936,
+            "max_wing_bending_stress": 262.3385067005015,
+            "max_moment_x": 3135849.8956720554,
+            "max_torque": -447575.6000922977,
+            "max_vertical_shearforce": 593362.3165324992,
+            "Yield_Stress_min_margin": 5.250427817173032,
+            "Column_Buckling_Stress_min_margin": 26.604322794941965,
+            "Buckling_Stress_min_margin": 2.4460681752227345,
+            "Critical_Web_Stress_min_margin": 3.2072556474880307,
+            "min_moment_x": -1145160.914864958,
+            "min_torque": 179030.2400369194,
+            "min_vertical_shearforce": -213529.4729492149
+        },
+        "vertical_tail_stress": {
+            "Yield_Stress_max_margin": 24.008062203647025,
+            "Column_Buckling_Stress_max_margin": 1620.651793972176,
+            "Buckling_Stress_max_margin": 2.382014221332644,
+            "Critical_Web_Stress_max_margin": 1.0118114569396741,
+            "max_bending_stress": 17.833396232552587,
+            "max_bending_stress_bottom": -17.358342241952887,
+            "max_shear_stress": 12.162483711430347,
+            "max_wing_bending_stress": 20.95129526628726,
+            "max_moment_x": 249100.89620027744,
+            "max_torque": -66872.18534749329,
+            "max_vertical_shearforce": 51114.78879634315,
+            "Yield_Stress_min_margin": 60.02015550911764,
+            "Column_Buckling_Stress_min_margin": 4893.077288234174,
+            "Buckling_Stress_min_margin": 5.319830688873572,
+            "Critical_Web_Stress_min_margin": 2.529528642349191,
+            "min_moment_x": -99640.35848011087,
+            "min_torque": 26748.87413899734,
+            "min_vertical_shearforce": -20445.915518537222
+        },
+        "fuselage_stress": {
+            "frame_amount": 86,
+            "frame_thickness_1": 2.192856647913561,
+            "frame_thickness_2": 14.045521055996147,
+            "frame_thickness_3": 4.551065824332023,
+            "frame_mass": 4584.927377788731,
+            "side_thickness_1": 2.192856647913561,
+            "side_thickness_2": 14.045521055996147,
+            "side_thickness_3": 4.551065824332023,
+            "hull_thickness_1": 1.8675168453101587,
+            "hull_thickness_2": 11.527723740895127,
+            "hull_thickness_3": 3.0280176843683932,
+            "top_thickness_1": 1.9015540778063629,
+            "top_thickness_2": 12.731959601006217,
+            "top_thickness_3": 4.133813212622528,
+            "stringer_amount_1": 26.0,
+            "stringer_amount_2": 61.0,
+            "stringer_amount_3": 23.0,
+            "I_yy": 1.429361454224439,
+            "I_zz": 1.0989749554065453,
+            "critical_margins": {
+                "bending": {
+                    "B1|buckling|0": 1.2257234675979394,
+                    "B1|buckling|1": 1.124395017411218,
+                    "B1|buckling|2": 1.673484063510188,
+                    "B2|buckling|0": 1.2257234675979394,
+                    "B2|buckling|1": 1.124395017411218,
+                    "B2|buckling|2": 1.673484063510188,
+                    "B3|buckling|0": 1.88070866792158,
+                    "B3|buckling|1": 1.5570319419756944,
+                    "B3|buckling|2": 1.7469338071495364,
+                    "B4|buckling|0": 1.88070866792158,
+                    "B4|buckling|1": 1.5570319419756944,
+                    "B4|buckling|2": 1.7469338071495364,
+                    "B5|buckling|0": 1.0756312188306663,
+                    "B5|buckling|1": 1.0188545855639886,
+                    "B5|buckling|2": 1.0893700095474663
+                },
+                "shear": {
+                    "13|buckling|1": 1.7913935312292422,
+                    "24|buckling|1": 1.7913935312292406
+                }
+            }
         },
         "component_weights": {
             "air_conditioning": 0.0,
@@ -510,114 +694,120 @@
         },
         "component_positions": {
             "air_conditioning": [
-                0.0,
-                0.0,
-                0.0
+                21.802500000000002,
+                0,
+                3.8
             ],
             "anti_ice": [
-                1.0,
-                0.0,
-                3.0
+                21.802500000000002,
+                0,
+                3.8
             ],
             "apu_installed": [
-                54.0,
-                0.0,
-                8.4
+                21.802500000000002,
+                0,
+                3.8
             ],
             "avionics": [
-                4.0,
-                0.0,
-                8.0
+                21.802500000000002,
+                0,
+                3.8
             ],
             "electrical": [
-                10.0,
-                0.0,
-                4.0
+                21.802500000000002,
+                0,
+                3.8
             ],
             "furnishings": [
-                20.0,
-                0.0,
-                5.0
+                21.802500000000002,
+                0,
+                3.8
             ],
             "fuselage": [
-                30.0,
-                0.0,
-                4.4
+                19.62225,
+                0,
+                3.8
             ],
             "handling_gear": [
-                10.0,
-                0.0,
-                0.0
+                21.802500000000002,
+                0,
+                3.8
             ],
             "horizontal_tail": [
-                67,
-                0.0,
-                8.8
+                43.385356048604756,
+                0,
+                18.261414897486077
             ],
             "instruments": [
-                5.0,
-                0.0,
-                0.0
+                21.802500000000002,
+                0,
+                3.8
             ],
             "nacelle_group": [
-                20.0,
-                0.0,
-                0.0
+                19.65889500000001,
+                0,
+                9.636788145711979
             ],
             "starter_pneumatic": [
-                0.0,
-                0.0,
-                0.0
+                21.802500000000002,
+                0,
+                3.8
             ],
             "vertical_tail": [
-                64.0,
-                0.0,
-                30.0
+                38.348330154711725,
+                0,
+                12.93070744874304
             ],
             "wing": [
-                20.0,
-                0.0,
-                6.0
+                25.76209347149384,
+                0,
+                8.4
             ],
             "engine": [
-                30.0,
-                0.0,
-                6.0
+                19.65889500000001,
+                0,
+                9.636788145711979
             ],
             "engine_controls": [
-                4.0,
-                0.0,
-                6.0
+                21.802500000000002,
+                0,
+                3.8
             ],
             "fuel_system": [
-                0.0,
-                0.0,
-                0.0
+                21.802500000000002,
+                0,
+                3.8
             ],
             "flight_control": [
-                50.0,
-                0.0,
-                0.0
+                5.5,
+                0,
+                3.8
             ],
             "military_cargo_handling_system": [
-                25.0,
-                0.0,
-                5.0
+                19.5625,
+                0,
+                5.300000000000001
             ],
             "door": [
-                4.0,
-                0.0,
-                5.0
+                5.5,
+                0,
+                3.8
             ],
             "anchor": [
-                10.0,
-                0.0,
-                1.0
+                2.75,
+                0,
+                1.9
             ],
             "floater": [
-                30.0,
-                0.0,
-                1.0
+                25.76209347149384,
+                0,
+                0
+            ],
+            "elictrical": 22.4525,
+            "floater_endplate": [
+                21.75889500000001,
+                0,
+                3.7
             ]
         },
         "engine_positions": {
@@ -637,14 +827,57 @@
                 23
             ],
             "wing_tip_clearance": [
-                9.184192637971243,
-                9.276704482090796,
-                9.36921632621035
+                9.184188590521005,
+                9.276700434640558,
+                9.369212278760111
             ]
         },
-        "cg_positions": {
-            "OEW_CG": 29.081340943622244,
-            "MTOW_CG": 30.23572726443795
+        "aerodynamic_stability_coefficients_sym": {
+            "C_m_q": 29.263192692804136,
+            "C_z_alpha": -5.801879768312837,
+            "C_x_alpha": 0.13040919353750408,
+            "C_m_alpha": -2.1567620087850576,
+            "C_Z_u": -0.1,
+            "C_X_u": -0.05306549029186214,
+            "C_m_u": 0,
+            "C_m_alphadot": -0.02,
+            "C_x_delta_e": -0.0014,
+            "C_z_delta_e": -0.000997370870787021,
+            "C_m_delta_e": -0.0321116811602233,
+            "CL": 0.6,
+            "C_z_alpha_dot": 0,
+            "C_z_q": 0
+        },
+        "aerodynamic_stability_coefficients_asym": {
+            "CyB": -0.035352597268454036,
+            "ClB": -0.012334351145823508,
+            "CnB": 0.009033695188400049,
+            "Cyp": 0,
+            "Clp": -0.46,
+            "Cnp": -0.042266950001015026,
+            "Cyr": 0,
+            "Clr": 0.5291310813412924,
+            "Cnr": -0.014311185888276486,
+            "CyBdot": 0.0835439802825826,
+            "ClBdot": -0.014117229900973801,
+            "CnBdot": -0.022443581655298202,
+            "C_y_delta_r": 0.0001385750941348258,
+            "C_y_delta_a": 0,
+            "C_l_delta_r": -0.0008165348647934568,
+            "C_l_delta_a": 12.859681260319945,
+            "C_n_delta_r": -0.002278490896931831,
+            "C_n_delta_a": 0
+        },
+        "inertia": {
+            "I_xx": 1000000.0,
+            "I_yy": 1000000.0,
+            "I_zz": 1000000.0,
+            "I_xy": 0.0,
+            "I_xz": 0.0,
+            "I_yz": 0.0
+        },
+        "aerodynamics": {
+            "Cl_alpha": 0.10126190476190478
         }
     },
     "kinematic_viscosity": 1.006e-06,
