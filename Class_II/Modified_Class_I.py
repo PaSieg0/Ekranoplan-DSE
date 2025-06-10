@@ -97,7 +97,7 @@ class ModifiedClassI:
         if self.mission_type == MissionType.DESIGN or self.mission_type == MissionType.ALTITUDE:
             mfuel1 = (1-self.Mff_1way)*self.MTOW
             mass_at_destination = self.Mff_1way*self.MTOW
-            mfuel2 = (1-self.Mff_1way)*(mass_at_destination-self.aircraft_data.data['requirements']['design_payload']*9.81)
+            mfuel2 = (1-self.Mff_1way)*(mass_at_destination-(self.aircraft_data.data['requirements']['design_payload']-10_000)*9.81)
             self.Mff = 1-(mfuel1+mfuel2)/self.MTOW
         else:
             self.Mff = self.Mff_1way

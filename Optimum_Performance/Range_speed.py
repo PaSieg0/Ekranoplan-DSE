@@ -72,15 +72,25 @@ class RangeAnalyzer:
         self.opt = OptimumSpeeds(self.aircraft_data, mission_type)
         self.rng = RangeCalculator(data_object=self.aircraft_data, mission_type=mission_type)
 
+        self.max_wave_height = [0, 0.1, 0.5, 1.25, 2.5, 4.0, 6., 9., 14.][sea_state]  # Example wave heights in meters
         # Assume TO takes 10% more fuel per sea state unit approximation
-        self.rng.Mff_nocruise *= (1-(1-self.rng.fuel_fracs_no_cruise[1])*(1+sea_state/10))/self.rng.fuel_fracs_no_cruise[1]
+        self.rng.Mff_nocruise *= (1-(1-self.rng.fuel_fracs_no_cruise[1])*(1+self.max_wave_height/3))/self.rng.fuel_fracs_no_cruise[1]
         # Adjust cruise altitude for sea state
-        self.aircraft_data.data['inputs']['cruise_altitude'] *= 1+sea_state/10
+        wave_margin_0 = self.aircraft_data.data['inputs']['cruise_altitude'] - self.aircraft_data.data['outputs']['fuselage_dimensions']['h_fuselage']
+        self.aircraft_data.data['inputs']['cruise_altitude'] = wave_margin_0 + self.max_wave_height + self.aircraft_data.data['outputs']['fuselage_dimensions']['h_fuselage']
+
+        # Calculate ground effect factor
+        self.k_wing = np.sqrt(1/Ainf_Ah(self.aircraft_data.data['inputs']['cruise_altitude'],
+                                        self.aircraft_data.data['outputs']['wing_design']['b'], 
+                                        self.aircraft_data.data['inputs']['endplate_height']))
+        self.h_tail = (self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['tail_height'] + self.aircraft_data.data['inputs']['cruise_altitude'])
+        self.k_tail = np.sqrt(1/Ainf_Ah(self.h_tail, self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['b']))
+        self.k = self.k_wing * self.k_tail  # Combined ground effect factor
         
         # Constants
         self.METERS_TO_NMI = 1852
         self.TOLERANCE_PERCENT = 1.0  # Acceptable difference percentage for sanity check
-        self.weight_step = 10  # Weight step for numerical integration (N)
+        self.weight_step = 100  # Weight step for numerical integration (N)
         
     def calculate_cruise_weights_leg1(self) -> Tuple[float, float]:
         """Calculate weights at start and end of cruise segment."""
@@ -139,10 +149,6 @@ class RangeAnalyzer:
         """
         R_numerical = 0
         t = 0
-        k = np.sqrt(1/Ainf_Ah(h,
-                               self.aircraft_data.data['outputs']['wing_design']['b'], 
-                               self.aircraft_data.data['inputs']['endplate_height']))
-        print(f"Ground effect factor (k): {k:.4f}, {h} m altitude")
         W_array = np.arange(W4, W5, -dW)
         
         integration_details = {
@@ -170,7 +176,7 @@ class RangeAnalyzer:
             
             # Calculate lift-to-drag ratio with ground effect correction
             Cl_Cd = self.opt.L_over_D(V, h, weight)
-            Cl_Cd_ge = Cl_Cd * k
+            Cl_Cd_ge = Cl_Cd * self.k
             
             # Integration step
             val_integration = (self.opt._prop_efficiency / 
@@ -206,13 +212,10 @@ class RangeAnalyzer:
         W_representative = np.sqrt(W4 * W5)
         
         V = self.opt.v_range(h)
-        k = np.sqrt(1/Ainf_Ah(self.aircraft_data.data['inputs']['cruise_altitude'],
-                               self.aircraft_data.data['outputs']['wing_design']['b'], 
-                               self.aircraft_data.data['inputs']['endplate_height']))
         
         # Calculate representative L/D ratio
         Cl_Cd = self.opt.L_over_D(V, h, W_representative)
-        Cl_Cd_ge = Cl_Cd * k
+        Cl_Cd_ge = Cl_Cd * self.k
         
         # Breguet range equation
         R_analytical = (self.opt._prop_efficiency / 
@@ -262,7 +265,7 @@ class RangeAnalyzer:
         velocity_func_list=None,
         labels=None,
         h: float = 10,
-        dW: float = 100
+        dW: float = 10
     ):
         """
         Plot speed versus weight for the cruise segment for multiple strategies.
@@ -350,7 +353,6 @@ def main():
     mission_type = MissionType.DESIGN
     analyzer = RangeAnalyzer(file_path, mission_type, sea_state=0)  # Example sea state
 
-    altitude = analyzer.aircraft_data.data['inputs']['cruise_altitude']  # Example altitude in meters
     weight_step = analyzer.weight_step  # Weight step for integration (N)
     
     # Calculate cruise weights
@@ -375,15 +377,52 @@ def main():
     R_total_test = R_numerical_test_1 + R_numerical_test_2
     time_total_test = time_test_1 + time_test_2
 
-    details_total = concat_details(details_1, details_2)
-    details_total_test = concat_details(details_test_1, details_test_2)
+    # details_total = concat_details(details_1, details_2)
+    # details_total_test = concat_details(details_test_1, details_test_2)
 
-    plot_speed_vs_time(details_total, "Default Strategy", payload_drop_time=details_1['times'][-1])
-    plot_speed_vs_time(details_total_test, "Test Strategy", payload_drop_time=details_test_1['times'][-1])
+    # plot_speed_vs_time(details_total, "Default Strategy", payload_drop_time=details_1['times'][-1])
+    # plot_speed_vs_time(details_total_test, "Test Strategy", payload_drop_time=details_test_1['times'][-1])
 
     print(f"Total mission range (default strategy): {R_total/analyzer.METERS_TO_NMI:.2f} nmi, time: {time_total/3600:.2f} h")
     print(f"Total mission range (test strategy):    {R_total_test/analyzer.METERS_TO_NMI:.2f} nmi, time: {time_total_test/3600:.2f} h")
 
+def sea_state_comparison():
+    """
+    Compare range performance across different sea states.
+    Prints cruise altitude and range for each sea state.
+    """
+    sea_states = [0, 1, 2, 3, 4]  # Example sea states
+    results = {}
+
+    for sea_state in sea_states:
+        print(f"Analyzing sea state {sea_state}...")
+        analyzer = RangeAnalyzer("design3.json", MissionType.DESIGN, sea_state=sea_state)
+        # Calculate and store numerical range for each sea state
+        W4, W5 = analyzer.calculate_cruise_weights_leg1()
+        R_numerical, time, _ = analyzer.calculate_numerical_range(W4, W5, None, dW=analyzer.weight_step)
+        cruise_altitude = analyzer.aircraft_data.data['inputs']['cruise_altitude']
+        results[sea_state] = {
+            'range_nmi': R_numerical / analyzer.METERS_TO_NMI,
+            'cruise_altitude': cruise_altitude
+        }
+
+    print("Sea state comparison results:")
+    for ss, res in results.items():
+        print(f"Sea State {ss}: Range = {res['range_nmi']:.2f} nmi, Cruise Altitude = {res['cruise_altitude']:.2f} m")
+
+    # Plotting
+    sea_states_list = list(results.keys())
+    ranges = [results[ss]['range_nmi'] for ss in sea_states_list]
+
+    plt.figure(figsize=(8, 5))
+    plt.plot(sea_states_list, ranges, marker='o', label='Range (nmi)')
+    plt.xlabel('Sea State')
+    plt.ylabel('Range (nmi)')
+    plt.title('Range vs Sea State')
+    plt.grid(True, alpha=0.3)
+    plt.xticks(sea_states_list)  # Set x-axis ticks to sea state values (step 1)
+    plt.tight_layout()
+    plt.show()
 
 if __name__ == "__main__":
     # Create analyzer
@@ -393,4 +432,4 @@ if __name__ == "__main__":
     # analyzer = RangeAnalyzer(file_path, mission_type)
     # analyzer.check()
 
-    main()
+    sea_state_comparison()
