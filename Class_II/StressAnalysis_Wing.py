@@ -802,7 +802,7 @@ def main(all=True):
         
 if __name__ == "__main__":
 
-    main(all=False)
+    main(all=True)
 
 
 

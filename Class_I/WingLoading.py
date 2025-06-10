@@ -46,7 +46,7 @@ class WingLoading:
         self.CL_hydro = self.aircraft_data.data['inputs']['CL_hydro']
         self.upsweep = self.aircraft_data.data['inputs']['upsweep']
         self.d_fuselage = self.aircraft_data.data['outputs']['fuselage_dimensions']['d_fuselage_equivalent_station2']
-        self.hull_surface = self.calculate_hull_surface()
+        self.hull_surface = self.aircraft_data.data['outputs']['fuselage_dimensions']['hull_surface']
         self.TW = None
         self.WP = None
         self.max_WS = None
@@ -85,25 +85,10 @@ class WingLoading:
             raise ValueError("No solution found for the piecewise function.")
 
 
-
-    def calculate_hull_surface(self):
-        self.w_fuselage = self.aircraft_data.data['inputs']['w_fuselage']
-        self.h_fuselage = self.aircraft_data.data['inputs']['h_fuselage']
-        self.t_fuselage = self.aircraft_data.data['inputs']['t_fuselage']
-
-        rho_water = self.aircraft_data.data['rho_water']
-        V_disp = self.aircraft_data.data['outputs']['max']['MTOM'] / rho_water
-        A_disp = V_disp / (self.aircraft_data.data['outputs']['fuselage_dimensions']['l_fuselage'] - self.aircraft_data.data['outputs']['fuselage_dimensions']['l_tailcone'])
-        depth = self.solve_piecewise(A_disp)
-        self.aircraft_data.data['outputs']['general']['resting_depth'] = depth
-        L = np.sqrt(1 + ((self.w_fuselage/2) / self.t_fuselage)**2)
-        A_hull = 2* (self.aircraft_data.data['outputs']['fuselage_dimensions']['l_fuselage'] - self.aircraft_data.data['outputs']['fuselage_dimensions']['l_tailcone']) * depth * L
-        return A_hull
-    
     def take_off_requirement(self):
         CL_takeoff = self.CLmax_takeoff/1.21
         Cd = self.calculate_Cd()
-        self.hull_surface = self.calculate_hull_surface()
+        self.hull_surface = self.aircraft_data.data['outputs']['fuselage_dimensions']['hull_surface']
         self.aircraft_data.data['outputs']['general']['Cd_water'] = Cd
         self.aircraft_data.data['outputs']['general']['hull_surface'] = self.hull_surface
         D = 0.5 * self.rho_water * (self.V_lof)**2 * Cd * self.hull_surface
