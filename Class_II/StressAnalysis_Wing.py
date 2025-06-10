@@ -40,16 +40,27 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
         self.widths_top = np.array([self.wing_structure[i]['stringers']['top']['spacing'] for i in range(len(self.wing_structure))])
         self.widths_bottom = np.array([self.wing_structure[i]['stringers']['bottom']['spacing'] for i in range(len(self.wing_structure))])
         self.poisson_ratio_wing = self.wing_material['poisson_ratio']
+        self.bv = self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['b']
+        self.bh = self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['b']
+        self.mass_vertical = self.aircraft_data.data['outputs']['component_weights']['vertical_tail']/9.81
+        self.mass_horizontal = self.aircraft_data.data['outputs']['component_weights']['horizontal_tail']/9.81
+        self.mass_wing = self.aircraft_data.data['outputs']['component_weights']['wing']/9.81
         self.E_wing = self.wing_material['E']
         self.load_data = {}
         self.rib_iteration = 0
         self.max_rib_iteration = 10
+        self.rho_water = self.aircraft_data.data['rho_water']
         self.wing_weight = self.wing_weight_dist()
         self.MTOW = self.aircraft_data.data['outputs']['max']['MTOW']
-        self.buoy_radius = 5 #TODO link these to json
-        self.buoy_length = 7
+        self.buoy_radius = 2 #TODO link these to json
+        self.buoy_length = 3
         self.buoy_offset = 5
-        self.buoy_landing_load = 1/2 * self.MTOW #TODO discuss about this value
+        self.buoy_projected_area = self.buoy_length*self.buoy_radius*2
+        self.roll_rate = np.deg2rad(self.aircraft_data.data['outputs']['control_surfaces']['aileron']['roll_rate'])
+        self.Cs = 1.5
+
+        # self.mass_I_xx = 1/8*(self.mass_wing*self.b**2 + self.mass_vertical*self.bv**2 + self.mass_horizontal*self.bh**2) #TODO check with Shuard
+        self.buoy_landing_load = 1/4 * self.MTOW #TODO discuss about this value
         self.kinematic_viscosity = self.aircraft_data.data['kinematic_viscosity']
         self.h_fuselage = self.aircraft_data.data['outputs']['fuselage_dimensions']['h_fuselage_station1']
         self.dihedral = self.aircraft_data.data['outputs']['wing_design']['dihedral']
@@ -68,38 +79,27 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
         area = R**2 * theta - (R - x) * np.sqrt(2 * R * x - x**2)
         return area * self.buoy_length
 
-    def solve_submersion_depth(self, weight):
-        rho_water = self.aircraft_data.data['rho_water']
-        g = 9.81
-        R = self.buoy_radius  # define this in __init__ from d_fuselage
+    def estimate_slam_depth(self):
+        A = self.buoy_projected_area
+        m_eff = self.F_slam/9.81
+        d = m_eff / (self.Cs * self.rho_water * A)
 
-        def buoyancy_balance(x):
-            V = self.submerged_volume(x)
-            Fb = rho_water * g * V
-            return Fb - weight
-
-        # Check signs at boundaries
-        f_a = buoyancy_balance(0)
-        f_b = buoyancy_balance(2 * R)
-
-        if f_a * f_b > 0:
-            raise ValueError(f"Root finding failed: function has same sign at bounds: f(0)={f_a}, f(2R)={f_b}")
-
-        sol = root_scalar(buoyancy_balance, bracket=[0, 2 * R], method='brentq')
-        if sol.converged:
-            return sol.root
-        else:
-            raise RuntimeError("Could not find valid submersion depth.")
+        d = np.pi * self.buoy_radius / 2 / self.Cs
+        return d
 
 
     def calculate_buoy_surface(self):
-        weight = self.buoy_landing_load 
+        
+        v_tip_z = self.roll_rate * (self.b / 2)
+        A_impact = self.buoy_projected_area 
+        self.F_slam = 0.5 * self.Cs * self.rho_water * A_impact * v_tip_z**2 
+        print(self.F_slam)
+        depth = self.estimate_slam_depth()
 
-        depth = self.solve_submersion_depth(weight)
-        self.aircraft_data.data['outputs']['general']['resting_depth'] = depth
-
-        A_buoy = 2 * self.buoy_length * depth 
-        return A_buoy
+        theta = 2 * np.arccos(1 - depth / self.buoy_radius)  
+        print(f'Estimated Slam Depth: {depth:.2f} m, Theta: {theta:.2f} rad')
+        A_wet = self.buoy_length * self.buoy_radius * theta
+        return A_wet
     
     def get_buoy_drag(self):
         A_buoy = self.calculate_buoy_surface()
@@ -201,7 +201,7 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
         elif self.evaluate_case == 'min':
             if self.evaluate == EvaluateType.WING:
                 self.vertical_distribution = self.lift_function - self.wing_weight
-                self.vertical_distribution[-1] += self.buoy_landing_load*self.max_load_factor
+                self.vertical_distribution[-1] += self.F_slam
             else:
                 self.vertical_distribution = self.min_load_factor*self.lift_function - self.wing_weight if self.evaluate == EvaluateType.HORIZONTAL else self.lift_function
             return self.vertical_distribution
@@ -217,7 +217,10 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
         elif self.evaluate_case == 'min':
             if self.evaluate == EvaluateType.WING:
                 self.torque_distribution = self.lift_function * quarter_chord_dist + self.moment_function
+                print(self.buoy_drag*self.buoy_arm)
                 self.torque_distribution[-1] += self.buoy_drag * self.buoy_arm
+                plt.plot(self.b_array, self.torque_distribution, label='Torque Distribution', color='orange')
+                plt.show()
             else:
                 self.torque_distribution = self.min_load_factor*self.lift_function * quarter_chord_dist
             return self.torque_distribution
@@ -232,6 +235,9 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
     def internal_vertical_shear_force(self):
 
         load = self.resultant_vertical_distribution()
+        load = load.copy()
+        if self.evaluate == EvaluateType.WING and self.evaluate_case == 'min':
+            load[-1] = load[-1]/self.dy[-1]
 
         Vy_flipped = np.cumsum(load[::-1] * self.dy[::-1])
         self.Vy_internal = -Vy_flipped[::-1]
@@ -264,8 +270,12 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
     
     def internal_torque(self):
         load = self.resultant_torque_distribution()
+        load = load.copy()
+        if self.evaluate == EvaluateType.WING and self.evaluate_case == 'min':
+            load[-1] = load[-1]/self.dy[-1]
         T_flipped = np.cumsum(load[::-1] * self.dy[::-1])
         self.T_internal = T_flipped[::-1]
+
         return self.T_internal
     
     def calculate_top_bending_stress(self): 
@@ -541,7 +551,7 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
                 margin = np.min(abs(ref)/abs(main_stress))
                 if margin < 1:
                     self.plot_any(i)
-                    print(f'Warning for {self.evaluate.name}: Margin for {i.name} (n={self.load_factor:.2f}) is below 1: {margin} ({labels[0]} vs {labels[1:][idx]})')
+                    print(f'Warning for {self.evaluate.name}: Margin for {i.name} (case={self.evaluate_case}) is below 1: {margin} ({labels[0]} vs {labels[1:][idx]})')
                 #print(f'Margin for {i.name} (n={self.load_factor:.2f}): {margin} ({labels[0]} vs {labels[1:][idx]})')
                 self.margins[f'{labels[1:][idx].replace(' ','_')}_{self.evaluate_case}_margin'] = margin
             
@@ -557,6 +567,7 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
         if self.evaluate == EvaluateType.WING:
             self.plot_any(StressOutput.DEFLECTION)
             self.plot_any(StressOutput.TWIST)
+            self.plot_any(StressOutput.INTERNAL_SHEAR_VERTICAL)
             self.margins[f'{self.evaluate_case}_deflection'] = self.wing_deflection[-1]
             self.margins[f'{self.evaluate_case}_twist'] = self.twist[-1]
         if self.runs == 1 and self.PLOT:
@@ -619,12 +630,9 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
                 'main': self.bottom_bending_stress,
                 'references': [
                     np.full_like(self.bottom_bending_stress, self.sigma_y / 1e6)
-                ] + (
-                    [-self.sigma_col_bottom, -self.buckling_stress_bottom/1000000] if self.load_factor < 0 else []
-                ),
-                'labels': ['Bottom Bending Stress', 'Yield Stress']
-                        + (['Column Buckling Stress', 'Buckling Stress'] if self.load_factor < 0 else []),
-                'unit': '[MPa]'
+                ],
+                'labels': ['Bottom Bending Stress', 'Yield Stress'],
+                'unit': '[MPa]'                 
             },
             StressOutput.SHEAR_STRESS: {
                 'main': abs(self.shear_stress),
@@ -719,7 +727,7 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
         plt.figure()
         if self.evaluate == EvaluateType.WING:
             color = {'max': 'blue', 'min': 'red'}
-            n_dict = {'max': f'n={self.max_load_factor}', 'min': 'Buoy Touch'}
+            n_dict = {'max': f'n={self.max_load_factor}', 'min': 'Buoy Slam'}
         else:
             color = {'max': 'blue'}
             if self.evaluate == EvaluateType.VERTICAL:
@@ -760,7 +768,7 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
         unit = output['unit']
         if self.evaluate == EvaluateType.WING:
             color = {'max': 'blue', 'min': 'red'}
-            n_dict = {'max': f'n={self.max_load_factor}', 'min': 'Buoy Touch'}
+            n_dict = {'max': f'n={self.max_load_factor}', 'min': 'Buoy Slam'}
         else:
             color = {'max': 'blue'}
             if self.evaluate == EvaluateType.VERTICAL:
@@ -800,13 +808,12 @@ def main(all=True):
     else:
         stress_analysis = StressAnalysisWing(aircraft_data=Data("design3.json"), wingbox_mat=wingbox_material, wing_mat=wing_material, stringer_mat=stringer_material, evaluate=EvaluateType.WING, 
                                              PLOT=False)
-        stress_analysis.main_analysis(run_all=False)
-        stress_analysis.plot_any(StressOutput.RESULTANT_VERTICAL)
-        stress_analysis.plot_any(StressOutput.RESULTANT_TORQUE)
+        stress_analysis.main_analysis(run_all=True)
+        stress_analysis.plot_any(StressOutput.INTERNAL_TORQUE)
         
 if __name__ == "__main__":
 
-    main()
+    main(all=False)
 
 
 

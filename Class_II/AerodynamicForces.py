@@ -6,6 +6,7 @@ from utils import Data, EvaluateType
 from numpy.polynomial import Polynomial
 import numpy as np
 from aero.lift_curve import lift_curve
+from aero.lateral_centre import lateral_centre
 import warnings
 warnings.filterwarnings("ignore")
 np.seterr(all='ignore')
@@ -105,13 +106,15 @@ class AerodynamicForces:
         self.lift_arm = self.xcg_aft - (self.xlemac + 0.25*self.MAC) 
 
         self.MTOW = self.aircraft_data.data['outputs']['max']['MTOW']
-        self.CL_max = self.aircraft_data.data['inputs']['CLmax_landing']/2
+        self.CL_max = self.aircraft_data.data['inputs']['CLmax_landing']
         self.V_land = self.aircraft_data.data['requirements']['stall_speed_landing']*1.05
 
         self.L_max = 0.5 * self.rho * self.V_land**2 * self.CL_max * self.S/2
         self.L_nominal = self.MTOW / 2 
 
         self.CL_nominal = self.L_nominal / (0.5 * self.rho * self.V**2 * self.S)
+
+        self.lateral_centre = lateral_centre()
 
         self.get_aileron_lift_distribution()
         self.get_elevator_lift_distribution()
@@ -134,7 +137,6 @@ class AerodynamicForces:
         for id, i in enumerate(self.elevator_lift_dist):
             idx = np.argmin(np.abs(self.b_h_array - self.elevator_array[id]))
             self.elevator_lift_array[idx] = i
-        
 
     def elliptic_lift_distribution(self, y_vals, span, CL):
         elliptical_distribution = np.sqrt(1 - (y_vals / span)**2)
@@ -201,14 +203,25 @@ class AerodynamicForces:
         plt.show()
     
     def get_max_aero_dist(self):
-        self.L_y = self.elliptic_lift_distribution(self.b_array, self.b/2, self.CL_max)* 0.5*self.rho*self.V_land**2*self.S
-        self.D_y = self.elliptic_drag_distribution(self.b_array, self.b/2, self.CL_max, self.V_land)* 0.5*self.rho*self.V_land**2*self.S
+        # self.L_y = self.elliptic_lift_distribution(self.b_array, self.b/2, self.CL_max)* 0.5*self.rho*self.V_land**2*self.S
+        y_vals, lift_vals = self.lateral_centre.determine_distr(self.b/2, self.chord_root, self.chord_tip, self.rho, self.V_land, self.CL_max)
+        poly = Polynomial.fit(y_vals, lift_vals, 8)
+        self.L_y = poly(self.b_array)
+        cl_vals = self.lateral_centre.cll
+        drag_vals = self.airfoil_Cd0 + (cl_vals**2) / (np.pi * self.aspect_ratio * self.oswald_factor * self.k)
+        poly_drag = Polynomial.fit(y_vals, drag_vals, 8)
+        self.D_y = poly_drag(self.b_array) * 0.5 * self.rho * self.V_land**2 * self.chord_span_function_aero(self.b_array)
         self.M_y = self.static_moment_distribution() * 0.5 * self.rho * self.V_land**2 * self.chord_span_function_aero(self.b_array) ** 2
         return self.L_y
     
     def get_nominal_aero_dist(self):
-        self.L_y = self.elliptic_lift_distribution(self.b_array, self.b/2, self.CL_nominal)*0.5*self.rho*self.V**2*self.S
-        self.D_y = self.elliptic_drag_distribution(self.b_array, self.b/2, self.CL_nominal, self.V)* 0.5*self.rho*self.V**2*self.S
+        y_vals, lift_vals = self.lateral_centre.determine_distr(self.b/2, self.chord_root, self.chord_tip, self.rho, self.V, self.CL_nominal)
+        poly = Polynomial.fit(y_vals, lift_vals, 8)
+        self.L_y = poly(self.b_array)
+        cl_vals = self.lateral_centre.cll
+        drag_vals = self.airfoil_Cd0 + (cl_vals**2) / (np.pi * self.aspect_ratio * self.oswald_factor * self.k)
+        poly_drag = Polynomial.fit(y_vals, drag_vals, 8)
+        self.D_y = poly_drag(self.b_array) * 0.5 * self.rho * self.V**2 * self.chord_span_function_aero(self.b_array)
         self.M_y = self.static_moment_distribution() * 0.5 * self.rho * self.V**2 * self.chord_span_function_aero(self.b_array) ** 2
         return self.L_y
 

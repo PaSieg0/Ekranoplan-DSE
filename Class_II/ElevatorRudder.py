@@ -142,12 +142,12 @@ class ElevatorRudder:
         self.pitch_rate = self.calculate_pitch_rate()
         integral, _ = quad(self.chord_h, self.elevator_start, b)
         elevator_effectiveness = self.control_surface_effectiveness(self.elevator_chord_ratio)
-        ratio = (self.airfoil_cl_alpha * elevator_effectiveness)/(self.Sh*self.l_h*self.tail_lift_slope)*integral
+        ratio = 2*(self.airfoil_cl_alpha * elevator_effectiveness)/(self.Sh*self.l_h*self.tail_lift_slope)*integral
         return ratio
     
     def calculate_elevator_surface(self):
         self.pitch_rate = self.calculate_pitch_rate()
-        self.required_Cmde_Cmq = -self.pitch_rate/np.deg2rad(-self.elevator_deflection)*(self.MAC/self.V)/2
+        self.required_Cmde_Cmq = -self.pitch_rate/np.deg2rad(-self.elevator_deflection)*(self.MAC/self.V)
         self.calculate_elevator_position()
 
     def calculate_elevator_position(self):
@@ -175,7 +175,7 @@ class ElevatorRudder:
         elevator_effectiveness = self.control_surface_effectiveness(self.elevator_chord_ratio)
         self.CMde = -self.airfoil_cl_alpha * elevator_effectiveness * self.l_h/(self.S * self.MAC)*self.Se
 
-        Cmq = -self.Sh*self.l_h**2/self.S/self.MAC * self.tail_lift_slope/2
+        Cmq = -self.Sh*self.l_h**2/self.S/self.MAC * self.tail_lift_slope
         print(f'cmq: {Cmq}')
 
         N = self.CMde * np.deg2rad(self.elevator_deflection) * 0.5 * self.rho * self.V**2 * self.S * self.MAC/self.l_h
