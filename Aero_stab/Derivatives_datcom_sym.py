@@ -95,7 +95,7 @@ class DerivativesDatcom_sym:
         # 'Ignored, see paper, Pitching moment coefficient science direct')
         return 0
 
-    def C_m_alphadot(self):
+    def C_m_alphadot(self): # Value is now is negative, should be positive ~0.2
         K_wb = 0.95 #p.1047
         K_bw = 0.15 #p.1047
         # X_ac__Cr = ((2/3)*(1-self.taper) + 1/2 * (1 - (self.taper**2/(1+self.taper))) * np.pi * np.log(1 + self.A/5)) / (1 + np.pi * np.log(1+self.A/5)) #p.664

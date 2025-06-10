@@ -45,7 +45,7 @@ class DerivativesDatcom_asym:
         self.Cl_alpha_Vtail = aircraft_data.data['outputs']['aerodynamics']['vertical/horizontal stab cl_alpha']
 
 
-    def CyB(self):
+    def CyB(self): # Value is very small, should be ~ -0.8
         """
         Calculate the side force coefficient due to the elevator deflection.
 
@@ -55,23 +55,23 @@ class DerivativesDatcom_asym:
         Returns:
         tuple(float: total Side force coefficient, side force due to tail(needed for Cyp).
         """
-        z_w = self.d_fusel / 2 #TODO #distance from centerline wing to centerline body
-        d = self.d_fusel #max body height at wing intersection
-        K = -2*1.85*(z_w / d)# from plot
+        z_w = self.d_fusel / 2 # Distance from centerline wing to centerline body
+        d = self.d_fusel # Max body height at wing intersection
+        K = -2*1.85*(z_w / d)# From plot
 
         delta_CyB_dihedral = -0.0001* np.radians(self.dihedral)
-        k2__k1 = 0.9 # determined from plot page 834 DATCOM
+        k2__k1 = 0.9 # Determined from plot page 834 DATCOM
 
         S0 = aircraft_data.data['outputs']['fuselage_dimensions']['cross_sectional_area_2'] # Cross sectional area of the body at the wing intersection [m2]
-        Cl_alpha_body = 2*(k2__k1)* S0 / (self.V_b ** (2/3)) # body lift curve slope [1/rad]
+        Cl_alpha_body = 2*(k2__k1)* S0 / (self.V_b ** (2/3)) # Body lift curve slope [1/rad]
 
         CyB_body = -Cl_alpha_body
         S_ref_body = self.l_b * self.d_fusel
         S_ref_wing = self.S
 
-        A_vbA_v = 1.2 #b_v / 2 * r, if we know empennage sizing->look at page 1667
-        Kh = 0.8 #depends on Sh/Sv-> page 1668 DATCOM
-        Av_hb__Av_b = 1.7 #Depends on zh/bh, thus for a t-tail equal to 1 ->p1667
+        A_vbA_v = 1.2 # b_v / 2 * r, if we know empennage sizing->look at page 1667
+        Kh = 0.8 # Depends on Sh/Sv-> page 1668 DATCOM
+        Av_hb__Av_b = 1.0 # Depends on zh/bh, thus for a t-tail equal to 1 ->p1667
         self.A_eff_Vstab = A_vbA_v * self.Av * (1+Kh*(Av_hb__Av_b - 1))
         Cl_alpha_Vtail = 0.16 # WIG, NACA 0012
         sidewash_coeff = 0.724 + 3.06 * (self.Sv / self.S) / (1 + np.cos(np.radians(self.Delta_c4))) +0.4*z_w / self.d_fusel + 0.009*self.A
@@ -84,7 +84,7 @@ class DerivativesDatcom_asym:
 
         return CyB_wing_body + CyB_tail, CyB_tail
     
-    def ClB(self):
+    def ClB(self): # Very small, should be about ~ -0.1
         clB__cl_s = -0.002/5 # from plot->p1563
         Km_s = 1.03 #from plot p1564
         kf = 0.95 # from plot p1625
@@ -105,7 +105,7 @@ class DerivativesDatcom_asym:
 
         return ClB_wb + dclB_Vtail
     
-    def CnB(self):
+    def CnB(self): # Value very small, should be about ~0.1
         K_N = 0.0018 #p.1633
         K_R_l = 1.65 #p.1634
         S_B_s = self.d_fusel * self.l_b # Cross sectional area of the body at the wing intersection [m2]
@@ -117,7 +117,7 @@ class DerivativesDatcom_asym:
         CnB_Vtail = -dcyB_Vtail * (self.lp / self.b)
         return CnB_wb + CnB_Vtail, CnB_wb, CnB_Vtail
     
-    def Cyp(self):
+    def Cyp(self): 
         """
         Calculate the side force coefficient due to the roll rate.
 
@@ -178,7 +178,7 @@ class DerivativesDatcom_asym:
     def Cyr(self):
         return 0 # It is very small, so we can ignore it for now
 
-    def Clr(self):
+    def Clr(self): # This value is not stable...
         """
         Calculate the roll moment coefficient due to the yaw rate.
 
@@ -198,14 +198,14 @@ class DerivativesDatcom_asym:
         dClr_Cl = self.Cl * ClB__Cl - self.ClB()
         dClr__dihedral = 1/12 * (np.pi * self.A * np.sin(np.radians(self.Delta_c4))) / (self.A + 4 * np.cos(np.radians(self.Delta_c4)))
 
-        #TODO: Check if dihedral should indeed be in degrees for this formula
-        Clr_wb = self.Cl * Clr__Cl + dClr_Cl + dClr__dihedral * self.dihedral
+        # Dihedral should be in radians for this formula
+        Clr_wb = self.Cl * Clr__Cl + dClr_Cl + dClr__dihedral * np.radians(self.dihedral)
 
-        zp = self.zp # Dstance from the centerline of the body to the centerline of the vertical tail
-        Clr_tail = 2 / self.b**2 * (self.lp * np.cos(np.radians(self.alpha)) + zp * np.sin(np.radians(self.alpha))*(zp*np.cos(np.radians(self.alpha) - self.lp * np.sin(np.radians(self.alpha)))) * self.CyB()[1]) #p.2802
+        zp = self.zp # Distance from the centerline of the body to the centerline of the vertical tail
+        Clr_tail = 2 / self.b**2 * (self.lp * np.cos(np.radians(self.alpha)) + zp * np.sin(np.radians(self.alpha)))*(zp*np.cos(np.radians(self.alpha) - self.lp * np.sin(np.radians(self.alpha)))) * self.CyB()[1] #p.2802
         return Clr_wb - Clr_tail
     
-    def Cnr(self):
+    def Cnr(self): # Value very small, should be aobut ~ -0.2
         """
         Calculate the yaw moment coefficient due to the yaw rate.
 
@@ -224,8 +224,7 @@ class DerivativesDatcom_asym:
     def CyBdot(self):
         """
         Calculate the side force coefficient due to the rate of change of the roll angle.
-        !!!!!!THIS IS THE MOST SKETCHY ONE, IT SHOULD BE VERY SMALL BUT IT IS NOT. HOWEVER CLBDOT DEPENDS ON THIS AND LOOKS FINE!!!!!
-
+        
         Returns:
         float: Side force coefficient.
         """
@@ -235,7 +234,7 @@ class DerivativesDatcom_asym:
         sigma_B_alpha = -0.001 # p.2834
         sigma_B_dihedral = np.rad2deg(-0.93) # p.2846
         sigma_B_WB = 0.135 # p.2867
-        #TODO: Check the units of the angles. Alpha and dihedral are in degrees
+    
         sigma_B = sigma_B_alpha * np.radians(self.alpha) + sigma_B_dihedral / 57.3 * np.radians(self.dihedral) + sigma_B_WB
         CyBdot = 2*C_L_alpha_V * sigma_B * self.Sv / self.S * (self.lp * np.cos(np.radians(self.alpha)) + zp * np.sin(np.radians(self.alpha)) / self.b) 
         return CyBdot
