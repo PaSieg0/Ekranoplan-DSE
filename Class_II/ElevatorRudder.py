@@ -49,9 +49,13 @@ class ElevatorRudder:
         self.sweep_v = self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['sweep']
         self.taper_v = self.chord_tip_v / self.chord_root_v
         self.sweep_h = self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['sweep']
+        self.w_fuselage = self.aircraft_data.data['outputs']['fuselage_dimensions']['w_fuselage']
 
         self.vertical_tail_thickness = self.aircraft_data.data['inputs']['airfoils']['vertical_tail']*self.chord_root_v/2
-        self.elevator_start = self.vertical_tail_thickness + self.elevator_start
+        self.take_off_power = self.aircraft_data.data['outputs']['general']['take_off_power']
+        self.V_lof = self.aircraft_data.data['requirements']['stall_speed_takeoff']*1.05
+
+        self.take_off_drag = self.take_off_power / self.V_lof
 
         self.MAC = self.aircraft_data.data['outputs']['wing_design']['MAC']
 
@@ -160,6 +164,10 @@ class ElevatorRudder:
 
         N = self.CMde * np.deg2rad(self.elevator_deflection) * 0.5 * self.rho_high * self.V**2 * self.S * self.MAC/self.l_h
         return N
+    
+    def calculate_pitch_up_performance(self):
+        pass
+
 
     def main(self):
         self.calculate_required_rudder_surface()
@@ -199,12 +207,12 @@ class ElevatorRudder:
 
 
     def plot_horizontal_tail(self):
-        b_half = np.arange(0, self.b_h/2 + 0.001, 0.001)
+        b_half = np.arange(0, self.b_h / 2 + 0.001, 0.001)
 
         # Main tail
         y_root_LE = self.chord_root_h / 2
-        leading_edge_h = y_root_LE - np.tan(np.deg2rad(self.sweep_h)) * b_half
-        trailing_edge_h = leading_edge_h - self.chord_h(b_half)
+        leading_edge = y_root_LE - np.tan(np.deg2rad(self.sweep_h)) * b_half
+        trailing_edge = leading_edge - self.chord_h(b_half)
 
         # Elevator
         b_elevator = np.array([self.elevator_start, self.elevator_end])
@@ -212,51 +220,67 @@ class ElevatorRudder:
         te_elevator = le_elevator - self.chord_h(b_elevator)
         le_elevator_actual = te_elevator + self.chord_h(b_elevator) * self.elevator_chord_ratio
 
-        # Mirror for left side
-        b_half_mirror = -b_half
-        leading_edge_h_mirror = leading_edge_h
-        trailing_edge_h_mirror = trailing_edge_h
-
-        b_elevator_mirror = -b_elevator
-        le_elevator_mirror = le_elevator
-        te_elevator_mirror = te_elevator
-        le_elevator_actual_mirror = le_elevator_actual
-
-        # Plotting
+        # Plot setup
         plt.figure(figsize=(10, 5))
 
-        # Horizontal tail (right and left)
-        plt.plot(b_half, leading_edge_h, color='green', label='Horizontal Tail LE')
-        plt.plot(b_half, trailing_edge_h, color='green', label='Horizontal Tail TE')
-        plt.plot(b_half_mirror, leading_edge_h_mirror, color='green')
-        plt.plot(b_half_mirror, trailing_edge_h_mirror, color='green')
-        plt.plot([0, 0], [y_root_LE, trailing_edge_h[0]], color='green')  # Root vertical line
+        # Plot right horizontal tail
+        plt.plot(b_half, leading_edge, color='green', label='Horizontal Tail LE')
+        plt.plot(b_half, trailing_edge, color='green', label='Horizontal Tail TE')
+        plt.plot([0, 0], [y_root_LE, trailing_edge[0]], color='green')
+        plt.plot([self.b_h/2, self.b_h/2], [leading_edge[-1], trailing_edge[-1]], color='green')
 
-        # Tip vertical lines
-        plt.plot([self.b_h/2, self.b_h/2], [leading_edge_h[-1], trailing_edge_h[-1]], color='green')
-        plt.plot([-self.b_h/2, -self.b_h/2], [leading_edge_h[-1], trailing_edge_h[-1]], color='green')
-
-        # Elevator (right and left)
-        # Right
+        # Plot elevator - right
         plt.plot(b_elevator, le_elevator_actual, color='red', label='Elevator LE')
         plt.plot(b_elevator, te_elevator, color='red', label='Elevator TE')
-        plt.plot([b_elevator[0], b_elevator[0]], [le_elevator_actual[0], te_elevator[0]], color='red')
-        plt.plot([b_elevator[1], b_elevator[1]], [le_elevator_actual[1], te_elevator[1]], color='red')
-        # Left (mirror)
-        plt.plot(b_elevator_mirror, le_elevator_actual_mirror, color='red')
-        plt.plot(b_elevator_mirror, te_elevator_mirror, color='red')
-        plt.plot([b_elevator_mirror[0], b_elevator_mirror[0]], [le_elevator_actual_mirror[0], te_elevator_mirror[0]], color='red')
-        plt.plot([b_elevator_mirror[1], b_elevator_mirror[1]], [le_elevator_actual_mirror[1], te_elevator_mirror[1]], color='red')
+        for i in range(2):
+            plt.plot([b_elevator[i], b_elevator[i]], [le_elevator_actual[i], te_elevator[i]], color='red')
 
-        # Final touches
-        plt.title('Horizontal Tail and Elevator Planform')
+        # Mirror left side (x → -x, y stays the same)
+        plt.plot(-b_half, leading_edge, color='green')
+        plt.plot(-b_half, trailing_edge, color='green')
+        plt.plot([-self.b_h/2, -self.b_h/2], [leading_edge[-1], trailing_edge[-1]], color='green')
+        plt.plot(-b_elevator, le_elevator_actual, color='red')
+        plt.plot(-b_elevator, te_elevator, color='red')
+        for i in range(2):
+            plt.plot([-b_elevator[i], -b_elevator[i]], [le_elevator_actual[i], te_elevator[i]], color='red')
+
+        # Vertical tail clipping
+        for pos in [self.w_fuselage/2, -self.w_fuselage/2]:
+            inner = pos - self.vertical_tail_thickness
+            outer = pos + self.vertical_tail_thickness
+
+            # Interpolate elevator or fall back to main tail
+            le_interp = np.interp([inner, outer], b_elevator, le_elevator_actual) \
+                if b_elevator[0] <= abs(pos) <= b_elevator[1] else \
+                np.interp([inner, outer], b_half, leading_edge)
+
+            te_interp = np.interp([inner, outer], b_elevator, te_elevator) \
+                if b_elevator[0] <= abs(pos) <= b_elevator[1] else \
+                np.interp([inner, outer], b_half, trailing_edge)
+
+            # Plot clipping lines
+            plt.plot([inner, inner], [le_interp[0], te_interp[0]], color='red', linewidth=2)
+            plt.plot([outer, outer], [le_interp[1], te_interp[1]], color='red', linewidth=2)
+
+            # Draw vertical tail box
+            idx = np.abs(b_half - abs(pos)).argmin()
+            le = leading_edge[idx]
+            te = trailing_edge[idx]
+
+            plt.fill([inner, outer, outer, inner], [le, le, te, te], color='blue', alpha=0.7)
+            plt.plot([inner, inner], [le, te], color='blue', linewidth=1.5)
+            plt.plot([outer, outer], [le, te], color='blue', linewidth=1.5)
+
+        plt.title('Horizontal Tail and Elevator Planform with Vertical Tail Positions')
         plt.xlabel('Spanwise Position (m)')
         plt.ylabel('Chordwise Position (m)')
         plt.ylim(-5, 5)
         plt.xlim(-self.b_h/2 - 1, self.b_h/2 + 1)
         plt.gca().set_aspect('equal')
         plt.grid(True)
+        plt.legend()
         plt.show()
+
 
 
     def plot_vertical_tail(self):
@@ -317,4 +341,3 @@ if __name__ == "__main__":
     print(f"pitch rate: {np.rad2deg(elevator_rudder.pitch_rate)}")
     print(f"Elevator end: {elevator_rudder.elevator_end}")
     print(f"Elevator area: {elevator_rudder.elevator_area}")
-    
