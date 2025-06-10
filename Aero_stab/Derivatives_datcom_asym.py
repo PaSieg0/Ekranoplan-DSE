@@ -45,7 +45,7 @@ class DerivativesDatcom_asym:
         self.Cl_alpha_Vtail = aircraft_data.data['outputs']['aerodynamics']['vertical/horizontal stab cl_alpha']*180/np.pi
 
 
-    def CyB(self): # Value is very small, should be ~ -0.8 fixed
+    def CyB(self):
         """
         Calculate the side force coefficient due to the elevator deflection.
 
@@ -84,7 +84,7 @@ class DerivativesDatcom_asym:
 
         return CyB_wing_body + CyB_tail, CyB_tail
     
-    def ClB(self): # Very small, should be about ~ -0.1 fixed
+    def ClB(self):
         clB__cl_s = -0.002/5 # from plot->p1563
         Km_s = 1.03 #from plot p1564
         kf = 0.95 # from plot p1625
@@ -107,7 +107,7 @@ class DerivativesDatcom_asym:
         # print(ClB_wb + dclB_Vtail)
         return ClB_wb + dclB_Vtail
     
-    def CnB(self): # Value very small, should be about ~0.1 fixed
+    def CnB(self):
         K_N = 0.0018 #p.1633
         K_R_l = 1.65 #p.1634
         S_B_s = self.d_fusel * self.l_b # Cross sectional area of the body at the wing intersection [m2]
@@ -178,9 +178,9 @@ class DerivativesDatcom_asym:
         return Cnp_w - Cnp_tail, Cnp_w, Cnp_tail
     
     def Cyr(self):
-        return 0 # It is very small, so we can ignore it for now
+        return 0 # subtracted by much larger mu factor, therefore ignored
 
-    def Clr(self): # This value is not stable...
+    def Clr(self): #Spiral instability, not large enough to cause problems
         """
         Calculate the roll moment coefficient due to the yaw rate.
 
@@ -207,7 +207,7 @@ class DerivativesDatcom_asym:
         Clr_tail = - 2 / self.b**2 * (self.lp * np.cos(np.radians(self.alpha)) + zp * np.sin(np.radians(self.alpha)))*(zp*np.cos(np.radians(self.alpha) - self.lp * np.sin(np.radians(self.alpha)))) * self.CyB()[1] #p.2802
         return Clr_wb + Clr_tail
     
-    def Cnr(self): # Value very small, should be aobut ~ -0.2
+    def Cnr(self):
         """
         Calculate the yaw moment coefficient due to the yaw rate.
 

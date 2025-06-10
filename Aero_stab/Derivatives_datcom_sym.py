@@ -48,7 +48,7 @@ class DerivativesDatcom_sym:
         self.Cl = 0.5
         self.alpha = np.deg2rad(2)  # Example angle of attack in radians
 
-    def Cmq(self):
+    def Cmq(self): # Cross validated with the help of Mr. Antens
         """
         Calculate the pitch moment coefficient due to the pitch rate.
 
@@ -94,10 +94,10 @@ class DerivativesDatcom_sym:
         return Cxu
 
     def C_m_u(self):
-        # 'Ignored, see paper, Pitching moment coefficient science direct')
+        # 'Ignored, see paper, Pitching moment coefficient science direct'), 
         return 0
 
-    def C_m_alphadot(self): # Value is now is negative, should be positive ~0.2
+    def C_m_alphadot(self): # Value is now is negative, should be positive ~0.2, From sensitivity analysis with SVV a larger negative value makes the SS more alike real life conditions.
         K_wb = 0.95 #p.1047
         K_bw = 0.15 #p.1047
         # X_ac__Cr = ((2/3)*(1-self.taper) + 1/2 * (1 - (self.taper**2/(1+self.taper))) * np.pi * np.log(1 + self.A/5)) / (1 + np.pi * np.log(1+self.A/5)) #p.664
