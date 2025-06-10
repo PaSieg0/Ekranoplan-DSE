@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import matplotlib.transforms as transforms
 from scipy.integrate import quad
-from weight_distributions import CGCalculation
+from weight_distributions import load_diagram
 from AerodynamicForces import AerodynamicForces
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -70,8 +70,10 @@ class FuselageThickness:
 
         self.b_array = np.arange(0, self.b/2 + 0.01, 0.01)
 
-        self.fuselage_mass = CGCalculation(self.aircraft_data, plot=False)
-        self.fuselage_mass.load_diagram()
+        self.fuselage_mass = load_diagram(self.aircraft_data, plot=False)
+        self.fuselage_mass.get_weights()
+        self.fuselage_mass.get_load_distribution()
+        self.fuselage_mass.get_internal_loads()
         self.x_points = self.fuselage_mass.x_points
 
         self.V_internal = self.fuselage_mass.shear

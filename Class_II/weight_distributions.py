@@ -7,12 +7,13 @@ from utils import Data, EvaluateType
 from AerodynamicForces import AerodynamicForces
 
 class load_diagram:
-    def __init__(self, aircraft_data: Data) -> None:
+    def __init__(self, aircraft_data: Data, plot=True) -> None:
         self.aircraft_data = aircraft_data
         
         # Initialize component weights
         self._init_aircraft_parameters()
         self._init_component_weights()
+        self.plot = plot
 
         
     def _init_component_weights(self, weights=True):
@@ -72,9 +73,13 @@ class load_diagram:
                              self.l_afterbody + self.l_tailcone)
         self.x_points = np.arange(0, self.l_fuselage, 0.01)
         self.OEW_loads = np.zeros_like(self.x_points)
-        self.fuel_margin = 0.15
+        self.fuel_margin = 0.15 #TODO link to json?
+        self.nose_share=0.15
+        self.forebody_share=0.45
+        self.afterbody_share=0.20
+        self.tailcone_share=0.20
 
-    def get_weights(self, nose_share, forebody_share, afterbody_share, tailcone_share):
+    def get_weights(self):
 
         self.section_weights = {
             'nose': 0.0,
@@ -107,10 +112,10 @@ class load_diagram:
             elif location == 'tail':
                 self.section_weights['tail'] += weight 
             elif location == 'all':
-                self.section_weights['nose'] += weight * nose_share 
-                self.section_weights['forebody'] += weight * forebody_share 
-                self.section_weights['afterbody'] += weight * afterbody_share 
-                self.section_weights['tailcone'] += weight * tailcone_share 
+                self.section_weights['nose'] += weight * self.nose_share 
+                self.section_weights['forebody'] += weight * self.forebody_share 
+                self.section_weights['afterbody'] += weight * self.afterbody_share 
+                self.section_weights['tailcone'] += weight * self.tailcone_share 
                 
         # Add cargo weight
         cargo_weight = self.cargo_mass * 9.81
@@ -193,11 +198,11 @@ class load_diagram:
         return self.total_load_distribution, self.load_distributions
 
 
-    def plot_aerodynamic_loads(self, total_load_distribution, individual_load_distributions, show_individual_contributions=False):
+    def get_internal_loads(self,show_individual_contributions=False):
         
         # Calculate shear force by integrating the load distribution
         delta_x = self.x_points[1] - self.x_points[0]
-        self.shear = np.cumsum(total_load_distribution * delta_x)
+        self.shear = np.cumsum(self.total_load_distribution * delta_x)
         shear_force_kN = self.shear / 1e3 # Convert to kN
 
         # Calculate bending moment by integrating the shear force
@@ -218,66 +223,67 @@ class load_diagram:
         ]
         section_labels = ['Nose', 'Forebody', 'Afterbody', 'Tailcone']
 
-        fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(12, 18), sharex=True) # Three subplots, shared x-axis
+        if self.plot:
+            fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(12, 18), sharex=True) # Three subplots, shared x-axis
 
-        # Plot 1: Load Distribution
-        if show_individual_contributions:
-            colors = plt.cm.get_cmap('tab10', len(individual_load_distributions.keys()))
-            for i, (section_name, distribution_array) in enumerate(individual_load_distributions.items()):
-                ax1.plot(self.x_points, distribution_array/1000, label=f'{section_name.capitalize()} Contribution', color=colors(i), linestyle='-')
+            # Plot 1: Load Distribution
+            if show_individual_contributions:
+                colors = plt.cm.get_cmap('tab10', len(self.load_distributions.keys()))
+                for i, (section_name, distribution_array) in enumerate(self.load_distributions.items()):
+                    ax1.plot(self.x_points, distribution_array/1000, label=f'{section_name.capitalize()} Contribution', color=colors(i), linestyle='-')
 
-        ax1.plot(self.x_points, total_load_distribution/1000, label='Total Load Distribution', color='k', linewidth=3, linestyle='-')
-        ax1.set_ylabel('Load Distribution (kN/m)')
-        ax1.set_title('Fuselage Load, Shear Force, and Bending Moment Diagrams')
-        ax1.grid(True, which='both', linestyle='--', linewidth=0.7, alpha=0.5)
-        ax1.legend(fontsize=8) # <--- Changed: Smaller legend font size
-        
-        # Add vertical lines and labels to ax1
-        ylim_ax1 = ax1.get_ylim()
-        for x in section_boundaries:
-            ax1.axvline(x=x, color='gray', linestyle=':', linewidth=1, alpha=0.7)
-        for i in range(len(section_boundaries)-1):
-            mid = (section_boundaries[i] + section_boundaries[i+1]) / 2
-            ax1.text(mid, ylim_ax1[1]*0.95, section_labels[i], ha='center', va='top', fontsize=11, color='gray')
+            ax1.plot(self.x_points, self.total_load_distribution/1000, label='Total Load Distribution', color='k', linewidth=3, linestyle='-')
+            ax1.set_ylabel('Load Distribution (kN/m)')
+            ax1.set_title('Fuselage Load, Shear Force, and Bending Moment Diagrams')
+            ax1.grid(True, which='both', linestyle='--', linewidth=0.7, alpha=0.5)
+            ax1.legend(fontsize=8) # <--- Changed: Smaller legend font size
+            
+            # Add vertical lines and labels to ax1
+            ylim_ax1 = ax1.get_ylim()
+            for x in section_boundaries:
+                ax1.axvline(x=x, color='gray', linestyle=':', linewidth=1, alpha=0.7)
+            for i in range(len(section_boundaries)-1):
+                mid = (section_boundaries[i] + section_boundaries[i+1]) / 2
+                ax1.text(mid, ylim_ax1[1]*0.95, section_labels[i], ha='center', va='top', fontsize=11, color='gray')
 
 
-        # Plot 2: Shear Force
-        ax2.plot(self.x_points, shear_force_kN, label='Internal Shear Force', color='blue', linewidth=2)
-        ax2.set_ylabel('Shear Force (kN)') # Set y-label to kN
-        ax2.grid(True, which='both', linestyle='--', linewidth=0.7, alpha=0.5)
-        ax2.legend()
-        
-        # Add vertical lines to ax2
-        for x in section_boundaries:
-            ax2.axvline(x=x, color='gray', linestyle=':', linewidth=1, alpha=0.7)
+            # Plot 2: Shear Force
+            ax2.plot(self.x_points, shear_force_kN, label='Internal Shear Force', color='blue', linewidth=2)
+            ax2.set_ylabel('Shear Force (kN)') # Set y-label to kN
+            ax2.grid(True, which='both', linestyle='--', linewidth=0.7, alpha=0.5)
+            ax2.legend()
+            
+            # Add vertical lines to ax2
+            for x in section_boundaries:
+                ax2.axvline(x=x, color='gray', linestyle=':', linewidth=1, alpha=0.7)
 
-        # Plot 3: Bending Moment
-        ax3.plot(self.x_points, bending_moment_MNm, label='Internal Bending Moment', color='red', linewidth=2)
-        ax3.plot([self.x_points[-1], self.x_points[-1]], [bending_moment_MNm[-1], 0], color='red', linewidth=2)
-        ax3.set_xlabel('Fuselage Station (m)')
-        ax3.set_ylabel('Bending Moment (MNm)') # Set y-label to MNm
-        ax3.grid(True, which='both', linestyle='--', linewidth=0.7, alpha=0.5)
-        ax3.legend()
+            # Plot 3: Bending Moment
+            ax3.plot(self.x_points, bending_moment_MNm, label='Internal Bending Moment', color='red', linewidth=2)
+            ax3.plot([self.x_points[-1], self.x_points[-1]], [bending_moment_MNm[-1], 0], color='red', linewidth=2)
+            ax3.set_xlabel('Fuselage Station (m)')
+            ax3.set_ylabel('Bending Moment (MNm)') # Set y-label to MNm
+            ax3.grid(True, which='both', linestyle='--', linewidth=0.7, alpha=0.5)
+            ax3.legend()
 
-        # Add vertical lines to ax3
-        for x in section_boundaries:
-            ax3.axvline(x=x, color='gray', linestyle=':', linewidth=1, alpha=0.7)
-        # add space under the last plot
-        plt.tight_layout()
-        plt.subplots_adjust(top=0.95)
-        plt.subplots_adjust(bottom=0.1)
+            # Add vertical lines to ax3
+            for x in section_boundaries:
+                ax3.axvline(x=x, color='gray', linestyle=':', linewidth=1, alpha=0.7)
+            # add space under the last plot
+            plt.tight_layout()
+            plt.subplots_adjust(top=0.95)
+            plt.subplots_adjust(bottom=0.1)
 
-        plt.show()
+            plt.show()
         
 if __name__ == "__main__":
     # Example usage
     aircraft_data = Data('design3.json')
     cg_calculation = load_diagram(aircraft_data)
     
-    cg_calculation.get_weights(nose_share=0.15, forebody_share=0.45, afterbody_share=0.20, tailcone_share=0.20)
+    cg_calculation.get_weights()
     
     # Get the load distributions
     total_load_dist, individual_load_dist = cg_calculation.get_load_distribution()
     
     # Plot all diagrams in one go
-    cg_calculation.plot_aerodynamic_loads(total_load_dist, individual_load_dist, show_individual_contributions=True)
+    cg_calculation.get_internal_loads(show_individual_contributions=True)
