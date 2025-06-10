@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import os
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from utils import Data, ISA, MissionType
+from utils import Data, ISA, MissionType, plt
 
 
 def energy_height(V: float, h: float) -> float:
@@ -101,9 +101,9 @@ def plot_turn_trajectory(aircraft_data, reaction_time=1.0):
     # Example obstacles: list of (x, y) positions in meters (from above)
     # Make obstacles symmetric about x=0
     base_obstacles = [
-        (4, 200),
-        (10, 260),
-        (30, 350)
+        (4, 300),
+        (10, 360),
+        (30, 450)
     ]
     obstacles = []
     for x, y in base_obstacles:
@@ -178,6 +178,7 @@ def plot_turn_trajectory(aircraft_data, reaction_time=1.0):
 if __name__ == "__main__":
     file_path = "design3.json"
     aircraft_data = Data(file_path)
+    reaction_time = 1.  # seconds
 
-    plot_pullup_trajectory(aircraft_data, reaction_time=0.6)
-    plot_turn_trajectory(aircraft_data, reaction_time=0.6)
+    plot_pullup_trajectory(aircraft_data, reaction_time=reaction_time)
+    plot_turn_trajectory(aircraft_data, reaction_time=reaction_time)

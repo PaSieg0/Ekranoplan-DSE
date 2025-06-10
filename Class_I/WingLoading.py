@@ -85,6 +85,21 @@ class WingLoading:
             raise ValueError("No solution found for the piecewise function.")
 
 
+
+    def calculate_hull_surface(self):
+        self.w_fuselage = self.aircraft_data.data['inputs']['w_fuselage']
+        self.h_fuselage = self.aircraft_data.data['inputs']['h_fuselage']
+        self.t_fuselage = self.aircraft_data.data['inputs']['structures']['fuselage']['t_fuselage']
+
+        rho_water = self.aircraft_data.data['rho_water']
+        V_disp = self.aircraft_data.data['outputs']['max']['MTOM'] / rho_water
+        A_disp = V_disp / (self.aircraft_data.data['outputs']['fuselage_dimensions']['l_fuselage'] - self.aircraft_data.data['outputs']['fuselage_dimensions']['l_tailcone'])
+        depth = self.solve_piecewise(A_disp)
+        self.aircraft_data.data['outputs']['general']['resting_depth'] = depth
+        L = np.sqrt(1 + ((self.w_fuselage/2) / self.t_fuselage)**2)
+        A_hull = 2* (self.aircraft_data.data['outputs']['fuselage_dimensions']['l_fuselage'] - self.aircraft_data.data['outputs']['fuselage_dimensions']['l_tailcone']) * depth * L
+        return A_hull
+    
     def take_off_requirement(self):
         CL_takeoff = self.CLmax_takeoff/1.21
         Cd = self.calculate_Cd()

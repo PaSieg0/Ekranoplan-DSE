@@ -6,7 +6,7 @@ from typing import Tuple, Dict
 import warnings
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from utils import Data, ISA, MissionType
+from utils import Data, ISA, MissionType, plt
 from Class_I.PayloadRange import RangeCalculator
 from Optimum_Performance.Optimum_speeds import OptimumSpeeds
 from Class_II.Small_Iteration import Ainf_Ah
@@ -212,6 +212,7 @@ class RangeAnalyzer:
         W_representative = np.sqrt(W4 * W5)
         
         V = self.opt.v_range(h)
+        print(V)
         
         # Calculate representative L/D ratio
         Cl_Cd = self.opt.L_over_D(V, h, W_representative)
@@ -427,9 +428,12 @@ def sea_state_comparison():
 if __name__ == "__main__":
     # Create analyzer
     # Configuration
+
     # file_path = "design3.json"
     # mission_type = MissionType.DESIGN
     # analyzer = RangeAnalyzer(file_path, mission_type)
     # analyzer.check()
+
+    # main()
 
     sea_state_comparison()

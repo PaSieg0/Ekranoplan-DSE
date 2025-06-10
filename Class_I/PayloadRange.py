@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import os
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from utils import Data
+from utils import Data, plt
 from Class_I.ClassIWeightEstimation import ClassI, MissionType
 
 
@@ -242,7 +242,7 @@ class RangeCalculator:
 
         # Annotate all points
         labels = ['0 nm', 'Harmonic', 'Design', 'Max', 'Ferry']
-        xylabel = [(30, 5),(70, -6),(55, 10),(75, -10),(0, 50)]
+        xylabel = [(30, 5),(70, -6),(60, 0),(75, -20),(0, 50)]
         for i, (x, y) in enumerate(points):
             if i == 0:
                 continue
@@ -260,7 +260,7 @@ class RangeCalculator:
         ax.set_ylim(bottom=0)
         ax.set_xlabel('Range (nautical miles)')
         ax.set_ylabel('Payload (tonnes)')
-        ax.legend(loc='upper right')
+        # ax.legend(loc='upper right')
         ax.grid(True)
         
         if save_path:
@@ -298,7 +298,8 @@ class RangeCalculator:
         points = self.generate_payload_range_points(ranges_nm)
         
         # Plot the diagram
-        self.plot_payload_range_diagram(points, show=show, save_path=save_path)
+        if show:
+            self.plot_payload_range_diagram(points, show=show, save_path=save_path)
         
         return ranges_nm, points
     
@@ -330,7 +331,7 @@ class RangeCalculator:
 
             return fuel_per_ton_km
             
-    def get_results_summary(self):
+    def get_results_summary(self, short_summary=False):
         """
         Get a formatted summary of the calculation results.
         
@@ -341,6 +342,12 @@ class RangeCalculator:
         weight_ratios = self.calculate_weight_ratios(mass_fractions)
         ranges_m = self.calculate_ranges(weight_ratios)
         ranges_nm = self.meters_to_nautical_miles(ranges_m)
+
+        if short_summary:
+            summary = f"Mission Type: {self.mission_type.name}\n"
+            summary += f"  - Design: {ranges_nm['design']:.2f} nm ({ranges_m['design']/1000:.2f} km)\n"
+            summary += f"  - Ferry: {ranges_nm['ferry']:.2f} nm ({ranges_m['ferry']/1000:.2f} km)\n"
+            return summary
         
         summary = f"Range Calculation Results Summary\n"
         summary += f"===============================\n"
@@ -369,15 +376,23 @@ class RangeCalculator:
         
         return summary
     
-if __name__ == "__main__":
-    # Example usage
+def analyze_3_missions():
     data_file = "design3.json"
-    range_calculator = RangeCalculator(data_file=data_file, mission_type=MissionType.DESIGN)
-    
-    # Perform analysis and plot
-    ranges_nm, points = range_calculator.analyze_and_plot(show=True)
-    
-    # Print summary
-    print(range_calculator.get_results_summary())
+    all_ranges = {}
+    for mission_type in [MissionType.DESIGN, MissionType.ALTITUDE, MissionType.FERRY]:
+        range_calculator = RangeCalculator(data_file=data_file, mission_type=mission_type)
+        ranges_nm, points = range_calculator.analyze_and_plot(show=False)
+        all_ranges[mission_type.name] = ranges_nm
+        print(range_calculator.get_results_summary(short_summary=True)) 
+    return all_ranges
 
-    
+def plot_mission(mission_type):
+    data_file = "design3.json"
+    range_calculator = RangeCalculator(data_file=data_file, mission_type=mission_type)
+    ranges_nm, points = range_calculator.analyze_and_plot(show=True)
+    print(range_calculator.get_results_summary(short_summary=False)) 
+    return ranges_nm, points
+
+if __name__ == "__main__":
+    analyze_3_missions()
+    plot_mission(MissionType.DESIGN)
