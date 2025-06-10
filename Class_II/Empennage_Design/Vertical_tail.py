@@ -122,7 +122,7 @@ class vertical_tail_sizing:
         static_stability = self.get_vertical_tail_size_static_stab()
         one_engine_inoperative = self.get_vertical_tail_size_one_engine_inoperative()
         # TODO: UPDATE y_axis VALUE
-        fig_23 = self.get_Sv_from_fig_9_23(y_axis=0.23)
+        fig_23 = self.get_Sv_from_fig_9_23(y_axis=0.15)
         tail_volume = self.check_tail_volume()
 
         print(f"Static Stability: {static_stability}, One Engine Inoperative: {one_engine_inoperative}, Fig 9.23: {fig_23}, Tail Volume: {tail_volume}")
@@ -192,8 +192,8 @@ class vertical_tail_sizing:
 
         print("sum of C_n_beta:", C_n_beta_f + C_n_beta_i + C_n_beta_p)
 
-        # UPDATE THIS VALUE 
-        volume = 0.09
+        # TODO: UPDATE THIS VALUE 
+        volume = 0.065
 
         min_Sv = volume * self.S * self.b / l_v
         return min_Sv
