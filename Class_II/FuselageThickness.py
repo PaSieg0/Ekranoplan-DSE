@@ -701,7 +701,7 @@ class FuselageThickness:
                 rib_volume += thickness * length * width
         
         self.rib_mass = rib_volume * self.rib_density
-
+        print(len(skin_area_along_fuselage))
         skin_mass = np.trapz(skin_area_along_fuselage, self.x_points) * self.density
         stringer_mass = np.trapz(stringer_area_along_fuselage, self.x_points) * self.density
 
