@@ -84,7 +84,7 @@ class AerodynamicForces:
         self.rudder_lift = self.aircraft_data.data['outputs']['control_surfaces']['rudder']['rudder_lift']
         self.max_side_slip = self.aircraft_data.data['inputs']['max_sideslip']
 
-        self.vertical_lift_coeff = -self.tail_lift_slope * self.max_side_slip/2
+        self.vertical_lift_coeff = -self.tail_lift_slope * self.max_side_slip/2*self.Sv/self.S
         self.rudder_coeff = self.rudder_lift / (0.5 * self.rho * self.V**2 * self.S)
         self.elevator_coeff = self.elevator_lift / (0.5 * self.rho * self.V**2 * self.Sh/2)
 

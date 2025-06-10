@@ -196,7 +196,7 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
             if self.evaluate == EvaluateType.WING:
                 self.vertical_distribution = self.max_load_factor*self.lift_function - self.wing_weight
             else:
-                self.vertical_distribution = self.max_load_factor*self.lift_function - self.wing_weight if self.evaluate == EvaluateType.HORIZONTAL else self.lift_function
+                self.vertical_distribution = self.max_load_factor*self.lift_function - self.wing_weight if self.evaluate == EvaluateType.HORIZONTAL else self.max_load_factor*self.lift_function
             return self.vertical_distribution
         elif self.evaluate_case == 'min':
             if self.evaluate == EvaluateType.WING:
@@ -395,7 +395,7 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
     def calculate_wing_deflection(self):
         moment = self.M_internal
         moment_flipped = np.cumsum(moment[::-1]*self.dy[::-1])
-        self.wing_deflection = np.cumsum(moment_flipped*self.dy) / (-self.E * np.average(self.I_xx_array))  # Deflection calculation
+        self.wing_deflection = np.cumsum(moment_flipped*self.dy) / (-self.E * self.I_xx_array) /3 # Deflection calculation
 
         return self.wing_deflection
 
@@ -584,10 +584,8 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
         }
         self.aircraft_data.data['outputs'][key_map[self.evaluate]] = self.margins
         self.aircraft_data.data['outputs'][key_map[self.evaluate]]['rib_amount'] = self.rib_amount
-        if self.evaluate == EvaluateType.VERTICAL:
-            self.aircraft_data.data['outputs']['component_weights'][component_weight_map[self.evaluate]] = self.wing_mass*9.81
-        else:
-            self.aircraft_data.data['outputs']['component_weights'][component_weight_map[self.evaluate]] = self.wing_mass*2*9.81
+
+        self.aircraft_data.data['outputs']['component_weights'][component_weight_map[self.evaluate]] = self.wing_mass*2*9.81
 
         print(f'saving {key_map[self.evaluate]} design to {self.design_file}')
         self.aircraft_data.save_design(self.design_file)
