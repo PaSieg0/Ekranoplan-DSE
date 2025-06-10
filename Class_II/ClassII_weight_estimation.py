@@ -20,7 +20,7 @@ class ClassII:
         self.fudge_factor = 1.25 # fudge factor for weight estimation for flying boat
 
 
-        # TODO: CHECK ALL UNITS AND VALUES
+        # TODO: CHECK ALL UNITS AND VALUES AND LINK EVERYTHING TO AIRCRAFT DATA
         self.A = self.aircraft_data.data['outputs']['wing_design']['aspect_ratio'] # wing aspect ratio
         self.A_h = self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['aspect_ratio'] # horizontal tail aspect ratio
         self.A_v = self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['aspect_ratio'] # vertical tail aspect ratio
@@ -123,21 +123,25 @@ class ClassII:
 
 
     def wing_weight(self) -> float:
-        W_wing_lbs = 0.0051 * (self.W_dg*self.N_z)**0.557 * self.S_w**0.649 * self.A**0.5 * self.t_c_root**-0.4 * (1+self.taper_ratio)**0.1 * np.cos(deg2rad(self.sweep_c_4))**-1.0 * self.S_csw**0.1
-        return lbs2kg(W_wing_lbs)*9.81
+        # W_wing_lbs = 0.0051 * (self.W_dg*self.N_z)**0.557 * self.S_w**0.649 * self.A**0.5 * self.t_c_root**-0.4 * (1+self.taper_ratio)**0.1 * np.cos(deg2rad(self.sweep_c_4))**-1.0 * self.S_csw**0.1
+        # return lbs2kg(W_wing_lbs)*9.81
+        return self.aircraft_data.data['outputs']['component_weights']['wing']
 
     def horizontal_tail(self) -> float:
-        W_horizontal_tail_lbs = 0.0379 * self.K_uht * (1 + self.F_w/self.B_h)**-0.25 * self.W_dg**0.639 * self.N_z**0.10 * self.S_ht**0.75 * self.L_t**-1.0 * self.K_y**0.704 * np.cos(deg2rad(self.sweep_c_4_ht))**-1.0 * self.A_h**0.166 * (1 + self.S_e/self.S_ht)**0.1
-        return lbs2kg(W_horizontal_tail_lbs)*9.81
+        # W_horizontal_tail_lbs = 0.0379 * self.K_uht * (1 + self.F_w/self.B_h)**-0.25 * self.W_dg**0.639 * self.N_z**0.10 * self.S_ht**0.75 * self.L_t**-1.0 * self.K_y**0.704 * np.cos(deg2rad(self.sweep_c_4_ht))**-1.0 * self.A_h**0.166 * (1 + self.S_e/self.S_ht)**0.1
+        # return lbs2kg(W_horizontal_tail_lbs)*9.81
+        return self.aircraft_data.data['outputs']['component_weights']['horizontal_tail']
 
     def vertical_tail(self) -> float:
-        W_vertical_tail_lbs = 0.0026 * (1 + self.H_t_H_v)**0.225 * self.W_dg**0.556 * self.N_z**0.536 * self.L_t**-0.5 * self.S_vt**0.5 * self.K_z**0.875 * np.cos(deg2rad(self.sweep_c_4_vt))**-1.0 * self.A_v**0.35 * self.t_c_root**-0.5
-        return lbs2kg(W_vertical_tail_lbs)*9.81
+        # W_vertical_tail_lbs = 0.0026 * (1 + self.H_t_H_v)**0.225 * self.W_dg**0.556 * self.N_z**0.536 * self.L_t**-0.5 * self.S_vt**0.5 * self.K_z**0.875 * np.cos(deg2rad(self.sweep_c_4_vt))**-1.0 * self.A_v**0.35 * self.t_c_root**-0.5
+        # return lbs2kg(W_vertical_tail_lbs)*9.81
+        return self.aircraft_data.data['outputs']['component_weights']['vertical_tail']
 
     def fuselage(self) -> float:
-        W_fuselage_lbs = 0.3280 * self.K_door * self.K_Lg * (self.W_dg*self.N_z)**0.5 * self.L**0.25 * self.S_f**0.302 * (1 + self.K_ws)**0.4 * (self.L/self.D)**0.10
-        W_fuselage_lbs *= self.fudge_factor
-        return lbs2kg(W_fuselage_lbs)*9.81
+        # W_fuselage_lbs = 0.3280 * self.K_door * self.K_Lg * (self.W_dg*self.N_z)**0.5 * self.L**0.25 * self.S_f**0.302 * (1 + self.K_ws)**0.4 * (self.L/self.D)**0.10
+        # W_fuselage_lbs *= self.fudge_factor
+        # return lbs2kg(W_fuselage_lbs)*9.81
+        return self.aircraft_data.data['outputs']['component_weights']['fuselage']
 
     def main_landing_gear(self):
         return 0
@@ -424,7 +428,72 @@ class ClassII:
 
         self.aircraft_data.save_design(self.design_file)
         
-        
+    def plot_pie_chart(self):
+        """
+        Plot a pie chart of component weights in actual kg, including crew, fuel, and payload from the data.
+        Components under 1%% are grouped into 'Miscellaneous'.
+        The chart is sorted by descending weight, with the largest at the top and moving clockwise.
+        Values are displayed outside the pie chart, with lines to avoid overlap.
+        """
+        import matplotlib.pyplot as plt
+        import numpy as np
+        # Get component weights (kg)
+        weights = dict(self.weights_dict)  # Copy to avoid mutating original
+        weights.pop('Total OEW', None)
+        # Get crew, fuel, and payload from self.aircraft_data.data
+        total_crew_weight = self.aircraft_data.data['requirements']['design_crew']*9.81
+        fuel_weight = self.aircraft_data.data['outputs']['max']['total_fuel']
+        payload_weight = self.aircraft_data.data['requirements']['design_payload']*9.81
+        weights['Crew'] = total_crew_weight
+        weights['Fuel'] = fuel_weight
+        weights['Payload'] = payload_weight
+        # Remove zero or negative weights
+        weights = {k: v for k, v in weights.items() if v > 0}
+        total = sum(weights.values())
+        # Calculate percentages and sort
+        items = sorted(weights.items(), key=lambda x: x[1], reverse=True)
+        major_labels = []
+        major_values = []
+        misc_value = 0
+        for label, value in items:
+            perc = value / total * 100
+            if perc < 1.75:
+                misc_value += value
+            else:
+                major_labels.append(label)
+                major_values.append(value)
+        if misc_value > 0:
+            major_labels.append('Miscellaneous')
+            major_values.append(misc_value)
+        # The largest slice starts at the top (90 deg), then moves clockwise
+        def kg_fmt(x):
+            if x >= 1000:
+                return f'{x/9.81/1000:.1f} tonnes'
+            else:
+                return f'{x/9.81:.0f} kg'
+        fig, ax = plt.subplots(figsize=(12, 12))
+        wedges, texts = ax.pie(
+            major_values,
+            labels=None,  # We'll add labels manually
+            startangle=90,
+            counterclock=False,
+            textprops={'fontsize': 12}
+        )
+        # Place labels and values outside, with lines
+        for i, w in enumerate(wedges):
+            ang = (w.theta2 + w.theta1) / 2.
+            x = w.r * 1.25 * np.cos(np.deg2rad(ang))
+            y = w.r * 1.25 * np.sin(np.deg2rad(ang))
+            # Draw a line from the wedge to the label
+            x0 = w.r * np.cos(np.deg2rad(ang))
+            y0 = w.r * np.sin(np.deg2rad(ang))
+            ax.plot([x0, x], [y0, y], color='gray', lw=1)
+            # Place the label and value, offset to avoid overlap
+            ha = 'left' if x > 0 else 'right'
+            ax.text(x, y, f"{major_labels[i]}\n{kg_fmt(major_values[i])}", ha=ha, va='center', fontsize=12, fontweight='bold', bbox=dict(boxstyle='round,pad=0.2', fc='white', ec='none', alpha=0.8))
+        ax.set_title('Aircraft Component Mass Breakdown', fontsize=16)
+        plt.tight_layout()
+        plt.show()
         
 
 if __name__ == "__main__":
@@ -441,3 +510,5 @@ if __name__ == "__main__":
         print(f"{name:<30} {weight/9.81:>10,.0f} kg   {perc:>7.2f} %")
 
     print(f"{'OEW from Class I':<30} {class_ii.aircraft_data.data['outputs']['max']['OEW']/9.81:>10,.0f} kg")
+
+    class_ii.plot_pie_chart()

@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import os
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from utils import Data, ISA, MissionType
+from utils import Data, ISA, MissionType, plt
 
 
 def energy_height(V: float, h: float) -> float:
@@ -31,9 +31,9 @@ def plot_pullup_trajectory(aircraft_data, reaction_time=1.0):
 
     # Example obstacles: list of (distance, height)
     obstacles = [
-        (150, 5),
-        (280, 30),
-        (350, 50)
+        (150, 3),
+        (280, 20),
+        (350, 40)
     ]
 
     # Initial conditions
@@ -101,9 +101,9 @@ def plot_turn_trajectory(aircraft_data, reaction_time=1.0):
     # Example obstacles: list of (x, y) positions in meters (from above)
     # Make obstacles symmetric about x=0
     base_obstacles = [
-        (5, 200),
-        (15, 260),
-        (40, 350)
+        (4, 300),
+        (10, 360),
+        (30, 450)
     ]
     obstacles = []
     for x, y in base_obstacles:
@@ -128,24 +128,44 @@ def plot_turn_trajectory(aircraft_data, reaction_time=1.0):
 
     # Stop when y exceeds the last obstacle's y + margin
     target_y = max([y for _, y in obstacles]) + 50  # 50 m margin after last obstacle
-    while y_traj[-1] < target_y:
+
+    # Main (right) turn trajectory
+    x_traj_right = x_traj.copy()
+    y_traj_right = y_traj.copy()
+    theta_right = theta
+    while y_traj_right[-1] < target_y:
         n = max_n_turn
         R = turn_radius(n, V)
         dtheta = (V / R) * dt
-        theta += dtheta
-        dx = V * np.cos(theta) * dt
-        dy = V * np.sin(theta) * dt
-        x_traj.append(x_traj[-1] + dx)
-        y_traj.append(y_traj[-1] + dy)
+        theta_right += dtheta
+        dx = V * np.cos(theta_right) * dt
+        dy = V * np.sin(theta_right) * dt
+        x_traj_right.append(x_traj_right[-1] + dx)
+        y_traj_right.append(y_traj_right[-1] + dy)
+
+    # Mirrored (left) turn trajectory
+    x_traj_left = [ -x for x in x_traj ]
+    y_traj_left = y_traj.copy()
+    theta_left = theta
+    while y_traj_left[-1] < target_y:
+        n = max_n_turn
+        R = turn_radius(n, V)
+        dtheta = -(V / R) * dt  # Negative for left turn
+        theta_left += dtheta
+        dx = V * np.cos(theta_left) * dt
+        dy = V * np.sin(theta_left) * dt
+        x_traj_left.append(x_traj_left[-1] + dx)
+        y_traj_left.append(y_traj_left[-1] + dy)
 
     plt.figure(figsize=(10, 6))
-    plt.plot(x_traj, y_traj, label="Turn Trajectory")
+    plt.plot(x_traj_right, y_traj_right, label="Turn Trajectory (Right)", color='b')
+    plt.plot(x_traj_left, y_traj_left, label="Turn Trajectory (Left)", color='b', linestyle='dotted')
 
     # Plot obstacles and join symmetric pairs with a dotted line, annotate them
     for idx, (x, y) in enumerate(base_obstacles):
         plt.scatter([x, -x], [y, y], color='r', label='Obstacle' if idx == 0 else None)
         plt.plot([x, -x], [y, y], 'r:', linewidth=1)
-        plt.annotate(f"Obs {idx+1}\n({x*2} m wide, {y} m away)", (x, y), textcoords="offset points", xytext=(5, 10), ha='left', color='r', fontsize=9)
+        plt.annotate(f"Obs {idx+1}\n({x*2} m wide, {y} m away)", (x, y), textcoords="offset points", xytext=(20, 10), ha='left', color='r', fontsize=9)
 
     plt.xlabel("X Position [m]")
     plt.ylabel("Y Position [m]")
@@ -158,6 +178,7 @@ def plot_turn_trajectory(aircraft_data, reaction_time=1.0):
 if __name__ == "__main__":
     file_path = "design3.json"
     aircraft_data = Data(file_path)
+    reaction_time = 1.  # seconds
 
-    plot_pullup_trajectory(aircraft_data, reaction_time=0.6)
-    plot_turn_trajectory(aircraft_data, reaction_time=0.6)
+    plot_pullup_trajectory(aircraft_data, reaction_time=reaction_time)
+    plot_turn_trajectory(aircraft_data, reaction_time=reaction_time)
