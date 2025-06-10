@@ -42,6 +42,7 @@ class AerodynamicForces:
 
         self.b = self.aircraft_data.data['outputs']['wing_design']['b']
         self.b_array = np.arange(0, self.b/2+0.01, 0.01)
+        self.Sr = self.aircraft_data.data['outputs']['control_surfaces']['rudder']['Sr']
 
         self.b_h = self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['b']
         self.b_h_array = np.arange(0, self.b_h/2+0.01, 0.01)
@@ -83,7 +84,7 @@ class AerodynamicForces:
         self.rudder_lift = self.aircraft_data.data['outputs']['control_surfaces']['rudder']['rudder_lift']
         self.max_side_slip = self.aircraft_data.data['inputs']['max_sideslip']
 
-        self.vertical_lift_coeff = -self.tail_lift_slope * self.max_side_slip
+        self.vertical_lift_coeff = -self.tail_lift_slope * self.max_side_slip/2*self.Sv/self.S
         self.rudder_coeff = self.rudder_lift / (0.5 * self.rho * self.V**2 * self.S)
         self.elevator_coeff = self.elevator_lift / (0.5 * self.rho * self.V**2 * self.Sh/2)
 
@@ -129,10 +130,11 @@ class AerodynamicForces:
 
     def get_elevator_lift_distribution(self):
         self.elevator_lift_array = np.zeros(len(self.b_h_array))
-        self.elevator_lift_dist = self.elevator_lift/(self.elevatored_area)*self.chord_span_function_aero(self.elevator_array)
+        self.elevator_lift_dist = self.elevator_lift/(self.elevatored_area)*self.chord_span_h_function(self.elevator_array)
         for id, i in enumerate(self.elevator_lift_dist):
             idx = np.argmin(np.abs(self.b_h_array - self.elevator_array[id]))
             self.elevator_lift_array[idx] = i
+        
 
     def elliptic_lift_distribution(self, y_vals, span, CL):
         elliptical_distribution = np.sqrt(1 - (y_vals / span)**2)
@@ -142,7 +144,7 @@ class AerodynamicForces:
         self.CL_y = CL0 * elliptical_distribution
         self.CL_y = np.nan_to_num(self.CL_y)
 
-        print(np.trapz(self.CL_y, y_vals))
+        # print(np.trapz(self.CL_y, y_vals))
         return self.CL_y
     
     def elliptic_drag_distribution(self, y_vals, span, CL, V):
@@ -162,7 +164,7 @@ class AerodynamicForces:
         CM0 = (4 * self.Cm) / (np.pi * self.b/2)
         self.Cm_y = CM0 * np.sqrt(1 - (self.b_array / (self.b/2))**2)
         self.Cm_y = np.nan_to_num(self.Cm_y)
-        print(np.trapz(self.Cm_y, self.b_array))
+        # print(np.trapz(self.Cm_y, self.b_array))
 
         return self.Cm_y
 
@@ -229,20 +231,23 @@ class AerodynamicForces:
         for i, pos in enumerate(self.b_v_array):
             if self.rudder_start <= pos <= self.rudder_end:
                 idx = np.argmin(np.abs(self.b_v_array - pos))
-                self.rudder_lift_array[idx] = self.rudder_lift/(self.rudder_end - self.rudder_start) * self.chord_span_v_function(pos)
+                self.rudder_lift_array[idx] = self.rudder_lift/(self.Sr) * self.chord_span_v_function(pos)
         
         self.vertical_tail_lift = self.vertical_tail_lift_function + self.rudder_lift_array
         return self.vertical_tail_lift
     
     def get_horizontal_tail_lift_distribution(self):
-        self.horizontal_tail_lift = (self.L_y * self.lift_arm + self.M_y)/self.l_h
+        self.horizontal_tail_lift = (self.L_y * self.lift_arm + self.M_y)/self.l_h * self.Sh/self.S
         CL_horizontal = self.horizontal_tail_lift / (0.5 * self.rho * self.V_land**2 * self.Sh)
         CL_tot_horizontal = np.trapz(CL_horizontal, self.b_array)
         self.horizontal_tail_lift = self.elliptic_lift_distribution(self.b_h_array, self.b_h/2, CL_tot_horizontal) * 0.5 * self.rho * self.V**2 * self.Sh
         for i, pos in enumerate(self.b_h_array):
             if self.elevator_start <= pos <= self.elevator_end:
                 idx = np.argmin(np.abs(self.b_h_array - pos))
-                self.horizontal_tail_lift[idx] += self.elevator_lift_array[i]
+                self.horizontal_tail_lift[idx] -= self.elevator_lift_array[i]
+
+        plt.plot(self.b_h_array, self.elevator_lift_array, label="Elevator Lift Distribution")
+        plt.show()
         return self.horizontal_tail_lift
 
     def chord_span_h_function(self,y):

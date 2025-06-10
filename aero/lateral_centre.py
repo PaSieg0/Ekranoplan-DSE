@@ -1,0 +1,111 @@
+import numpy as np
+import matplotlib.pyplot as plt
+import json
+import os
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from utils import Data, MissionType, ISA, AircraftType
+import scipy.integrate as sc
+
+from scipy.optimize import curve_fit
+
+def f(x,a,b,c,d,e,f,g):
+    return a*np.sqrt(b**2-x**2) +c*d*e*f*g    
+
+class lateral_centre():
+    def __init__(self):
+        self.import_data()
+        self.aircraft_data = Data("design3.json")
+
+    def import_data(self):
+        #importing data
+        self.data=np.loadtxt("aero\\wing distr.txt")
+
+        #using data
+        self.pos=self.data[:,0]
+        self.n=int(self.pos.shape[0])*2
+        self.cl=self.data[:,3]
+
+        #calc cl at 0
+        cl0=-self.pos[0]*(self.cl[1]-self.cl[0])/(self.pos[1]-self.pos[0])+self.cl[0]
+
+        #adding 0
+        self.pos=np.append(0,self.pos)
+        self.cl=np.append(cl0,self.cl)
+
+        #calc boundaries for intergration
+        self.b=self.pos[-1]
+        self.a=self.pos[0]
+        
+        #making y*cl
+        self.cl_pos=self.pos*self.cl
+        
+        #print(self.cl_pos)
+    
+    def intergrate(self):
+        I_2=sc.trapezoid(self.cl,self.pos)
+        I_1=sc.trapezoid(self.cl_pos,self.pos)
+        # print(I_2)
+        
+        I=I_1/I_2
+        self.mu=I/max(self.pos)
+
+    def oswald_calc(self):
+        self.e=(4.5*(np.pi*self.mu)**2-12*np.pi*self.mu+9)**(-1)
+        if __name__=='__main__':
+            print('\t')
+            print('----------e---------')
+            print(f'e={round(self.e,3)}')
+
+    def update_json(self):
+        self.aircraft_data.data['inputs']['oswald_factor']=self.e
+        self.aircraft_data.save_design('design3.json')
+
+    def run(self):
+        self.intergrate()
+        self.oswald_calc()
+
+    
+    def plot_distr(self):
+        #importing pos and L
+        pos,L=self.determine_distr(20,11,4,1.225,90)
+
+        #making plots
+        fig=plt.figure()
+        ax=fig.subplots(2,1)
+        ax[0].plot(pos,self.cll)
+        # ax[0].vlines(self.mu*self.b,0,2.5,color='red',linestyle='dashed')
+        ax[0].plot(self.pos,self.cl)
+        ax[1].set_xlim(-1.5,36.5)
+        ax[1].plot(pos,L)
+        plt.show()
+
+
+
+
+    def determine_distr(self,b__2,cr,ct,rho,v_inv,cl_max=2.2):
+        #scaling position
+        pos=self.pos*b__2/self.b
+
+        #scalling cl
+        C_L=sc.trapezoid(self.cl,self.pos)/self.b
+        self.cll=self.cl*cl_max/C_L
+
+        #calculating l/q
+        self.l__q=self.cl*((ct-cr)*pos/self.b+cr)
+        l__q=self.cll*((ct-cr)*pos/b__2+cr)
+
+        #calculating L
+        L=l__q*0.5*rho*v_inv**2
+
+        return pos,L
+
+
+
+
+if __name__=='__main__':
+    obj=lateral_centre()
+    obj.run()
+    obj.update_json()
+    obj.plot_distr()
+    

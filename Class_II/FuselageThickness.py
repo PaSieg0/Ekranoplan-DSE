@@ -701,7 +701,7 @@ class FuselageThickness:
                 rib_volume += thickness * length * width
         
         self.rib_mass = rib_volume * self.rib_density
-
+        print(len(skin_area_along_fuselage))
         skin_mass = np.trapz(skin_area_along_fuselage, self.x_points) * self.density
         stringer_mass = np.trapz(stringer_area_along_fuselage, self.x_points) * self.density
 
@@ -864,8 +864,8 @@ class FuselageThickness:
                     label=f"{boom_name} ({area:.2e} m²)")
 
         ax.grid(True)
-        ax.set_xlabel('y-coordinate (m) - Left is positive')
-        ax.set_ylabel('z-coordinate (m)')
+        ax.set_xlabel('y (m)')
+        ax.set_ylabel('z (m)')
         ax.set_title(f'Fuselage Cross-Section at {station_name} (x = {self.thresholds[station_idx]:.2f} m)')
         ax.set_aspect('equal')
         ax.invert_xaxis()  # Flip x-axis so left is positive
