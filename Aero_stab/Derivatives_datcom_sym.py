@@ -32,8 +32,8 @@ class DerivativesDatcom_sym:
         self.x_bar = self.x_ac - self.x_cg # Distance from the leading edge of the wing to the center of gravity: 31.5(from excel)
         self.Cd0 = aircraft_data.data['inputs']['Cd0'] # Zero-lift drag coefficient of the wing
         self.c_h = aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['MAC'] # Mean aerodynamic chord of the horizontal tail
-        self.x_h = aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['l_h']
-        self.Cl_alpha_h = aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['Cl_alpha']
+        self.l_h = aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['l_h']
+        self.Cl_alpha_h = aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['Cl_alpha'] * (180 / np.pi)
         self.x_w = self.x_ac
         isa = ISA(self.aircraft_data.data['inputs']['cruise_altitude'])
         self.M = isa.Mach(self.aircraft_data.data['requirements']['cruise_speed'])
@@ -42,11 +42,13 @@ class DerivativesDatcom_sym:
         self.d_fusel = aircraft_data.data['outputs']['fuselage_dimensions']['d_fuselage_equivalent_station2']  # Diameter of the fuselage, assumed to be 0 for now
         self.S_b = aircraft_data.data['outputs']['fuselage_dimensions']['body_base_area'] # body base area
         self.C_r = aircraft_data.data['outputs']['wing_design']['chord_root']
+        self.x_h=self.x_cg+self.l_h
+        self.l_f=aircraft_data.data['outputs']['fuselage_dimensions']['l_fuselage']
 
         self.Cl = 0.5
         self.alpha = np.deg2rad(2)  # Example angle of attack in radians
 
-    def Cmq(self):
+    def Cmq(self): # Cross validated with the help of Mr. Antens
         """
         Calculate the pitch moment coefficient due to the pitch rate.
 
@@ -57,15 +59,16 @@ class DerivativesDatcom_sym:
         K_wb = 0.95 #1047
         K_bw = 0.11 #p.1047
         Cmqe = -0.7 * self.Cl_alpha * np.cos(np.radians(self.Delta_c4)) * ((self.A * (0.5 * self.x_bar / self.MAC + 2 * (self.x_bar / self.MAC)**2))/(self.A + 2 * np.cos(np.radians(self.Delta_c4))) + 1/24 * self.A**3 * np.tan(np.radians(self.Delta_c4))**2 / (self.A + 6 * np.cos(np.radians(self.Delta_c4))) + 1/8) #p.2488
-        x_m = 32.55 # longtitudinal
-        x_c = 75.078 / 2 # cross-sectional
+        
+        x_m = self.x_cg # longtitudinal
+        x_c = self.l_f/2 # cross-sectional
         S_b = self.S_b
         CmqB = 2 * self.Cmalpha() * (((1 - x_m/self.l_b)**2 - self.V_b /(S_b * self.l_b)*(x_c/self.l_b - x_m / self.l_b)) / ((1-x_m/self.l_b) - self.V_b/(S_b*self.l_b))) #p.2655
         Cm_wb = (K_wb + K_bw)*(self.Sh/self.S)*(self.c_h/self.MAC)**2 * Cmqe + CmqB * (S_b / self.S)*(self.l_b/self.MAC)**2
         
         
-        Cm_tail = 2*(K_wb + K_bw)*(self.Sh / self.S) * ((x_c - self.x_h)/self.MAC)**2 * (self.Cl_alpha_h/(np.pi/180)) #p.2743
-
+        Cm_tail = 2*(K_wb + K_bw)*(self.Sh / self.S) * ((x_m - self.x_h)/self.MAC)**2 * (self.Cl_alpha_h) #p.2743
+        
         return Cm_wb - Cm_tail
     
     def C_z_alpha(self):
@@ -77,8 +80,10 @@ class DerivativesDatcom_sym:
     def Cmalpha(self):
         # From FD
         downwash_gradient = 2 * self.Cl_alpha / (np.pi * self.A)
-        l_h = self.x_h - self.x_cg
-        Cmalpha = self.Cl_alpha * (self.x_cg - self.x_w)/self.MAC - self.Cl_alpha_h*(1-downwash_gradient)*self.Sh*l_h / (self.S * self.MAC)
+        # downwash_gradient=0
+        # l_h = self.x_h - self.x_cg
+        Cmalpha = self.Cl_alpha * (self.x_cg - self.x_w)/self.MAC - self.Cl_alpha_h*(1-downwash_gradient)*self.Sh*self.l_h / (self.S * self.MAC)
+        # print(self.Cl_alpha * (self.x_cg - self.x_w)/self.MAC, self.Cl_alpha_h*(1-downwash_gradient)*self.Sh*l_h / (self.S * self.MAC))
         return Cmalpha
     
     def C_Z_u(self):
@@ -89,10 +94,10 @@ class DerivativesDatcom_sym:
         return Cxu
 
     def C_m_u(self):
-        # 'Ignored, see paper, Pitching moment coefficient science direct')
+        # 'Ignored, see paper, Pitching moment coefficient science direct'), 
         return 0
 
-    def C_m_alphadot(self):
+    def C_m_alphadot(self): # Value is now is negative, should be positive ~0.2, From sensitivity analysis with SVV a larger negative value makes the SS more alike real life conditions.
         K_wb = 0.95 #p.1047
         K_bw = 0.15 #p.1047
         # X_ac__Cr = ((2/3)*(1-self.taper) + 1/2 * (1 - (self.taper**2/(1+self.taper))) * np.pi * np.log(1 + self.A/5)) / (1 + np.pi * np.log(1+self.A/5)) #p.664
@@ -104,20 +109,18 @@ class DerivativesDatcom_sym:
         Cm_alphadot_dp = -81/32 * (self.x_ac / self.C_r)**2 * self.Cl_alpha + 9/2 * Cm0_g
         Cm_alphadot_e = Cm_alphadot_dp + (self.x_cg / self.MAC) * Cl_alphadot #p.2617
 
-        x_c = 0.5 * self.l_b
-        x_m = self.x_cg
-        S_b = self.S_b
-        #The Cm_alpha_body is the one we discussed Jaime
+        # x_c = 0.5 * self.l_b
+        # x_m = self.x_cg
+        # S_b = self.S_b
 
-        Cm_alphadot_B = 2 * self.Cmalpha() * ((self.V_b / (S_b * self.l_b)) * ((x_c / self.l_b) - (x_m / self.l_b)) / (((1 - (x_m / self.l_b)) * self.V_b / (S_b * self.l_b))))
-        Cm_alphadot_wb = (K_bw + K_wb) * (self.Sh/self.S)*(self.c_h/self.MAC)**2 * Cm_alphadot_e + Cm_alphadot_B * ((S_b / self.S)*(self.l_b/self.MAC)**2)
+        # Cm_alphadot_B = 2 * self.Cmalpha() * ((self.V_b / (S_b * self.l_b)) * ((x_c / self.l_b) - (x_m / self.l_b)) / (((1 - (x_m / self.l_b)) * self.V_b / (S_b * self.l_b))))
+        # Cm_alphadot_wb = (K_bw + K_wb) * (self.Sh/self.S)*(self.c_h/self.MAC)**2 * Cm_alphadot_e + Cm_alphadot_B * ((S_b / self.S)*(self.l_b/self.MAC)**2)
+        # print((K_bw + K_wb) * (self.Sh/self.S)*(self.c_h/self.MAC)**2 * Cm_alphadot_e, Cm_alphadot_B * ((S_b / self.S)*(self.l_b/self.MAC)**2))
+        # print(Cm_alphadot_B, S_b / self.S,(self.l_b/self.MAC)**2)
         
-        l_h = self.x_h - self.x_cg
         downwash_gradient = (2 * self.Cl_alpha / (np.pi * self.A))
-        Cm_alphadot_tail = -(self.Cl_alpha * 1 * downwash_gradient * self.Sh*l_h**2) / (self.S * self.MAC**2)
-        print(Cm_alphadot_wb, Cm_alphadot_tail)
-        print(Cm_alphadot_wb + Cm_alphadot_tail)
-        return Cm_alphadot_wb + Cm_alphadot_tail
+        Cm_alphadot_tail = -(self.Cl_alpha * 1 * downwash_gradient * self.Sh*self.l_h**2) / (self.S * self.MAC**2)
+        return Cm_alphadot_tail #No body contribution, see FD
     
     def update_json(self):
         # Run the functions you want to store

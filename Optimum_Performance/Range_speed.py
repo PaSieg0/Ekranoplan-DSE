@@ -125,7 +125,7 @@ class RangeAnalyzer:
         self.opt._current_weight = weight
         angle_of_climb = self.opt.calculate_AoC(V, h)
         
-        if angle_of_climb < 0:
+        if angle_of_climb < 0-1e-6:  # Allow small negative AoC for numerical stability
             print(f"Warning: Cannot fly at V={V:.2f} m/s with weight={weight/9.81:.2f} kg")
             print(f"Angle of climb: {angle_of_climb:.4f} degrees")
             return False
@@ -365,18 +365,14 @@ def main():
         """Example"""
         return opt.v_range(h)*1.25
     
+    def v_max(opt, h):
+        """Use optimal range speed (default)"""
+        return opt.v_max(h)
+    
     # Leg 1
     R_numerical_1, time_1, details_1 = analyzer.calculate_numerical_range(W4_1, W5_1, None, dW=weight_step)
     R_numerical_test_1, time_test_1, details_test_1 = analyzer.calculate_numerical_range(W4_1, W5_1, v_test, dW=weight_step)
-    # Leg 2
-    R_numerical_2, time_2, details_2 = analyzer.calculate_numerical_range(W4_2, W5_2, None, dW=weight_step)
-    R_numerical_test_2, time_test_2, details_test_2 = analyzer.calculate_numerical_range(W4_2, W5_2, v_test, dW=weight_step)
-
-    # Combine ranges and times for total mission
-    R_total = R_numerical_1 + R_numerical_2
-    time_total = time_1 + time_2
-    R_total_test = R_numerical_test_1 + R_numerical_test_2
-    time_total_test = time_test_1 + time_test_2
+    R_numerical_max_1, time_max_1, details_max_1 = analyzer.calculate_numerical_range(W4_1, W5_1, v_max, dW=weight_step)
 
     # details_total = concat_details(details_1, details_2)
     # details_total_test = concat_details(details_test_1, details_test_2)
@@ -384,8 +380,9 @@ def main():
     # plot_speed_vs_time(details_total, "Default Strategy", payload_drop_time=details_1['times'][-1])
     # plot_speed_vs_time(details_total_test, "Test Strategy", payload_drop_time=details_test_1['times'][-1])
 
-    print(f"Total mission range (default strategy): {R_total/analyzer.METERS_TO_NMI:.2f} nmi, time: {time_total/3600:.2f} h")
-    print(f"Total mission range (test strategy):    {R_total_test/analyzer.METERS_TO_NMI:.2f} nmi, time: {time_total_test/3600:.2f} h")
+    print(f"Total mission range (default strategy): {R_numerical_1/analyzer.METERS_TO_NMI:.2f} nmi, time: {time_1/3600:.2f} h")
+    print(f"Total mission range (test strategy):    {R_numerical_test_1/analyzer.METERS_TO_NMI:.2f} nmi, time: {time_test_1/3600:.2f} h")
+    print(f"Total mission range (max speed strategy): {R_numerical_max_1/analyzer.METERS_TO_NMI:.2f} nmi, time: {time_max_1/3600:.2f} h")
 
 def sea_state_comparison():
     """
@@ -396,7 +393,6 @@ def sea_state_comparison():
     results = {}
 
     for sea_state in sea_states:
-        print(f"Analyzing sea state {sea_state}...")
         analyzer = RangeAnalyzer("design3.json", MissionType.DESIGN, sea_state=sea_state)
         # Calculate and store numerical range for each sea state
         W4, W5 = analyzer.calculate_cruise_weights_leg1()
@@ -434,6 +430,6 @@ if __name__ == "__main__":
     # analyzer = RangeAnalyzer(file_path, mission_type)
     # analyzer.check()
 
-    # main()
+    main()
 
-    sea_state_comparison()
+    # sea_state_comparison()
