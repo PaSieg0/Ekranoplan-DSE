@@ -294,44 +294,120 @@ class LoadingDiagram:
         plt.tight_layout()
         plt.show()
 
-    def plot_all_dimensions(self):
-        # Get all loading cases
+    def plot_x(self):
+        """
+        Plot CG X Position (longitudinal) vs. Weight for all loading conditions.
+        """
         f2b_cg, f2b_weight = self.load_front_to_back_regular()
         f2b_heavy_cg, f2b_heavy_weight = self.load_front_to_back_heavy()
-        b2f_cg, b2f_weight = self.load_back_to_front_regular()
-        b2f_heavy_cg, b2f_heavy_weight = self.load_back_to_front_heavy()
+        # b2f_cg, b2f_weight = self.load_back_to_front_regular()
+        # b2f_heavy_cg, b2f_heavy_weight = self.load_back_to_front_heavy()
         fuel_cg, fuel_weight = self.add_fuel_regular()
         fuel_heavy_cg, fuel_heavy_weight = self.add_fuel_heavy()
         fuel_OEW_cg, fuel_OEW_weight = self.add_fuel_OEW()
 
-        OEW_kg = self.aircraft_data.data['outputs']['component_weights']['total_OEW'] / 9.81  # Convert to kg
-        f2b_weight = f2b_weight / 9.81  # Convert to kg
-        b2f_weight = b2f_weight / 9.81
+        OEW_kg = self.aircraft_data.data['outputs']['component_weights']['total_OEW'] / 9.81
+        f2b_weight = f2b_weight / 9.81
         f2b_heavy_weight = f2b_heavy_weight / 9.81
-        b2f_heavy_weight = b2f_heavy_weight / 9.81
+        # b2f_weight = b2f_weight / 9.81
+        # b2f_heavy_weight = b2f_heavy_weight / 9.81
         fuel_weight = fuel_weight / 9.81
         fuel_heavy_weight = fuel_heavy_weight / 9.81
         fuel_OEW_weight = fuel_OEW_weight / 9.81
 
-        dim_labels = ['X (Longitudinal)', 'Y (Lateral)', 'Z (Vertical)']
-        fig, axs = plt.subplots(3, 1, figsize=(10, 14), sharex=False)
+        import matplotlib.pyplot as plt
+        fig, ax = plt.subplots(figsize=(10, 6))
+        ax.plot(f2b_cg[:, 0], f2b_weight, label='Front to Back Regular', color='blue')
+        ax.plot(f2b_heavy_cg[:, 0], f2b_heavy_weight, label='Front to Back Heavy', color='red')
+        # ax.plot(b2f_cg[:, 0], b2f_weight, label='Back to Front Regular', color='green')
+        # ax.plot(b2f_heavy_cg[:, 0], b2f_heavy_weight, label='Back to Front Heavy', color='orange')
+        ax.scatter(fuel_cg[0], fuel_weight, color='green', marker='*', s=120, label='Fuel CG')
+        ax.scatter(fuel_heavy_cg[0], fuel_heavy_weight, color='darkgreen', marker='*', s=120, label='Fuel CG (Heavy)')
+        ax.scatter(fuel_OEW_cg[0], fuel_OEW_weight, color='purple', marker='*', s=120, label='Fuel CG (OEW)')
+        ax.scatter(self.OEW_cg[0], OEW_kg, color='black', marker='x', s=100, label='OEW CG', zorder=10)
+        ax.set_xlabel('CG X Position (m)')
+        ax.set_ylabel('Weight (kg)')
+        ax.set_title('CG X vs Weight for Loading Conditions')
+        ax.grid(True)
+        ax.legend(loc='best')
+        plt.tight_layout()
+        plt.show()
 
-        for dim in range(3):
-            axs[dim].plot(f2b_cg[:, dim], f2b_weight, label='Front to Back Regular', color='blue')
-            axs[dim].plot(f2b_heavy_cg[:, dim], f2b_heavy_weight, label='Front to Back Heavy', color='red')
-            axs[dim].scatter(fuel_cg[dim], fuel_weight, color='green', label='Fuel CG', zorder=5)
-            axs[dim].plot([f2b_cg[-1, dim], fuel_cg[dim]], [f2b_weight[-1], fuel_weight], color='green', linestyle='--', label='Fuel Loading')
-            axs[dim].scatter(fuel_heavy_cg[dim], fuel_heavy_weight, color='darkgreen', label='Fuel CG (Heavy)', zorder=5)
-            axs[dim].plot([f2b_heavy_cg[-1, dim], fuel_heavy_cg[dim]], [f2b_heavy_weight[-1], fuel_heavy_weight], color='darkgreen', linestyle='--', label='Fuel Loading (Heavy)')
-            axs[dim].scatter(fuel_OEW_cg[dim], fuel_OEW_weight, color='purple', label='Fuel CG (OEW)', zorder=5)
-            axs[dim].plot([self.OEW_cg[dim], fuel_OEW_cg[dim]], [OEW_kg, fuel_OEW_weight], color='purple', linestyle='--', label='Fuel Loading (OEW)')
-            axs[dim].scatter(self.OEW_cg[dim], OEW_kg, color='black', label='OEW CG', zorder=6, marker='x', s=80)
-            axs[dim].set_xlabel(f'CG {dim_labels[dim]} Position (m)')
-            axs[dim].set_ylabel('Weight (kg)')
-            axs[dim].set_title(f'Loading Diagram Fuselage Reference Frame ({dim_labels[dim]})')
-            axs[dim].grid(True)
-            axs[dim].legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+    def plot_y(self):
+        """
+        Plot CG Y Position (lateral) vs. Weight for all loading conditions.
+        """
+        f2b_cg, f2b_weight = self.load_front_to_back_regular()
+        f2b_heavy_cg, f2b_heavy_weight = self.load_front_to_back_heavy()
+        # b2f_cg, b2f_weight = self.load_back_to_front_regular()
+        # b2f_heavy_cg, b2f_heavy_weight = self.load_back_to_front_heavy()
+        fuel_cg, fuel_weight = self.add_fuel_regular()
+        fuel_heavy_cg, fuel_heavy_weight = self.add_fuel_heavy()
+        fuel_OEW_cg, fuel_OEW_weight = self.add_fuel_OEW()
 
+        OEW_kg = self.aircraft_data.data['outputs']['component_weights']['total_OEW'] / 9.81
+        f2b_weight = f2b_weight / 9.81
+        f2b_heavy_weight = f2b_heavy_weight / 9.81
+        # b2f_weight = b2f_weight / 9.81
+        # b2f_heavy_weight = b2f_heavy_weight / 9.81
+        fuel_weight = fuel_weight / 9.81
+        fuel_heavy_weight = fuel_heavy_weight / 9.81
+        fuel_OEW_weight = fuel_OEW_weight / 9.81
+
+        import matplotlib.pyplot as plt
+        fig, ax = plt.subplots(figsize=(10, 6))
+        ax.plot(f2b_cg[:, 1], f2b_weight, label='Front to Back Regular', color='blue')
+        ax.plot(f2b_heavy_cg[:, 1], f2b_heavy_weight, label='Front to Back Heavy', color='red')
+        # ax.plot(b2f_cg[:, 1], b2f_weight, label='Back to Front Regular', color='green')
+        # ax.plot(b2f_heavy_cg[:, 1], b2f_heavy_weight, label='Back to Front Heavy', color='orange')
+        ax.scatter(fuel_cg[1], fuel_weight, color='green', marker='*', s=120, label='Fuel CG')
+        ax.scatter(fuel_heavy_cg[1], fuel_heavy_weight, color='darkgreen', marker='*', s=120, label='Fuel CG (Heavy)')
+        ax.scatter(fuel_OEW_cg[1], fuel_OEW_weight, color='purple', marker='*', s=120, label='Fuel CG (OEW)')
+        ax.scatter(self.OEW_cg[1], OEW_kg, color='black', marker='x', s=100, label='OEW CG', zorder=10)
+        ax.set_xlabel('CG Y Position (m)')
+        ax.set_ylabel('Weight (kg)')
+        ax.set_title('CG Y vs Weight for Loading Conditions')
+        ax.grid(True)
+        ax.legend(loc='best')
+        plt.tight_layout()
+        plt.show()
+
+    def plot_z(self):
+        """
+        Plot CG Z Position (vertical) vs. Weight for all loading conditions.
+        """
+        f2b_cg, f2b_weight = self.load_front_to_back_regular()
+        f2b_heavy_cg, f2b_heavy_weight = self.load_front_to_back_heavy()
+        # b2f_cg, b2f_weight = self.load_back_to_front_regular()
+        # b2f_heavy_cg, b2f_heavy_weight = self.load_back_to_front_heavy()
+        fuel_cg, fuel_weight = self.add_fuel_regular()
+        fuel_heavy_cg, fuel_heavy_weight = self.add_fuel_heavy()
+        fuel_OEW_cg, fuel_OEW_weight = self.add_fuel_OEW()
+
+        OEW_kg = self.aircraft_data.data['outputs']['component_weights']['total_OEW'] / 9.81
+        f2b_weight = f2b_weight / 9.81
+        f2b_heavy_weight = f2b_heavy_weight / 9.81
+        # b2f_weight = b2f_weight / 9.81
+        # b2f_heavy_weight = b2f_heavy_weight / 9.81
+        fuel_weight = fuel_weight / 9.81
+        fuel_heavy_weight = fuel_heavy_weight / 9.81
+        fuel_OEW_weight = fuel_OEW_weight / 9.81
+
+        import matplotlib.pyplot as plt
+        fig, ax = plt.subplots(figsize=(10, 6))
+        ax.plot(f2b_cg[:, 2], f2b_weight, label='Front to Back Regular', color='blue')
+        ax.plot(f2b_heavy_cg[:, 2], f2b_heavy_weight, label='Front to Back Heavy', color='red')
+        # ax.plot(b2f_cg[:, 2], b2f_weight, label='Back to Front Regular', color='green')
+        # ax.plot(b2f_heavy_cg[:, 2], b2f_heavy_weight, label='Back to Front Heavy', color='orange')
+        ax.scatter(fuel_cg[2], fuel_weight, color='green', marker='*', s=120, label='Fuel CG')
+        ax.scatter(fuel_heavy_cg[2], fuel_heavy_weight, color='darkgreen', marker='*', s=120, label='Fuel CG (Heavy)')
+        ax.scatter(fuel_OEW_cg[2], fuel_OEW_weight, color='purple', marker='*', s=120, label='Fuel CG (OEW)')
+        ax.scatter(self.OEW_cg[2], OEW_kg, color='black', marker='x', s=100, label='OEW CG', zorder=10)
+        ax.set_xlabel('CG Z Position (m)')
+        ax.set_ylabel('Weight (kg)')
+        ax.set_title('CG Z vs Weight for Loading Conditions')
+        ax.grid(True)
+        ax.legend(loc='best')
         plt.tight_layout()
         plt.show()
 
@@ -345,8 +421,8 @@ class LoadingDiagram:
         # Get all loading cases
         f2b_cg, f2b_weight = self.load_front_to_back_regular()
         f2b_heavy_cg, f2b_heavy_weight = self.load_front_to_back_heavy()
-        b2f_cg, b2f_weight = self.load_back_to_front_regular()
-        b2f_heavy_cg, b2f_heavy_weight = self.load_back_to_front_heavy()
+        # b2f_cg, b2f_weight = self.load_back_to_front_regular()
+        # b2f_heavy_cg, b2f_heavy_weight = self.load_back_to_front_heavy()
         fuel_cg, fuel_weight = self.add_fuel_regular()
         fuel_heavy_cg, fuel_heavy_weight = self.add_fuel_heavy()
         fuel_OEW_cg, fuel_OEW_weight = self.add_fuel_OEW()
@@ -354,8 +430,8 @@ class LoadingDiagram:
         # Convert weights to kg
         f2b_weight = f2b_weight / 9.81
         f2b_heavy_weight = f2b_heavy_weight / 9.81
-        b2f_weight = b2f_weight / 9.81
-        b2f_heavy_weight = b2f_heavy_weight / 9.81
+        # b2f_weight = b2f_weight / 9.81
+        # b2f_heavy_weight = b2f_heavy_weight / 9.81
         fuel_weight = fuel_weight / 9.81
         fuel_heavy_weight = fuel_heavy_weight / 9.81
         fuel_OEW_weight = fuel_OEW_weight / 9.81
@@ -365,8 +441,8 @@ class LoadingDiagram:
         # Plot each loading condition as a line (no color scale)
         ax.plot(f2b_cg[:, 0], f2b_cg[:, 2], label='Front to Back Regular', color='blue')
         ax.plot(f2b_heavy_cg[:, 0], f2b_heavy_cg[:, 2], label='Front to Back Heavy', color='red')
-        ax.plot(b2f_cg[:, 0], b2f_cg[:, 2], label='Back to Front Regular', color='green')
-        ax.plot(b2f_heavy_cg[:, 0], b2f_heavy_cg[:, 2], label='Back to Front Heavy', color='orange')
+        # ax.plot(b2f_cg[:, 0], b2f_cg[:, 2], label='Back to Front Regular', color='green')
+        # ax.plot(b2f_heavy_cg[:, 0], b2f_heavy_cg[:, 2], label='Back to Front Heavy', color='orange')
         # Fuel points as special markers
         ax.scatter(fuel_cg[0], fuel_cg[2], color='green', marker='*', s=120, label='Fuel CG')
         ax.scatter(fuel_heavy_cg[0], fuel_heavy_cg[2], color='darkgreen', marker='*', s=120, label='Fuel CG (Heavy)')
@@ -379,8 +455,8 @@ class LoadingDiagram:
         ax.grid(True)
         ax.legend(loc='best')
         plt.tight_layout()
-        plt.xlim(0, 1.1 * self.aircraft_data.data['outputs']['fuselage_dimensions']['l_fuselage'])
-        plt.ylim(0, 1.1 * self.aircraft_data.data['outputs']['fuselage_dimensions']['h_fuselage'])
+        # plt.xlim(0, 1.1 * self.aircraft_data.data['outputs']['fuselage_dimensions']['l_fuselage'])
+        # plt.ylim(0, 1.1 * self.aircraft_data.data['outputs']['fuselage_dimensions']['h_fuselage'])
         plt.show()
 
 if __name__ == "__main__":
@@ -393,4 +469,7 @@ if __name__ == "__main__":
     # print(f"Min CG (MAC): {min_cg:.3f}, Max CG (MAC): {max_cg:.3f}")
     # loading_diagram.update_json()
     # loading_diagram.plot_all_dimensions()
+    loading_diagram.plot_x()
+    loading_diagram.plot_y()
+    loading_diagram.plot_z()
     loading_diagram.plot_2D()
