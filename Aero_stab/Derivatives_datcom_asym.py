@@ -42,10 +42,10 @@ class DerivativesDatcom_asym:
         isa = ISA(self.aircraft_data.data['inputs']['cruise_altitude'])
         self.M = isa.Mach(self.aircraft_data.data['requirements']['cruise_speed'])
         self.d_f = aircraft_data.data['outputs']['fuselage_dimensions']['d_fuselage_equivalent_station3']
-        self.Cl_alpha_Vtail = aircraft_data.data['outputs']['aerodynamics']['vertical/horizontal stab cl_alpha']
+        self.Cl_alpha_Vtail = aircraft_data.data['outputs']['aerodynamics']['vertical/horizontal stab cl_alpha']*180/np.pi
 
 
-    def CyB(self): # Value is very small, should be ~ -0.8
+    def CyB(self): # Value is very small, should be ~ -0.8 fixed
         """
         Calculate the side force coefficient due to the elevator deflection.
 
@@ -73,18 +73,18 @@ class DerivativesDatcom_asym:
         Kh = 0.8 # Depends on Sh/Sv-> page 1668 DATCOM
         Av_hb__Av_b = 1.0 # Depends on zh/bh, thus for a t-tail equal to 1 ->p1667
         self.A_eff_Vstab = A_vbA_v * self.Av * (1+Kh*(Av_hb__Av_b - 1))
-        Cl_alpha_Vtail = 0.16 # WIG, NACA 0012
+        # Cl_alpha_Vtail = 0.16 # WIG, NACA 0012
         sidewash_coeff = 0.724 + 3.06 * (self.Sv / self.S) / (1 + np.cos(np.radians(self.Delta_c4))) +0.4*z_w / self.d_fusel + 0.009*self.A
 
 
         # CyB_wing  = Cl**2 (6 * np.tan(self.Delta_c4) / (np.pi * self.A * (self.A + 4 * np.cos(self.Delta_c4)))) * 1/ 57.3
 
         CyB_wing_body = K * CyB_body * (S_ref_body / S_ref_wing) * delta_CyB_dihedral # TODO: Check formula for angle unit
-        CyB_tail = - 1 * Cl_alpha_Vtail * sidewash_coeff *self.Sv / self.S
+        CyB_tail = - 1 * self.Cl_alpha_Vtail * sidewash_coeff *self.Sv / self.S
 
         return CyB_wing_body + CyB_tail, CyB_tail
     
-    def ClB(self): # Very small, should be about ~ -0.1
+    def ClB(self): # Very small, should be about ~ -0.1 fixed
         clB__cl_s = -0.002/5 # from plot->p1563
         Km_s = 1.03 #from plot p1564
         kf = 0.95 # from plot p1625
@@ -92,28 +92,30 @@ class DerivativesDatcom_asym:
         clB__dihedral = -0.00024 #1/deg^2 #p1565
         Km_d = 1 #p1566
         dclB__dihedral = -0.0005 * np.sqrt(self.A)*(self.d_fusel / self.b)**2
-        dclB_zw = 1.2 * np.sqrt(self.A) / 57.3 * (2/self.b) * (2 * self.d_fusel / self.b)
+        z_w = -self.d_fusel/2
+        dclB_zw = 1.2 * np.sqrt(self.A) / 57.3 * (2/self.b) * (2 * self.d_fusel / self.b) * z_w
 
         #Dihedral is in degrees
         ClB_wb = self.Cl *(clB__cl_s*Km_s*kf+clB__Cl_A) + self.dihedral * (clB__dihedral * Km_d + dclB__dihedral) + dclB_zw + 0
 
         K = 1.4 #p.1600 smthng
-        cl_alpha_V_tail = 0.16 #p.1600 smthng
-        dcyB_Vtail = -K * cl_alpha_V_tail * self.Sv / self.S
+        # cl_alpha_V_tail = 0.16*180/np.pi #p.1600 smthng
+        dcyB_Vtail = -K * self.Cl_alpha_Vtail * self.Sv / self.S
         zp = self.zp
         dclB_Vtail = dcyB_Vtail * (zp * np.cos(np.radians(self.alpha)) - self.lp*np.sin((self.alpha))) / self.b
 
+        # print(ClB_wb + dclB_Vtail)
         return ClB_wb + dclB_Vtail
     
-    def CnB(self): # Value very small, should be about ~0.1
+    def CnB(self): # Value very small, should be about ~0.1 fixed
         K_N = 0.0018 #p.1633
         K_R_l = 1.65 #p.1634
         S_B_s = self.d_fusel * self.l_b # Cross sectional area of the body at the wing intersection [m2]
         CnB_wb = -K_N * K_R_l * (S_B_s / self.S) * (self.l_b / self.b)
 
         K = 1.4 #p.1600 smthng
-        cl_alpha_V_tail = 0.16 #p.1600 smthng
-        dcyB_Vtail = -K * cl_alpha_V_tail * self.Sv / self.S
+        # cl_alpha_V_tail = 0.16 #p.1600 smthng
+        dcyB_Vtail = -K * self.Cl_alpha_Vtail * self.Sv / self.S
         CnB_Vtail = -dcyB_Vtail * (self.lp / self.b)
         return CnB_wb + CnB_Vtail, CnB_wb, CnB_Vtail
     
@@ -143,7 +145,7 @@ class DerivativesDatcom_asym:
         Cyp_Vtail = 2 * ((z - zp) / self.b) * dCyB_VWBH
         # print(dCyB_VWBH)
         # print(z, zp)
-        print(Cyp_wb + Cyp_Vtail)
+        # print(Cyp_wb + Cyp_Vtail)
         return Cyp_wb + Cyp_Vtail, K
     
     def Clp(self):
@@ -202,8 +204,8 @@ class DerivativesDatcom_asym:
         Clr_wb = self.Cl * Clr__Cl + dClr_Cl + dClr__dihedral * np.radians(self.dihedral)
 
         zp = self.zp # Distance from the centerline of the body to the centerline of the vertical tail
-        Clr_tail = 2 / self.b**2 * (self.lp * np.cos(np.radians(self.alpha)) + zp * np.sin(np.radians(self.alpha)))*(zp*np.cos(np.radians(self.alpha) - self.lp * np.sin(np.radians(self.alpha)))) * self.CyB()[1] #p.2802
-        return Clr_wb - Clr_tail
+        Clr_tail = - 2 / self.b**2 * (self.lp * np.cos(np.radians(self.alpha)) + zp * np.sin(np.radians(self.alpha)))*(zp*np.cos(np.radians(self.alpha) - self.lp * np.sin(np.radians(self.alpha)))) * self.CyB()[1] #p.2802
+        return Clr_wb + Clr_tail
     
     def Cnr(self): # Value very small, should be aobut ~ -0.2
         """
