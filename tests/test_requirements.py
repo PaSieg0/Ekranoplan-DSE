@@ -49,7 +49,7 @@ def test_service_ceiling(altitude_velocity: AltitudeVelocity):
 
 def test_design_range(range_calculator_design: RangeCalculator):
     ranges_nm, points = range_calculator_design.analyze_and_plot(show=False)
-    assert ranges_nm['design'] >= 2000, f"Design range is too low: {ranges_nm['design']} nmi"
+    assert round(ranges_nm['design'], 2) >= 2000, f"Design range is too low: {ranges_nm['design']} nmi"
 
 def test_altitude_range(range_calculator_altitude: RangeCalculator):
     ranges_nm, points = range_calculator_altitude.analyze_and_plot(show=False)

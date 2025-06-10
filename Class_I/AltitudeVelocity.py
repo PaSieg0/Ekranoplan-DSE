@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import os
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from utils import Data, ISA, MissionType
+from utils import Data, ISA, MissionType, plt
 from functools import lru_cache
 from tqdm import tqdm
 
@@ -75,9 +75,9 @@ class AltitudeVelocity:
         Calculate the power available for the aircraft at different velocities.
         Assume power available is constant for propeller engines.
         """
-        return self._engine_power * (self._get_density(h) / self._sea_level_density)**0.70 * 4 * self._prop_efficiency
+        return self._engine_power * (self._get_density(h) / self._sea_level_density)**0.70 * 6 * self._prop_efficiency
     
-    def calculate_drag(self, V: float, h: float, W: float) -> float:
+    def calculate_drag(self, V: float, h: float, W: float = None) -> float:
         return self.calculate_power_required(V, h, W=W)/V
 
     def calculate_thust(self, V: float, h: float) -> float:
@@ -552,6 +552,40 @@ class AltitudeVelocity:
                 arrowprops=dict(arrowstyle="->", color='purple', lw=1)
             )
 
+        # Plot horizontal line at h=10000 ft with velocity range
+        if altitude_units == 'feet':
+            h_10000 = 10000
+        else:
+            h_10000 = 10000 / self.m_to_ft  # Convert to meters if needed
+        
+        # Calculate stall speed at 10000 ft
+        V_stall_10k = self.calculate_stall_speed(h_10000 / self.m_to_ft if altitude_units == 'feet' else h_10000)
+        
+        # Find thrust limited speed at 10000 ft (where RoC = 0)
+        h_actual = h_10000 / self.m_to_ft if altitude_units == 'feet' else h_10000
+        velocity_range = np.linspace(V_stall_10k, self.dive_speed, self.velocity_steps)
+        RoC_values = self.calculate_RoC_vectorized(velocity_range, h_actual)
+        
+        # Find where RoC crosses zero (thrust limited speed)
+        zero_crossings = np.where(np.diff(np.sign(RoC_values)))[0]
+        if len(zero_crossings) > 0:
+            # Interpolate to find accurate thrust limited speed
+            idx = zero_crossings[-1]  # Take the last crossing (max speed)
+            v1, v2 = velocity_range[idx], velocity_range[idx + 1]
+            roc1, roc2 = RoC_values[idx], RoC_values[idx + 1]
+            V_max_10k = v1 + (0 - roc1) * (v2 - v1) / (roc2 - roc1) if roc2 != roc1 else v1
+        else:
+            V_max_10k = self.dive_speed  # Fallback to dive speed if no zero crossing found
+        
+        # Convert to equivalent airspeed if needed
+        if airspeed_type == 'equivalent':
+            V_stall_10k = self.equivalent_air_speed(V_stall_10k, h_actual)
+            V_max_10k = self.equivalent_air_speed(V_max_10k, h_actual)
+        
+        # Plot horizontal line from stall speed to thrust limited speed at 10000 ft
+        plt.plot([x_transform(V_stall_10k), x_transform(V_max_10k)], [h_10000, h_10000], 
+            color='gray', linestyle='--', alpha=0.7, linewidth=2, label='h = 10,000 ft')
+
         # Set appropriate axis labels based on airspeed type and altitude units
         if airspeed_type == 'equivalent':
             plt.xlabel('Equivalent Airspeed (m/s)')
@@ -564,7 +598,7 @@ class AltitudeVelocity:
         else:
             plt.ylabel('Altitude (m)')
         plt.legend()
-        plt.grid()
+        plt.grid(True, which='both')
         plt.show()
     
     def calculate_t_climb(self, h_start: float, h_end: float, V_ias: float=None) -> float:

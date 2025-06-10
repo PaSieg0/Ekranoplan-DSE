@@ -68,6 +68,25 @@ class OptimumSpeeds(AltitudeVelocity):
         v_max_endurance = res.x
         return v_max_endurance
     
+    def v_max(self, h: float) -> float:
+        """
+        Calculate the maximum velocity at a given altitude (where rate of climb = 0).
+        """
+        V_stall = self.calculate_stall_speed(h)
+        
+        def roc_func(V):
+            roc = self.calculate_RoC(V, h)
+            return abs(roc)  # Minimize absolute value to find where RoC = 0
+
+        res = minimize_scalar(
+            roc_func,
+            bounds=(V_stall, self.dive_speed*2),
+            method='bounded',
+            options={'xatol': 1e-6}
+        )
+        v_max = res.x
+        return v_max
+    
     def L_over_D(self, V: float, h: float, W: float) -> float:
         """
         Calculate the lift-to-drag ratio at a given altitude.
@@ -96,11 +115,12 @@ if __name__ == "__main__":
 
     h = h_WIG = 10  # Example altitude in meters
 
-    optimum_speeds._current_weight = 1839082
+    optimum_speeds._current_weight = optimum_speeds._mtow  # Set current weight to MTOW for calculations
     v = optimum_speeds.v_range(h)
 
     v_range = optimum_speeds.v_range(h)
     v_endurance = optimum_speeds.v_endurance(h)
+    v_max = optimum_speeds.v_max(h)
     _, v_max_roc = optimum_speeds.calculate_max_RoC(h)
     _, v_max_aod = optimum_speeds.calculate_max_AoC(h)
     _, v_min_rod = optimum_speeds.calculate_min_RoD(h)
