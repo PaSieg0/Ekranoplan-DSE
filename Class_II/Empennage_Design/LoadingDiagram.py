@@ -252,9 +252,9 @@ class LoadingDiagram:
 
         # self.aircraft_data.data['outputs']['fuselage_dimensions'] reference frame (x in meters)
         axs[0].plot(f2b_cg[:, 0], f2b_weight, label='Front to Back Regular', color='blue')
-        # axs[0].plot(b2f_cg[:, 0], b2f_weight, label='Back to Front Regular', color='cyan')
+        # axs[0].plot(b2f_cg[:, 0], label='Back to Front Regular', color='cyan')
         axs[0].plot(f2b_heavy_cg[:, 0], f2b_heavy_weight, label='Front to Back Heavy', color='red')
-        # axs[0].plot(b2f_heavy_cg[:, 0], b2f_heavy_weight, label='Back to Front Heavy', color='orange')
+        # axs[0].plot(b2f_heavy_cg[:, 0], label='Back to Front Heavy', color='orange')
         axs[0].scatter(fuel_cg[0], fuel_weight, color='green', label='Fuel CG', zorder=5)
         axs[0].plot([f2b_cg[-1, 0], fuel_cg[0]], [f2b_weight[-1], fuel_weight], color='green', linestyle='--', label='Fuel Loading')
         axs[0].scatter(fuel_heavy_cg[0], fuel_heavy_weight, color='darkgreen', label='Fuel CG (Heavy)', zorder=5)
@@ -335,6 +335,53 @@ class LoadingDiagram:
         plt.tight_layout()
         plt.show()
 
+    def plot_2D(self):
+        """
+        Plot x vs z CG for each loading condition, without color scale for weight.
+        OEW CG is marked for reference.
+        """
+        import matplotlib.pyplot as plt
+        import numpy as np
+        # Get all loading cases
+        f2b_cg, f2b_weight = self.load_front_to_back_regular()
+        f2b_heavy_cg, f2b_heavy_weight = self.load_front_to_back_heavy()
+        b2f_cg, b2f_weight = self.load_back_to_front_regular()
+        b2f_heavy_cg, b2f_heavy_weight = self.load_back_to_front_heavy()
+        fuel_cg, fuel_weight = self.add_fuel_regular()
+        fuel_heavy_cg, fuel_heavy_weight = self.add_fuel_heavy()
+        fuel_OEW_cg, fuel_OEW_weight = self.add_fuel_OEW()
+
+        # Convert weights to kg
+        f2b_weight = f2b_weight / 9.81
+        f2b_heavy_weight = f2b_heavy_weight / 9.81
+        b2f_weight = b2f_weight / 9.81
+        b2f_heavy_weight = b2f_heavy_weight / 9.81
+        fuel_weight = fuel_weight / 9.81
+        fuel_heavy_weight = fuel_heavy_weight / 9.81
+        fuel_OEW_weight = fuel_OEW_weight / 9.81
+        OEW_kg = self.aircraft_data.data['outputs']['component_weights']['total_OEW'] / 9.81
+
+        fig, ax = plt.subplots(figsize=(10, 8))
+        # Plot each loading condition as a line (no color scale)
+        ax.plot(f2b_cg[:, 0], f2b_cg[:, 2], label='Front to Back Regular', color='blue')
+        ax.plot(f2b_heavy_cg[:, 0], f2b_heavy_cg[:, 2], label='Front to Back Heavy', color='red')
+        ax.plot(b2f_cg[:, 0], b2f_cg[:, 2], label='Back to Front Regular', color='green')
+        ax.plot(b2f_heavy_cg[:, 0], b2f_heavy_cg[:, 2], label='Back to Front Heavy', color='orange')
+        # Fuel points as special markers
+        ax.scatter(fuel_cg[0], fuel_cg[2], color='green', marker='*', s=120, label='Fuel CG')
+        ax.scatter(fuel_heavy_cg[0], fuel_heavy_cg[2], color='darkgreen', marker='*', s=120, label='Fuel CG (Heavy)')
+        ax.scatter(fuel_OEW_cg[0], fuel_OEW_cg[2], color='purple', marker='*', s=120, label='Fuel CG (OEW)')
+        # OEW CG
+        ax.scatter(self.OEW_cg[0], self.OEW_cg[2], color='black', marker='x', s=100, label='OEW CG', zorder=10)
+        ax.set_xlabel('CG X Position (m)')
+        ax.set_ylabel('CG Z Position (m)')
+        ax.set_title('CG X vs Z for Loading Conditions')
+        ax.grid(True)
+        ax.legend(loc='best')
+        plt.tight_layout()
+        plt.xlim(0, 1.1 * self.aircraft_data.data['outputs']['fuselage_dimensions']['l_fuselage'])
+        plt.ylim(0, 1.1 * self.aircraft_data.data['outputs']['fuselage_dimensions']['h_fuselage'])
+        plt.show()
 
 if __name__ == "__main__":
     file_path = "design3.json"
@@ -344,5 +391,6 @@ if __name__ == "__main__":
     # loading_diagram.plot()
     # min_cg, max_cg = loading_diagram.determine_range()
     # print(f"Min CG (MAC): {min_cg:.3f}, Max CG (MAC): {max_cg:.3f}")
-    loading_diagram.update_json()
-    loading_diagram.plot_all_dimensions()
+    # loading_diagram.update_json()
+    # loading_diagram.plot_all_dimensions()
+    loading_diagram.plot_2D()
