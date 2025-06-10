@@ -649,14 +649,16 @@ if __name__ == "__main__":
     
     cruise_speed = aircraft_data.data['requirements']['cruise_speed']
     power_required_cruise = altitude_velocity.calculate_power_required(cruise_speed, h=0)
+    power_available_cruise = altitude_velocity.calculate_power_available(h=0)
     print(f"Power required to cruise at h=0 and V={cruise_speed} m/s: {power_required_cruise/10**6:.2f} MW")
+    print(f"Power required / Power available at cruise: {power_required_cruise / power_available_cruise:.2f}")
 
     print(f"Max RoC at h = 0 is {altitude_velocity.calculate_max_RoC(0)[0] * 196.85} ft/min")
     print(f"Max AoC at h = 0 is {altitude_velocity.calculate_max_AoC(0)[0] * 180/np.pi} degrees")
     print(f"Max true RoC at h = 0 is {altitude_velocity.calculate_true_RoC(altitude_velocity.calculate_max_RoC(0)[1], 0) * 196.85} ft/min")
 
-    zero_points, stall_points = altitude_velocity.calculate_limit_points(airspeed_type='energy', altitude_units='feet')
+    zero_points, stall_points = altitude_velocity.calculate_limit_points(airspeed_type='true', altitude_units='feet')
     altitude_velocity.plot_limit_points(zero_points, stall_points, 
-                                        airspeed_type='energy', 
+                                        airspeed_type='true', 
                                         altitude_units='feet', 
-                                        plot=('thrust_limit', 'stall_limit', 'Vy', 'energy_height', 'roc_contours'))
+                                        plot=('thrust_limit', 'stall_limit', 'Vy'))
