@@ -4,7 +4,7 @@ import numpy as np
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 from utils import Data
 import matplotlib.pyplot as plt
-from Class_II.weight_distributions import CGCalculation
+from Class_II.Cgcalculation import CGCalculation
 
 class LoadingDiagram:
     def __init__(self, aircraft_data: Data, wing_placement):
