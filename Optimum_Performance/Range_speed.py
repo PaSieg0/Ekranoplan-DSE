@@ -10,6 +10,7 @@ from utils import Data, ISA, MissionType, plt
 from Class_I.PayloadRange import RangeCalculator
 from Optimum_Performance.Optimum_speeds import OptimumSpeeds
 from Class_II.Small_Iteration import Ainf_Ah
+import random
 
 def plot_speed_vs_time(details, label, payload_drop_time=None):
     times = np.array(details['times']) / 3600  # Convert seconds to hours
@@ -165,9 +166,9 @@ class RangeAnalyzer:
             
             # Calculate velocity using provided function or default
             if velocity_func is not None:
-                V = velocity_func(self.opt, h)
+                V = velocity_func(self.opt, h, weight)
             else:
-                V = self.opt.v_range(h)  # Default: optimal range speed
+                V = self.opt.v_range(h, W=weight)  # Default: optimal range speed
             
             # Validate flight capability
             if not self.validate_flight_capability(V, weight, h):
@@ -245,31 +246,36 @@ class RangeAnalyzer:
             payload_leg1: Payload for leg 1 (kg), if None uses design payload.
             payload_leg2: Payload for leg 2 (kg), default is 0.
             h: Altitude (m)
+            numerical: If True, use numerical integration, otherwise use analytical formula (only for constant L/D).
             
         Returns:
             Total range in meters and time in seconds for both legs.
         """
         if payload_leg1 is None:
             payload_leg1 = self.aircraft_data.data['requirements']['design_payload']
+        else:
+            # Update MTOW based on the new payload
+            payload_diff = payload_leg1 - self.aircraft_data.data['requirements']['design_payload']
+            self.opt._mtow += payload_diff * 9.81  # Adjust MTOW by payload difference
 
         W4_leg1 = self.opt._mtow * self.rng.Mff_nocruise  # Weight at start of cruise for leg 1
         W5_leg1 = 0 # this is the variable we want to calculate for R_leg1 = R_leg2
         W4_leg2 = (W5_leg1 - (payload_leg1-payload_leg2) * 9.81) * self.rng.Mff_nocruise  # Weight at start of cruise for leg 2
-        W5_leg2 = self.aircraft_data.data['outputs']['design']['ZFW'] + self.aircraft_data.data['outputs']['design']['reserve_fuel'] - (payload_leg1-payload_leg2) * 9.81
+        W5_leg2 = self.aircraft_data.data['outputs']['design']['ZFW'] + self.aircraft_data.data['outputs']['design']['reserve_fuel'] - (self.aircraft_data.data['requirements']['design_payload']-payload_leg2) * 9.81
 
         # Iteratively find W5_leg1 such that R_leg1 equals R_leg2
-        W5_leg1_min = self.aircraft_data.data['outputs']['design']['ZFW'] + self.aircraft_data.data['outputs']['design']['reserve_fuel']
+        W5_leg1_min = W5_leg2
         W5_leg1_max = W4_leg1
 
-        if numerical:
-            tolerance = 10  # Tolerance for range difference (m)
-        else:
-            tolerance = 1e-3  # Tolerance for range difference (m)
+        tolerance = 10000  # Big tolerance for convergence (meters)
 
         max_iterations = 100
+        dW = self.weight_step*5  # Initial weight step for numerical integration
+        range_diff = float('inf')  # Initialize range difference
 
         for iteration in range(max_iterations):
-            W5_leg1 = (W5_leg1_min + W5_leg1_max) / 2
+            prev_range_diff = range_diff
+            W5_leg1 = (W5_leg1_min + W5_leg1_max) / 2 + random.uniform(-dW, dW)  # Randomize W5_leg1 within bounds
             W4_leg2 = (W5_leg1 - (payload_leg1 - payload_leg2) * 9.81) * self.rng.Mff_nocruise
             
             if numerical:
@@ -289,12 +295,11 @@ class RangeAnalyzer:
             else:  # R_leg1 < R_leg2, need to increase W5_leg1
                 W5_leg1_min = W5_leg1
 
-            if numerical and abs(range_diff) < dW:
-                # If range difference is smaller than weight step, reduce weight step for better precision
-                dW = max(dW / 2)  # Reduce weight step but don't go below 10 N
-                print(f"Reducing weight step to {dW} N for better precision")
+            if numerical and abs(range_diff - prev_range_diff) < 0.1 * abs(prev_range_diff):
+                # If range difference is roughly equal to previous (within 1%), reduce weight step for better precision
+                dW = dW // 2  # Reduce weight step
 
-            print(f'Iteration {iteration+1}/{max_iterations}: W5_leg1_min={W5_leg1_min:.2f}, W5_leg1_max={W5_leg1_max:.2f}, R_leg1={R_leg1:.2f}, R_leg2={R_leg2:.2f}, Range diff={range_diff:.2f}')
+            # print(f"Iteration {iteration+1}: W5_leg1 = {W5_leg1:.2f} N, R_leg1 = {R_leg1/1852:.2f} nmi, R_leg2 = {R_leg2/1852:.2f} nmi, Range diff = {range_diff/1852:.2f} nmi")
 
         total_range= R_leg1 + R_leg2
 
@@ -403,9 +408,9 @@ class RangeAnalyzer:
             W4, W5 = self.calculate_cruise_weights_leg1()
             
             # Example velocity functions for different strategies
-            def v_max_range(opt, h):
+            def v_max_range(opt, h, W=None):
                 """Use optimal range speed (default)"""
-                return opt.v_range(h)
+                return opt.v_range(h, W=W)
 
             # Numerical integration for range, endurance, and constant speed
             R_numerical_range, time_numerical, _ = self.calculate_numerical_range(W4, W5, v_max_range, altitude, dW=self.weight_step)
@@ -436,13 +441,13 @@ def speed_comparison():
     W4_2, W5_2 = analyzer.calculate_cruise_weights_leg2()
     
     # Calculate numerical range
-    def v_test(opt, h):
+    def v_test(opt, h, W=None):
         """Example"""
-        return opt.v_range(h)*1.25
+        return opt.v_range(h, W=W)*1.25
     
-    def v_max(opt, h):
+    def v_max(opt, h, W=None):
         """Use optimal range speed (default)"""
-        return opt.v_max(h)
+        return opt.v_max(h, W=W)
     
     # Leg 1
     R_numerical_1, time_1, _ = analyzer.calculate_numerical_range(W4_1, W5_1, None, dW=weight_step)
@@ -543,7 +548,5 @@ if __name__ == "__main__":
     mission_type = MissionType.DESIGN
     analyzer = RangeAnalyzer(file_path, mission_type)
     analyzer.check()
-
-    speed_comparison()
 
     sea_state_comparison()

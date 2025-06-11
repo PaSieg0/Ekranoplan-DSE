@@ -151,13 +151,13 @@ class AltitudeVelocity:
         if show:
             plt.show()
 
-    def calculate_RoC(self, V: float, h: float, minus_power: float=0) -> float:
+    def calculate_RoC(self, V: float, h: float, W: float = None) -> float:
         """Calculate Rate of Climb at a given velocity and altitude."""
-        return (self.calculate_power_available(h) - self.calculate_power_required(V, h)) / self._current_weight
+        return (self.calculate_power_available(h) - self.calculate_power_required(V, h, W=W)) / self._current_weight
     
-    def calculate_AoC(self, V: float, h: float) -> float:
+    def calculate_AoC(self, V: float, h: float, W: float = None) -> float:
         """Calculate Angle of Climb at a given velocity and altitude."""
-        return np.arcsin(self.calculate_RoC(V, h) / V)
+        return np.arcsin(self.calculate_RoC(V, h, W=W) / V)
     
     def calculate_RoC_vectorized(self, velocities: np.ndarray, h: float) -> np.ndarray:
         """Vectorized version of calculate_RoC for multiple velocities at once."""
