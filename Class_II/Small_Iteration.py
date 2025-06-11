@@ -7,6 +7,7 @@ from Class_I.WingLoading import main, WingLoading
 from Class_II.Modified_Class_I import ModifiedClassI
 import matplotlib.pyplot as plt
 from utils import Data, ISA, MissionType, AircraftType, WingType
+from Optimum_Performance.Optimum_speeds import OptimumSpeeds
 
 def solve_hb(target_A_A):
     h_b = np.arange(0, 2, 0.00001)
@@ -48,7 +49,7 @@ class SmallIteration:
         self.mission_type = mission_type
         self.class_ii_OEW = class_ii_OEW
 
-        self.tolerance = 0.00015
+        self.tolerance = 0.00001
         self.max_iterations = 20
         self.iteration = 0
 
@@ -58,6 +59,10 @@ class SmallIteration:
             aircraft_data=self.aircraft_data,
             mission_type=self.mission_type,
             class_ii_OEW=self.class_ii_OEW
+        )
+        self.optimum_speeds = OptimumSpeeds(
+            aircraft_data=self.aircraft_data, 
+            mission_type=self.mission_type
         )
 
     def get_initial_conditions(self):
@@ -87,8 +92,8 @@ class SmallIteration:
         elif self.wing_type == WingType.LOW:
             self.h_fus = (self.aircraft_data.data['inputs']['cruise_altitude']) / self.n_fuselages
         self.A_ratio_fus = Ainf_Ah(self.h_fus, self.d_fuselage)
-        self.k_fus = np.sqrt(1 / self.A_ratio_fus)
-        self.new_k = self.new_k * self.k_fus
+        # self.k_fus = np.sqrt(1 / self.A_ratio_fus)
+        # self.new_k = self.new_k * self.k_fus
         self.k_tail = 1
 
     def run_iteration(self) -> list[float]:
@@ -106,6 +111,8 @@ class SmallIteration:
             self.WP, self.TW, self.WS = main(aircraft_data=self.aircraft_data,
                                             mission_type=self.mission_type,
                                              PLOT_OUTPUT=False)
+
+
             stop_condition = abs((self.curr_MTOM - self.prev_MTOM) / self.prev_MTOM) < self.tolerance or self.iteration >= self.max_iterations
             if stop_condition:
                 self.update_attributes()
@@ -123,7 +130,7 @@ class SmallIteration:
                 self.k_tail = np.sqrt(1 / self.A_ratio_tail)
             else:
                 self.k_tail = 1
-            self.new_k = np.sqrt(1 / self.A_ratio)*self.k_fus*self.k_tail
+            self.new_k = np.sqrt(1 / self.A_ratio)*self.k_tail
             self.aircraft_data.data['outputs'][self.mission_type.name.lower()]['k'] = self.new_k
             self.new_Cd0 = self.aircraft_data.data['inputs']['Cd0']
 

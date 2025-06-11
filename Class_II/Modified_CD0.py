@@ -18,8 +18,8 @@ class Cd0Estimation:
         self.t_c_wing = self.aircraft_data.data['inputs']['airfoils']['wing']
         self.t_c_htail = self.aircraft_data.data['inputs']['airfoils']['horizontal_tail']
         self.t_c_vtail = self.aircraft_data.data['inputs']['airfoils']['vertical_tail']
-        self.d_F = self.aircraft_data.data['outputs']['general']['d_fuselage_equivalent_straight']
-        self.l_F = self.aircraft_data.data['outputs']['general']['l_fuselage']
+        self.d_F = self.aircraft_data.data['outputs']['fuselage_dimensions']['d_fuselage_equivalent_station2']
+        self.l_F = self.aircraft_data.data['outputs']['fuselage_dimensions']['l_fuselage']
         self.lambda_F = self.l_F / self.d_F
         self.l_nacelle = self.aircraft_data.data['inputs']['engine']['engine_length']
         self.d_nacelle = 0.92  # diameter in meters
@@ -189,7 +189,8 @@ if __name__ == '__main__':
     data = Data('design3.json')
     est = Cd0Estimation(
         aircraft_data=data,
-        mission_type=MissionType.DESIGN
+        mission_type=MissionType.DESIGN,
+        class_ii_OEW=data.data['outputs']['design']['OEW']/9.81
     )
 
     est.mainloop()

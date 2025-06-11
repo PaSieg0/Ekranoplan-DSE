@@ -4,7 +4,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from utils import Data, EvaluateType
-from AerodynamicForces import AerodynamicForces
 
 class load_diagram:
     def __init__(self, aircraft_data: Data, plot=True) -> None:

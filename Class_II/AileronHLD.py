@@ -255,6 +255,8 @@ class AileronHLD:
         self.aircraft_data.data['outputs']['control_surfaces']['aileron']['bank_angle'] = np.rad2deg(self.bank_angle)
         self.aircraft_data.data['outputs']['control_surfaces']['aileron']['turn_radius'] = self.turn_radius
         self.aircraft_data.data['outputs']['control_surfaces']['aileron']['object_distance'] = self.object_distance
+        self.aircraft_data.data['outputs']['control_surfaces']['aileron']['Clda'] = self.Clda
+        self.aircraft_data.data['outputs']['aerodynamic_stability_coefficients_asym']['C_l_delta_a'] = -self.Clda
         self.aircraft_data.data['outputs']['HLD']['b1'] = self.flap_start
         self.aircraft_data.data['outputs']['HLD']['b2'] = self.flap_end
         self.aircraft_data.data['outputs']['HLD']['Swf_single'] = self.flap_area

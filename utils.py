@@ -88,6 +88,17 @@ class Materials(Enum):
     Rene_41 = auto()
     HASTELLOY_X = auto()
 
+class EigenMotion(Enum):
+    PHUGOID = auto()
+    SHORT_PERIOD = auto()
+    DUTCH_ROLL = auto()
+    DUTCH_ROLL_DAMPED = auto()
+    ROLL = auto()
+    SPIRAL = auto()
+
+class EigenMotionType(Enum):
+    SYMMETRIC = auto()
+    ASYMMETRIC = auto()
 class EnumEncoder(json.JSONEncoder):
     """
     Makes sure that enums are saved as strings correctly in the json file
@@ -366,6 +377,18 @@ def lbsftsq2kgmsq(lbsft2):
     """
     return lbsft2 / 0.204816
 
+def W2hp(W):
+    """
+    Convert Watts to horsepower
+    """
+    return W * 0.00134102
+
+def hp2W(hp):
+    """
+    Convert horsepower to Watts
+    """
+    return hp / 0.00134102
+
 def apply_number_format(cell, value):
     if isinstance(value, (int, float)):
         if abs(value) >= 0.001:
@@ -484,6 +507,27 @@ def design_json_to_excel(json_file: str, excel_file: str) -> None:
     auto_adjust_column_widths(sheet)
 
     excelsheet.save(excel_file)
+
+import matplotlib.pyplot as plt
+
+# Set matplotlib parameters for technical report quality
+plt.rcParams.update({
+    'font.size': 12,
+    'font.family': 'serif',
+    'axes.labelsize': 14,
+    'axes.titlesize': 16,
+    'xtick.labelsize': 12,
+    'ytick.labelsize': 12,
+    'legend.fontsize': 12,
+    'figure.titlesize': 18,
+    'axes.grid': True,
+    'grid.alpha': 0.3,
+    'lines.linewidth': 2,
+    'axes.linewidth': 1.2,
+    'xtick.major.width': 1.2,
+    'ytick.major.width': 1.2,
+    'axes.titleweight': 'bold'
+})
 
 class ISA:
     """

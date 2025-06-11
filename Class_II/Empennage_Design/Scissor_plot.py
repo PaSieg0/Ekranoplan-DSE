@@ -23,16 +23,18 @@ class Tail_area:
         self.most_aft_cg = aft_cg * self.MAC + self.lemac
         self.most_fwd_cg = fwd_cg * self.MAC + self.lemac
         self.horizontal_tail_pos = aircraft_data.data['outputs']['component_positions']['horizontal_tail']
+        self.l_h = aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['l_h']  # horizontal tail arm length
 
     def get_downwash(self):
         if self.tail_type == "T_TAIL":
-            downwash = 0
+            downwash = 0.46
             return downwash
         else:
             downwash = 4/(self.A+2)
             return downwash
         
     def get_aerodynamic_center(self):
+        # TODO: link to json
         X_ac = 0.277360658914395 #hard coded for now, change later to link to aero
         return X_ac
     
@@ -44,13 +46,14 @@ class Tail_area:
         return X_cg
             
     def Sh_S_stability(self,X_cg):
-        CL_alpha_h = 0.132 #need to account for the tail
-        CL_alpha_A_h = 0.132
-        lh = self.horizontal_tail_pos[0]-self.most_aft_cg
+        # TODO: link to json
+        CL_alpha_h = 0.1187 #need to account for the tail
+        CL_alpha_A_h = 0.10126
+        lh = self.l_h
         downwash = self.get_downwash()
         c = self.MAC
         X_ac = self.get_aerodynamic_center()
-        Stability_margin = 0.05 #maybe look up if this needs to be bigger for ekrano
+        Stability_margin = 0.1 #maybe look up if this needs to be bigger for ekrano
         Vh_V = 1
 
         Sh_S = 1/((CL_alpha_h/CL_alpha_A_h)*(1-downwash)*(lh/c)*Vh_V**2)*X_cg - (X_ac-Stability_margin)/((CL_alpha_h/CL_alpha_A_h)*(1-downwash)*(lh/c)*Vh_V**2)
@@ -60,11 +63,12 @@ class Tail_area:
 
     def Sh_S_controllability(self,X_cg):
         X_ac = self.get_aerodynamic_center()
-        C_m_ac = -0.26 #outta Martin's ass, change later 
-        CL_A_h = 1.36 #5def AOA
-        CL_h = 0.665
+        # TODO: link to json
+        C_m_ac = -0.25 #outta Martin's ass, change later 
+        CL_A_h = 1.13 #5def AOA
+        CL_h = 0.59
         Vh_V = 1
-        lh = self.horizontal_tail_pos[0]-self.most_aft_cg
+        lh = self.l_h
         c = self.MAC
         Sh_S = -(X_cg-X_ac+(C_m_ac/CL_A_h))/((CL_h/CL_A_h)*(lh/c)*Vh_V**2)
         return Sh_S
@@ -90,6 +94,8 @@ class Tail_area:
         plt.title('Scissor plot')
         plt.grid(True)
         plt.legend()
+        plt.xlim(-0.2, 1)
+        plt.ylim(0, 1)
         plt.tight_layout()
         plt.show()
 
@@ -109,8 +115,8 @@ if __name__ == "__main__":
     file_path = "design3.json"
     aircraft_data = Data(file_path)
     Xcg_values = np.linspace(-0.5, 1.2, 200)
-    fwd_cg = 0.2138
-    aft_cg = 0.7489
+    fwd_cg = 0.2416
+    aft_cg = 0.4874
     tail = Tail_area(aircraft_data=aircraft_data, fwd_cg=fwd_cg, aft_cg=aft_cg)
     plot = tail.plot(Xcg_values)
     tail_area = tail.get_tail_area()

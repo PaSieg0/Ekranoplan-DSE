@@ -3,9 +3,10 @@ import matplotlib.pyplot as plt
 import os
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from utils import Data, ISA, MissionType
+from utils import Data, ISA, MissionType, plt
 from functools import lru_cache
 from tqdm import tqdm
+from scipy.optimize import minimize_scalar
 
 class AltitudeVelocity:
     def __init__(self, aircraft_data: Data, mission_type: MissionType):
@@ -25,7 +26,8 @@ class AltitudeVelocity:
         self._AR = self.data.data['inputs']['aspect_ratio']
         self._e = self.data.data['inputs']['oswald_factor']
         self._CLmax = self.data.data['inputs']['CLmax_clean']
-        self._engine_power = self.data.data['inputs']['engine_power']
+        self._engine_power = self.data.data['inputs']['engine']['engine_power']
+        self._prop_efficiency = self.data.data['inputs']['prop_efficiency']
         self._sea_level_density = ISA(0).rho
         self._k = 1 / (np.pi * self._AR * self._e)  # Induced drag factor
         self.velocity_steps = 2000  # Number of velocity steps for calculations
@@ -54,32 +56,34 @@ class AltitudeVelocity:
         rho = self._get_density(h)
         return V_ias * np.sqrt(self._sea_level_density/rho)
 
-    def calculate_power_required(self, V: float, h: float, RoC: float=0) -> float:
+    def calculate_power_required(self, V: float, h: float, RoC: float=0, W=None) -> float:
         """
         Calculate the power required for the aircraft at different velocities.
         """
+        if W is None:
+            W = self._current_weight
+
         rho = self._get_density(h)
         q = 0.5 * rho * V**2
         qS = q * self._S
-        Cl = self._current_weight / qS
+        Cl = W / qS
         Cd = self._Cd0 + Cl**2 * self._k
         
-        return Cd * qS * V + self._current_weight * RoC
+        return Cd * qS * V + W * RoC
 
     def calculate_power_available(self, h: float) -> float:
         """
         Calculate the power available for the aircraft at different velocities.
         Assume power available is constant for propeller engines.
         """
-        return self._engine_power * (self._get_density(h) / self._sea_level_density)**0.70 * 4
+        return self._engine_power * (self._get_density(h) / self._sea_level_density)**0.70 * 6 * self._prop_efficiency
     
-    def calculate_drag(self, V: float, h: float) -> float:
-        return self.calculate_power_required(V, h)/V
+    def calculate_drag(self, V: float, h: float, W: float = None) -> float:
+        return self.calculate_power_required(V, h, W=W)/V
 
     def calculate_thust(self, V: float, h: float) -> float:
         return self.calculate_power_available(h)/V
     
-    @lru_cache(maxsize=128)
     def calculate_stall_speed(self, h: float) -> float:
         """
         Calculate stall speed depending on altitude
@@ -112,15 +116,16 @@ class AltitudeVelocity:
         plt.grid()
         plt.show()
 
-    def plot_force_curve(self, h_list: np.array, n_list: float = [1]) -> None:
+    def plot_force_curve(self, h_list: np.array, n_list: float = [1], show=True) -> None:
         """
         Plot the drag and thrust available curves for different load factors.
         """
         plt.figure(figsize=(10, 6))
         color_list = ['b', 'g', 'r', 'c', 'm', 'y', 'k']
+        initial_weight = self._current_weight  # Store initial weight
 
         for n_idx, n in enumerate(n_list):
-            self._current_weight = self._mtow * n  # Adjust weight based on load factor
+            self._current_weight = initial_weight * n  # Adjust weight based on load factor
 
             for i, h in enumerate(h_list):
                 V_stall = self.calculate_stall_speed(h)
@@ -136,22 +141,23 @@ class AltitudeVelocity:
                 plt.plot(velocity_range, drag, label=label_drag, color=color, linestyle='-')
                 plt.plot(velocity_range, thrust, label=label_thrust, color=color, linestyle='--')
 
-        self._current_weight = self._mtow  # Reset weight to original value
+        self._current_weight = initial_weight  # Reset weight to original value
 
         plt.title('Thrust and Drag vs Velocity')
         plt.xlabel('Velocity (m/s)')
         plt.ylabel('Force (N)')
         plt.legend()
         plt.grid()
-        plt.show()
+        if show:
+            plt.show()
 
-    def calculate_RoC(self, V: float, h: float, minus_power: float=0) -> float:
+    def calculate_RoC(self, V: float, h: float, W: float = None) -> float:
         """Calculate Rate of Climb at a given velocity and altitude."""
-        return (self.calculate_power_available(h) - self.calculate_power_required(V, h)) / self._current_weight
+        return (self.calculate_power_available(h) - self.calculate_power_required(V, h, W=W)) / self._current_weight
     
-    def calculate_AoC(self, V: float, h: float) -> float:
+    def calculate_AoC(self, V: float, h: float, W: float = None) -> float:
         """Calculate Angle of Climb at a given velocity and altitude."""
-        return np.arcsin(self.calculate_RoC(V, h) / V)
+        return np.arcsin(self.calculate_RoC(V, h, W=W) / V)
     
     def calculate_RoC_vectorized(self, velocities: np.ndarray, h: float) -> np.ndarray:
         """Vectorized version of calculate_RoC for multiple velocities at once."""
@@ -185,11 +191,19 @@ class AltitudeVelocity:
     
     def calculate_max_AoC(self, h: float) -> tuple:
         """Find the maximum Angle of Climb and corresponding velocity at a given altitude."""
+
         V_stall = self.calculate_stall_speed(h)
-        velocity_range = np.linspace(V_stall, self.dive_speed, self.velocity_steps)
-        
-        AoC_values = self.calculate_AoC_vectorized(velocity_range, h)
-        max_aoc_idx = np.argmax(AoC_values)
+
+        def negative_aoc(V):
+            thrust_available = self.calculate_power_available(h) / V
+            thrust_required = self.calculate_power_required(V, h) / V
+            return -np.arcsin((thrust_available - thrust_required) / self._current_weight)
+
+        result = minimize_scalar(negative_aoc, bounds=(V_stall, self.dive_speed), method='bounded')
+        max_aoc_idx = None  # Not needed with minimize_scalar
+        AoC_values = [-result.fun]  # Convert back to positive value
+        velocity_range = [result.x]  # Optimal velocity
+        max_aoc_idx = 0  # Index for the single optimal point
         
         return AoC_values[max_aoc_idx], velocity_range[max_aoc_idx]
     
@@ -208,7 +222,7 @@ class AltitudeVelocity:
         elif V_opt > self.dive_speed:
             V_opt = self.dive_speed
            
-        RoD = -self.calculate_power_required(V_opt, h, 0)/self._current_weight
+        RoD = -self.calculate_power_required(V_opt, h, RoC=0)/self._current_weight
         
         return RoD, V_opt
     
@@ -217,7 +231,7 @@ class AltitudeVelocity:
         V_stall = self.calculate_stall_speed(h)
         velocity_range = np.linspace(V_stall, self.dive_speed, self.velocity_steps)
         
-        AoD_values = [np.arcsin(-self.calculate_power_required(V, h, 0)/V/self._current_weight) for V in velocity_range]
+        AoD_values = [np.arcsin(-self.calculate_power_required(V, h, RoC=0)/V/self._current_weight) for V in velocity_range]
         max_aoc_idx = np.argmax(AoD_values)
         
         return AoD_values[max_aoc_idx], velocity_range[max_aoc_idx]
@@ -547,6 +561,40 @@ class AltitudeVelocity:
                 arrowprops=dict(arrowstyle="->", color='purple', lw=1)
             )
 
+        # Plot horizontal line at h=10000 ft with velocity range
+        if altitude_units == 'feet':
+            h_10000 = 10000
+        else:
+            h_10000 = 10000 / self.m_to_ft  # Convert to meters if needed
+        
+        # Calculate stall speed at 10000 ft
+        V_stall_10k = self.calculate_stall_speed(h_10000 / self.m_to_ft if altitude_units == 'feet' else h_10000)
+        
+        # Find thrust limited speed at 10000 ft (where RoC = 0)
+        h_actual = h_10000 / self.m_to_ft if altitude_units == 'feet' else h_10000
+        velocity_range = np.linspace(V_stall_10k, self.dive_speed, self.velocity_steps)
+        RoC_values = self.calculate_RoC_vectorized(velocity_range, h_actual)
+        
+        # Find where RoC crosses zero (thrust limited speed)
+        zero_crossings = np.where(np.diff(np.sign(RoC_values)))[0]
+        if len(zero_crossings) > 0:
+            # Interpolate to find accurate thrust limited speed
+            idx = zero_crossings[-1]  # Take the last crossing (max speed)
+            v1, v2 = velocity_range[idx], velocity_range[idx + 1]
+            roc1, roc2 = RoC_values[idx], RoC_values[idx + 1]
+            V_max_10k = v1 + (0 - roc1) * (v2 - v1) / (roc2 - roc1) if roc2 != roc1 else v1
+        else:
+            V_max_10k = self.dive_speed  # Fallback to dive speed if no zero crossing found
+        
+        # Convert to equivalent airspeed if needed
+        if airspeed_type == 'equivalent':
+            V_stall_10k = self.equivalent_air_speed(V_stall_10k, h_actual)
+            V_max_10k = self.equivalent_air_speed(V_max_10k, h_actual)
+        
+        # Plot horizontal line from stall speed to thrust limited speed at 10000 ft
+        plt.plot([x_transform(V_stall_10k), x_transform(V_max_10k)], [h_10000, h_10000], 
+            color='gray', linestyle='--', alpha=0.7, linewidth=2, label='h = 10,000 ft')
+
         # Set appropriate axis labels based on airspeed type and altitude units
         if airspeed_type == 'equivalent':
             plt.xlabel('Equivalent Airspeed (m/s)')
@@ -559,7 +607,7 @@ class AltitudeVelocity:
         else:
             plt.ylabel('Altitude (m)')
         plt.legend()
-        plt.grid()
+        plt.grid(True, which='both')
         plt.show()
     
     def calculate_t_climb(self, h_start: float, h_end: float, V_ias: float=None) -> float:
@@ -643,15 +691,17 @@ if __name__ == "__main__":
     # altitude_velocity.plot_RoC_line(h)
     
     cruise_speed = aircraft_data.data['requirements']['cruise_speed']
-    power_required_cruise = altitude_velocity.calculate_power_required(cruise_speed, 0)
+    power_required_cruise = altitude_velocity.calculate_power_required(cruise_speed, h=0)
+    power_available_cruise = altitude_velocity.calculate_power_available(h=0)
     print(f"Power required to cruise at h=0 and V={cruise_speed} m/s: {power_required_cruise/10**6:.2f} MW")
+    print(f"Power required / Power available at cruise: {power_required_cruise / power_available_cruise:.2f}")
 
     print(f"Max RoC at h = 0 is {altitude_velocity.calculate_max_RoC(0)[0] * 196.85} ft/min")
     print(f"Max AoC at h = 0 is {altitude_velocity.calculate_max_AoC(0)[0] * 180/np.pi} degrees")
     print(f"Max true RoC at h = 0 is {altitude_velocity.calculate_true_RoC(altitude_velocity.calculate_max_RoC(0)[1], 0) * 196.85} ft/min")
 
-    zero_points, stall_points = altitude_velocity.calculate_limit_points(airspeed_type='energy', altitude_units='feet')
+    zero_points, stall_points = altitude_velocity.calculate_limit_points(airspeed_type='true', altitude_units='feet')
     altitude_velocity.plot_limit_points(zero_points, stall_points, 
-                                        airspeed_type='energy', 
+                                        airspeed_type='true', 
                                         altitude_units='feet', 
-                                        plot=('thrust_limit', 'stall_limit', 'Vy', 'energy_height', 'roc_contours'))
+                                        plot=('thrust_limit', 'stall_limit', 'Vy', 'Vx'))

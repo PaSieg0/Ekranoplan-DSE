@@ -1,0 +1,44 @@
+from control.matlab import *
+import numpy as np
+import matplotlib.pyplot as plt
+import os
+import sys
+#from termcolor import colored
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from utils import Data, EigenMotion, EigenMotionType, ISA
+
+from Eigenmotion_Simulation.setup_state_space import StateSpaceModel
+
+class PID_augmentation:
+    def __init__(self, aircraft_data: Data):
+        self.aircraft_data = aircraft_data
+        self.stability_coefficients_sym = aircraft_data.data['outputs']['aerodynamic_stability_coefficients_sym']
+        self.stability_coefficients_asym = aircraft_data.data['outputs']['aerodynamic_stability_coefficients_asym']
+
+        self.time_step = 0.1
+        self.time_vector = np.arange(0, 300, self.time_step)
+
+        model = StateSpaceModel(aircraft_data)
+
+        self.sym_model = model.sym_model
+        self.asym_model = model.asym_model
+        #print(self.asym_model)
+
+    def PID_augmentation_sym(self):
+        A = self.sym_model.A
+        B = self.sym_model.B
+        C = self.sym_model.C
+        D = self.sym_model.D
+        print("A:",A,"B:",B,"C:",C,"D:",D)
+
+
+        
+
+
+if __name__ == "__main__":
+    # Example usage
+    aircraft_data = Data('design3.json')
+    state_space_model_aug = PID_augmentation(aircraft_data)
+    model = state_space_model_aug.PID_augmentation_sym()
+    

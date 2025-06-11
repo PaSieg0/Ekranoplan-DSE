@@ -9,7 +9,8 @@ from utils import Data
 from Class_II.Empennage_Design.main_empennage import EmpennageOptimizer
 
 def main():
-    forebody_lengths = np.arange(19.5, 21.13, 0.1)
+
+    forebody_lengths = np.arange(13.0, 23.13, 0.1)
     diffs = []
     aft_cgs = []
     step_dists = []
@@ -23,6 +24,7 @@ def main():
         best_placement = optimizer.run()
         aft_cg = aircraft_data.data['outputs']['cg_range']['most_aft_cg']
         step_dist = aircraft_data.data['outputs']['fuselage_dimensions']['l_nose'] + aircraft_data.data['outputs']['fuselage_dimensions']['l_forebody']
+        aircraft_data.data['outputs']['fuselage_dimensions']['x_step'] = step_dist
         diff = aft_cg - step_dist
         diffs.append(diff)
         aft_cgs.append(aft_cg)
@@ -31,7 +33,9 @@ def main():
             print(f"First forebody length where diff <= -0.5: {forebody_length:.2f} (diff={diff:.3f})")
             chosen_length = forebody_length
             aircraft_data.data['outputs']['fuselage_dimensions']['l_forebody'] = round(chosen_length, 2)
-            aircraft_data.data['outputs']['fuselage_dimensions']['l_fuselage'] = aircraft_data.data['outputs']['fuselage_dimensions']['l_nose'] + aircraft_data.data['outputs']['fuselage_dimensions']['l_tailcone'] + aircraft_data.data['outputs']['fuselage_dimensions']['l_forebody'] + aircraft_data.data['outputs']['fuselage_dimensions']['l_afterbody']
+            aircraft_data.data['outputs']['fuselage_dimensions']['l_fuselage'] = aircraft_data.data['outputs']['fuselage_dimensions']['l_nose'] + aircraft_data.data['outputs']['fuselage_dimensions']['l_tailcone'] + forebody_length + aircraft_data.data['outputs']['fuselage_dimensions']['l_afterbody']
+            aircraft_data.data['outputs']['fuselage_dimensions']['x_step'] = aircraft_data.data['outputs']['fuselage_dimensions']['l_nose'] + aircraft_data.data['outputs']['fuselage_dimensions']['l_forebody']
+            aircraft_data.save_design('design3.json')
             found = True
             break
         if aft_cg < step_dist:

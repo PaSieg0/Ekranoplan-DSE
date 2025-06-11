@@ -224,20 +224,20 @@ class WingStructure:
         top_flange = patches.Rectangle(
             (x - top_w / 2, top_y - thickness),
             top_w,
-            thickness*4,
+            thickness*5,
             facecolor=color
         )
 
         bottom_flange = patches.Rectangle(
             (x - bottom_w / 2, bottom_y),
             bottom_w,
-            thickness*4,
+            thickness*5,
             facecolor=color
         )
 
         web = patches.Rectangle(
             (x - thickness / 2, bottom_y + thickness),
-            thickness*4,
+            thickness*5,
             web_h - 2 * thickness,
             facecolor=color
         )
@@ -844,6 +844,59 @@ class WingStructure:
 
         # print(I_xx_front_spar, I_xx_rear_spar, I_xx_panels, I_xx_wing_bottom, I_xx_wing_top, I_xx_mid_spars, self.stringer_dict['top']['I_xx'], self.stringer_dict['bottom']['I_xx'])
         # print(self.I_xx)
+
+    def standard_MMOI_beam(self, length, thickness, distance, effective_mass):
+
+        Ip = 1/12 * effective_mass * (length**2 + thickness**2) + effective_mass * distance**2
+        return Ip
+
+    def get_mass_MOI(self):
+
+        Ip_front_spar = self.standard_MMOI_beam(self.spar_info['front_spar_height'], self.spar_thickness_span_function(self.y),
+                                                 abs(self.spar_info['front_spar_height'] / 2 - self.centroid[1]), self.rho_wingbox*self.spar_info['front_spar_height']* self.spar_thickness_span_function(self.y))
+        
+        Ip_rear_spar = self.standard_MMOI_beam(self.spar_info['rear_spar_height'], self.spar_thickness_span_function(self.y),
+                                                 abs(self.spar_info['rear_spar_height'] / 2 - self.centroid[1]), self.rho_wingbox*self.spar_info['rear_spar_height']* self.spar_thickness_span_function(self.y))
+        
+        Ip_mid_spars = 0
+        Ip_panels = 0
+        for i in range(1, self.n_cells + 1):
+
+            top_panel_length = self.panel_info[f'top_panel_length_{i}']
+            bottom_panel_length = self.panel_info[f'bottom_panel_length_{i}']
+            left_spar_top = self.spar_info[f'{self.get_spar_label(i - 1)}_top']
+            left_spar_bottom = self.spar_info[f'{self.get_spar_label(i - 1)}_bottom']
+
+            # Euclidean distance from centroid to panel centroid (top)
+            top_panel_angle = self.panel_info[f'top_panel_angle_{i}']
+            top_panel_centroid_x = 0.5 * top_panel_length * np.cos(top_panel_angle)
+            top_panel_centroid_y = 0.5 * top_panel_length * np.sin(top_panel_angle) + left_spar_top
+            d_top = np.sqrt((top_panel_centroid_x - self.centroid[0])**2 + (top_panel_centroid_y - self.centroid[1])**2)
+
+            # Euclidean distance from centroid to panel centroid (bottom)
+            bottom_panel_angle = self.panel_info[f'bottom_panel_angle_{i}']
+            bottom_panel_centroid_x = 0.5 * bottom_panel_length * np.cos(bottom_panel_angle)
+            bottom_panel_centroid_y = 0.5 * bottom_panel_length * np.sin(bottom_panel_angle) + left_spar_bottom
+            d_bottom = np.sqrt((bottom_panel_centroid_x - self.centroid[0])**2 + (bottom_panel_centroid_y - self.centroid[1])**2)
+
+            Ip_panels += self.standard_MMOI_beam(top_panel_length, self.skin_thickness_span_function(self.y),
+                             d_top,
+                             self.rho_wingbox * top_panel_length * self.skin_thickness_span_function(self.y))
+            Ip_panels += self.standard_MMOI_beam(bottom_panel_length, self.skin_thickness_span_function(self.y),
+                             d_bottom,
+                             self.rho_wingbox * bottom_panel_length * self.skin_thickness_span_function(self.y))
+
+            if i < self.n_cells:
+                mid_spar_height = self.spar_info[f'mid_spar_{i}_height']
+                mid_spar_x = self.spar_info[f'mid_spar_{i}_x']
+                # Euclidean distance from centroid to mid spar centroid
+                mid_spar_centroid_x = mid_spar_x
+                mid_spar_centroid_y = mid_spar_height / 2
+                d_mid = np.sqrt((mid_spar_centroid_x - self.centroid[0])**2 + (mid_spar_centroid_y - self.centroid[1])**2)
+
+                Ip_mid_spars += self.standard_MMOI_beam(mid_spar_height, self.spar_thickness_span_function(self.y),
+                                    d_mid,
+                                    self.rho_wingbox * mid_spar_height * self.spar_thickness_span_function(self.y))
 
     def get_wing_rib(self, ribs: dict = None):  
 
