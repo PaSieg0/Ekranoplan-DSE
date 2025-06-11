@@ -101,11 +101,18 @@ class OptimumSpeeds(AltitudeVelocity):
 
         return L_over_D
     
-    def update_cruise_speed(self, h: float) -> None:
+    def update_json(self, h: float) -> None:
         """
         Update the cruise speed based on the current altitude.
         """
         self.data.data['requirements']['cruise_speed'] = self.v_range(h)
+        self.data.data['outputs']['optimum_speeds']['range'] = self.v_range(h)
+        self.data.data['outputs']['optimum_speeds']['endurance'] = self.v_endurance(h)
+        self.data.data['outputs']['optimum_speeds']['max'] = self.v_max(h)
+        self.data.data['outputs']['optimum_speeds']['max_roc'] = self.calculate_max_RoC(h)[1]
+        self.data.data['outputs']['optimum_speeds']['max_aoc'] = self.calculate_max_AoC(h)[1]
+        self.data.data['outputs']['optimum_speeds']['min_rod'] = self.calculate_min_RoD(h)[1]
+        self.data.data['outputs']['optimum_speeds']['min_aod'] = self.calculate_min_AoD(h)[1]
 
 if __name__ == "__main__":
     # Example usage
@@ -115,20 +122,24 @@ if __name__ == "__main__":
 
     h = h_WIG = 10  # Example altitude in meters
 
-    optimum_speeds._current_weight = optimum_speeds._mtow  # Set current weight to MTOW for calculations
-    v = optimum_speeds.v_range(h)
+    optimum_speeds.update_json(h)
+    aircraft_data.save_design("design3.json")
 
-    v_range = optimum_speeds.v_range(h)
-    v_endurance = optimum_speeds.v_endurance(h)
-    v_max = optimum_speeds.v_max(h)
-    _, v_max_roc = optimum_speeds.calculate_max_RoC(h)
-    _, v_max_aod = optimum_speeds.calculate_max_AoC(h)
-    _, v_min_rod = optimum_speeds.calculate_min_RoD(h)
-    _, v_min_aod = optimum_speeds.calculate_min_AoD(h)
+    # optimum_speeds._current_weight = optimum_speeds._mtow  # Set current weight to MTOW for calculations
+    # v = optimum_speeds.v_range(h)
 
-    print(f"Optimum range speed: {v_range:.2f} m/s")
-    print(f"Optimum endurance speed: {v_endurance:.2f} m/s")
-    print(f"Maximum rate of climb speed: {v_max_roc:.2f} m/s")
-    print(f"Maximum angle of climb speed: {v_max_aod:.2f} m/s")
-    print(f"Minimum rate of descent speed: {v_min_rod:.2f} m/s")
-    print(f"Minimum angle of descent speed: {v_min_aod:.2f} m/s")
+    # v_range = optimum_speeds.v_range(h)
+    # v_endurance = optimum_speeds.v_endurance(h)
+    # v_max = optimum_speeds.v_max(h)
+    # _, v_max_roc = optimum_speeds.calculate_max_RoC(h)
+    # _, v_max_aod = optimum_speeds.calculate_max_AoC(h)
+    # _, v_min_rod = optimum_speeds.calculate_min_RoD(h)
+    # _, v_min_aod = optimum_speeds.calculate_min_AoD(h)
+
+    # print(f"Optimum range speed: {v_range:.2f} m/s")
+    # print(f"Optimum endurance speed: {v_endurance:.2f} m/s")
+    # print(f"Maximum speed: {v_max:.2f} m/s")
+    # print(f"Maximum rate of climb speed: {v_max_roc:.2f} m/s")
+    # print(f"Maximum angle of climb speed: {v_max_aod:.2f} m/s")
+    # print(f"Minimum rate of descent speed: {v_min_rod:.2f} m/s")
+    # print(f"Minimum angle of descent speed: {v_min_aod:.2f} m/s")
