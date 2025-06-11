@@ -253,14 +253,18 @@ class RangeAnalyzer:
         """
         if payload_leg1 is None:
             payload_leg1 = self.aircraft_data.data['requirements']['design_payload']
+        else:
+            # Update MTOW based on the new payload
+            payload_diff = payload_leg1 - self.aircraft_data.data['requirements']['design_payload']
+            self.opt._mtow += payload_diff * 9.81  # Adjust MTOW by payload difference
 
         W4_leg1 = self.opt._mtow * self.rng.Mff_nocruise  # Weight at start of cruise for leg 1
         W5_leg1 = 0 # this is the variable we want to calculate for R_leg1 = R_leg2
         W4_leg2 = (W5_leg1 - (payload_leg1-payload_leg2) * 9.81) * self.rng.Mff_nocruise  # Weight at start of cruise for leg 2
-        W5_leg2 = self.aircraft_data.data['outputs']['design']['ZFW'] + self.aircraft_data.data['outputs']['design']['reserve_fuel'] - (payload_leg1-payload_leg2) * 9.81
+        W5_leg2 = self.aircraft_data.data['outputs']['design']['ZFW'] + self.aircraft_data.data['outputs']['design']['reserve_fuel'] - (self.aircraft_data.data['requirements']['design_payload']-payload_leg2) * 9.81
 
         # Iteratively find W5_leg1 such that R_leg1 equals R_leg2
-        W5_leg1_min = self.aircraft_data.data['outputs']['design']['ZFW'] + self.aircraft_data.data['outputs']['design']['reserve_fuel']
+        W5_leg1_min = W5_leg2
         W5_leg1_max = W4_leg1
 
         tolerance = 10000  # Big tolerance for convergence (meters)
@@ -291,12 +295,11 @@ class RangeAnalyzer:
             else:  # R_leg1 < R_leg2, need to increase W5_leg1
                 W5_leg1_min = W5_leg1
 
-            if numerical and abs(range_diff - prev_range_diff) < 0.01 * abs(prev_range_diff):
+            if numerical and abs(range_diff - prev_range_diff) < 0.1 * abs(prev_range_diff):
                 # If range difference is roughly equal to previous (within 1%), reduce weight step for better precision
                 dW = dW // 2  # Reduce weight step
-                print(f"Reducing weight step to {dW} N for better precision")
 
-            print(f"Iteration {iteration+1}: W5_leg1 = {W5_leg1:.2f} N, R_leg1 = {R_leg1/1852:.2f} nmi, R_leg2 = {R_leg2/1852:.2f} nmi, Range diff = {range_diff/1852:.2f} nmi")
+            # print(f"Iteration {iteration+1}: W5_leg1 = {W5_leg1:.2f} N, R_leg1 = {R_leg1/1852:.2f} nmi, R_leg2 = {R_leg2/1852:.2f} nmi, Range diff = {range_diff/1852:.2f} nmi")
 
         total_range= R_leg1 + R_leg2
 
@@ -545,7 +548,5 @@ if __name__ == "__main__":
     mission_type = MissionType.DESIGN
     analyzer = RangeAnalyzer(file_path, mission_type)
     analyzer.check()
-
-    speed_comparison()
 
     sea_state_comparison()
