@@ -9,27 +9,45 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from utils import Data
 import numpy as np
 
+# Code based on Aerolasticity course AE4ASM506
 
-def get_constant(aircraft_data: Data):
+
+def get_constant(aircraft_data: Data, evaluate_type='wing_box'):
     """
     Typical properties of the 3DOF system used in the book.
     NOTE: the nonlinear stiffnesses are set to 0!!!
     :return: a dictionary containing all the system properties
     """
-    m = aircraft_data.data['outputs']['wing_stress']['section_mass_MAC']
+    if evaluate_type == 'wing_box':
+        chord = aircraft_data.data['outputs']['wing_design']['MAC']
+        b = aircraft_data.data['outputs']['wing_design']['b']
+    elif evaluate_type == 'horizontal_wing_box':
+        chord = aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['MAC']
+        b = aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['b']
+    elif evaluate_type == 'vertical_wing_box':
+        chord = aircraft_data.data['outputs']['empennage_design']['vertical_tail']['MAC']
+        b = aircraft_data.data['outputs']['empennage_design']['vertical_tail']['b']
     
+    m = aircraft_data.data['inputs']['structures'][evaluate_type]['section_mass_MAC']
+    Ip = aircraft_data.data['inputs']['structures'][evaluate_type]['Ip_MAC']
+    Ip_control = 1e6
+    centroid_x = aircraft_data.data['inputs']['structures'][evaluate_type]['centroid_x']
+    y_MAC_norm = (centroid_x)/(b/2) - 1
+    
+    S = m*(chord/2 - centroid_x)
+
     constant = {
-        'm': 13.5,  # section mass [kg]
-        'S': 0.3375,  # section static moment [kgm]
+        'm': m,  # section mass [kg]
+        'S': S,  # section static moment [kgm]
         'Sbt': 0.1055,  # control surface static moment about the its hinge axis [kgm]
-        'Ith': 0.0787,  # section moment of inertia about pitch axis [kgm**2]
+        'Ith': Ip,  # section moment of inertia about pitch axis [kgm**2]
+        'Ibt': Ip_control,  # section moment of inertia about pitch axis [kgm**2]
         'Ith_bt': 0.0136,  # section moment of inertia about pitch axis [kgm**2]
-        'Ibt': 0.0044,  # section moment of inertia about pitch axis [kgm**2]
-        'c': 0.25,  # chord [m]
-        'b': 0.125,  # semi-chord (chord/2) [m]
-        'a': -0.2,  # main wing (xf/b -1) [-]
+        'c': chord,  # chord [m]
+        'b': chord/2,  # semi-chord (chord/2) [m]
+        'a': y_MAC_norm,  # main wing (xf/b -1) [-]
         'ch': 0.5,  # control surface  (xh/b -1) [-]
-        'xf': 0.1,  # distance to the pitch axis (measured from the LE) [m]
+        'xf': centroid_x,  # distance to the pitch axis (measured from the LE) [m]
         'xh': 0.1875,  # distance to the control hinge axis (measured from the LE) [m]
         'rho': 1.225,  # air density [kg/m**3]
         'Kh': 2131.8346,  # heave (plunge) stiffness [N/m]
@@ -43,6 +61,7 @@ def get_constant(aircraft_data: Data):
         'Cbt': 0.0,  # structural damping in control DOF
         'event': 'none'  # event to detect: 'none', 'pitch', 'plunge', 'control'
     }
+
 
     return constant
 

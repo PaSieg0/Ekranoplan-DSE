@@ -5,18 +5,15 @@ import matplotlib.pyplot as plt
 from utils import Data, StressOutput, Materials, EvaluateType
 from AerodynamicForces import AerodynamicForces
 from WingStructure import WingStructure
-from scipy.integrate import quad
 import numpy as np
-from scipy.optimize import root_scalar
-import winsound
-
+from FlutterAnalysis import FlutterAnalysis
 class StressAnalysisWing(AerodynamicForces, WingStructure):
 
     def __init__(self, aircraft_data: Data,
                  wing_mat: Materials, wingbox_mat: Materials, stringer_mat: Materials, 
                  evaluate: EvaluateType, PLOT: bool = False):
         AerodynamicForces.__init__(self, aircraft_data, evaluate=evaluate)
-        WingStructure.__init__(self, aircraft_data, wingbox_mat=wingbox_mat, wing_mat=wing_mat, stringer_mat=stringer_mat, evaluate=evaluate)
+        WingStructure.__init__(self, aircraft_data, wingbox_mat=wingbox_mat, wing_mat=wing_mat, stringer_mat=stringer_mat, evaluate=evaluate, plot=PLOT)
         self.get_wing_structure()
         self.safety_factor = 1.5
         self.PLOT = PLOT
@@ -52,56 +49,37 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
         self.rho_water = self.aircraft_data.data['rho_water']
         self.wing_weight = self.wing_weight_dist()
         self.MTOW = self.aircraft_data.data['outputs']['max']['MTOW']
-        self.buoy_radius = 2 #TODO link these to json
-        self.buoy_length = 3
-        self.buoy_offset = 5
-        self.buoy_projected_area = self.buoy_length*self.buoy_radius*2
+        self.buoy_width = 1 #TODO link these to json
+        self.buoy_length = 4.5
+        self.buoy_height = 5.8
+        self.buoy_projected_area = self.buoy_length*self.buoy_width
         self.roll_rate = np.deg2rad(self.aircraft_data.data['outputs']['control_surfaces']['aileron']['roll_rate'])
-        self.Cs = 1.5
+        self.Cs = 2
         self.quarter_chord_dist = [self.wing_structure[i]['quarter_chord_dist'] for i in range(len(self.wing_structure))]
 
         # self.mass_I_xx = 1/8*(self.mass_wing*self.b**2 + self.mass_vertical*self.bv**2 + self.mass_horizontal*self.bh**2) #TODO check with Shuard
-        self.buoy_landing_load = 1/4 * self.MTOW #TODO discuss about this value
-        self.RPM = 815 #TODO link to json
-        self.n_blades = 6
         self.kinematic_viscosity = self.aircraft_data.data['kinematic_viscosity']
         self.h_fuselage = self.aircraft_data.data['outputs']['fuselage_dimensions']['h_fuselage_station1']
         self.dihedral = self.aircraft_data.data['outputs']['wing_design']['dihedral']
         self.last_centroid = self.wing_structure[len(self.b_array)-1]['centroid'][1] + self.h_fuselage + np.tan(np.deg2rad(self.dihedral))*self.b/2
-        self.buoy_arm = self.buoy_offset - self.last_centroid
+        self.buoy_arm = self.buoy_height - self.last_centroid
         self.buoy_drag = self.get_buoy_drag()
-        
-    def submerged_volume(self, x):
-        R = self.buoy_radius
-        if x <= 0:
-            return 0
-        elif x >= 2 * R:
-            return np.pi * R**2 * self.buoy_length
-
-        theta = np.arccos((R - x) / R)
-        area = R**2 * theta - (R - x) * np.sqrt(2 * R * x - x**2)
-        return area * self.buoy_length
 
     def estimate_slam_depth(self):
         A = self.buoy_projected_area
-        m_eff = self.F_slam/9.81
+        m_eff = self.buoy_length * self.buoy_width * self.buoy_height * self.rho_water
         d = m_eff / (self.Cs * self.rho_water * A)
 
-        d = np.pi * self.buoy_radius / 2 / self.Cs
         return d
-
 
     def calculate_buoy_surface(self):
         
         v_tip_z = self.roll_rate * (self.b / 2)
         A_impact = self.buoy_projected_area 
         self.F_slam = 0.5 * self.Cs * self.rho_water * A_impact * v_tip_z**2 
-        print(self.F_slam)
         depth = self.estimate_slam_depth()
 
-        theta = 2 * np.arccos(1 - depth / self.buoy_radius)  
-        print(f'Estimated Slam Depth: {depth:.2f} m, Theta: {theta:.2f} rad')
-        A_wet = self.buoy_length * self.buoy_radius * theta
+        A_wet = self.buoy_projected_area + depth * self.buoy_length * 2 + depth * self.buoy_width * 2
         return A_wet
     
     def get_buoy_drag(self):
@@ -219,10 +197,7 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
         elif self.evaluate_case == 'min':
             if self.evaluate == EvaluateType.WING:
                 self.torque_distribution = self.lift_function * self.quarter_chord_dist + self.moment_function
-                print(self.buoy_drag*self.buoy_arm)
                 self.torque_distribution[-1] += self.buoy_drag * self.buoy_arm
-                plt.plot(self.b_array, self.torque_distribution, label='Torque Distribution', color='orange')
-                plt.show()
             else:
                 self.torque_distribution = self.min_load_factor*self.lift_function * self.quarter_chord_dist
             return self.torque_distribution
@@ -231,6 +206,9 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
         self.horizontal_distribution = self.drag_array.copy()
         for engine_y in self.engine_positions:
             self.horizontal_distribution[int(round(engine_y,2)*100)] += self.engine_thrust
+
+        if self.evaluate_case == 'min' and self.evaluate == EvaluateType.WING:
+            self.horizontal_distribution[-1] -= self.buoy_drag
 
         return self.horizontal_distribution
 
@@ -253,6 +231,9 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
         Vx_flipped_engines = np.cumsum(engine_load[::-1] * self.dy[::-1])
 
         load = self.drag_array
+        load = load.copy()
+        if self.evaluate == EvaluateType.WING and self.evaluate_case == 'min':
+            load[-1] = load[-1]/self.dy[-1]
         Vx_flipped = np.cumsum(load[::-1] * self.dy[::-1]) 
         self.Vx_internal = -Vx_flipped[::-1] + Vx_flipped_engines[::-1] 
     
@@ -407,7 +388,7 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
     def calculate_wing_deflection(self):
         moment = self.M_internal
         moment_flipped = np.cumsum(moment[::-1]*self.dy[::-1])
-        self.wing_deflection = np.cumsum(moment_flipped*self.dy) / (-self.E * self.I_xx_array) /3 # Deflection calculation
+        self.wing_deflection = np.cumsum(moment_flipped*self.dy) / (-self.E * np.average(self.I_xx_array))
 
         return self.wing_deflection
 
@@ -577,7 +558,7 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
             self.plot_rib(id=0)
             self.plot_rib(id=len(self.rib_positions)-1)
 
-        self.plot_wing_ribs()
+        # self.plot_wing_ribs()
 
         if self.runs == 1 and self.evaluate == EvaluateType.WING:
             self.update_attributes()
@@ -598,8 +579,25 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
         self.aircraft_data.data['outputs'][key_map[self.evaluate]] = self.margins
         self.aircraft_data.data['outputs'][key_map[self.evaluate]]['rib_amount'] = self.rib_amount
 
-        self.aircraft_data.data['outputs']['component_weights'][component_weight_map[self.evaluate]] = self.wing_mass*2*9.81
+        key_string_map = {
+            EvaluateType.WING: 'wing_box',
+            EvaluateType.HORIZONTAL: 'horizontal_wing_box',
+            EvaluateType.VERTICAL: 'vertical_wing_box'
+        }
 
+        epoxy_map = {
+            EvaluateType.WING: 'epoxy_wing',
+            EvaluateType.HORIZONTAL: 'epoxy_horizontal',
+            EvaluateType.VERTICAL: 'epoxy_vertical'
+        }
+        key_string = key_string_map[self.evaluate]
+        self.aircraft_data.data['outputs']['component_weights'][component_weight_map[self.evaluate]] = self.wing_mass*2*9.81
+        self.aircraft_data.data['outputs']['component_weights'][epoxy_map[self.evaluate]] = self.epoxy_mass*2*9.81
+        self.aircraft_data.data['inputs']['structures'][key_string]['Ip_MAC'] = self.MAC_Ip
+        self.aircraft_data.data['inputs']['structures'][key_string]['J_MAC'] = self.MAC_J
+        self.aircraft_data.data['inputs']['structures'][key_string]['section_mass_MAC'] = self.MAC_m
+        self.aircraft_data.data['inputs']['structures'][key_string]['I_xx_MAC'] = self.I_xx_MAC
+        self.aircraft_data.data['inputs']['structures'][key_string]['centroid_x'] = self.centroid_x_MAC
         print(f'saving {key_map[self.evaluate]} design to {self.design_file}')
         self.aircraft_data.save_design(self.design_file)
 
@@ -795,7 +793,7 @@ def main(all=True):
     stringer_material = Materials.Al7075
     wingbox_material = Materials.Al7075
     wing_material = Materials.Al5052
-
+    
     if all:
         for evaluate in EvaluateType:
 
@@ -806,16 +804,20 @@ def main(all=True):
                                                 PLOT=False)
             
             stress_analysis.main_analysis()
-            stress_analysis.plot_any(StressOutput.RESULTANT_VERTICAL)
+            # stress_analysis.plot_any(StressOutput.RESULTANT_VERTICAL)
+            flutter_analysis = FlutterAnalysis(aircraft_data=Data("design3.json"), wing_mat=wingbox_material, evaluate=evaluate)
+            flutter_analysis.main(plot=True)
     else:
         stress_analysis = StressAnalysisWing(aircraft_data=Data("design3.json"), wingbox_mat=wingbox_material, wing_mat=wing_material, stringer_mat=stringer_material, evaluate=EvaluateType.WING, 
                                              PLOT=False)
         stress_analysis.main_analysis(run_all=True)
-        stress_analysis.plot_any(StressOutput.INTERNAL_TORQUE)
+        # stress_analysis.plot_any(StressOutput.INTERNAL_TORQUE)
+        flutter_analysis = FlutterAnalysis(aircraft_data=Data("design3.json"), wing_mat=wingbox_material, evaluate=EvaluateType.WING)
+        flutter_analysis.main(plot=True)
         
 if __name__ == "__main__":
 
-    main(all=False)
+    main()
 
 
 

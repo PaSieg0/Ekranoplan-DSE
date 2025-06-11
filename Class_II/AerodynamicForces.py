@@ -259,8 +259,6 @@ class AerodynamicForces:
                 idx = np.argmin(np.abs(self.b_h_array - pos))
                 self.horizontal_tail_lift[idx] -= self.elevator_lift_array[i]
 
-        plt.plot(self.b_h_array, self.elevator_lift_array, label="Elevator Lift Distribution")
-        plt.show()
         return self.horizontal_tail_lift
 
     def chord_span_h_function(self,y):
