@@ -73,7 +73,7 @@ class load_diagram:
                              self.l_afterbody + self.l_tailcone)
         self.x_points = np.arange(0, self.l_fuselage, 0.01)
         self.OEW_loads = np.zeros_like(self.x_points)
-        self.fuel_margin = 0.15 #TODO link to json?
+        self.fuel_margin = 0 #TODO link to json?
         self.nose_share=0.15
         self.forebody_share=0.45
         self.afterbody_share=0.20
@@ -211,6 +211,11 @@ class load_diagram:
         wing_root_center = self.x_LEMAC_wing + self.MAC_wing / 2
         point_moment_mask = self.x_points >= wing_root_center
         self.moment[point_moment_mask] += 2*self.root_moment
+
+        tail_root_center = self.x_LE_vertical_tail + self.v_tail_chord_root / 2
+        tail_point_mask = self.x_points >= tail_root_center
+        self.moment[tail_point_mask] += 2*self.tail_moment
+    
 
         bending_moment_MNm = self.moment / 1e6 # Convert to MNm
         # Define section boundaries and labels
