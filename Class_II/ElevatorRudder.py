@@ -175,7 +175,7 @@ class ElevatorRudder:
         elevator_effectiveness = self.control_surface_effectiveness(self.elevator_chord_ratio)
         self.CMde = -self.airfoil_cl_alpha * elevator_effectiveness * self.l_h/(self.S * self.MAC)*self.Se
 
-        Cmq = -self.Sh*self.l_h**2/self.S/self.MAC * self.tail_lift_slope
+        Cmq = -self.Sh*self.l_h**2/self.S/self.MAC * self.tail_lift_slope/2
         print(f'cmq: {Cmq}')
 
         N = self.CMde * np.deg2rad(self.elevator_deflection) * 0.5 * self.rho * self.V**2 * self.S * self.MAC/self.l_h
