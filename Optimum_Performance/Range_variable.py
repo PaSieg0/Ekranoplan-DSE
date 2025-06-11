@@ -11,7 +11,13 @@ if __name__ == "__main__":
     file_path = "design3.json"
     mission_type = MissionType.DESIGN
     analyzer = RangeAnalyzer(file_path, mission_type)
-    range_m, time1, time2 = analyzer.calculate_range_variable(vfunc_leg1=None, 
+
+    def v_max(opt, h, W=None):
+        """Use optimal range speed (default)"""
+        return opt.v_max(h, W=W)
+
+
+    range_m, time1, time2 = analyzer.calculate_range_variable(vfunc_leg1=v_max, 
                                                       vfunc_leg2=None, 
                                                       payload_leg1=None,
                                                       payload_leg2=0, 
