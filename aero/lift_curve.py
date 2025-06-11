@@ -266,6 +266,10 @@ class lift_curve():
         
         self.cmac_segm1=np.mean(self.cmac_seg1)
         self.cmac_segm2=np.mean(self.cmac_seg2)
+        
+        #calc region in between
+        self.segm15=np.arange(self.seg1[1],self.seg2[0],0.01)
+        self.xac_segm15=self.xac_segm1-(self.xac_segm2-self.xac_segm1)/(self.seg1[1]-self.seg2[0])*(self.segm15-self.seg1[1])
 
 
 
@@ -286,19 +290,23 @@ class lift_curve():
 
         #cmx__c plot
         ax[0][0].plot(self.alpha,self.cmx__c)
-        ax[0][0].set_title('cm at arbitrary x/c for multiple alpha')
+        ax[0][0].set_title('cm at x/c for alpha')
         ax[0][0].set_ylim(0,-0.1)
         ax[0][0].set_ylabel('cmac_x__c')
 
         #x_ac plot
         ax[0][1].plot(self.alpha,self.xac)
-        ax[0][1].set_title('Position of the aerodynamic centre at every angle of attack')
+        ax[0][1].set_title('Position of the ac at alpha')
         ax[0][1].set_ylim(-1,1)
         ax[0][1].set_ylabel('x_ac')
+        ax[0][1].set_xlabel('alpha')
+        ax[0][1].hlines(self.xac_segm1,self.seg1[0],self.seg1[1],color='red',linestyle='dashed')
+        ax[0][1].hlines(self.xac_segm2,self.seg2[0],self.seg2[1],color='red',linestyle='dashed')
+        ax[0][1].plot(self.segm15,self.xac_segm15,color='red',linestyle='dashed')
 
         #cmac1
         ax[1][0].plot(self.alpha_seg1,self.cmac_seg1)
-        ax[1][0].set_title('cm at first range angle of attack')
+        ax[1][0].set_title('cm at first range of alpha')
         ax[1][0].set_ylim(-0.09,-0.1)
         ax[1][0].set_xlim(-7,22)
         ax[1][0].set_ylabel('cm')
@@ -308,7 +316,7 @@ class lift_curve():
         ax[1][1].plot(self.alpha_seg2,self.cmac_seg2)
         ax[1][1].set_ylim(-0.25,-0.27)
         ax[1][1].set_xlim(-7,22)
-        ax[1][1].set_title('cm at second range angle of attack')
+        # ax[1][1].set_title('cm at second range of alpha')
         ax[1][1].set_ylabel('cm')
         ax[1][1].set_xlabel('alpha')
 
