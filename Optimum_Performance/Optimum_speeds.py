@@ -51,10 +51,13 @@ class OptimumSpeeds(AltitudeVelocity):
         v_max_range = res.x
         return v_max_range
     
-    def v_endurance(self, h: float) -> float:
+    def v_endurance(self, h: float, W: float = None) -> float:
         """
         Calculate the maximum endurance velocity at a given altitude.
         """
+        if W is None:
+            W = self._current_weight
+
         V_stall = self.calculate_stall_speed(h)
         def power_func(V):
             return self.calculate_power_required(V, h)
@@ -68,10 +71,13 @@ class OptimumSpeeds(AltitudeVelocity):
         v_max_endurance = res.x
         return v_max_endurance
     
-    def v_max(self, h: float) -> float:
+    def v_max(self, h: float, W: float = None) -> float:
         """
         Calculate the maximum velocity at a given altitude (where rate of climb = 0).
         """
+        if W is None:
+            W = self._current_weight
+
         V_stall = self.calculate_stall_speed(h)
         
         def roc_func(V):
@@ -122,24 +128,23 @@ if __name__ == "__main__":
 
     h = h_WIG = 10  # Example altitude in meters
 
+    optimum_speeds._current_weight = optimum_speeds._mtow  # Set current weight to MTOW for calculations
+
     optimum_speeds.update_json(h)
     aircraft_data.save_design("design3.json")
 
-    # optimum_speeds._current_weight = optimum_speeds._mtow  # Set current weight to MTOW for calculations
-    # v = optimum_speeds.v_range(h)
+    v_range = optimum_speeds.v_range(h)
+    v_endurance = optimum_speeds.v_endurance(h)
+    v_max = optimum_speeds.v_max(h)
+    _, v_max_roc = optimum_speeds.calculate_max_RoC(h)
+    _, v_max_aod = optimum_speeds.calculate_max_AoC(h)
+    _, v_min_rod = optimum_speeds.calculate_min_RoD(h)
+    _, v_min_aod = optimum_speeds.calculate_min_AoD(h)
 
-    # v_range = optimum_speeds.v_range(h)
-    # v_endurance = optimum_speeds.v_endurance(h)
-    # v_max = optimum_speeds.v_max(h)
-    # _, v_max_roc = optimum_speeds.calculate_max_RoC(h)
-    # _, v_max_aod = optimum_speeds.calculate_max_AoC(h)
-    # _, v_min_rod = optimum_speeds.calculate_min_RoD(h)
-    # _, v_min_aod = optimum_speeds.calculate_min_AoD(h)
-
-    # print(f"Optimum range speed: {v_range:.2f} m/s")
-    # print(f"Optimum endurance speed: {v_endurance:.2f} m/s")
-    # print(f"Maximum speed: {v_max:.2f} m/s")
-    # print(f"Maximum rate of climb speed: {v_max_roc:.2f} m/s")
-    # print(f"Maximum angle of climb speed: {v_max_aod:.2f} m/s")
-    # print(f"Minimum rate of descent speed: {v_min_rod:.2f} m/s")
-    # print(f"Minimum angle of descent speed: {v_min_aod:.2f} m/s")
+    print(f"Optimum range speed: {v_range:.2f} m/s")
+    print(f"Optimum endurance speed: {v_endurance:.2f} m/s")
+    print(f"Maximum speed: {v_max:.2f} m/s")
+    print(f"Maximum rate of climb speed: {v_max_roc:.2f} m/s")
+    print(f"Maximum angle of climb speed: {v_max_aod:.2f} m/s")
+    print(f"Minimum rate of descent speed: {v_min_rod:.2f} m/s")
+    print(f"Minimum angle of descent speed: {v_min_aod:.2f} m/s")

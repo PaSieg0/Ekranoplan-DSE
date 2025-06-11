@@ -253,7 +253,7 @@
         "altitude_range_WOG": 538000,
         "altitude_payload": 90000,
         "altitude_crew": 425,
-        "cruise_speed": 122.80197897163295,
+        "cruise_speed": 86.83411207056605,
         "stall_speed_clean": 77.16,
         "stall_speed_takeoff": 61.73,
         "stall_speed_landing": 61.73,
@@ -824,13 +824,13 @@
             ]
         },
         "optimum_speeds": {
-            "range": 122.80197897163295,
-            "endurance": 93.30932603642503,
-            "max": 170.41525775409298,
-            "max_roc": 93.30932589783687,
-            "max_aoc": 66.25208521182863,
-            "min_rod": 93.30932589783687,
-            "min_aod": 122.79964842038785
+            "range": 86.83411207056605,
+            "endurance": 65.97965723305772,
+            "max": 181.41045522656503,
+            "max_roc": 65.97965709030599,
+            "max_aoc": 45.77154969259815,
+            "min_rod": 65.97965709030599,
+            "min_aod": 86.86733259486053
         },
         "aerodynamic_stability_coefficients_sym": {
             "C_m_q": 29.263192692804136,
