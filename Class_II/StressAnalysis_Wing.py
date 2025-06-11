@@ -58,9 +58,13 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
         self.buoy_projected_area = self.buoy_length*self.buoy_radius*2
         self.roll_rate = np.deg2rad(self.aircraft_data.data['outputs']['control_surfaces']['aileron']['roll_rate'])
         self.Cs = 1.5
+        self.quarter_chord_dist = [self.wing_structure[i]['quarter_chord_dist'] for i in range(len(self.wing_structure))]
 
+        self.shape_coeff = np.array([1.875, 4.694, 7.855, 10.996])
         # self.mass_I_xx = 1/8*(self.mass_wing*self.b**2 + self.mass_vertical*self.bv**2 + self.mass_horizontal*self.bh**2) #TODO check with Shuard
         self.buoy_landing_load = 1/4 * self.MTOW #TODO discuss about this value
+        self.RPM = 815 #TODO link to json
+        self.n_blades = 6
         self.kinematic_viscosity = self.aircraft_data.data['kinematic_viscosity']
         self.h_fuselage = self.aircraft_data.data['outputs']['fuselage_dimensions']['h_fuselage_station1']
         self.dihedral = self.aircraft_data.data['outputs']['wing_design']['dihedral']
@@ -116,6 +120,27 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
         Cd = 0.075 / (np.log10(self.Re) - 2)**2
         return Cd
     
+    def get_prop_fn(self):
+        self.f_prop = self.n_blades * self.RPM/60
+        return self.f_prop
+    
+    def wave_freq(self):
+        self.wf = 0.3
+        return self.wf
+    
+    def get_bending_fn(self):
+        self.bending_fn = self.shape_coeff**2/2/np.pi/(self.b/2)**2 * np.sqrt(self.E*self.I_xx_array/self.wing_weight)
+        return self.bending_fn
+    
+    def get_torsion_fn(self):
+        self.torsion_fn = self.n/2/(self.b/2)*np.sqrt(self.G*self.J/self.Ip_array)
+        return self.torsion_fn
+    
+    def get_flutter_speed(self):
+        chord = 8
+        self.V_f = np.sqrt(2*np.pi*self.torsion_fn*self.J/(self.rho*(chord/2)**2*(self.quarter_chord_dist/chord)))
+        return self.V_f
+
     def main_stresses(self):
         if self.evaluate_case == 'max':
             self.get_max_aero_dist()
@@ -207,22 +232,21 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
             return self.vertical_distribution
     
     def resultant_torque_distribution(self):
-        quarter_chord_dist = [self.wing_structure[i]['quarter_chord_dist'] for i in range(len(self.wing_structure))]
         if self.evaluate_case == 'max':
             if self.evaluate == EvaluateType.WING:
-                self.torque_distribution = self.max_load_factor*self.lift_function * quarter_chord_dist + self.moment_function
+                self.torque_distribution = self.max_load_factor*self.lift_function * self.quarter_chord_dist + self.moment_function
             else:
-                self.torque_distribution = self.max_load_factor*self.lift_function * quarter_chord_dist
+                self.torque_distribution = self.max_load_factor*self.lift_function * self.quarter_chord_dist
             return self.torque_distribution
         elif self.evaluate_case == 'min':
             if self.evaluate == EvaluateType.WING:
-                self.torque_distribution = self.lift_function * quarter_chord_dist + self.moment_function
+                self.torque_distribution = self.lift_function * self.quarter_chord_dist + self.moment_function
                 print(self.buoy_drag*self.buoy_arm)
                 self.torque_distribution[-1] += self.buoy_drag * self.buoy_arm
                 plt.plot(self.b_array, self.torque_distribution, label='Torque Distribution', color='orange')
                 plt.show()
             else:
-                self.torque_distribution = self.min_load_factor*self.lift_function * quarter_chord_dist
+                self.torque_distribution = self.min_load_factor*self.lift_function * self.quarter_chord_dist
             return self.torque_distribution
         
     def resultant_horizontal_distribution(self):
