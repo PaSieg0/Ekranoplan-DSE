@@ -59,7 +59,7 @@ class ElevatorRudder:
         self.V_lof = self.aircraft_data.data['requirements']['stall_speed_takeoff']*1.05
         self.i_h = self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['i_h']
 
-        self.take_off_drag = self.take_off_power / self.V_lof
+        self.take_off_drag = self.take_off_power / self.V_lof * self.prop_efficiency
         self.highest_cg = self.aircraft_data.data['outputs']['cg_range']['highest_cg']
 
         self.MAC = self.aircraft_data.data['outputs']['wing_design']['MAC']
@@ -68,9 +68,11 @@ class ElevatorRudder:
         self.climb_rate = self.aircraft_data.data['requirements']['climb_rate']
         self.n_engines = self.aircraft_data.data['inputs']['engine']['n_engines']
 
-        self.engine_zs = np.array(self.aircraft_data.data['outputs']['engine_positions']['z_engines'])
-        self.vertical_engine_arms = self.engine_zs - self.highest_cg #TODO update when prop position is known
         self.prop_diameter = self.aircraft_data.data['inputs']['engine']['prop_diameter'] 
+        self.bottom_prop = 7.6
+        self.engine_zs = np.array([self.bottom_prop+self.prop_diameter/2, self.bottom_prop+self.prop_diameter/2, self.bottom_prop+self.prop_diameter/2])
+        self.vertical_engine_arms = self.engine_zs - self.highest_cg
+
         high_altitude = self.aircraft_data.data['requirements']['high_altitude']
         self.rho = self.aircraft_data.data['rho_air'] 
         self.isa = ISA(altitude=high_altitude)
@@ -147,7 +149,7 @@ class ElevatorRudder:
     
     def calculate_elevator_surface(self):
         self.pitch_rate = self.calculate_pitch_rate()
-        self.required_Cmde_Cmq = -self.pitch_rate/np.deg2rad(-self.elevator_deflection)*(self.MAC/self.V)
+        self.required_Cmde_Cmq = -self.pitch_rate/np.deg2rad(-self.elevator_deflection)*(self.MAC/self.V)/2
         self.calculate_elevator_position()
 
     def calculate_elevator_position(self):
@@ -156,7 +158,7 @@ class ElevatorRudder:
         #TODO account for double vertical tail
         for b in self.b_test:
             ratio = self.calculate_Cmde_Cmq(b)
-            # print(ratio, self.required_Cmde_Cmq)
+            print(ratio, self.required_Cmde_Cmq)
             if abs(ratio - self.required_Cmde_Cmq) < tolerance:
                 self.elevator_end = b
                 if self.elevator_end + self.vertical_tail_thickness < self.b_h/2:
@@ -185,6 +187,7 @@ class ElevatorRudder:
         self.horizontal_tail_lift = (self.main_lift_moment -self.engine_moments + self.main_moment - self.take_off_drag * self.highest_cg) /self.l_h * self.Sh/self.S/2
         zero_elevator_lift = self.i_h*self.tail_lift_slope * self.Sh * 0.5 * self.rho * self.V**2
         self.required_elevator_lift = self.horizontal_tail_lift - zero_elevator_lift
+        print(f'required elevator lift: {self.required_elevator_lift}')
         self.trim_deflection_TO = np.ceil(-self.required_elevator_lift * self.l_h*1.5/(0.5*self.rho*self.V**2*self.MAC*self.S) / self.CMde * 180/np.pi)
         print(f'trim deflection TO: {self.trim_deflection_TO} deg')
 
