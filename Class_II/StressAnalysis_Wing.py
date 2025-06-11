@@ -60,7 +60,6 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
         self.Cs = 1.5
         self.quarter_chord_dist = [self.wing_structure[i]['quarter_chord_dist'] for i in range(len(self.wing_structure))]
 
-        self.shape_coeff = np.array([1.875, 4.694, 7.855, 10.996])
         # self.mass_I_xx = 1/8*(self.mass_wing*self.b**2 + self.mass_vertical*self.bv**2 + self.mass_horizontal*self.bh**2) #TODO check with Shuard
         self.buoy_landing_load = 1/4 * self.MTOW #TODO discuss about this value
         self.RPM = 815 #TODO link to json
@@ -120,27 +119,6 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
         Cd = 0.075 / (np.log10(self.Re) - 2)**2
         return Cd
     
-    def get_prop_fn(self):
-        self.f_prop = self.n_blades * self.RPM/60
-        return self.f_prop
-    
-    def wave_freq(self):
-        self.wf = 0.3
-        return self.wf
-    
-    def get_bending_fn(self):
-        self.bending_fn = self.shape_coeff**2/2/np.pi/(self.b/2)**2 * np.sqrt(self.E*self.I_xx_array/self.wing_weight)
-        return self.bending_fn
-    
-    def get_torsion_fn(self):
-        self.torsion_fn = self.n/2/(self.b/2)*np.sqrt(self.G*self.J/self.Ip_array)
-        return self.torsion_fn
-    
-    def get_flutter_speed(self):
-        chord = 8
-        self.V_f = np.sqrt(2*np.pi*self.torsion_fn*self.J/(self.rho*(chord/2)**2*(self.quarter_chord_dist/chord)))
-        return self.V_f
-
     def main_stresses(self):
         if self.evaluate_case == 'max':
             self.get_max_aero_dist()
