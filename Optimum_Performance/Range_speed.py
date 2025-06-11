@@ -113,8 +113,8 @@ class RangeAnalyzer:
         W4_leg2 = (W5_leg1-self.aircraft_data.data['requirements']['design_payload']*9.81) * self.rng.Mff_nocruise  # Weight at start of cruise for leg 2
         W5_leg2 = W4_leg2 / W4_W5['design']  # Weight at end of cruise for leg 2
 
-        # Check if W5_leg2 is close to zero fuel weight (ZFW)
-        oew = self.opt._oew
+        # Check if W5_leg2 is close to zero fuel weight (OEW)
+        oew = self.opt._oew + self.aircraft_data.data['outputs']['design']['reserve_fuel']
         if not np.isclose(W5_leg2, oew, rtol=0.01):
             warnings.warn(f"W5_leg2 ({W5_leg2:.2f} N) is not close to OEW ({oew:.2f} N)")
 
@@ -131,7 +131,7 @@ class RangeAnalyzer:
             return False
         return True
     
-    def calculate_numerical_range(self, W4: float, W5: float, velocity_func=None, h: float = 10, dW: float = 10) -> Tuple[float, Dict]:
+    def calculate_numerical_range(self, W4: float, W5: float, velocity_func=None, h: float = 10, dW: float = 100) -> Tuple[float, float, Dict]:
         """
         Calculate range using numerical integration.
         
@@ -196,7 +196,7 @@ class RangeAnalyzer:
         
         return R_numerical, t, integration_details
     
-    def calculate_analytical_range(self, W4: float, W5: float, h: float = 10) -> float:
+    def calculate_analytical_range(self, W4: float, W5: float, velocity_func=None, h: float = 10) -> float:
         """
         Calculate range using analytical formula (Breguet range equation).
         
@@ -211,9 +211,10 @@ class RangeAnalyzer:
         # Use representative weight for L/D calculation (geometric mean)
         W_representative = np.sqrt(W4 * W5)
         
-        V = self.opt.v_range(h)
-        print(V)
-        
+        if velocity_func is not None:
+            V = velocity_func(self.opt, h)
+        else:
+            V = self.opt.v_range(h, W=W_representative)  # Default: optimal range speed
         # Calculate representative L/D ratio
         Cl_Cd = self.opt.L_over_D(V, h, W_representative)
         Cl_Cd_ge = Cl_Cd * self.k
@@ -221,9 +222,83 @@ class RangeAnalyzer:
         # Breguet range equation
         R_analytical = (self.opt._prop_efficiency / 
                        self.aircraft_data.data['inputs']['prop_consumption'] * 
-                       Cl_Cd_ge * np.log(W4 / W5) / self.opt.g)     
+                       Cl_Cd_ge * np.log(W4 / W5) / self.opt.g)
+
+        t_analytical = R_analytical / V  # Time for analytical range  
         
-        return R_analytical
+        return R_analytical, t_analytical
+    
+    def calculate_range_variable(self, 
+                        vfunc_leg1: callable = None, 
+                        vfunc_leg2: callable = None, 
+                        payload_leg1: float = None, 
+                        payload_leg2: float = 0, 
+                        h: float = 10,
+                        numerical: bool = False
+                        ) -> Tuple[float, float, float]:
+        """
+        Calculate total range for the mission using both legs.
+        
+        Args:
+            vfunc_leg1: Velocity function for leg 1 (optional).
+            vfunc_leg2: Velocity function for leg 2 (optional).
+            payload_leg1: Payload for leg 1 (kg), if None uses design payload.
+            payload_leg2: Payload for leg 2 (kg), default is 0.
+            h: Altitude (m)
+            
+        Returns:
+            Total range in meters and time in seconds for both legs.
+        """
+        if payload_leg1 is None:
+            payload_leg1 = self.aircraft_data.data['requirements']['design_payload']
+
+        W4_leg1 = self.opt._mtow * self.rng.Mff_nocruise  # Weight at start of cruise for leg 1
+        W5_leg1 = 0 # this is the variable we want to calculate for R_leg1 = R_leg2
+        W4_leg2 = (W5_leg1 - (payload_leg1-payload_leg2) * 9.81) * self.rng.Mff_nocruise  # Weight at start of cruise for leg 2
+        W5_leg2 = self.aircraft_data.data['outputs']['design']['ZFW'] + self.aircraft_data.data['outputs']['design']['reserve_fuel'] - (payload_leg1-payload_leg2) * 9.81
+
+        # Iteratively find W5_leg1 such that R_leg1 equals R_leg2
+        W5_leg1_min = self.aircraft_data.data['outputs']['design']['ZFW'] + self.aircraft_data.data['outputs']['design']['reserve_fuel']
+        W5_leg1_max = W4_leg1
+
+        if numerical:
+            tolerance = 10  # Tolerance for range difference (m)
+        else:
+            tolerance = 1e-3  # Tolerance for range difference (m)
+
+        max_iterations = 100
+
+        for iteration in range(max_iterations):
+            W5_leg1 = (W5_leg1_min + W5_leg1_max) / 2
+            W4_leg2 = (W5_leg1 - (payload_leg1 - payload_leg2) * 9.81) * self.rng.Mff_nocruise
+            
+            if numerical:
+                # Calculate numerical range for both legs
+                R_leg1, time_leg1, _ = self.calculate_numerical_range(W4_leg1, W5_leg1, vfunc_leg1, h, dW=dW)
+                R_leg2, time_leg2, _ = self.calculate_numerical_range(W4_leg2, W5_leg2, vfunc_leg2, h, dW=dW)
+            else:
+                R_leg1, time_leg1 = self.calculate_analytical_range(W4_leg1, W5_leg1, vfunc_leg1, h)
+                R_leg2, time_leg2 = self.calculate_analytical_range(W4_leg2, W5_leg2, vfunc_leg2, h)
+            
+            range_diff = R_leg1 - R_leg2
+            
+            if abs(range_diff) < tolerance:
+                break
+            elif range_diff < 0:  # R_leg1 > R_leg2, need to increase W5_leg1
+                W5_leg1_max = W5_leg1
+            else:  # R_leg1 < R_leg2, need to increase W5_leg1
+                W5_leg1_min = W5_leg1
+
+            if numerical and abs(range_diff) < dW:
+                # If range difference is smaller than weight step, reduce weight step for better precision
+                dW = max(dW / 2)  # Reduce weight step but don't go below 10 N
+                print(f"Reducing weight step to {dW} N for better precision")
+
+            print(f'Iteration {iteration+1}/{max_iterations}: W5_leg1_min={W5_leg1_min:.2f}, W5_leg1_max={W5_leg1_max:.2f}, R_leg1={R_leg1:.2f}, R_leg2={R_leg2:.2f}, Range diff={range_diff:.2f}')
+
+        total_range= R_leg1 + R_leg2
+
+        return total_range, time_leg1, time_leg2
     
     def perform_sanity_check(self, R_numerical: float, R_analytical: float, print_results: bool = False) -> bool:
         """
@@ -333,10 +408,10 @@ class RangeAnalyzer:
                 return opt.v_range(h)
 
             # Numerical integration for range, endurance, and constant speed
-            R_numerical_range, time_range, _ = self.calculate_numerical_range(W4, W5, v_max_range, altitude, dW=self.weight_step)
+            R_numerical_range, time_numerical, _ = self.calculate_numerical_range(W4, W5, v_max_range, altitude, dW=self.weight_step)
             
             # Analytical range calculation
-            R_analytical_range = self.calculate_analytical_range(W4, W5, altitude)
+            R_analytical_range, time_analytical = self.calculate_analytical_range(W4, W5, h=altitude)
 
             # Perform sanity check
             self.perform_sanity_check(R_numerical_range, R_analytical_range, print_results=True)
@@ -370,9 +445,9 @@ def speed_comparison():
         return opt.v_max(h)
     
     # Leg 1
-    R_numerical_1, time_1, details_1 = analyzer.calculate_numerical_range(W4_1, W5_1, None, dW=weight_step)
-    R_numerical_test_1, time_test_1, details_test_1 = analyzer.calculate_numerical_range(W4_1, W5_1, v_test, dW=weight_step)
-    R_numerical_max_1, time_max_1, details_max_1 = analyzer.calculate_numerical_range(W4_1, W5_1, v_max, dW=weight_step)
+    R_numerical_1, time_1, _ = analyzer.calculate_numerical_range(W4_1, W5_1, None, dW=weight_step)
+    R_numerical_test_1, time_test_1, _ = analyzer.calculate_numerical_range(W4_1, W5_1, v_test, dW=weight_step)
+    R_numerical_max_1, time_max_1, _ = analyzer.calculate_numerical_range(W4_1, W5_1, v_max, dW=weight_step)
 
     # details_total = concat_details(details_1, details_2)
     # details_total_test = concat_details(details_test_1, details_test_2)
@@ -464,10 +539,10 @@ if __name__ == "__main__":
     # Create analyzer
     # Configuration
 
-    # file_path = "design3.json"
-    # mission_type = MissionType.DESIGN
-    # analyzer = RangeAnalyzer(file_path, mission_type)
-    # analyzer.check()
+    file_path = "design3.json"
+    mission_type = MissionType.DESIGN
+    analyzer = RangeAnalyzer(file_path, mission_type)
+    analyzer.check()
 
     speed_comparison()
 
