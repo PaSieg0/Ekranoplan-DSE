@@ -22,7 +22,7 @@ class DerivativesDatcom_sym:
         self.Sv = aircraft_data.data['outputs']['empennage_design']['vertical_tail']['S'] # Surface area of the vertical tail: 75
         self.V_b = aircraft_data.data['outputs']['fuselage_dimensions']['total_volume'] # total body volume [m3]: 20000
         self.b = aircraft_data.data['outputs']['design']['b']
-        self.lp = (aircraft_data.data['outputs']['fuselage_dimensions']['d_fuselage_equivalent_station3'] / 2) + (aircraft_data.data['outputs']['empennage_design']['vertical_tail']['z_MAC_v'])  # ℓₚ is the distance parallel to the longitudinal body axis between the vehicle moment center and the quarter-chord point of the MAC of the vertical panel, positive for the panel aft of the vehicle moment center.
+        self.lp = (aircraft_data.data['outputs']['fuselage_dimensions']['d_fuselage_equivalent_station3'] / 2) + (aircraft_data.data['outputs']['empennage_design']['vertical_tail']['z_MAC'])  # ℓₚ is the distance parallel to the longitudinal body axis between the vehicle moment center and the quarter-chord point of the MAC of the vertical panel, positive for the panel aft of the vehicle moment center.
         self.Cl_alpha = self.lift_curve.dcl_dalpha()[0]*180/np.pi # Lift curve slope of the wing, in rad: 9.167
         self.e = aircraft_data.data['inputs']['oswald_factor'] # Oswald efficiency factor of the wing : 0.85 (guessed, typical value for a subsonic aircraft)
         self.taper = aircraft_data.data['outputs']['wing_design']['taper_ratio'] # Taper ratio of the wing: 0.4
@@ -124,19 +124,27 @@ class DerivativesDatcom_sym:
     
     def update_json(self):
         # Run the functions you want to store
-        aero_stability_outputs = {
-            'C_m_q': derivatives.Cmq(), #Cl=1, alpha=2 degrees
-            'C_z_alpha': derivatives.C_z_alpha(),
-            'C_x_alpha': derivatives.C_x_alpha(),  # Cl=1
-            'C_m_alpha': derivatives.Cmalpha(),
-            'C_Z_u': derivatives.C_Z_u(),  # Cl=1
-            'C_X_u': derivatives.C_X_u(),
-            'C_m_u': derivatives.C_m_u(),
-            'C_m_alphadot': derivatives.C_m_alphadot()
+        # aero_stability_outputs = {
+        #     'C_m_q': self.Cmq(), #Cl=1, alpha=2 degrees
+        #     'C_z_alpha': self.C_z_alpha(),
+        #     'C_x_alpha': self.C_x_alpha(),  # Cl=1
+        #     'C_m_alpha': self.Cmalpha(),
+        #     'C_Z_u': self.C_Z_u(),  # Cl=1
+        #     'C_X_u': self.C_X_u(),
+        #     'C_m_u': self.C_m_u(),
+        #     'C_m_alphadot': self.C_m_alphadot()
 
-            # Add more functions here if needed
-        }
-        self.aircraft_data.data['outputs']['aerodynamic_stability_coefficients_sym'] = aero_stability_outputs
+        #     # Add more functions here if needed
+        # }
+        self.aircraft_data.data['outputs']['aerodynamic_stability_coefficients_sym']['C_m_q'] = self.Cmq()
+        self.aircraft_data.data['outputs']['aerodynamic_stability_coefficients_sym']['C_z_alpha'] = self.C_z_alpha()
+        self.aircraft_data.data['outputs']['aerodynamic_stability_coefficients_sym']['C_x_alpha'] = self.C_x_alpha()
+        self.aircraft_data.data['outputs']['aerodynamic_stability_coefficients_sym']['C_m_alpha'] = self.Cmalpha()
+        self.aircraft_data.data['outputs']['aerodynamic_stability_coefficients_sym']['C_Z_u'] = self.C_Z_u()
+        self.aircraft_data.data['outputs']['aerodynamic_stability_coefficients_sym']['C_X_u'] = self.C_X_u()
+        self.aircraft_data.data['outputs']['aerodynamic_stability_coefficients_sym']['C_m_u'] = self.C_m_u()
+        self.aircraft_data.data['outputs']['aerodynamic_stability_coefficients_sym']['C_m_alphadot'] = self.C_m_alphadot()
+        # self.aircraft_data.data['outputs']['aerodynamic_stability_coefficients_sym'] = aero_stability_outputs
         self.aircraft_data.save_design('design3.json')
 
     

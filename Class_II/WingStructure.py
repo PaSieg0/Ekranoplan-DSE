@@ -176,7 +176,7 @@ class WingStructure:
         ]
 
         self.I_xx_list = []
-        print(self.evaluate)
+        # print(self.evaluate)
 
     def chord_span_function(self,y):
         if self.evaluate == EvaluateType.VERTICAL:
@@ -795,7 +795,7 @@ class WingStructure:
                 
                 # print(mid_spar_height, self.t_spar)
                 # print(self.beam_standard_Ixx(mid_spar_height, self.t_spar,
-                #                                         abs(mid_spar_height / 2 - self.centroid[1]), np.pi / 2))
+                #                                          abs(mid_spar_height / 2 - self.centroid[1]), np.pi / 2))
 
         I_xx_wing_top = 0
         I_yy_wing_top = 0
@@ -843,7 +843,7 @@ class WingStructure:
             I_yy_wing_bottom += self.beam_standard_Iyy(length, self.t_wing, abs(distance_yy), angle)
             I_xy_wing_bottom += self.beam_standard_Ixy(length, self.t_wing, xy, angle)
 
-        #print(I_xx_front_spar + I_xx_rear_spar + I_xx_mid_spars)
+        # print(I_xx_front_spar + I_xx_rear_spar + I_xx_mid_spars)
         self.I_xx = (I_xx_front_spar + I_xx_rear_spar + I_xx_panels +
                  + I_xx_wing_bottom + I_xx_wing_top + I_xx_mid_spars + self.stringer_dict['top']['I_xx'] + self.stringer_dict['bottom']['I_xx'])
         self.I_yy = (I_yy_front_spar + I_yy_rear_spar + I_yy_panels +
@@ -1175,7 +1175,7 @@ class WingStructure:
         stringers_volume = np.trapz(stringers_area, self.b_array)
         epoxy_volume = np.trapz(wing_epoxy_area, self.b_array) + np.trapz(wing_box_epoxy_area, self.b_array) + np.trapz(stringer_area_epoxy, self.b_array)
         self.epoxy_mass = epoxy_volume * self.rho_epoxy
-        print(f'wing epoxy mass: {self.epoxy_mass} kg')
+        # print(f'wing epoxy mass: {self.epoxy_mass} kg')
         self.wing_mass = wing_volume * self.rho_wing + wing_box_volume * self.rho_wingbox + stringers_volume * self.rho_stringer + self.epoxy_mass
 
         return self.wing_mass
@@ -1250,7 +1250,7 @@ class WingStructure:
             fuel_dist = np.zeros_like(self.b_array)
             self.tank_mass = 0
         if hasattr(self, 'rib_masses'):
-            print(f'tot rib mass: {sum(self.rib_masses)} kg')
+            # print(f'tot rib mass: {sum(self.rib_masses)} kg')
             self.wing_mass = self.calculate_wing_mass() + sum(self.rib_masses) + self.tank_mass
         else:
             self.wing_mass = self.calculate_wing_mass() + self.tank_mass
@@ -1265,11 +1265,11 @@ class WingStructure:
                 self.weight_dist[int(round(engine_y,2)*100)] += self.engine_weight*9.81
         
         self.wing_mass = self.wing_mass + self.tank_mass
-        print(f"Wing mass without fuel: {self.wing_mass:.2f} kg")
+        # print(f"Wing mass without fuel: {self.wing_mass:.2f} kg")
         self.weight_dist[-1] += self.buoy_mass*9.81
 
         self.tot_weight = np.trapz(self.weight_dist, self.b_array)
-        print(f"Wing mass all inc: {self.tot_weight/9.81:.2f} kg")
+        # print(f"Wing mass all inc: {self.tot_weight/9.81:.2f} kg")
         return self.weight_dist
 
     def plot_wing_ribs(self):
@@ -1490,5 +1490,5 @@ if __name__ == "__main__":
     wing_structure.get_wing_structure()
     wing_structure.plot_moment_of_inertia()
     wing_structure.plot_thickness_distribution()
-    print(f"Stringer Length, thickness in mm:{wing_structure.calculate_stringer_thickness()}")
-    print(f"Crippling stress stringer in MPa: {wing_structure.crippling_stress_stringer()}")
+    # print(f"Stringer Length, thickness in mm:{wing_structure.calculate_stringer_thickness()}")
+    # print(f"Crippling stress stringer in MPa: {wing_structure.crippling_stress_stringer()}")

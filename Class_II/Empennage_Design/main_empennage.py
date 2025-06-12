@@ -22,7 +22,7 @@ class EmpennageOptimizer:
     def run(self):
         from tqdm import tqdm
         # Use tqdm for a progress bar
-        for wing_placement in tqdm(self.placements, desc="Wing Placement Sweep", unit="placement"):
+        for wing_placement in self.placements:
             loading_diagram = LoadingDiagram(aircraft_data=self.aircraft_data, wing_placement=wing_placement)
             mins, maxs = loading_diagram.determine_range()
             tail_area = Tail_area(aircraft_data=self.aircraft_data, fwd_cg=mins, aft_cg=maxs)

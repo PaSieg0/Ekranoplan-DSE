@@ -119,23 +119,23 @@ class load_diagram:
         # Add cargo weight
         cargo_weight = self.cargo_mass * 9.81
         self.section_weights['cargo'] += cargo_weight
-        print(f"Adding cargo weight: {cargo_weight} N to cargo section")
+        # print(f"Adding cargo weight: {cargo_weight} N to cargo section")
         # Add fuel weight   
         
         self.section_weights['fuel'] += self.fuel_weight
-        print(f"Adding fuel weight: {self.fuel_weight} N to fuel section")
-        print(f"Calculated OEW: {sum(self.section_weights.values())-self.section_weights['fuel']-self.section_weights['cargo']} N")
-        print(f"Actual OEW by summing component weights: {sum([v['weight'] for v in self.component_weights.values()])} N")
+        # print(f"Adding fuel weight: {self.fuel_weight} N to fuel section")
+        # print(f"Calculated OEW: {sum(self.section_weights.values())-self.section_weights['fuel']-self.section_weights['cargo']} N")
+        # print(f"Actual OEW by summing component weights: {sum([v['weight'] for v in self.component_weights.values()])} N")
 
         # Calculate total OEW from the new dictionary (values of the dict)
         self.mtow_from_sections = sum(self.section_weights.values())
         # Make all the values negative
         self.section_weights = {k: -v for k, v in self.section_weights.items()}
-        print(f"section weights (negative values): {self.section_weights}")
+        # print(f"section weights (negative values): {self.section_weights}")
         
-        print(f"Calculated MTOW (sum of sections): {self.mtow_from_sections} N")
-        print(f"MTOW from json: {self.MTOW_json} N")
-        print(f"Difference between calculated and json MTOW: {self.mtow_from_sections-self.MTOW_json} N")
+        # print(f"Calculated MTOW (sum of sections): {self.mtow_from_sections} N")
+        # print(f"MTOW from json: {self.MTOW_json} N")
+        # print(f"Difference between calculated and json MTOW: {self.mtow_from_sections-self.MTOW_json} N")
 
         return self.section_weights
     

@@ -8,7 +8,7 @@ from scipy.integrate import quad
 from utils import ISA
 import matplotlib.pyplot as plt
 from aero.lift_curve import lift_curve
-from AerodynamicForces import AerodynamicForces
+from Class_II.AerodynamicForces import AerodynamicForces
 
 class ElevatorRudder:
 
@@ -23,8 +23,8 @@ class ElevatorRudder:
         self.lift_curve = lift_curve()
         self.aeroforces = AerodynamicForces(self.aircraft_data)
         self.aeroforces.get_max_aero_dist()
-        self.airfoil_cl_alpha = self.lift_curve.dcl_dalpha()
-        self.tail_lift_slope = self.lift_curve.dcl_dalpha()
+        self.airfoil_cl_alpha = self.lift_curve.dcl_dalpha()[0]
+        self.tail_lift_slope = self.lift_curve.dcl_dalpha()[0]
 
         self.rudder_chord_ratio = self.aircraft_data.data['inputs']['control_surfaces']['rudder_chord']
         self.elevator_chord_ratio = self.aircraft_data.data['inputs']['control_surfaces']['elevator_chord']
@@ -186,9 +186,9 @@ class ElevatorRudder:
         self.horizontal_tail_lift = (self.main_lift_moment -self.engine_moments + self.main_moment - self.take_off_drag * self.highest_cg) /self.l_h * self.Sh/self.S/2
         zero_elevator_lift = self.i_h*self.tail_lift_slope * self.Sh/2 * 0.5 * self.rho * self.V**2
         self.required_elevator_lift = self.horizontal_tail_lift - zero_elevator_lift
-        print(f'required elevator lift: {self.required_elevator_lift}')
+        # print(f'required elevator lift: {self.required_elevator_lift}')
         self.trim_deflection_TO = np.ceil(-self.required_elevator_lift * self.l_h*1.5/(0.5*self.rho*self.V**2*self.MAC*self.S) / self.CMde * 180/np.pi)
-        print(f'trim deflection TO: {self.trim_deflection_TO} deg')
+        # print(f'trim deflection TO: {self.trim_deflection_TO} deg')
 
     #TODO calculate normal trim deflection
 
@@ -202,8 +202,8 @@ class ElevatorRudder:
             self.plot_horizontal_tail()
         
         self.elevator_lift = self.calculate_elevator_normal_force()
-        print(f"Elevator lift: {self.elevator_lift}")
-        print(f"Rudder lift: {self.rudder_normal_force}")
+        # print(f"Elevator lift: {self.elevator_lift}")
+        # print(f"Rudder lift: {self.rudder_normal_force}")
         self.calculate_pitch_up_performance()
         self.update_attributes()
         self.aircraft_data.save_design(self.design_file)

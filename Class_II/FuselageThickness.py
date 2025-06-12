@@ -1,18 +1,19 @@
 import os
 import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import matplotlib.transforms as transforms
 from scipy.integrate import quad
-from weight_distributions import load_diagram
-from AerodynamicForces import AerodynamicForces
+from Class_II.weight_distributions import load_diagram
+from Class_II.AerodynamicForces import AerodynamicForces
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from utils import Data, Materials
 
 class FuselageThickness:
-    def __init__(self, aircraft_data: Data, fuselage_mat: Materials, frame_mat: Materials, plot=False):
+    def __init__(self, aircraft_data: Data, fuselage_mat: Materials = Materials.Al7075, frame_mat: Materials = Materials.Al7075, plot=False):
           
         self.aircraft_data = aircraft_data
 
@@ -598,22 +599,22 @@ class FuselageThickness:
 
         if not converged and self.iteration < self.max_iterations:
             self.iteration += 1
-            if self.iteration % 10 == 0:
-                print(f"Iteration {self.iteration}: Parameters not converged, optimizing...")
+            # if self.iteration % 10 == 0:
+            #     print(f"Iteration {self.iteration}: Parameters not converged, optimizing...")
             self.main()
         else:
-            print(f"Converged after {self.iteration} iterations.")
-            self.plot_station_cross_section(1)
+            # print(f"Converged after {self.iteration} iterations.")
             self.calculate_rib_spacing_skin()
             self.calculate_mass()
             if self.plot:
+                self.plot_station_cross_section(1)
                 self.plot_shear_stress()
                 self.plot_bending_stress()
-            print(f"Frame Amount: {self.rib_amount}")
-            print("Final Thicknesses:", self.final_thicknesses)
-            print("Final Boom Areas:", self.boom_map)
-            print("Final Stringer Area:", self.stringer_areas)
-            print("Final Number of Stringers:", self.n_stringers)
+            # print(f"Frame Amount: {self.rib_amount}")
+            # print("Final Thicknesses:", self.final_thicknesses)
+            # print("Final Boom Areas:", self.boom_map)
+            # print("Final Stringer Area:", self.stringer_areas)
+            # print("Final Number of Stringers:", self.n_stringers)
             self.update_attributes()
 
     def calculate_rib_spacing_skin(self):
@@ -627,7 +628,6 @@ class FuselageThickness:
         self.rib_positions.append(x)
 
         while x < self.l_fuselage:
-            print(x)
             idx = np.argmin(np.abs(self.x_points - x))
             station_idx = np.argmin(np.abs(np.array(self.thresholds) - x))
 
@@ -637,7 +637,6 @@ class FuselageThickness:
             else:
                 thickness = self.final_thicknesses[1][station_idx]
                 b = min(40 * 0.0254, thickness * np.sqrt(self.C * factor / stress))
-                print(b,thickness)
             self.rib_spacings.append(b)
             x += b
 
@@ -647,7 +646,7 @@ class FuselageThickness:
                 break
 
         self.rib_amount = len(self.rib_positions)
-        print("Rib Count:", self.rib_amount)
+        # print("Rib Count:", self.rib_amount)
         self.calculate_rib_thickness()
 
     def calculate_frame_width(self, thickness, tau_cr):
@@ -713,18 +712,17 @@ class FuselageThickness:
                 rib_volume += thickness * length * width
         
         self.rib_mass = rib_volume * self.rib_density
-        print(len(skin_area_along_fuselage))
         skin_mass = np.trapz(skin_area_along_fuselage, self.x_points) * self.density
         stringer_mass = np.trapz(stringer_area_along_fuselage, self.x_points) * self.density
         self.epoxy_mass = np.trapz(skin_area_epoxy, self.x_points) * self.rho_epoxy + np.trapz(stringer_area_epoxy, self.x_points) * self.rho_epoxy
         total_mass = skin_mass + stringer_mass + self.rib_mass + self.epoxy_mass
         self.fuselage_mass = total_mass*1.05
 
-        print(f"Skin Mass: {skin_mass:.2f} kg")
-        print(f"Frame Mass: {self.rib_mass:.2f} kg")
-        print(f"Stringer Mass: {stringer_mass:.2f} kg")
-        print(f"Epoxy Mass: {self.epoxy_mass:.2f} kg")
-        print(f"Fuselage Mass (total): {total_mass:.2f} kg")
+        # print(f"Skin Mass: {skin_mass:.2f} kg")
+        # print(f"Frame Mass: {self.rib_mass:.2f} kg")
+        # print(f"Stringer Mass: {stringer_mass:.2f} kg")
+        # print(f"Epoxy Mass: {self.epoxy_mass:.2f} kg")
+        # print(f"Fuselage Mass (total): {total_mass:.2f} kg")
 
         # Optional: plot area distributions
         if self.plot:

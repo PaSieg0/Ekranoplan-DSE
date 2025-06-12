@@ -221,8 +221,8 @@ def main():
     # Calculate and print CG positions
     mtow_cg = cg_calculator.calculate_cg(OEW=False)
     oew_cg = cg_calculator.calculate_cg(OEW=True)
-    print(f"Total CG position: {mtow_cg} m")
-    print(f"OEW CG position: {oew_cg} m")
+    # print(f"Total CG position: {mtow_cg} m")
+    # print(f"OEW CG position: {oew_cg} m")
 
     # Update JSON with CG positions
     cg_calculator.update_json()

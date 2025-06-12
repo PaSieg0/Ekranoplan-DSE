@@ -77,7 +77,7 @@ class AerodynamicForces:
         self.cd0 = self.aircraft_data.data['inputs']['Cd0']
 
         self.lift_curve = lift_curve()
-        self.tail_lift_slope = self.lift_curve.dcl_dalpha()
+        self.tail_lift_slope = self.lift_curve.dcl_dalpha()[0]
 
         self.airfoil_Cd0 = self.aircraft_data.data['inputs']['airfoils']['cd0_wing']
         self.aileron_lift = self.aircraft_data.data['outputs']['control_surfaces']['aileron']['aileron_lift']

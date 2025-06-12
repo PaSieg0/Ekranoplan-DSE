@@ -16,7 +16,6 @@ class AileronHLD:
         self.design_file = f"design{self.design_number}.json"
 
         self.flaptype = FlapType[self.aircraft_data.data['inputs']['control_surfaces']['flap_type']]
-        print(self.flaptype)
         self.S = self.aircraft_data.data['outputs']['wing_design']['S']
         self.b = self.aircraft_data.data['outputs']['wing_design']['b']
 
@@ -53,7 +52,7 @@ class AileronHLD:
 
         self.airfoil_Cd0 = self.aircraft_data.data['inputs']['airfoils']['cd0_wing']
         self.lift_curve = lift_curve()
-        self.airfoil_Cl_alpha = self.lift_curve.dcl_dalpha()*180/np.pi
+        self.airfoil_Cl_alpha = self.lift_curve.dcl_dalpha()[0]*180/np.pi
 
         self.CLMax_landing = self.aircraft_data.data['inputs']['CLmax_landing']
         self.CLMax_clean = self.aircraft_data.data['inputs']['CLmax_clean']
@@ -117,11 +116,9 @@ class AileronHLD:
 
         self.aileron_lift = L/mid_point/2
         self.aileroned_area = quad(self.Swa, self.aileron_start, self.aileron_end)[0]
-        print(f"Aileron lift: {self.aileron_lift}")
 
     def calculate_aileron_size(self):
         self.required_roll_rate = self.calculate_roll_rate()
-        print(self.required_roll_rate)
         self.required_Cla_Clp = -self.required_roll_rate/(self.max_aileron_deflection*(2*self.V/self.b))
         self.calculate_aileron_position()
         self.aileron_area = self.chord_span_function((self.aileron_end - self.aileron_start)/2)*self.aileron_chord_ratio*(self.aileron_end - self.aileron_start)
@@ -228,7 +225,6 @@ class AileronHLD:
 
         self.CL_increase_TO = self.calculate_CLmax_increase(self.tot_flap_area,self.clmax_increase*0.6)
         self.CL_max_TO = self.CLMax_clean + self.CL_increase_TO
-        print(self.CL_max_TO)
 
         self.CL_increase = self.calculate_CLmax_increase(self.tot_flap_area,self.clmax_increase)
 

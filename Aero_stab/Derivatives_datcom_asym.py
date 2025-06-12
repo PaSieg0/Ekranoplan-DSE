@@ -8,7 +8,7 @@ from utils import Data, MissionType, ISA, AircraftType
 from aero.lift_curve import lift_curve
 
 class DerivativesDatcom_asym:
-    def __init__(self, aircraft_data: Data, mission_type: MissionType) -> None:
+    def __init__(self, aircraft_data: Data) -> None:
         self.aircraft_data = aircraft_data
         self.lift_curve = lift_curve()
         self.Delta_c4 = aircraft_data.data['outputs']['wing_design']['sweep_c_4'] #degrees
@@ -26,7 +26,7 @@ class DerivativesDatcom_asym:
         self.b = aircraft_data.data['outputs']['design']['b']
 
         self.lp = aircraft_data.data['outputs']['empennage_design']['vertical_tail']['l_v']
-        self.zp = (aircraft_data.data['outputs']['fuselage_dimensions']['d_fuselage_equivalent_station3'] / 2) + (aircraft_data.data['outputs']['empennage_design']['vertical_tail']['z_MAC_v'])  
+        self.zp = (aircraft_data.data['outputs']['fuselage_dimensions']['d_fuselage_equivalent_station3'] / 2) + (aircraft_data.data['outputs']['empennage_design']['vertical_tail']['z_MAC'])  
         self.Cl_alpha = self.lift_curve.dcl_dalpha()[0]*(180*np.pi) # Lift curve slope of the wing in deg
         self.e = aircraft_data.data['inputs']['oswald_factor'] # Oswald efficiency factor of the wing : 0.85 (guessed, typical value for a subsonic aircraft)
         self.taper = aircraft_data.data['outputs']['wing_design']['taper_ratio'] # Taper ratio of the wing: 0.4
@@ -62,7 +62,7 @@ class DerivativesDatcom_asym:
         delta_CyB_dihedral = -0.0001* np.radians(self.dihedral)
         k2__k1 = 0.9 # Determined from plot page 834 DATCOM
 
-        S0 = aircraft_data.data['outputs']['fuselage_dimensions']['cross_sectional_area_2'] # Cross sectional area of the body at the wing intersection [m2]
+        S0 = self.aircraft_data.data['outputs']['fuselage_dimensions']['cross_sectional_area_2'] # Cross sectional area of the body at the wing intersection [m2]
         Cl_alpha_body = 2*(k2__k1)* S0 / (self.V_b ** (2/3)) # Body lift curve slope [1/rad]
 
         CyB_body = -Cl_alpha_body
@@ -255,27 +255,39 @@ class DerivativesDatcom_asym:
         # Run the functions you want to store
         # Run the functions you want to store
         # Note, sometimes the [0] entry is used. THis is due to some function outputs being used in other functions. The main coefficient is always the first one
-        aero_stability_outputs = {
-            'CyB': derivatives.CyB()[0],  # Example usage with Cl = 0.5
-            'ClB': derivatives.ClB(),  # Example usage with Cl = 0.5 and alpha = 5 degrees
-            'CnB': derivatives.CnB()[0],  # Example usage
-            'Cyp': derivatives.Cyp()[0],  # Example usage with Cl = 0.5, alpha = 5 degrees, h_b = 0.05
-            'Clp': derivatives.Clp(),  # Example usage
-            'Cnp': derivatives.Cnp()[0],  # Example usage with Cl = 0.5, alpha = 5 degrees
-            'Cyr': derivatives.Cyr(),  # Example usage with Cl = 0.5, alpha = 5 degrees
-            'Clr': derivatives.Clr(),  # Example usage with Cl = 0.5, alpha = 5 degrees
-            'Cnr': derivatives.Cnr(),  # Example usage with Cl = 0.5, alpha = 5 degrees
-            'CyBdot': derivatives.CyBdot(),  # Example usage with Cl = 0.5, alpha = 5 degrees
-            'ClBdot': derivatives.ClBdot(),  # Example usage with Cl = 0.5, alpha = 5 degrees
-            'CnBdot': derivatives.CnBdot(),
-            # Add more functions here if needed
-        }
+        # aero_stability_outputs = {
+        #     'CyB': self.CyB()[0],  # Example usage with Cl = 0.5
+        #     'ClB': self.ClB(),  # Example usage with Cl = 0.5 and alpha = 5 degrees
+        #     'CnB': self.CnB()[0],  # Example usage
+        #     'Cyp': self.Cyp()[0],  # Example usage with Cl = 0.5, alpha = 5 degrees, h_b = 0.05
+        #     'Clp': self.Clp(),  # Example usage
+        #     'Cnp': self.Cnp()[0],  # Example usage with Cl = 0.5, alpha = 5 degrees
+        #     'Cyr': self.Cyr(),  # Example usage with Cl = 0.5, alpha = 5 degrees
+        #     'Clr': self.Clr(),  # Example usage with Cl = 0.5, alpha = 5 degrees
+        #     'Cnr': self.Cnr(),  # Example usage with Cl = 0.5, alpha = 5 degrees
+        #     'CyBdot': self.CyBdot(),  # Example usage with Cl = 0.5, alpha = 5 degrees
+        #     'ClBdot': self.ClBdot(),  # Example usage with Cl = 0.5, alpha = 5 degrees
+        #     'CnBdot': self.CnBdot(),
+        #     # Add more functions here if needed
+        # }
+        self.aircraft_data.data['outputs']['aerodynamic_stability_coefficients_asym']['CyB'] = self.CyB()[0]
+        self.aircraft_data.data['outputs']['aerodynamic_stability_coefficients_asym']['ClB'] = self.ClB()
+        self.aircraft_data.data['outputs']['aerodynamic_stability_coefficients_asym']['CnB'] = self.CnB()[0]
+        self.aircraft_data.data['outputs']['aerodynamic_stability_coefficients_asym']['Cyp'] = self.Cyp()[0]
+        self.aircraft_data.data['outputs']['aerodynamic_stability_coefficients_asym']['Clp'] = self.Clp()
+        self.aircraft_data.data['outputs']['aerodynamic_stability_coefficients_asym']['Cnp'] = self.Cnp()[0]
+        self.aircraft_data.data['outputs']['aerodynamic_stability_coefficients_asym']['Cyr'] = self.Cyr()
+        self.aircraft_data.data['outputs']['aerodynamic_stability_coefficients_asym']['Clr'] = self.Clr()
+        self.aircraft_data.data['outputs']['aerodynamic_stability_coefficients_asym']['Cnr'] = self.Cnr()
+        self.aircraft_data.data['outputs']['aerodynamic_stability_coefficients_asym']['CyBdot'] = self.CyBdot()
+        self.aircraft_data.data['outputs']['aerodynamic_stability_coefficients_asym']['ClBdot'] = self.ClBdot()
+        self.aircraft_data.data['outputs']['aerodynamic_stability_coefficients_asym']['CnBdot'] = self.CnBdot()
 
         # lift_curve_slope = {
         #     'Cl_alpha': self.lift_curve.dcl_dalpha()[0]  # Lift curve slope of the wing, in deg
         # }
 
-        self.aircraft_data.data['outputs']['aerodynamic_stability_coefficients_asym'] = aero_stability_outputs
+        # self.aircraft_data.data['outputs']['aerodynamic_stability_coefficients_asym'] = aero_stability_outputs
         # self.aircraft_data.data['outputs']['aerodynamics'] = lift_curve_slope
         self.aircraft_data.save_design('design3.json')
 

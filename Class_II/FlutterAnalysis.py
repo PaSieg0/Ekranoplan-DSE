@@ -9,7 +9,7 @@ import Flutter_functions.typical_section_3DOF as ts3
 import Flutter_functions.theodorsen_aerodynamics as ta
 import Flutter_functions.wagner_aerodynamics as wa
 
-np.set_printoptions(precision=4, linewidth=400)
+# np.set_printoptions(precision=4, linewidth=400)
 
 # region Parameters:
 
@@ -144,8 +144,8 @@ class FlutterAnalysis:
             # print('modes:\n {}\n'.format(modes))
             # ------------------------------------------------------------------------------
 
-            if len(eval_cc)>3:
-                print(eval_cc)
+            # if len(eval_cc)>3:
+            #     # print(eval_cc)
             self.w_n[i,:] = np.absolute(eval_cc)
             self.zeta[i,:] = -eval_cc.real/np.absolute(eval_cc)
 
@@ -198,7 +198,7 @@ class FlutterAnalysis:
                 self.global_min_zeta_velocity = min_velocity
                 self.global_min_zeta_mode = f"Mode {self.idx+1}, DOF {self.legend_entries[min_idx[1]]}"
             self.idx += 1
-        print(f"Global minimum zeta: {self.global_min_zeta:.4f} at U = {self.global_min_zeta_velocity:.2f} m/s ({self.global_min_zeta_mode})")
+        # print(f"Global minimum zeta: {self.global_min_zeta:.4f} at U = {self.global_min_zeta_velocity:.2f} m/s ({self.global_min_zeta_mode})")
 
         if plot:
             ax[0].set_xlim([0, self.u_max])

@@ -3,10 +3,10 @@ import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import matplotlib.pyplot as plt
 from utils import Data, StressOutput, Materials, EvaluateType
-from AerodynamicForces import AerodynamicForces
-from WingStructure import WingStructure
+from Class_II.AerodynamicForces import AerodynamicForces
+from Class_II.WingStructure import WingStructure
 import numpy as np
-from FlutterAnalysis import FlutterAnalysis
+from Class_II.FlutterAnalysis import FlutterAnalysis
 class StressAnalysisWing(AerodynamicForces, WingStructure):
 
     def __init__(self, aircraft_data: Data,
@@ -515,7 +515,7 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
     def get_margins(self):
 
         relevant_stresses = [StressOutput.BENDING_STRESS, StressOutput.BENDING_STRESS_BOTTOM, StressOutput.SHEAR_STRESS, StressOutput.WING_BENDING_STRESS, StressOutput.INTERNAL_MOMENT_X]
-
+        self.critical_margins = 0
         self.load_data[self.evaluate_case] = {}
         for i in relevant_stresses:
             output = self.get_output(i)
@@ -533,8 +533,9 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
             for idx,ref in enumerate(references):
                 margin = np.min(abs(ref)/abs(main_stress))
                 if margin < 1:
-                    self.plot_any(i)
-                    print(f'Warning for {self.evaluate.name}: Margin for {i.name} (case={self.evaluate_case}) is below 1: {margin} ({labels[0]} vs {labels[1:][idx]})')
+                    # self.plot_any(i)
+                    # print(f'Warning for {self.evaluate.name}: Margin for {i.name} (case={self.evaluate_case}) is below 1: {margin} ({labels[0]} vs {labels[1:][idx]})')
+                    self.critical_margins += 1
                 #print(f'Margin for {i.name} (n={self.load_factor:.2f}): {margin} ({labels[0]} vs {labels[1:][idx]})')
                 self.margins[f'{i.name.lower()}_vs_{labels[1:][idx].replace(' ','_')}_{self.evaluate_case}'] = margin
             
@@ -548,9 +549,9 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
         self.margins[f'{self.evaluate_case}_vertical_shearforce'] = self.Vy_internal[0]
 
         if self.evaluate == EvaluateType.WING:
-            self.plot_any(StressOutput.DEFLECTION)
-            self.plot_any(StressOutput.TWIST)
-            self.plot_any(StressOutput.INTERNAL_SHEAR_VERTICAL)
+            # self.plot_any(StressOutput.DEFLECTION)
+            # self.plot_any(StressOutput.TWIST)
+            # self.plot_any(StressOutput.INTERNAL_SHEAR_VERTICAL)
             self.margins[f'{self.evaluate_case}_deflection'] = self.wing_deflection[-1]
             self.margins[f'{self.evaluate_case}_twist'] = self.twist[-1]
         if self.runs == 1 and self.PLOT:
@@ -597,7 +598,7 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
         self.aircraft_data.data['inputs']['structures'][key_string]['section_mass_MAC'] = self.MAC_m
         self.aircraft_data.data['inputs']['structures'][key_string]['I_xx_MAC'] = self.I_xx_MAC
         self.aircraft_data.data['inputs']['structures'][key_string]['centroid_x'] = self.centroid_x_MAC
-        print(f'saving {key_map[self.evaluate]} design to {self.design_file}')
+        # print(f'saving {key_map[self.evaluate]} design to {self.design_file}')
         self.aircraft_data.save_design(self.design_file)
 
     def get_output(self, output_type: StressOutput):
@@ -805,7 +806,7 @@ def main(all=True):
             stress_analysis.main_analysis()
             # stress_analysis.plot_any(StressOutput.RESULTANT_VERTICAL)
             flutter_analysis = FlutterAnalysis(aircraft_data=Data("design3.json"), wing_mat=wingbox_material, evaluate=evaluate)
-            flutter_analysis.main(plot=True)
+            flutter_analysis.main(plot=False)
     else:
         stress_analysis = StressAnalysisWing(aircraft_data=Data("design3.json"), wingbox_mat=wingbox_material, wing_mat=wing_material, stringer_mat=stringer_material, evaluate=EvaluateType.WING, 
                                              PLOT=False)
@@ -813,6 +814,8 @@ def main(all=True):
         # stress_analysis.plot_any(StressOutput.INTERNAL_TORQUE)
         flutter_analysis = FlutterAnalysis(aircraft_data=Data("design3.json"), wing_mat=wingbox_material, evaluate=EvaluateType.WING)
         flutter_analysis.main(plot=True)
+    
+    return stress_analysis.critical_margins
         
 if __name__ == "__main__":
 
