@@ -1,6 +1,7 @@
 import os
 import copy
 import sys
+import numpy as np
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from utils import Data, MissionType, plt
 from Class_I.Fuselage import Fuselage
@@ -184,6 +185,17 @@ def compare_dicts(dict1, dict2, tolerance=0.01):
                 print(f"Difference found in key '{key}': {val1} != {val2}\n")
                 return False
     return True
+
+def change_initial_values(dictionary):
+    for key, value in dictionary.items():
+        if isinstance(value, dict):
+            change_initial_values(value)
+        elif isinstance(value, list):
+            for i in range(len(value)):
+                if isinstance(value[i], (int, float)):
+                    value[i] = np.random.uniform(0.5 * value[i], 1.5 * value[i])
+        elif isinstance(value, (int, float)):
+            dictionary[key] = np.random.uniform(0.5 * value, 1.5 * value)
 
 
 def is_close(val1, val2, tolerance):
