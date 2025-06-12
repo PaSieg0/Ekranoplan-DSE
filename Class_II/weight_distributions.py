@@ -47,7 +47,7 @@ class load_diagram:
         self.cargo_mass = self.aircraft_data.data['requirements']['cargo_mass']
         self.wing_root_chord = self.aircraft_data.data['outputs']['wing_design']['chord_root']
         self.wing_x_LE = self.aircraft_data.data['outputs']['wing_design']['X_LE']
-        self.nmax = self.aircraft_data.data['outputs']['general']['nmax']
+        self.nmax = np.maximum(self.aircraft_data.data['outputs']['general']['nmax'], self.aircraft_data.data['outputs']['general']['n_landing'])
         self.fuel_weight = self.aircraft_data.data['outputs']['design']['total_fuel']  
         self.root_moment = self.aircraft_data.data['outputs']['wing_stress']['max_torque']  # Root moment for CG calculation
         self.v_tail_chord_root = self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['chord_root']
