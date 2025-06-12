@@ -119,6 +119,7 @@ class OptimumSpeeds(AltitudeVelocity):
         self.data.data['outputs']['optimum_speeds']['max_aoc'] = self.calculate_max_AoC(h)[1]
         self.data.data['outputs']['optimum_speeds']['min_rod'] = self.calculate_min_RoD(h)[1]
         self.data.data['outputs']['optimum_speeds']['min_aod'] = self.calculate_min_AoD(h)[1]
+        self.data.save_design("design3.json")
 
 if __name__ == "__main__":
     # Example usage
@@ -129,9 +130,7 @@ if __name__ == "__main__":
     h = h_WIG = 10  # Example altitude in meters
 
     optimum_speeds._current_weight = optimum_speeds._mtow  # Set current weight to MTOW for calculations
-
     optimum_speeds.update_json(h)
-    aircraft_data.save_design("design3.json")
 
     v_range = optimum_speeds.v_range(h)
     v_endurance = optimum_speeds.v_endurance(h)
