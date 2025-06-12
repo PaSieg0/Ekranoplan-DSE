@@ -30,7 +30,9 @@ class FinalIteration:
     def main(self, mission_type: MissionType):
         self.prev_json = copy.deepcopy(self.aircraft_data.data.copy())
         iteration_number = 0
-
+        self.MTOW = []
+        self.S = []
+        self.fuel_economy = []    
         while True:
             # Run iteration lil broski
             iteration_number += 1

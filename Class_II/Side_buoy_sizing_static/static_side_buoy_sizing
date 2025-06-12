@@ -1,0 +1,68 @@
+import sys
+import os
+import numpy as np
+from scipy.optimize import fsolve
+import matplotlib.pyplot as plt
+from scipy.integrate import solve_ivp
+from scipy.signal import TransferFunction
+
+
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.append(project_root)
+
+from utils import Data
+#import pandas as pd
+import numpy as np
+from enum import Enum, auto
+import matplotlib.pyplot as plt
+
+class side_Buoy_sizing:
+    def __init__(self, aircraft_data: Data):
+        self.aircraft_data = aircraft_data
+        self.MTOW = self.aircraft_data.data['outputs']['max']['MTOW']
+        self.b = self.aircraft_data.data['outputs']['design']['b']
+        self.MTOM = self.aircraft_data.data['outputs']['max']['MTOM']
+        self.OEW = self.aircraft_data.data['outputs']['design']['OEW']
+        self.Cg = self.aircraft_data.data['outputs']['cg_range']['MTOW_cg']
+        self.wing_pos = self.aircraft_data.data['output']['component_positions']['wing']
+        self.max_bank = 5 #deg
+        
+
+    def get_side_bouy(self):
+        #consider worst case bank senario, where center of rotation is supported at bottom of the hull. 
+        #side buoy need to result in static equilibrium 
+        #thie together with dynamic staility will form selection of buoy size, always select worst case buoy size
+        Cg = np.array(self.Cg)
+        Cg_z = Cg[2]
+        max_bank = self.max_bank
+        max_bank_rad = np.deg2rad(max_bank)
+        moment_bank = self.MTOW*0.5*np.sin(max_bank_rad)*Cg_z
+        force_buoy = moment_bank/(0.5*self.b)
+        buoy_volume = force_buoy/(1000*9.81)
+
+        return buoy_volume
+
+    def get_buoy_dimention(self):
+
+        max_bank = self.max_bank
+        max_bank_rad = np.deg2rad(max_bank)
+        wing_pos = np.array(self.wing_pos)
+        wing_height = wing_pos[2]
+        submerged_depth = 3.1
+        buoy_vol = self.get_side_bouy()
+        buoy_submerged_height = 5.8-((wing_height-submerged_depth)/np.sin(max_bank_rad)-self.b)*np.sin(max_bank_rad)
+        buoy_area = buoy_vol-buoy_submerged_height
+
+        print(buoy_area)
+        return buoy_area #this returns the area, map this area to airfoil shape
+    
+if __name__ == "__main__":
+    # Load the aircraft data
+    aircraft = "design3.json"
+    aircraft_data = Data(aircraft)
+    buoy = side_Buoy_sizing(aircraft_data)
+    buoy_area = buoy.get_buoy_dimention()
+    
+
+
+
