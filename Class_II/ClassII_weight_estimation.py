@@ -91,7 +91,7 @@ class ClassII:
         # self.q = Pa2lbfpftsq(0.5*ISA(self.aircraft_data.data['inputs']['cruise_altitude']).rho * self.aircraft_data.data['requirements']['cruise_speed']**2) # dynamic pressure
         self.R_kva = 50 # system electrical rating based on typical values Raymer
         self.S_c = msq2ftsq(7 * self.aircraft_data.data['outputs']['fuselage_dimensions']['cargo_length']) # cargo floor surface area
-        self.S_cs = msq2ftsq(100) # total control surface area
+        self.S_cs = msq2ftsq(self.aircraft_data.data['outputs']['control_surfaces']['aileron']['area_single']*2 + self.aircraft_data.data['outputs']['control_surfaces']['elevator']['area']*2 + self.aircraft_data.data['outputs']['control_surfaces']['rudder']*2) # total control surface area
         self.S_csw = 2*msq2ftsq(self.aircraft_data.data['outputs']['control_surfaces']['aileron']['area_single']) # control surface area wing mounted 
         self.S_e = 2*msq2ftsq(self.aircraft_data.data['outputs']['control_surfaces']['aileron']['area_single']) # elevator area
         self.S_f = msq2ftsq(cdest.fuselage_wet())
@@ -142,6 +142,18 @@ class ClassII:
         # W_fuselage_lbs *= self.fudge_factor
         # return lbs2kg(W_fuselage_lbs)*9.81
         return self.aircraft_data.data['outputs']['component_weights']['fuselage']
+    
+    def epoxy_fuselage(self) -> float:
+        return self.aircraft_data.data['outputs']['component_weights']['epoxy_fuselage']
+    
+    def epoxy_wing(self) -> float:
+        return self.aircraft_data.data['outputs']['component_weights']['epoxy_wing']
+    
+    def epoxy_vertical_tail(self) -> float:
+        return self.aircraft_data.data['outputs']['component_weights']['epoxy_vertical']
+    
+    def epoxy_horizontal_tail(self) -> float:
+        return self.aircraft_data.data['outputs']['component_weights']['epoxy_horizontal']
 
     def main_landing_gear(self):
         return 0
@@ -258,6 +270,7 @@ class ClassII:
         self.W_floater = self.floater()
         self.W_floater_endplate = self.floater_endplate()
         self.W_hull = self.hull()
+        self.W_epoxy = self.epoxy_fuselage() + self.epoxy_wing() + self.epoxy_vertical_tail() + self.epoxy_horizontal_tail()
 
         self.perc_wing = self.W_wing / (self.aircraft_data.data['outputs']['max']['OEW']) * 100
         self.perc_horizontal_tail = self.W_horizontal_tail / (self.aircraft_data.data['outputs']['max']['OEW']) * 100
@@ -309,7 +322,8 @@ class ClassII:
             self.W_door +
             self.W_anchor +
             self.W_floater +
-            self.W_floater_endplate
+            self.W_floater_endplate +
+            self.W_epoxy
             # self.W_hull
         )
 
