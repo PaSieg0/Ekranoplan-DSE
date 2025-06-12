@@ -164,14 +164,15 @@ class ElevatorRudder:
             ratio = self.calculate_Cmde_Cmq(b)
             # print(ratio, self.required_Cmde_Cmq)
             if abs(ratio - self.required_Cmde_Cmq) < tolerance:
-                self.elevator_end = b
-                if self.elevator_end + self.vertical_tail_thickness < self.b_h/2:
+                if (b + self.vertical_tail_thickness) < self.b_h/2:
+                    self.elevator_end = b
                     break
         
         if not hasattr(self, 'elevator_end'):
             print("Aint gonna work cuh")
             self.elevator_end = 5
-        
+
+        print(self.elevator_end)
         integral, _ = quad(self.chord_h, self.elevator_start, self.elevator_end)
         self.elevator_area = self.elevator_chord_ratio * integral
 

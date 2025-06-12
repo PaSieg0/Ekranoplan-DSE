@@ -229,18 +229,8 @@ def is_close(val1, val2, tolerance):
     return val1 == val2  # Fallback for non-numeric values
 
 if __name__ == "__main__":
-    # Assuming the Data class is properly
-    # aircraft_data = Data('design3.json')
-    # aircraft_data2 = copy.deepcopy(aircraft_data.data)
-    # aircraft_data2['outputs']['max']['MTOW'] += 4000
-    # print(aircraft_data.data['outputs']['max']['MTOW'])
-    # print(aircraft_data2['outputs']['max']['MTOW'])
-    # print(compare_dicts(aircraft_data.data, aircraft_data2, tolerance=0.01))
 
     aircraft_data = Data('design3.json')
-    print(aircraft_data.data['outputs']['max']['MTOM'])
-    change_initial_values(aircraft_data.data)
-    print(aircraft_data.data['outputs']['max']['MTOM'])
 
     try:
         final_iteration = FinalIteration(aircraft_data=aircraft_data)
