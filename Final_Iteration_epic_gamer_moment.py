@@ -187,15 +187,19 @@ def compare_dicts(dict1, dict2, tolerance=0.01):
     return True
 
 def change_initial_values(dictionary):
+    exclude = ['kinematic_viscosity', 'design_id', 'inputs', 'requirements', 'rho_water', 'viscosity_air', 'rho_air']
     for key, value in dictionary.items():
+        if key in exclude:
+            continue
+
         if isinstance(value, dict):
             change_initial_values(value)
         elif isinstance(value, list):
             for i in range(len(value)):
                 if isinstance(value[i], (int, float)):
-                    value[i] = np.random.uniform(0.5 * value[i], 1.5 * value[i])
+                    value[i] = np.random.uniform(0.5*value[i], 1.5 * value[i])
         elif isinstance(value, (int, float)):
-            dictionary[key] = np.random.uniform(0.5 * value, 1.5 * value)
+            dictionary[key] = np.random.uniform(0.5*value, 1.5 * value)
 
 
 def is_close(val1, val2, tolerance):
@@ -230,6 +234,10 @@ if __name__ == "__main__":
     # print(compare_dicts(aircraft_data.data, aircraft_data2, tolerance=0.01))
 
     aircraft_data = Data('design3.json')
+    print(aircraft_data.data['outputs']['max']['MTOM'])
+    change_initial_values(aircraft_data.data)
+    print(aircraft_data.data['outputs']['max']['MTOM'])
+
     final_iteration = FinalIteration(aircraft_data=aircraft_data)
     final_iteration.main(mission_type=MissionType.DESIGN)
     final_iteration.plot_convergence()

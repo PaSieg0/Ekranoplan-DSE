@@ -130,7 +130,9 @@ class ElevatorRudder:
                 self.cndr = cndr_test
                 break
         if not hasattr(self, 'rudder_end'):
-            raise ValueError("Aint gonna work cuh")
+            print("Aint gonna work cuh")
+            self.rudder_end = 5
+            self.cndr = -0.1
         
         integral, _ = quad(self.chord_v, self.rudder_start, self.rudder_end)
         self.Sr = integral
@@ -167,7 +169,8 @@ class ElevatorRudder:
                     break
         
         if not hasattr(self, 'elevator_end'):
-            raise ValueError("Aint gonna work cuh")
+            print("Aint gonna work cuh")
+            self.elevator_end = 5
         
         integral, _ = quad(self.chord_h, self.elevator_start, self.elevator_end)
         self.elevator_area = self.elevator_chord_ratio * integral

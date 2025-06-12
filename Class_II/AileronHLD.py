@@ -107,6 +107,10 @@ class AileronHLD:
             if abs(ratio - self.required_Cla_Clp) < tolerance:
                 self.aileron_start = b
                 break
+
+        if not hasattr(self, 'aileron_start'):
+            print('Aint gonna work cuh')
+            self.aileron_start = 7
         
         aileron_integral = quad(self.c, self.aileron_start, self.aileron_end)[0]
         self.Clda = -2*np.rad2deg(self.airfoil_Cl_alpha)*self.tau/self.S/self.b*aileron_integral
