@@ -323,7 +323,7 @@ class RangeCalculator:
                 }[key]
                 range_km = ranges_m[key] / 1000
                 # Fuel used is (1 - mass_fraction) * MTOW
-                fuel_used = (1 - mass_fractions[key]) * self.MTOW / self.g / 0.82
+                fuel_used = (1 - mass_fractions[key]) * self.MTOW / self.g / 0.76
                 if range_km > 0 and payload_ton > 0:
                     fuel_per_ton_km[key] = fuel_used / (payload_ton * range_km * 2)
                 else:
