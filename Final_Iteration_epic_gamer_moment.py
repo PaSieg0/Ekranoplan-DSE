@@ -113,14 +113,14 @@ class FinalIteration:
             self.MTOM.append(self.aircraft_data.data['outputs']['design']['MTOM'])
             self.fuel_economy.append(self.aircraft_data.data['outputs']['max']['fuel_economy'])
             self.cruise_speeds.append(self.aircraft_data.data['requirements']['cruise_speed'])
-            self.cost.append() 
+            self.cost.append(0) 
             
             if stop_condition:
                 self.aircraft_data.save_design(self.design_file)
                 print("Final iteration completed successfully. LET'S GOOOOO BABY! Time to put the blinds up. 😎")
                 break
             
-            self.prev_json = copy.deepcopy(self.aircraft_data.data.copy())
+            self.prev_json = copy.deepcopy(self.aircraft_data.data)
 
     def plot_convergence(self):
         # plot self.MTOM, self.fuel_economy, self.cruise_sppeds and self.cost agains iteration number, range(0, length of the lists)
@@ -177,7 +177,6 @@ def compare_dicts(dict1, dict2, tolerance=0.01):
         # Check if both values are dictionaries, and recursively compare them
         if isinstance(val1, dict) and isinstance(val2, dict):
             if not compare_dicts(val1, val2, tolerance):
-                print(f"Difference found in key '{key}': {val1} != {val2}\n")
                 return False
         else:
             # Compare values within the given tolerance

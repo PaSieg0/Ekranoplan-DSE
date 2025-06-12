@@ -537,7 +537,7 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
                     # print(f'Warning for {self.evaluate.name}: Margin for {i.name} (case={self.evaluate_case}) is below 1: {margin} ({labels[0]} vs {labels[1:][idx]})')
                     self.critical_margins += 1
                 #print(f'Margin for {i.name} (n={self.load_factor:.2f}): {margin} ({labels[0]} vs {labels[1:][idx]})')
-                self.margins[f'{i.name.lower()}_vs_{labels[1:][idx].replace(' ','_')}_{self.evaluate_case}'] = margin
+                self.margins[f"{i.name.lower()}_vs_{labels[1:][idx].replace(' ','_')}_{self.evaluate_case}"] = margin
             
         for i in relevant_stresses:
             self.margins[f'max_{i.name.lower()}'] = self.load_data['max'][i]['main'][0]
