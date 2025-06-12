@@ -131,44 +131,46 @@ class FinalIteration:
             self.prev_json = copy.deepcopy(self.aircraft_data.data)
 
     def plot_convergence(self):
-        # plot self.MTOM, self.fuel_economy, self.cruise_sppeds and self.cost agains iteration number, range(0, length of the lists)
         iterations = range(len(self.MTOM))  # Assuming all lists have the same length
 
-        plt.figure(figsize=(12, 8))
-
-        plt.subplot(2, 3, 1)
+        plt.figure()
         plt.plot(iterations, self.MTOM, marker='o')
         plt.title("MTOM vs Iteration")
         plt.xlabel("Iteration")
-        plt.ylabel("MTOM")
+        plt.ylabel("MTOM (kg)")
+        plt.grid(True)
+        plt.show()
 
-        plt.subplot(2, 3, 2)
+        plt.figure()
         plt.plot(iterations, self.fuel_economy, marker='o', color='green')
         plt.title("Fuel Economy vs Iteration")
         plt.xlabel("Iteration")
-        plt.ylabel("Fuel Economy")
+        plt.ylabel("Fuel Economy (L/tonne/km)")
+        plt.grid(True)
+        plt.show()
 
-        plt.subplot(2, 3, 3)
+        plt.figure()
         plt.plot(iterations, self.cruise_speeds, marker='o', color='red')
         plt.title("Cruise Speeds vs Iteration")
         plt.xlabel("Iteration")
-        plt.ylabel("Cruise Speed")
+        plt.ylabel("Cruise Speed (m/s)")
+        plt.grid(True)
+        plt.show()
 
-        plt.subplot(2, 3, 4)
+        plt.figure()
         plt.plot(iterations, self.unit_cost, marker='o', color='purple')
-        plt.title("Const vs Iteration")
+        plt.title("Unit Cost vs Iteration")
         plt.xlabel("Iteration")
-        plt.ylabel("Unit Cost")
+        plt.ylabel("Unit Cost ($)")
+        plt.grid(True)
+        plt.show()
 
-        plt.subplot(2, 3, 5)
+        plt.figure()
         plt.plot(iterations, self.operational_cost, marker='o', color='orange')
         plt.title("Operational Cost vs Iteration")
         plt.xlabel("Iteration")
-        plt.ylabel("Operational Cost")
-
-        plt.suptitle("Convergence of Aircraft Design Parameters")
-
-        plt.tight_layout()
+        plt.ylabel("Operational Cost ($/tonne/km)")
+        plt.grid(True)
         plt.show()
 
 
@@ -240,7 +242,7 @@ def is_close(val1, val2, tolerance):
     return val1 == val2  # Fallback for non-numeric values
 
 if __name__ == "__main__":
-    aircraft_data = Data('design3.json')
+    aircraft_data = Data('backup_design3.json')
 
     try:
         final_iteration = FinalIteration(aircraft_data=aircraft_data)
