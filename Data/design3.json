@@ -937,7 +937,7 @@
             "I_yz": 0.0
         },
         "aerodynamics": {
-            "Cl_alpha": 0.10071974154423742,
+            "Cl_alpha": 0.10468652020130526,
             "Cl_max": 1.689500505804675,
             "t/c": 0.1426,
             "seg1_alpha": [
@@ -953,7 +953,7 @@
             "cmac_seg2": -0.26085803908052024,
             "xac_seg2": 0.40156481338033767,
             "oswald_factor": 0.8380800245928491,
-            "vertical/horizontal stab cl_alpha": 0.1187476190476189,
+            "vertical/horizontal stab cl_alpha": 0.11888999999999995,
             "downwash_grad": 0.2627444119186623
         }
     },
