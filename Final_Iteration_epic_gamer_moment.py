@@ -7,6 +7,7 @@ from utils import Data, MissionType, plt
 from Class_I.Fuselage import Fuselage
 from Class_I.PrelimWingPlanformDesign import WingPlanform
 from Class_I.cgRange import CGRange
+from Class_II.joinedloaddiagrams import LoadDiagram
 from Class_II.ClassII_weight_estimation import ClassII
 from Class_II.Small_Iteration import SmallIteration
 from Class_II.Modified_CD0 import Cd0Estimation
@@ -40,6 +41,9 @@ class FinalIteration:
             iteration_number += 1
             print(f"Iteration {iteration_number} started...")
 
+            # Loads
+            load_diagram = LoadDiagram(aircraft_data=self.aircraft_data)
+            load_diagram.update_attributes()
             # Run Class II
             print('Class II + I')
             class_ii = ClassII(aircraft_data=self.aircraft_data)
@@ -197,9 +201,9 @@ def change_initial_values(dictionary):
         elif isinstance(value, list):
             for i in range(len(value)):
                 if isinstance(value[i], (int, float)):
-                    value[i] = np.random.uniform(0.5*value[i], 1.5 * value[i])
+                    value[i] = np.random.uniform(0.9*value[i], 1.1 * value[i])
         elif isinstance(value, (int, float)):
-            dictionary[key] = np.random.uniform(0.5*value, 1.5 * value)
+            dictionary[key] = np.random.uniform(0.9*value, 1.1 * value)
 
 
 def is_close(val1, val2, tolerance):
