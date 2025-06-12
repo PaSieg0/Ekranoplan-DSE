@@ -32,7 +32,7 @@ class WingLoading:
         self.V_lof = 1.05*self.stall_speed_takeoff
         self.L = self.aircraft_data.data['outputs']['fuselage_dimensions']['l_fuselage']
         self.tail_length = self.aircraft_data.data['outputs']['fuselage_dimensions']['l_tailcone']
-        self.r_float = self.aircraft_data.data['inputs']['r_float']
+        # self.r_float = self.aircraft_data.data['inputs']['r_float']
         self.cruise_altitude = self.aircraft_data.data['inputs']['cruise_altitude']
         self.high_altitude = self.aircraft_data.data['requirements']['high_altitude']
         self.climb_rate = self.aircraft_data.data['requirements']['climb_rate']
@@ -43,7 +43,7 @@ class WingLoading:
         self.rho_water = self.aircraft_data.data['rho_water']
         self.depth = self.aircraft_data.data['inputs']['depth']
         self.prop_efficiency = self.aircraft_data.data['inputs']['prop_efficiency']
-        self.CL_hydro = self.aircraft_data.data['inputs']['CL_hydro']
+        # self.CL_hydro = self.aircraft_data.data['inputs']['CL_hydro']
         self.upsweep = self.aircraft_data.data['inputs']['upsweep']
         self.d_fuselage = self.aircraft_data.data['outputs']['fuselage_dimensions']['d_fuselage_equivalent_station2']
         self.hull_surface = self.aircraft_data.data['outputs']['fuselage_dimensions']['hull_surface']
