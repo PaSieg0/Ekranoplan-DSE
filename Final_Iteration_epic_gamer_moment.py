@@ -33,7 +33,7 @@ class FinalIteration:
         self.MTOM = [self.aircraft_data.data['outputs']['max']['MTOM']]
         self.fuel_economy = [self.aircraft_data.data['outputs']['max']['fuel_economy']]
         self.cruise_speeds = [self.aircraft_data.data['requirements']['cruise_speed']]
-        self.cost = []    
+        self.cost = [0]    
         while True:
             # Run iteration lil broski
             iteration_number += 1
@@ -106,14 +106,14 @@ class FinalIteration:
                 print('The wing box is weak bro 😔')
                 break
             
-            stop_condition = compare_dicts(self.aircraft_data.data, self.prev_json, tolerance=0.01) or iteration_number >= self.max_iterations
-
-            print(self.aircraft_data.data['outputs']['design']['MTOM'], self.prev_json['outputs']['design']['MTOM'])
+            stop_condition = compare_dicts(self.aircraft_data.data, self.prev_json, tolerance=0.0001) or iteration_number >= self.max_iterations
 
             self.MTOM.append(self.aircraft_data.data['outputs']['design']['MTOM'])
             self.fuel_economy.append(self.aircraft_data.data['outputs']['max']['fuel_economy'])
             self.cruise_speeds.append(self.aircraft_data.data['requirements']['cruise_speed'])
             self.cost.append(0) 
+
+            print(self.MTOM)
             
             if stop_condition:
                 self.aircraft_data.save_design(self.design_file)
@@ -124,7 +124,7 @@ class FinalIteration:
 
     def plot_convergence(self):
         # plot self.MTOM, self.fuel_economy, self.cruise_sppeds and self.cost agains iteration number, range(0, length of the lists)
-        iterations = range(len(self.MTOM)-1)  # Assuming all lists have the same length
+        iterations = range(len(self.MTOM))  # Assuming all lists have the same length
 
         plt.figure(figsize=(12, 8))
 

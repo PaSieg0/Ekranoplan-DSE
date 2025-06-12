@@ -66,9 +66,9 @@ class AircraftIteration:
         self.A_ratio = Ainf_Ah(self.h_b)
         self.new_k = np.sqrt(1 / self.A_ratio)
         self.new_Cd0 = self.aircraft_data.data['inputs']['Cd0']
-        self.d_fuselage = self.aircraft_data.data['outputs']['general']['d_fuselage_equivalent_straight']
-        self.l_fuselage = self.aircraft_data.data['outputs']['general']['l_fuselage']
-        self.n_fuselages = self.aircraft_data.data['inputs']['n_fuselages']
+        self.d_fuselage = 12
+        self.l_fuselage = 70
+        self.n_fuselages = 1
         self.wing_type = WingType[self.aircraft_data.data['inputs']['wing_type']]
 
         if self.wing_type == WingType.HIGH:

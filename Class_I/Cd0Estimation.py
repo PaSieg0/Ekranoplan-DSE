@@ -17,8 +17,8 @@ class Cd0Estimation:
         self.t_c_wing = self.aircraft_data.data['inputs']['airfoils']['wing']
         self.t_c_htail = self.aircraft_data.data['inputs']['airfoils']['horizontal_tail']
         self.t_c_vtail = self.aircraft_data.data['inputs']['airfoils']['vertical_tail']
-        self.d_F = self.aircraft_data.data['outputs']['general']['d_fuselage_equivalent_straight']
-        self.l_F = self.aircraft_data.data['outputs']['general']['l_fuselage']
+        self.d_F = 12
+        self.l_F = 70
         self.lambda_F = self.l_F / self.d_F
         self.l_nacelle = self.aircraft_data.data['inputs']['engine']['engine_length']
         self.d_nacelle = 0.92  # diameter in meters
