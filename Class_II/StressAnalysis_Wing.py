@@ -591,8 +591,7 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
             EvaluateType.VERTICAL: 'epoxy_vertical'
         }
         key_string = key_string_map[self.evaluate]
-        self.aircraft_data.data['outputs']['component_weights'][component_weight_map[self.evaluate]] = self.wing_mass*2*9.81
-        self.aircraft_data.data['outputs']['component_weights'][epoxy_map[self.evaluate]] = self.epoxy_mass*2*9.81
+        self.aircraft_data.data['outputs']['component_weights'][component_weight_map[self.evaluate]] = self.wing_mass*2*9.81 + self.epoxy_mass*2*9.81
         self.aircraft_data.data['inputs']['structures'][key_string]['Ip_MAC'] = self.MAC_Ip
         self.aircraft_data.data['inputs']['structures'][key_string]['J_MAC'] = self.MAC_J
         self.aircraft_data.data['inputs']['structures'][key_string]['section_mass_MAC'] = self.MAC_m
