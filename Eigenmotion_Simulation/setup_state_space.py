@@ -122,6 +122,10 @@ class StateSpaceModel:
             [0],
             [0]
         ])
+        print(A_sym)
+        print(B_sym)
+        print(C_sym)
+        print(D_sym)
         
         P_asym = np.array([
             [(C_Ybeta_dot-2*mu_b)*self.b/self.v, 0                 , 0                            , 0                            ],
@@ -160,6 +164,11 @@ class StateSpaceModel:
             [0.0, 0.0],
             [0.0, 0.0]
         ])
+
+        print(A_asym)
+        print(B_asym)
+        print(C_asym)
+        print(D_asym)
         
         self.sym_model = ss(A_sym, B_sym, C_sym, D_sym)
         self.asym_model = ss(A_asym, B_asym, C_asym, D_asym)
@@ -299,7 +308,7 @@ if __name__ == "__main__":
     # Example usage
     aircraft_data = Data('design3.json')
     state_space_model = StateSpaceModel(aircraft_data)
-    eigenmotion_type = EigenMotion.PHUGOID
+    eigenmotion_type = EigenMotion.ROLL
 
 
     state_space_model.plot_input(eigenmotion_type)

@@ -1,0 +1,110 @@
+from control.matlab import *
+import control as ctrl
+import numpy as np
+import matplotlib.pyplot as plt
+import os
+import sys
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.linalg import solve_discrete_are, expm
+from scipy.signal import dlti, dlsim
+from scipy.signal import cont2discrete
+from control import lqr
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from utils import Data, EigenMotion, EigenMotionType, ISA
+
+from Eigenmotion_Simulation.setup_state_space import StateSpaceModel
+
+class LQR_augmentation:
+    def __init__(self, aircraft_data: Data):
+        self.aircraft_data = aircraft_data
+        self.stability_coefficients_sym = aircraft_data.data['outputs']['aerodynamic_stability_coefficients_sym']
+        self.stability_coefficients_asym = aircraft_data.data['outputs']['aerodynamic_stability_coefficients_asym']
+
+        model = StateSpaceModel(aircraft_data)
+
+        self.sym_model = model.sym_model
+        self.asym_model = model.asym_model
+
+    def getStateSpace(self):
+        A = self.sym_model.A
+        B = self.sym_model.B
+        C = self.sym_model.C
+        D = self.sym_model.D
+
+
+        print(A)
+        print(B)
+        print(C)
+        print(D)
+        return A,B,C,D
+        
+       
+
+
+    def getQR(self):
+        R = np.array([[1]])
+        Q = np.array([
+            [1, 0, 0, 0],
+            [0, 1, 0, 0],
+            [0, 0, 1, 0],
+            [0, 0, 0, 1]])
+        return Q,R
+                    
+    def dlqr(self, A, B, Q, R):
+        """
+        Discrete-time LQR controller.
+        Solves the discrete Riccati equation and returns gain K.
+        """
+        X = solve_discrete_are(A, B, Q, R)
+        K = np.linalg.inv(B.T @ X @ B + R) @ (B.T @ X @ A)
+        return K
+
+
+    def simulate_dlqr(self, A, B, C, D, Q, R, x0, dt=0.01, t_final=10):
+        # Discretize system
+        Ad, Bd = c2d(A, B, dt)
+        Cd, Dd = C, D  # Assume outputs unchanged for discrete
+
+        # Compute discrete LQR gain
+        K = dlqr(Ad, Bd, Q, R)
+        print("Discrete LQR gain K:\n", K)
+
+        # Closed-loop system matrices
+        Acl = Ad - Bd @ K
+        Bcl = np.zeros_like(Bd)
+        sys_cl = dlti(Acl, Bcl, Cd, Dd, dt=dt)
+
+        # Time vector for simulation
+        t = np.arange(0, t_final, dt)
+        u = np.zeros((len(t), B.shape[1]))  # zero input
+
+        # Simulate discrete closed loop
+        _, y, x = dlsim(sys_cl, u, t, x0)
+
+        # Plot states
+        plt.figure(figsize=(10, 6))
+        for i in range(x.shape[1]):
+            plt.plot(t, x[:, i], label=f'State {i+1}')
+        plt.xlabel('Time [s]')
+        plt.ylabel('State value')
+        plt.title('Discrete-time closed-loop state trajectories (LQR)')
+        plt.legend()
+        plt.grid(True)
+        plt.show()
+
+        return K, t, x, y
+
+
+    def close_loop_response(self):
+        sys = self.getStateSpace()
+        
+
+ 
+
+    #def LQR(self):
+if __name__ == "__main__":
+    aircraft_data = Data('design3.json')
+    state_space_model_aug = LQR_augmentation(aircraft_data)
+    model = state_space_model_aug.getStateSpace()
