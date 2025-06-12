@@ -54,7 +54,7 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
         self.buoy_height = 5.8
         self.buoy_projected_area = self.buoy_length*self.buoy_width
         self.roll_rate = np.deg2rad(self.aircraft_data.data['outputs']['control_surfaces']['aileron']['roll_rate'])
-        self.Cs = 2
+        self.Cs = 1.5
         self.quarter_chord_dist = [self.wing_structure[i]['quarter_chord_dist'] for i in range(len(self.wing_structure))]
 
         # self.mass_I_xx = 1/8*(self.mass_wing*self.b**2 + self.mass_vertical*self.bv**2 + self.mass_horizontal*self.bh**2) #TODO check with Shuard
@@ -536,7 +536,7 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
                     self.plot_any(i)
                     print(f'Warning for {self.evaluate.name}: Margin for {i.name} (case={self.evaluate_case}) is below 1: {margin} ({labels[0]} vs {labels[1:][idx]})')
                 #print(f'Margin for {i.name} (n={self.load_factor:.2f}): {margin} ({labels[0]} vs {labels[1:][idx]})')
-                self.margins[f'{labels[1:][idx].replace(' ','_')}_{self.evaluate_case}_margin'] = margin
+                self.margins[f'{i.name.lower()}_vs_{labels[1:][idx].replace(' ','_')}_{self.evaluate_case}'] = margin
             
         for i in relevant_stresses:
             self.margins[f'max_{i.name.lower()}'] = self.load_data['max'][i]['main'][0]

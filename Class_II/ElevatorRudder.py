@@ -87,6 +87,8 @@ class ElevatorRudder:
         self.main_moment = np.trapz(self.aeroforces.M_y, self.aeroforces.b_array)*2
         self.engine_moments = sum(self.engine_thrust * np.array(self.vertical_engine_arms))*2
 
+        self.cmq = np.deg2rad(self.aircraft_data.data['outputs']['aerodynamic_stability_coefficients_sym']['C_m_q'])
+
     def control_surface_effectiveness(self,r):
         return -6.624*r**4 + 12.07*r**3 - 8.292*r**2 + 3.295*r + 0.004942
     
@@ -144,7 +146,7 @@ class ElevatorRudder:
         self.pitch_rate = self.calculate_pitch_rate()
         integral, _ = quad(self.chord_h, self.elevator_start, b)
         elevator_effectiveness = self.control_surface_effectiveness(self.elevator_chord_ratio)
-        ratio = 2*(self.airfoil_cl_alpha * elevator_effectiveness)/(self.Sh*self.l_h*self.tail_lift_slope)*integral
+        ratio = -2*self.airfoil_cl_alpha * elevator_effectiveness * self.l_h/(self.S*self.MAC)/self.cmq*integral
         return ratio
     
     def calculate_elevator_surface(self):
@@ -158,7 +160,7 @@ class ElevatorRudder:
         #TODO account for double vertical tail
         for b in self.b_test:
             ratio = self.calculate_Cmde_Cmq(b)
-            print(ratio, self.required_Cmde_Cmq)
+            # print(ratio, self.required_Cmde_Cmq)
             if abs(ratio - self.required_Cmde_Cmq) < tolerance:
                 self.elevator_end = b
                 if self.elevator_end + self.vertical_tail_thickness < self.b_h/2:
@@ -177,19 +179,18 @@ class ElevatorRudder:
         elevator_effectiveness = self.control_surface_effectiveness(self.elevator_chord_ratio)
         self.CMde = -self.airfoil_cl_alpha * elevator_effectiveness * self.l_h/(self.S * self.MAC)*self.Se
 
-        Cmq = -self.Sh*self.l_h**2/self.S/self.MAC * self.tail_lift_slope/2
-        print(f'cmq: {Cmq}')
-
         N = self.CMde * np.deg2rad(self.elevator_deflection) * 0.5 * self.rho * self.V**2 * self.S * self.MAC/self.l_h
         return N
     
     def calculate_pitch_up_performance(self):
         self.horizontal_tail_lift = (self.main_lift_moment -self.engine_moments + self.main_moment - self.take_off_drag * self.highest_cg) /self.l_h * self.Sh/self.S/2
-        zero_elevator_lift = self.i_h*self.tail_lift_slope * self.Sh * 0.5 * self.rho * self.V**2
+        zero_elevator_lift = self.i_h*self.tail_lift_slope * self.Sh/2 * 0.5 * self.rho * self.V**2
         self.required_elevator_lift = self.horizontal_tail_lift - zero_elevator_lift
         print(f'required elevator lift: {self.required_elevator_lift}')
         self.trim_deflection_TO = np.ceil(-self.required_elevator_lift * self.l_h*1.5/(0.5*self.rho*self.V**2*self.MAC*self.S) / self.CMde * 180/np.pi)
         print(f'trim deflection TO: {self.trim_deflection_TO} deg')
+
+    #TODO calculate normal trim deflection
 
     def main(self):
         self.calculate_required_rudder_surface()
