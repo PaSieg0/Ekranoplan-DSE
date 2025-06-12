@@ -48,7 +48,7 @@ class lift_curve():
 
 
     
-    def interpolate_Cl(self, alpha):   #gets a cl for a given alpha and linearly interpolates
+    def interpolate_Cl(self, alpha,h_b='no'):   #gets a cl for a given alpha and linearly interpolates
         #distance list in alpha
         # print(self.alpha)
         # print(alpha)
@@ -61,22 +61,39 @@ class lift_curve():
         # print(ind)
 
         #uses point below
-        if dist[ind] > 0:
-            cl=self.cl_lst[ind-1]+(alpha-self.alpha[ind-1])*(self.cl_lst[ind]-self.cl_lst[ind-1])/(self.alpha[ind]-self.alpha[ind-1])
-        
-        #uses point ahead
-        elif dist[ind]<0:
-            cl=self.cl_lst[ind]+(alpha-self.alpha[ind])*(self.cl_lst[ind+1]-self.cl_lst[ind])/(self.alpha[ind+1]-self.alpha[ind])
-        
-        #uses selected alpha
-        elif dist[ind]==0:
-            cl=self.cl_lst[ind]
+        if h_b=='no':
+            if dist[ind] > 0:
+                cl=self.cl_lst[ind-1]+(alpha-self.alpha[ind-1])*(self.cl_lst[ind]-self.cl_lst[ind-1])/(self.alpha[ind]-self.alpha[ind-1])
+
+            #uses point ahead
+            elif dist[ind]<0:
+                cl=self.cl_lst[ind]+(alpha-self.alpha[ind])*(self.cl_lst[ind+1]-self.cl_lst[ind])/(self.alpha[ind+1]-self.alpha[ind])
+
+            #uses selected alpha
+            elif dist[ind]==0:
+                cl=self.cl_lst[ind]
+
+
+        else: 
+            if dist[ind] > 0:
+                cl=self.Cl_correction_GE(h_b,cl=self.cl_lst[ind-1]+(alpha-self.alpha[ind-1])*(self.cl_lst[ind]-self.cl_lst[ind-1])/(self.alpha[ind]-self.alpha[ind-1]))
+
+            #uses point ahead
+            elif dist[ind]<0:
+                cl=self.Cl_correction_GE(h_b,cl=self.cl_lst[ind]+(alpha-self.alpha[ind])*(self.cl_lst[ind+1]-self.cl_lst[ind])/(self.alpha[ind+1]-self.alpha[ind]))
+
+            #uses selected alpha
+            elif dist[ind]==0:
+                cl=self.Cl_correction_GE(h_b,cl=self.cl_lst[ind])
 
         #returns cl
         return cl
     
-    def Cl_correction_GE(self,h_b=0.050):
-        Cl_arr = self.cl_lst
+    def Cl_correction_GE(self,h_b,cl='no'):
+        if cl=='no':
+            Cl_arr = self.cl_lst
+        else: 
+            Cl_arr=cl
         delta_L = 1 - 2.25 * (self.taper**0.00273 - 0.997)*(self.AR*0.717 + 13.6)
         Cl_arr_GE = (1 + delta_L * (288*(h_b)**0.787 * np.exp(-9.14*h_b**0.327))/(self.AR*0.882)) * Cl_arr
         return Cl_arr_GE
@@ -84,32 +101,32 @@ class lift_curve():
 
 
     
-    def interpolate_Cd(self, alpha):   #gets a cd for a given alpha and linearly interpolates
-        #distance list in alpha
-        # print(self.alpha)
-        # print(alpha)
-        dist=abs(self.alpha-alpha)
-        # print(dist)
+    # def interpolate_Cd(self, alpha):   #gets a cd for a given alpha and linearly interpolates
+    #     #distance list in alpha
+    #     # print(self.alpha)
+    #     # print(alpha)
+    #     dist=abs(self.alpha-alpha)
+    #     # print(dist)
 
 
-        #determines the index of the closest alpha
-        ind=np.where(min(dist)==dist)[0][0]
-        # print(ind)
+    #     #determines the index of the closest alpha
+    #     ind=np.where(min(dist)==dist)[0][0]
+    #     # print(ind)
 
-        #uses point below
-        if dist[ind] > 0:
-            cd=self.cd_lst[ind-1]+(alpha-self.alpha[ind-1])*(self.cd_lst[ind]-self.cd_lst[ind-1])/(self.alpha[ind]-self.alpha[ind-1])
+    #     #uses point below
+    #     if dist[ind] > 0:
+    #         cd=self.cd_lst[ind-1]+(alpha-self.alpha[ind-1])*(self.cd_lst[ind]-self.cd_lst[ind-1])/(self.alpha[ind]-self.alpha[ind-1])
         
-        #uses point ahead
-        elif dist[ind]<0:
-            cd=self.cd_lst[ind]+(alpha-self.alpha[ind])*(self.cd_lst[ind+1]-self.cd_lst[ind])/(self.alpha[ind+1]-self.alpha[ind])
+    #     #uses point ahead
+    #     elif dist[ind]<0:
+    #         cd=self.cd_lst[ind]+(alpha-self.alpha[ind])*(self.cd_lst[ind+1]-self.cd_lst[ind])/(self.alpha[ind+1]-self.alpha[ind])
         
-        #uses selected alpha
-        elif dist[ind]==0:
-            cd=self.cd_lst[ind]
+    #     #uses selected alpha
+    #     elif dist[ind]==0:
+    #         cd=self.cd_lst[ind]
 
-        #returns cl
-        return cd
+    #     #returns cl
+    #     return cd
  
     def interpolate_Cm(self, alpha):   #gets a cl for a given alpha and linearly interpolates
         #distance list in alpha
@@ -148,7 +165,7 @@ class lift_curve():
 
         # calculates cl for given alpha
         if cl=='n':
-            cl=self.interpolate_Cl(alpha)
+            cl=self.interpolate_Cl(alpha,h_b)
 
         #calculates induced drag with correction
         CD_i=cl**2/(np.pi*self.AR*self.e)*(1-sigma)
@@ -170,7 +187,10 @@ class lift_curve():
 
         # calculates cl for given alpha
         if cl=='n':
-            cl=self.interpolate_Cl(alpha)
+            if h_b=='no':
+                cl=self.interpolate_Cl(alpha)
+            else:
+                cl=self.interpolate_Cl(alpha,h_b=h_b)
 
         #calculates induced drag with correction
         CD_i=cl**2/(np.pi*self.AR*self.e)*(1-sigma)
@@ -291,7 +311,7 @@ class lift_curve():
         #cmx__c plot
         ax[0][0].plot(self.alpha,self.cmx__c)
         ax[0][0].set_title('cm at x/c for alpha')
-        ax[0][0].set_ylim(0,-0.1)
+        ax[0][0].set_ylim(0,-0.2)
         ax[0][0].set_ylabel('cmac_x__c')
 
         #x_ac plot
@@ -323,15 +343,18 @@ class lift_curve():
         
         plt.show()
             
-    def dcl_dalpha(self):
+    def dcl_dalpha(self,h__b='no'):
     # Convert alpha to numpy array if it's not already
+        if h__b=='no':
+            cl_arr = np.array(self.cl_lst)
+        else:
+            cl_arr=self.Cl_correction_GE(self.cl_lst)
         alpha_arr = np.array(self.alpha)
-        cl_arr = np.array(self.cl_lst)
 
         # Find index where alpha is closest to 5
         
-        idx = 7   #np.argmin(np.abs(alpha_arr - 3))
-        # # print(alpha_arr[idx])
+        idx=np.argmin(np.abs(alpha_arr - 7))
+        # print(alpha_arr[idx])
         
         # Slice arrays up to and including that index
         alpha_fit = alpha_arr[:idx+1]
@@ -349,7 +372,7 @@ class lift_curve():
         cl=self.data_tail_NACA0012[:,1]
         cd=self.data_tail_NACA0012[:,2]
 
-        idx = 7
+        idx = np.argmin(np.abs(alpha - 7))
 
         # Slice arrays up to and including that index
         alpha_fit = alpha[:idx+1]
@@ -371,8 +394,8 @@ class lift_curve():
         #iteration over all alpha
         for i in range(len(self.alpha)):
             #calculation of drag 
-            self.ind_lst.append(self.calc_drag(h_b=0.050,alpha=self.alpha[i]))
-            self.ind_lst2.append(self.calc_drag(h_b='no',alpha=self.alpha[i]))
+            # self.ind_lst.append(self.calc_drag(h_b=0.050,alpha=self.alpha[i]))
+            # self.ind_lst2.append(self.calc_drag(h_b='no',alpha=self.alpha[i]))
 
             self.ind_lst3.append(self.calc_drag_butbetter(h_b=0.050,alpha=self.alpha[i]))
             self.ind_lst4.append(self.calc_drag_butbetter(h_b='no',alpha=self.alpha[i]))
@@ -381,10 +404,10 @@ class lift_curve():
         #cl curve
         par0,par1=self.dcl_dalpha()
         self.cl_fit_no_WIG=par0*self.alpha+par1
-        self.cl_lst_GE = self.Cl_correction_GE()
+        self.cl_lst_GE = self.Cl_correction_GE(h_b=0.05)
 
         #L/D
-        self.L_D_lst=self.cl_lst/self.ind_lst
+        self.L_D_lst=self.cl_lst/self.ind_lst4
         self.L_D_GE_lst=self.cl_lst_GE/self.ind_lst3
 
         
@@ -398,8 +421,8 @@ class lift_curve():
 
         # drag polar
         ax[0][0].set_title('Drag polar')
-        ax[0][0].plot(self.alpha[0:self.idx_cl_max], self.ind_lst[:self.idx_cl_max], label='h_b=0.050(old)') # Add a label
-        ax[0][0].plot(self.alpha[0:self.idx_cl_max], self.ind_lst2[:self.idx_cl_max], label='out GE(old)') # Add a label
+        # ax[0][0].plot(self.alpha[0:self.idx_cl_max], self.ind_lst[:self.idx_cl_max], label='h_b=0.050(old)') # Add a label
+        # ax[0][0].plot(self.alpha[0:self.idx_cl_max], self.ind_lst2[:self.idx_cl_max], label='out GE(old)') # Add a label
         ax[0][0].plot(self.alpha[0:self.idx_cl_max], self.ind_lst3[:self.idx_cl_max], label='h_b=0.050') # Add a label
         ax[0][0].plot(self.alpha[0:self.idx_cl_max], self.ind_lst4[:self.idx_cl_max], label='out GE') # Add a label
         ax[0][0].legend() # Call legend() to display the labels
@@ -478,7 +501,7 @@ class lift_curve():
         self.downwash_gr=4.44*(kA*klam*kh*np.sqrt(np.cos(self.sweep_c4*np.pi/180)))**(1.19)*clM__cl0
 
     def inp_json(self):
-        
+        self.slope,l=self.dcl_dalpha(0.05)
         aerodynamics = {
             'Cl_alpha': self.slope,
             'Cl_max': self.cL_max,
