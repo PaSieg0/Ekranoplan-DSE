@@ -70,6 +70,7 @@ class EmpennageOptimizer:
             self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['chord_root'] = ct_v*b / (2*(taper-1)*w/2 + b)
             self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['chord_tip'] = taper * self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['chord_root']
             self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['MAC'] = (2 / 3) * self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['chord_root'] * ((1 + self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['taper'] + self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['taper']**2) / (1 + self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['taper']))
+            self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['y_MAC'] = (self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['b'] / 6) * (1 + 2 * self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['taper']) / (1 + self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['taper'])
 
 
     def save_design(self):

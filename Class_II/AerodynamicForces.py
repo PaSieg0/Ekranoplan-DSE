@@ -204,25 +204,25 @@ class AerodynamicForces:
     
     def get_max_aero_dist(self):
         # self.L_y = self.elliptic_lift_distribution(self.b_array, self.b/2, self.CL_max)* 0.5*self.rho*self.V_land**2*self.S
-        y_vals, lift_vals = self.lateral_centre.determine_distr(self.b/2, self.chord_root, self.chord_tip, self.rho, self.V_land, self.CL_max)
-        poly = Polynomial.fit(y_vals, lift_vals, 8)
-        self.L_y = poly(self.b_array)
-        cl_vals = self.lateral_centre.cll
-        drag_vals = self.airfoil_Cd0 + (cl_vals**2) / (np.pi * self.aspect_ratio * self.oswald_factor * self.k)
+        y_vals, lift_vals, moment_vals, drag_vals = self.lateral_centre.determine_distr(self.b/2, self.chord_root, self.chord_tip, self.rho, self.V_land, self.CL_max)
+        poly_lift = Polynomial.fit(y_vals, lift_vals, 8)
+        self.L_y = poly_lift(self.b_array)
         poly_drag = Polynomial.fit(y_vals, drag_vals, 8)
-        self.D_y = poly_drag(self.b_array) * 0.5 * self.rho * self.V_land**2 * self.chord_span_function_aero(self.b_array)
-        self.M_y = self.static_moment_distribution() * 0.5 * self.rho * self.V_land**2 * self.chord_span_function_aero(self.b_array) ** 2
+        self.D_y = poly_drag(self.b_array) 
+        poly_moment = Polynomial.fit(y_vals, moment_vals, 8)
+        self.M_y = poly_moment(self.b_array) 
         return self.L_y
     
     def get_nominal_aero_dist(self):
-        y_vals, lift_vals = self.lateral_centre.determine_distr(self.b/2, self.chord_root, self.chord_tip, self.rho, self.V, self.CL_nominal)
-        poly = Polynomial.fit(y_vals, lift_vals, 8)
-        self.L_y = poly(self.b_array)
-        cl_vals = self.lateral_centre.cll
-        drag_vals = self.airfoil_Cd0 + (cl_vals**2) / (np.pi * self.aspect_ratio * self.oswald_factor * self.k)
+        y_vals, lift_vals, moment_vals, drag_vals = self.lateral_centre.determine_distr(
+            self.b/2, self.chord_root, self.chord_tip, self.rho, self.V, self.CL_nominal
+        )
+        poly_lift = Polynomial.fit(y_vals, lift_vals, 8)
+        self.L_y = poly_lift(self.b_array)
         poly_drag = Polynomial.fit(y_vals, drag_vals, 8)
-        self.D_y = poly_drag(self.b_array) * 0.5 * self.rho * self.V**2 * self.chord_span_function_aero(self.b_array)
-        self.M_y = self.static_moment_distribution() * 0.5 * self.rho * self.V**2 * self.chord_span_function_aero(self.b_array) ** 2
+        self.D_y = poly_drag(self.b_array)
+        poly_moment = Polynomial.fit(y_vals, moment_vals, 8)
+        self.M_y = poly_moment(self.b_array)
         return self.L_y
 
     def moment_distribution(self):
@@ -259,8 +259,6 @@ class AerodynamicForces:
                 idx = np.argmin(np.abs(self.b_h_array - pos))
                 self.horizontal_tail_lift[idx] -= self.elevator_lift_array[i]
 
-        plt.plot(self.b_h_array, self.elevator_lift_array, label="Elevator Lift Distribution")
-        plt.show()
         return self.horizontal_tail_lift
 
     def chord_span_h_function(self,y):
