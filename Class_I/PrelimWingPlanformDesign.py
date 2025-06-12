@@ -19,14 +19,14 @@ class WingPlanform:
         self.aspect_ratio = aircraft_data.data['inputs']['aspect_ratio']
         self.count = count
 
-        self.fuselage_length = self.aircraft_data.data['outputs']['general']['l_fuselage']
+        self.fuselage_length = self.aircraft_data.data['outputs']['fuselage_dimensions']['l_fuselage']
         self.x_c = 0 #Where along the wing we want to look, so in this case 0 is the leading edge of the wing
         self.x_c_OEW_cg = self.aircraft_data.data['inputs']['xc_OEW'] # x/c OEW CG position
         self.x_c_wing_cg = self.aircraft_data.data['inputs']['xc_wing'] # x/c wing CG position
         self.fuse_x_cg = self.aircraft_data.data['inputs']['xc_fuselage']  # normalized CG position
-        self.mass_fraction_wing = self.aircraft_data.data['inputs']['mf_wing'] # mass fraction of the wing
-        self.mass_fraction_fuse = self.aircraft_data.data['inputs']['mf_fuselage'] # mass fraction of the fuselage
-        self.d_fuselage = self.aircraft_data.data['outputs']['general']['d_fuselage']
+        self.mass_fraction_wing = self.aircraft_data.data['outputs']['component_weights']['wing'] / self.aircraft_data.data['outputs']['component_weights']['total_OEW'] # mass fraction of the wing
+        self.mass_fraction_fuse = self.aircraft_data.data['outputs']['component_weights']['fuselage'] / self.aircraft_data.data['outputs']['component_weights']['total_OEW'] # mass fraction of the fuselage
+        self.d_fuselage = self.aircraft_data.data['outputs']['fuselage_dimensions']['d_fuselage_equivalent_station2']
 
     def calculate(self):
         self.mach = ISA(self.aircraft_data.data['inputs']['cruise_altitude']).Mach(self.aircraft_data.data['requirements']['cruise_speed'])
@@ -82,10 +82,20 @@ class WingPlanform:
         self.aircraft_data.data['outputs']['wing_design']['S'] = self.S
         self.aircraft_data.data['outputs']['wing_design']['b'] = self.b
         self.aircraft_data.data['outputs']['wing_design']['aspect_ratio'] = self.aspect_ratio
+        self.aircraft_data.data['outputs']['wing_design']['ac_mac'] = self.aircraft_data.data['outputs']['wing_design']['X_LEMAC'] + self.aircraft_data.data['outputs']['wing_design']['MAC']*0.277
         #self.aircraft_data.data['inputs']['oswald_factor'] = self.oswald
 
+    def get_half_span_points(self):
+        """Return array of points for half span (positive side only)"""
+        return np.arange(0, self.b/2 + 0.05, 0.05)  # include endpoint
+
     def plot_wing(self, ax):
-        b_array = np.arange(0, self.b/2, 0.1)
+        b_array = self.get_half_span_points()
+        # Calculate actual number of points (2 * half-span points - 1 to avoid double counting center)
+        total_points = len(b_array) 
+        print(f"\nWing planform array length (full span): {total_points} points")
+        print(f"First x-coordinate: {b_array[0]} m")
+        print(f"Last x-coordinate: {b_array[-1]} m")
         leading_edge = self.chord_root/2 - np.tan(np.deg2rad(self.sweep_x_c)) * b_array
         y_tip_LE = leading_edge[-1]
         y_tip_TE = y_tip_LE - self.chord_tip
@@ -93,19 +103,27 @@ class WingPlanform:
         y_root_LE = self.chord_root/2 
         y_root_TE = y_root_LE - self.chord_root
 
+        # Calculate chord at each spanwise position
+        chord_distribution = np.zeros_like(b_array)
+        for i, x in enumerate(b_array):
+            # Linear interpolation between root and tip chord
+            chord_distribution[i] = self.chord_root + (self.chord_tip - self.chord_root) * (x / (self.b/2))
+
         colors = ['blue', 'orange', 'green']
         designs = ['2', '7', '10']
 
         # Main planform
         ax.plot(b_array, leading_edge, label=f'Design {designs[self.count-1]}', color = colors[self.count-1])
-        ax.plot(-b_array, leading_edge, color = colors[self.count-1])  # Mirror
+        # ax.plot(-b_array, leading_edge, color = colors[self.count-1])  # Mirror
 
         ax.plot([0, 0], [y_root_LE, y_root_TE], color = colors[self.count-1])
         ax.plot([self.b/2, self.b/2], [y_tip_LE, y_tip_TE], color = colors[self.count-1])
-        ax.plot([-self.b/2, -self.b/2], [y_tip_LE, y_tip_TE], color = colors[self.count-1])
+        # ax.plot([-self.b/2, -self.b/2], [y_tip_LE, y_tip_TE], color = colors[self.count-1])
 
         ax.plot([0, self.b/2], [y_root_TE, y_tip_TE], color = colors[self.count-1])
-        ax.plot([0, -self.b/2], [y_root_TE, y_tip_TE], color = colors[self.count-1])
+        # ax.plot([0, -self.b/2], [y_root_TE, y_tip_TE], color = colors[self.count-1])
+
+        return b_array, chord_distribution
 
 
 if __name__ == "__main__":
@@ -120,7 +138,7 @@ if __name__ == "__main__":
     # print(f"sweep_x_c: {wing.sweep_x_c}")
     fig, ax = plt.subplots()
 
-    for i in range(1, 4):
+    for i in range(3, 4):
         data = Data(f'design{i}.json')
         wing = WingPlanform(data, count=i)
         wing.calculate()

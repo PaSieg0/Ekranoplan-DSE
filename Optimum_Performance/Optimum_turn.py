@@ -77,7 +77,7 @@ class OptimumTurns(AltitudeVelocity):
         ax.legend()
         plt.show()
     
-    def max_bank_angle_points(self, zero_points, n_max=None):
+    def max_bank_angle_points(self, zero_points):
         max_bank_angle = np.arccos(1/zero_points[:, 1]) * (180 / np.pi)
         points = np.column_stack((zero_points[:, 0], max_bank_angle))
         return points
@@ -120,6 +120,28 @@ class OptimumTurns(AltitudeVelocity):
             return  np.pi /2 * (180 / np.pi)  # 90 degrees if the altitude is greater than half the span	
         else:
             return (np.arcsin(h / half_span) + dihedral_rad) * (180 / np.pi)
+        
+    def update_json(self, file_path, h_max=None):
+        """
+        Update the JSON file with the calculated values.
+
+        Parameters:
+        file_path (str): Path to the JSON file.
+        """
+        data = self.data.data
+        zero_points = optimum_turns.max_n_turn_points(h=h)
+        
+        zero_points_limited = zero_points.copy()
+        if h_max:
+            max_n = 1/np.cos(np.radians(optimum_turns.sea_bank_limit(h)))
+            zero_points_limited[zero_points_limited[:, 1] > max_n, 1] = max_n
+
+        data['outputs']['general']['max_n_turn'] = float(np.max(zero_points_limited[:, 1]))
+        data['outputs']['general']['max_bank_angle'] = float(np.max(self.max_bank_angle_points(zero_points_limited)[:, 1]))
+        data['outputs']['general']['min_turn_radius'] = float(np.min(self.min_turn_radius_points(zero_points_limited)[:, 1]))
+        data['outputs']['general']['min_time_turn'] = float(np.min(self.min_time_turn_points(zero_points_limited)[:, 1]))
+        
+        self.data.save_design(file_path)
     
 if __name__ == "__main__":
     file_path = "design3.json"
@@ -127,23 +149,20 @@ if __name__ == "__main__":
     mission_type = MissionType.DESIGN
     optimum_turns = OptimumTurns(aircraft_data, mission_type)
     h = aircraft_data.data['inputs']['cruise_altitude']
-    
-    # Example usage of steepest_turn method
 
-    sea_limit_bank_angle = optimum_turns.sea_bank_limit(h=h)  # degrees
-    print(f"Maximum bank angle: {sea_limit_bank_angle:.2f} degrees")
-    max_n = 1/np.cos(sea_limit_bank_angle * (np.pi / 180))
-    
-    zero_points = optimum_turns.max_n_turn_points(h=h)
-    # Limit n to max_n in zero_points if n > max_n
-    zero_points_limited = zero_points.copy()
-    zero_points_limited[zero_points_limited[:, 1] > max_n, 1] = max_n
+    optimum_turns.update_json(file_path, h_max=None)
 
-    turn_radii = optimum_turns.min_turn_radius_points(zero_points_limited)
-    max_bank_angles = optimum_turns.max_bank_angle_points(zero_points_limited)
-    min_time_turns = optimum_turns.min_time_turn_points(zero_points_limited)
+    # zero_points = optimum_turns.max_n_turn_points(h=h)
+    # zero_points_limited = zero_points.copy()
 
-    optimum_turns.plot_vs_velocity(zero_points_limited, y_axis_name="Load Factor [-]", color='blue')
-    optimum_turns.plot_vs_velocity(turn_radii, y_axis_name="Min Turn Radius [m]", color='blue')
-    optimum_turns.plot_vs_velocity(max_bank_angles, y_axis_name="Max Bank Angle [deg]", color='blue')
-    optimum_turns.plot_vs_velocity(min_time_turns, y_axis_name="Min Turn Time [s]", color='blue')
+    # max_n = 1/np.cos(np.radians(optimum_turns.sea_bank_limit(h)))
+    # zero_points_limited[zero_points_limited[:, 1] > max_n, 1] = max_n
+
+    # turn_radii = optimum_turns.min_turn_radius_points(zero_points_limited)
+    # max_bank_angles = optimum_turns.max_bank_angle_points(zero_points_limited)
+    # min_time_turns = optimum_turns.min_time_turn_points(zero_points_limited)
+
+    # optimum_turns.plot_vs_velocity(zero_points_limited, y_axis_name="Load Factor [-]", color='blue')
+    # optimum_turns.plot_vs_velocity(turn_radii, y_axis_name="Min Turn Radius [m]", color='blue')
+    # optimum_turns.plot_vs_velocity(max_bank_angles, y_axis_name="Max Bank Angle [deg]", color='blue')
+    # optimum_turns.plot_vs_velocity(min_time_turns, y_axis_name="Min Turn Time [s]", color='blue')

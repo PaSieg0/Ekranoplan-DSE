@@ -3,6 +3,9 @@ from gustloads import Calculate_K_g, Calculate_mu, Calculate_V_b, Calculate_U_re
 
 import numpy as np
 import matplotlib.pyplot as plt
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from utils import Data, ISA
 
 class LoadDiagram:
@@ -13,7 +16,7 @@ class LoadDiagram:
     def plot_complete_load_diagram(self, plot=False):
         # ====== Gust Load Point Calculation ======
         g = 9.80665  # m/s²
-        W_final = aircraft_data.data["outputs"]["design"]["OEW"]
+        W_final = aircraft_data.data["outputs"]["design"]["MTOW"]
         U_ref = Calculate_U_ref(self.h / 0.3048)  # Altitude in ft
         S = aircraft_data.data["outputs"]["design"]["S"]
         rho = ISA(self.h).rho
@@ -167,7 +170,7 @@ if __name__ == "__main__":
     load_diagram = LoadDiagram(aircraft_data)
     
     # Plot the load diagram
-    n_max, n_min = load_diagram.plot_complete_load_diagram(plot=False)
+    n_max, n_min = load_diagram.plot_complete_load_diagram(plot=True)
     load_diagram.update_attributes()
     aircraft_data.save_design(design_file)
     print(f"Max n: {n_max}, Min n: {n_min}")

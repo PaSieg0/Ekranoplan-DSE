@@ -1,21 +1,27 @@
 import os
-from Iteration import AircraftIteration
-from ClassIWeightEstimation import MissionType
-from bar_graph import plot_bar_graph
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
+from Class_I.Iteration import AircraftIteration
+from Class_I.ClassIWeightEstimation import MissionType
+from Class_I.bar_graph import plot_bar_graph
 from utils import design_json_to_excel,Data, generate_df
+from Class_I.Fuselage import Fuselage
+from Class_I.PrelimWingPlanformDesign import WingPlanform
+from Class_I.Cd0Estimation import Cd0Estimation
+from Class_I.cgRange import CGRange
+from Class_I.empennage import Empennage
+from Optimum_Performance.Optimum_speeds import OptimumSpeeds
 from Fuselage import Fuselage
 from PrelimWingPlanformDesign import WingPlanform
 from Cd0Estimation import Cd0Estimation
 from cgRange import CGRange
 from empennage import Empennage
-from Optimum_Performance.Optimum_speeds import OptimumSpeeds
+from engine_height import EngineHeight
 
 
 def main(create_excel: bool = False) -> None:
-    for i in range(1, 5):
+    for i in range(3, 4):
         print(f"Running iteration for design {i}...")
         file_path = f"design{i}.json"
         aircraft_data = Data(file_path)
@@ -73,6 +79,8 @@ def main_iteration(
         mission_type=mission
     )
     opt.update_cruise_speed(aircraft_data.data['inputs']['cruise_altitude'])
+    engine_height = EngineHeight(data=aircraft_data)
+    engine_height.calculate_engine_positions()
 
     S = aircraft_data.data['outputs']['wing_design']['S']
     MTOM = aircraft_data.data['outputs']['max']['MTOM']
@@ -89,8 +97,8 @@ def main_iteration(
     if stop_condition:
         #aircraft_data.save_design(file_path)
         if create_excel:
-            design_json_to_excel(file_path,'concepts.xlsx')
-        return
+            #design_json_to_excel(file_path,'concepts.xlsx')
+            return
     else:
         return main_iteration(
             aircraft_data=aircraft_data,
@@ -108,7 +116,7 @@ def main_iteration(
 
 
 if __name__ == "__main__":
-    main(create_excel=True)
+    main(create_excel=False)
     ''' df = generate_df()
     plot = plot_bar_graph(df, 'take_off_power')
     # print(df.columns)
