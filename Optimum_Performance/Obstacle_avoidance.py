@@ -158,8 +158,8 @@ def plot_turn_trajectory(aircraft_data, reaction_time=1.0):
         y_traj_left.append(y_traj_left[-1] + dy)
 
     plt.figure(figsize=(10, 6))
-    plt.plot(x_traj_right, y_traj_right, label="Turn Trajectory (Right)", color='b')
-    plt.plot(x_traj_left, y_traj_left, label="Turn Trajectory (Left)", color='b', linestyle='dotted')
+    plt.plot(x_traj_right, y_traj_right, label="Turn Trajectory (Left)", color='b')
+    plt.plot(x_traj_left, y_traj_left, label="Turn Trajectory (Right)", color='b', linestyle='dotted')
 
     # Plot obstacles and join symmetric pairs with a dotted line, annotate them
     for idx, (x, y) in enumerate(base_obstacles):

@@ -716,14 +716,14 @@ class FuselageThickness:
         print(len(skin_area_along_fuselage))
         skin_mass = np.trapz(skin_area_along_fuselage, self.x_points) * self.density
         stringer_mass = np.trapz(stringer_area_along_fuselage, self.x_points) * self.density
-        epoxy_mass = np.trapz(skin_area_epoxy, self.x_points) * self.rho_epoxy + np.trapz(stringer_area_epoxy, self.x_points) * self.rho_epoxy
-        total_mass = skin_mass + stringer_mass + self.rib_mass + epoxy_mass
-        self.fuselage_mass = total_mass
+        self.epoxy_mass = np.trapz(skin_area_epoxy, self.x_points) * self.rho_epoxy + np.trapz(stringer_area_epoxy, self.x_points) * self.rho_epoxy
+        total_mass = skin_mass + stringer_mass + self.rib_mass + self.epoxy_mass
+        self.fuselage_mass = total_mass*1.05
 
         print(f"Skin Mass: {skin_mass:.2f} kg")
         print(f"Frame Mass: {self.rib_mass:.2f} kg")
         print(f"Stringer Mass: {stringer_mass:.2f} kg")
-        print(f"Epoxy Mass: {epoxy_mass:.2f} kg")
+        print(f"Epoxy Mass: {self.epoxy_mass:.2f} kg")
         print(f"Fuselage Mass (total): {total_mass:.2f} kg")
 
         # Optional: plot area distributions
@@ -766,7 +766,7 @@ class FuselageThickness:
         self.aircraft_data.data['outputs']['fuselage_stress']['I_zz'] = float(sum(self.I_zz_all))
         self.aircraft_data.data['outputs']['fuselage_stress']['critical_margins'] = json_friendly_margins
         self.aircraft_data.data['outputs']['component_weights']['fuselage'] = self.fuselage_mass*9.81
-        print(f'Fuselage mass: {self.fuselage_mass:.2f} kg')
+
         self.aircraft_data.save_design(self.design_file)
 
 

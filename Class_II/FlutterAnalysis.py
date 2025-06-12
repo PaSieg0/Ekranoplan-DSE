@@ -182,7 +182,7 @@ class FlutterAnalysis:
         self.global_min_zeta_velocity = None
         self.global_min_zeta_mode = None
         
-        for i in range(len(self.shape_coeff[1:3])):
+        for i in range(len(self.shape_coeff[:2])):
             beta = self.shape_coeff[i]
             n = self.n[i]
             self.initialize_analysis(beta, n)

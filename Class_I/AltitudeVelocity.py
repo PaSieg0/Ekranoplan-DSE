@@ -8,6 +8,17 @@ from functools import lru_cache
 from tqdm import tqdm
 from scipy.optimize import minimize_scalar
 
+@lru_cache(maxsize=128)
+def Ainf_Ah(h, b, endplante_height=0):
+    h_b = h/b
+    WIG_term = 1 - np.exp(-4.74*h_b**0.814) - h_b**2*np.exp(-3.88*h_b**0.758)
+    k = WIG_term
+
+    endplate_term = 1.0 + 1.9 * endplante_height/b
+    k /= endplate_term
+
+    return k
+
 class AltitudeVelocity:
     def __init__(self, aircraft_data: Data, mission_type: MissionType):
         self.data = aircraft_data
@@ -23,13 +34,14 @@ class AltitudeVelocity:
 
         self._S = self.data.data['outputs']['design']['S']
         self._Cd0 = self.data.data['inputs']['Cd0']
+        self._b = self.data.data['outputs']['design']['b']
         self._AR = self.data.data['inputs']['aspect_ratio']
         self._e = self.data.data['inputs']['oswald_factor']
         self._CLmax = self.data.data['inputs']['CLmax_clean']
         self._engine_power = self.data.data['inputs']['engine']['engine_power']
         self._prop_efficiency = self.data.data['inputs']['prop_efficiency']
         self._sea_level_density = ISA(0).rho
-        self._k = 1 / (np.pi * self._AR * self._e)  # Induced drag factor
+        self._k = 1 / (np.pi * self._AR * self._e)
         self.velocity_steps = 2000  # Number of velocity steps for calculations
         self.height_steps = 7000  # Number of height steps for calculations
         self.g = 9.81  # Gravitational acceleration in m/s^2
@@ -67,7 +79,7 @@ class AltitudeVelocity:
         q = 0.5 * rho * V**2
         qS = q * self._S
         Cl = W / qS
-        Cd = self._Cd0 + Cl**2 * self._k
+        Cd = self._Cd0 + Cl**2 * self._k #* Ainf_Ah(h, self._b)
         
         return Cd * qS * V + W * RoC
 
@@ -324,7 +336,7 @@ class AltitudeVelocity:
     def calculate_limit_points(self, airspeed_type='true', altitude_units='meters') -> tuple:
         # First determine maximum altitude to avoid unnecessary calculations
         h_max, _ = self.calculate_h_max(RoC_limit=0)
-        h_list = np.linspace(0, h_max, self.height_steps)
+        h_list = np.linspace(10, h_max, self.height_steps)
 
         zero_points = []
         stall_points = []
@@ -569,27 +581,7 @@ class AltitudeVelocity:
         
         # Calculate stall speed at 10000 ft
         V_stall_10k = self.calculate_stall_speed(h_10000 / self.m_to_ft if altitude_units == 'feet' else h_10000)
-        
-        # Find thrust limited speed at 10000 ft (where RoC = 0)
-        h_actual = h_10000 / self.m_to_ft if altitude_units == 'feet' else h_10000
-        velocity_range = np.linspace(V_stall_10k, self.dive_speed, self.velocity_steps)
-        RoC_values = self.calculate_RoC_vectorized(velocity_range, h_actual)
-        
-        # Find where RoC crosses zero (thrust limited speed)
-        zero_crossings = np.where(np.diff(np.sign(RoC_values)))[0]
-        if len(zero_crossings) > 0:
-            # Interpolate to find accurate thrust limited speed
-            idx = zero_crossings[-1]  # Take the last crossing (max speed)
-            v1, v2 = velocity_range[idx], velocity_range[idx + 1]
-            roc1, roc2 = RoC_values[idx], RoC_values[idx + 1]
-            V_max_10k = v1 + (0 - roc1) * (v2 - v1) / (roc2 - roc1) if roc2 != roc1 else v1
-        else:
-            V_max_10k = self.dive_speed  # Fallback to dive speed if no zero crossing found
-        
-        # Convert to equivalent airspeed if needed
-        if airspeed_type == 'equivalent':
-            V_stall_10k = self.equivalent_air_speed(V_stall_10k, h_actual)
-            V_max_10k = self.equivalent_air_speed(V_max_10k, h_actual)
+        V_max_10k = 163.76
         
         # Plot horizontal line from stall speed to thrust limited speed at 10000 ft
         plt.plot([x_transform(V_stall_10k), x_transform(V_max_10k)], [h_10000, h_10000], 
@@ -686,19 +678,19 @@ if __name__ == "__main__":
     mission_type = MissionType.DESIGN  # Example mission type
     altitude_velocity = AltitudeVelocity(aircraft_data, mission_type)
     
-    h = np.array([0, 3048])  # Example altitude in meters
+    h = np.array([10, 3048])  # Example altitude in meters
     # altitude_velocity.plot_power_curve(h)
     # altitude_velocity.plot_RoC_line(h)
     
     cruise_speed = aircraft_data.data['requirements']['cruise_speed']
-    power_required_cruise = altitude_velocity.calculate_power_required(cruise_speed, h=0)
-    power_available_cruise = altitude_velocity.calculate_power_available(h=0)
-    print(f"Power required to cruise at h=0 and V={cruise_speed} m/s: {power_required_cruise/10**6:.2f} MW")
+    power_required_cruise = altitude_velocity.calculate_power_required(cruise_speed, h=10)
+    power_available_cruise = altitude_velocity.calculate_power_available(h=10)
+    print(f"Power required to cruise at h=10 and V={cruise_speed} m/s: {power_required_cruise/10**6:.2f} MW")
     print(f"Power required / Power available at cruise: {power_required_cruise / power_available_cruise:.2f}")
 
-    print(f"Max RoC at h = 0 is {altitude_velocity.calculate_max_RoC(0)[0] * 196.85} ft/min")
-    print(f"Max AoC at h = 0 is {altitude_velocity.calculate_max_AoC(0)[0] * 180/np.pi} degrees")
-    print(f"Max true RoC at h = 0 is {altitude_velocity.calculate_true_RoC(altitude_velocity.calculate_max_RoC(0)[1], 0) * 196.85} ft/min")
+    print(f"Max RoC at h = 10 is {altitude_velocity.calculate_max_RoC(h=10)[0] * 196.85} ft/min")
+    print(f"Max AoC at h = 10 is {altitude_velocity.calculate_max_AoC(h=10)[0] * 180/np.pi} degrees")
+    print(f"Max true RoC at h = 10 is {altitude_velocity.calculate_true_RoC(altitude_velocity.calculate_max_RoC(h=10)[1], h=10) * 196.85} ft/min")
 
     zero_points, stall_points = altitude_velocity.calculate_limit_points(airspeed_type='true', altitude_units='feet')
     altitude_velocity.plot_limit_points(zero_points, stall_points, 

@@ -176,19 +176,7 @@ class CGCalculation:
         plt.show()
 
 
-    def update_json(self):
-        """Update the JSON file with calculated CG positions"""
-        oew_cg = self.calculate_cg(OEW=True)
-        mtow_cg = self.calculate_cg(OEW=False)
-        
-        # Update CG values in the JSON data
-        if 'cg_positions' not in self.aircraft_data.data['outputs']:
-            self.aircraft_data.data['outputs']['cg_positions'] = {}
-            
-        self.aircraft_data.data['outputs']['cg_positions'].update({
-            'OEW_CG': oew_cg,
-            'MTOW_CG': mtow_cg
-        })
+
 
         self.aircraft_data.data['outputs']['fuselage_dimensions']['l_fuselage'] = self.l_fuselage
           # Save updated data to JSON file
@@ -203,7 +191,7 @@ class CGCalculation:
     # ========== SENSITIVITY ANALYSIS SECTION ==========
         if sensitivity_analysis:
             original_root_chord = self.wing_root_chord
-            root_chords = np.arange(0.02, 0.3, 0.001)
+            root_chords = np.arange(0.1, 13.1, 0.5)
             
             # Store nominal maximum values
             nominal_load_max = 0

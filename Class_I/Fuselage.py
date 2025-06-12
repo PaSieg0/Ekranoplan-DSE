@@ -57,7 +57,7 @@ class Fuselage:
         self.ln = self.lnd*self.d
         self.cargo_straight = self.calculate_y_in_tail()
         self.update_attributes()
-        self.aircraft_data.save_design(self.design_file)
+        # self.aircraft_data.save_design(self.design_file)
 
 
     def update_attributes(self):

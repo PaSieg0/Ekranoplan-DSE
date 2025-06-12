@@ -224,6 +224,8 @@ class RangeAnalyzer:
         R_analytical = (self.opt._prop_efficiency / 
                        self.aircraft_data.data['inputs']['prop_consumption'] * 
                        Cl_Cd_ge * np.log(W4 / W5) / self.opt.g)
+        
+        print(f"Analytical range: {R_analytical/1852:.2f} nmi, Cl/Cd: {Cl_Cd_ge:.4f}, W4: {W4/W5:.2f}")
 
         t_analytical = R_analytical / V  # Time for analytical range  
         

@@ -1,0 +1,135 @@
+import sys
+import os
+import numpy as np
+from scipy.optimize import fsolve
+
+
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.append(project_root)
+
+from utils import Data
+import pandas as pd
+import numpy as np
+from enum import Enum, auto
+import matplotlib.pyplot as plt
+
+class Buoy_sizing:
+    def __init__(self, aircraft_data: Data):
+        self.aircraft_data = aircraft_data
+        self.MTOW = self.aircraft_data.data['outputs']['max']['MTOW']
+
+    def submerged_sphere_volume(self,h, r):
+        if h <= r:
+            return (np.pi * h**2 * (3*r - h)) / 3
+        elif h <= 2*r:
+            return (4/3)*np.pi*r**3 - (np.pi * (2*r - h)**2 * (h - r)) / 3
+        else:
+            return (4/3)*np.pi*r**3  # fully submerged
+
+
+    def submerged_cylinder_volume(self,l,h,r):
+        if h <= r:
+            theta = np.arccos((r-h)/r)
+            Sw = 2*theta*r**2-(r-h)*r
+            return l*Sw
+        elif h <= 2*r:
+            theta2 = np.arccos((h-r)/r)
+            return (2*np.pi-theta2)/2*r**2+r**2 * np.sin(theta2)*np.cos(theta2)  
+        else:
+            return 2 * np.pi * r**2 * l
+
+
+    def get_max_volume(self,l,r):
+        Max_vol_sphere = self.submerged_sphere_volume(2*r, r)
+        Max_vol_cylinder = self.submerged_cylinder_volume(l,2*r,r)
+        return Max_vol_cylinder+Max_vol_sphere
+        
+
+    def get_submerged_height_bisection_method(self, l, d, Vw, vars=None, tol=1e-1, max_iter=1000):
+        r = d / 2
+        h_min = 0.0
+        h_max = 2*r  # max possible submersion is full sphere + cylinder
+        iter_count = 0
+
+        def total_volume(h):
+            # clamp cylinder height to [0, l]
+            h_cyl = min(max(h, 0), l)
+            V_cyl = self.submerged_cylinder_volume(l, h_cyl, r)
+            
+            # clamp sphere depth to [0, 2r]
+            h_sph = max(0.0, h - l)
+            V_sph = self.submerged_sphere_volume(h_sph, r)
+
+            return V_cyl + V_sph
+
+        while (h_max - h_min) > tol and iter_count < max_iter:
+            h_mid = (h_min + h_max) / 2
+            V_mid = total_volume(h_mid)
+
+            if V_mid < Vw:
+                h_min = h_mid
+            else:
+                h_max = h_mid
+
+            iter_count += 1
+
+        h_result = (h_min + h_max) / 2
+        V_final = self.submerged_cylinder_volume(l,h_result,r)+self.submerged_sphere_volume(h_result,r)
+        print("h:", h_result,V_final)
+        return h_result,V_final
+    
+    ###### this is the final numerical program that can converge, 
+    ###### at a few values it still seem to break
+    ###### might be due to local minimum but.....meh
+
+    def get_submerged_height_looped(self, l, d, Vw, step=0.005, tol=1e-1, max_iter=10000):
+        r = d / 2
+        h_max_total = 2*r  # full submersion
+        h_guess_start = 0.0
+
+        while h_guess_start < h_max_total:
+            h_min = h_guess_start
+            h_max = h_min+step
+            iter_count = 0
+
+            def total_volume(h):
+                h_cyl = min(max(h, 0), l)
+                h_sph = max(0.0, h - l)
+                V_cyl = self.submerged_cylinder_volume(l, h_cyl, r)
+                V_sph = self.submerged_sphere_volume(h_sph, r)
+                return V_cyl + V_sph
+
+            while (h_max - h_min) > tol and iter_count < max_iter:
+                h_mid = (h_min + h_max) / 2
+                V_mid = total_volume(h_mid)
+
+                if V_mid < Vw:
+                    h_min = h_mid
+                else:
+                    h_max = h_mid
+
+                iter_count += 1
+
+            h_result = (h_min + h_max) / 2
+            V_result = total_volume(h_result)
+            print("Buoy volume:",V_result)
+            print("submerged height:",h_result)
+
+            if abs(V_result - Vw) < tol:
+                return h_result, V_result
+
+            h_guess_start += step  # add 0.05 and try again
+
+        #raise ValueError("Failed to converge on a valid height for given volume.")
+
+if __name__ == "__main__":
+    # Load the aircraft data
+    aircraft = "design3.json"
+    aircraft_data = Data(aircraft)
+    buoy = Buoy_sizing(aircraft_data)
+    submerged_depth = buoy.get_submerged_height_looped(8, 4, 55)
+    
+    
+    
+    
+        
