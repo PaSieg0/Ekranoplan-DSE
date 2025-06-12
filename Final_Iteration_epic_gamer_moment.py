@@ -20,7 +20,7 @@ from Class_II.ElevatorRudder import ElevatorRudder
 from Aero_stab.Derivatives_datcom_sym import DerivativesDatcom_sym
 from Aero_stab.Derivatives_datcom_asym  import DerivativesDatcom_asym
 from Optimum_Performance.Optimum_speeds import OptimumSpeeds
-
+from Class_I.unit_cost import main_cost
 
 class FinalIteration:
     def __init__(self, aircraft_data: Data):
@@ -35,7 +35,8 @@ class FinalIteration:
         self.MTOM = [self.aircraft_data.data['outputs']['max']['MTOM']]
         self.fuel_economy = [self.aircraft_data.data['outputs']['max']['fuel_economy']]
         self.cruise_speeds = [self.aircraft_data.data['requirements']['cruise_speed']]
-        self.cost = [0]    
+        self.unit_cost = [self.aircraft_data.data['outputs']['costs']['unit_costs']['unit_cost_with_inflation_correction']]  
+        self.operational_cost = [self.aircraft_data.data['outputs']['costs']['operational_costs']['operational_cost_per_tonne_km']]  
         while True:
             # Run iteration lil broski
             iteration_number += 1
@@ -85,9 +86,6 @@ class FinalIteration:
             # EmpennageOptimizer (Vertical Tail, main_empennage)
             empennage_optimizer = EmpennageOptimizer(self.aircraft_data)
             empennage_optimizer.run()
-
-            empennage_optimizer = EmpennageOptimizer(self.aircraft_data)
-            empennage_optimizer.run()
             
             # AileronHLD 
             print('Control surfaces')
@@ -107,6 +105,10 @@ class FinalIteration:
             print('Wing Stress')
             critical_margins = wing_stress_analysis()
 
+            # Calculate costs
+            print('Calculating costs')
+            main_cost(aircraft_data=self.aircraft_data,plot=False)
+
             if critical_margins != 0:
                 print('The wing box is weak bro 😔')
                 break
@@ -116,7 +118,8 @@ class FinalIteration:
             self.MTOM.append(self.aircraft_data.data['outputs']['design']['MTOM'])
             self.fuel_economy.append(self.aircraft_data.data['outputs']['max']['fuel_economy'])
             self.cruise_speeds.append(self.aircraft_data.data['requirements']['cruise_speed'])
-            self.cost.append(0) 
+            self.unit_cost.append(self.aircraft_data.data['outputs']['costs']['unit_costs']['unit_cost_with_inflation_correction'])
+            self.operational_cost.append(self.aircraft_data.data['outputs']['costs']['operational_costs']['operational_cost_per_tonne_km'])
 
             print(self.MTOM)
             
@@ -133,29 +136,37 @@ class FinalIteration:
 
         plt.figure(figsize=(12, 8))
 
-        plt.subplot(2, 2, 1)
+        plt.subplot(2, 3, 1)
         plt.plot(iterations, self.MTOM, marker='o')
         plt.title("MTOM vs Iteration")
         plt.xlabel("Iteration")
         plt.ylabel("MTOM")
 
-        plt.subplot(2, 2, 2)
+        plt.subplot(2, 3, 2)
         plt.plot(iterations, self.fuel_economy, marker='o', color='green')
         plt.title("Fuel Economy vs Iteration")
         plt.xlabel("Iteration")
         plt.ylabel("Fuel Economy")
 
-        plt.subplot(2, 2, 3)
+        plt.subplot(2, 3, 3)
         plt.plot(iterations, self.cruise_speeds, marker='o', color='red')
         plt.title("Cruise Speeds vs Iteration")
         plt.xlabel("Iteration")
         plt.ylabel("Cruise Speed")
 
-        plt.subplot(2, 2, 4)
-        plt.plot(iterations, self.cost, marker='o', color='purple')
+        plt.subplot(2, 3, 4)
+        plt.plot(iterations, self.unit_cost, marker='o', color='purple')
         plt.title("Const vs Iteration")
         plt.xlabel("Iteration")
-        plt.ylabel("Const")
+        plt.ylabel("Unit Cost")
+
+        plt.subplot(2, 3, 5)
+        plt.plot(iterations, self.operational_cost, marker='o', color='orange')
+        plt.title("Operational Cost vs Iteration")
+        plt.xlabel("Iteration")
+        plt.ylabel("Operational Cost")
+
+        plt.suptitle("Convergence of Aircraft Design Parameters")
 
         plt.tight_layout()
         plt.show()

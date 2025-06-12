@@ -6,13 +6,10 @@ from utils import Data
 from matplotlib import pyplot as plt
 import json
 
-# Based on DAPCA IV Cost Model from Raymer (FY1986)
 
-aircraft_data = Data("design3.json")
-concepts = ['Design 3']
 
 '''Unit Cost'''
-def calculate_unit_cost():
+def calculate_unit_cost(aircraft_data: Data, plot=True):
     We =        aircraft_data.data["outputs"]["design"]["EW"]*0.2248089431 # lb
     V =         aircraft_data.data["outputs"]['optimum_speeds']['max']/0.51444444 # kts
     Q =         50 # Quantity
@@ -59,28 +56,27 @@ def calculate_unit_cost():
         C_Q,
         C_M
     ]
-
-    plt.figure(figsize=(8, 6))
-    plt.bar(cost_labels, [c / 1e6 for c in cost_values])
-    plt.ylabel('Cost (Million $)')
-    plt.title(f'Cost Breakdown for {concepts}')
-    plt.xticks(rotation=45)
-    plt.tight_layout()
-    plt.show()
+    if plot:
+        plt.figure(figsize=(8, 6))
+        plt.bar(cost_labels, [c / 1e6 for c in cost_values])
+        plt.ylabel('Cost (Million $)')
+        plt.xticks(rotation=45)
+        plt.tight_layout()
+        plt.show()
 
 
     C = C_D + C_F + C_M_mat + C_eng*N_eng + C_avionics + R_T*H_T + R_Q*H_Q + R_M*H_M
 
     unit_costs = {
-        "cost_with_inflation_correction_M$": (C/1e6)*2.92,
-        "unit_cost_with_inflation_correction_M$": (C/1e6)*2.92/(Q+FTA)
+        "cost_with_inflation_correction": (C/1e6)*2.92,
+        "unit_cost_with_inflation_correction": (C/1e6)*2.92/(Q+FTA)
     }
 
     return unit_costs
 
 '''Operational Cost'''
 
-def calculate_operational_cost():
+def calculate_operational_cost(aircraft_data: Data):
     time_design_mission = 12  # h
     time_design_mission_c5 = 5 # h
 
@@ -138,46 +134,39 @@ def calculate_operational_cost():
 
     # Collect all outputs in a dictionary.
     operational_costs = {
-        "fuel_price_design_mission ($)": fuel_price,
-        "crew_cost_design_mission ($)": crew_cost,
-        "maintenance_cost_per_mission ($)": maintenance_cost,
-        "total_operational_cost_design_mission ($)": operational_cost_design_mission,
-        "operational_cost_design_mission_per_hr ($/hr)": operational_cost_design_mission_per_hr,
-        "operational_cost_per_tonne_km ($/tonne/km)": operational_cost_payload,
+        "fuel_price_design_mission": fuel_price,
+        "crew_cost_design_mission": crew_cost,
+        "maintenance_cost_per_mission": maintenance_cost,
+        "total_operational_cost_design_mission": operational_cost_design_mission,
+        "operational_cost_design_mission_per_hr": operational_cost_design_mission_per_hr,
+        "operational_cost_per_tonne_km": operational_cost_payload,
     }
 
     operational_costs_c5 = {
-        "fuel_price_design_mission C5 ($)": fuel_price_c5,
-        "crew_cost_design_mission C5($)": crew_cost_c5,
-        "maintenance_cost_per_mission C5 ($)": maintenance_cost_c5,
-        "total_operational_cost_design_mission C5 ($)": operational_cost_design_mission_c5,
-        "operational_cost_design_mission_per_hr C5 ($/hr)": operational_cost_design_mission_per_hr_c5,
-        "operational_cost_per_tonne_km C5($/tonne/km)": operational_cost_payload_c5,
+        "fuel_price_design_mission": fuel_price_c5,
+        "crew_cost_design_mission": crew_cost_c5,
+        "maintenance_cost_per_mission": maintenance_cost_c5,
+        "total_operational_cost_design_mission": operational_cost_design_mission_c5,
+        "operational_cost_design_mission_per_hr": operational_cost_design_mission_per_hr_c5,
+        "operational_cost_per_tonne_km": operational_cost_payload_c5,
     }
 
     return operational_costs, operational_costs_c5
 
-print(f"Unit Cost of the design:{calculate_unit_cost()}")
-print(f"Operational Cost dictionary of our design: \n {calculate_operational_cost()[0]}")
-print(f"Operational Cost dictionary of C5 Galaxy: \n {calculate_operational_cost()[1]}")
+def main_cost(aircraft_data: Data, plot=True, design_file = "design3.json"):
+    unit_costs = calculate_unit_cost(aircraft_data,plot)  # returns a dictionary
+    operational_costs, operational_costs_c5 = calculate_operational_cost(aircraft_data)  # returns two dictionaries
+    aircraft_data.data["outputs"]["costs"] = {
+        "unit_costs": unit_costs,
+        "operational_costs": operational_costs,
+        "operational_costs_c5": operational_costs_c5
+    }
 
-# Load the design3.json file
-with open("Data/design3.json", "r") as infile:
-    design_data = json.load(infile)
+    aircraft_data.save_design(design_file=design_file)
 
-# Get the cost dictionaries from your functions
-unit_costs = calculate_unit_cost()  # returns a dictionary
-operational_costs, operational_costs_c5 = calculate_operational_cost()  # returns two dictionaries
 
-# Add the cost dictionaries to your JSON data under a new key, e.g. "costs"
-design_data["costs"] = {
-    "unit_costs": unit_costs,
-    "operational_costs": operational_costs,
-    "operational_costs_c5": operational_costs_c5
-}
+if __name__ == "__main__":
+    aircraft_data = Data("design3.json")  # Load the design data
+    main_cost(aircraft_data=aircraft_data, design_file="design3.json")
 
-# Write the updated data to a new JSON file (or overwrite the original)
-with open("Data/design3.json", "w") as outfile:
-    json.dump(design_data, outfile, indent=4)
-
-print("Design data has been updated with costs!")
+    print("Design data has been updated with costs!")
