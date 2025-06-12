@@ -117,6 +117,32 @@ class vertical_tail_sizing:
         S_v = ((y_axis*S)/(k_delta_r * k_v * S_r**(1/3) * A_v**(1/3) * np.cos(sweep_r)**(1/3) ))**(3/2)
         return S_v
     
+    def get_fig_23(self):
+        
+        x_vals = np.arange(0.06,0.2,0.01)
+        y_vals = np.array([0.06, 0.07, 0.075, 0.085, 0.1, 0.115, 0.125, 0.135, 0.145, 0.16, 0.175, 0.191, 0.21, 0.225, 0.25])*1.2
+
+        interpolation = np.interp(self.X_axis,x_vals, y_vals)
+        full_interp = np.interp(x_vals, x_vals, y_vals)
+        # plt.plot(x_vals, full_interp, marker='o', linestyle='-')
+        # plt.xlim(0.04,0.22)
+        # plt.ylim(0, 0.25)
+        # plt.show()
+        return interpolation
+    
+    def get_fig_24(self):
+
+        x_vals = np.arange(-0.14, 0, 0.01)
+        y_vals = np.array([0.04, 0.041, 0.0415, 0.043, 0.046, 0.05, 0.055, 0.06, 0.064, 0.07, 0.078, 0.082, 0.09, 0.1, 0.12])[::-1]
+        interpolation = np.interp(self.betas, x_vals, y_vals)
+        full_interp = np.interp(x_vals, x_vals, y_vals)
+        # plt.plot(x_vals, full_interp, marker='o', linestyle='-')
+        # plt.xlim(-0.14, 0)
+        # plt.gca().invert_xaxis()
+        # plt.ylim(0, 0.15)
+        # plt.show()
+        return interpolation
+    
     def get_vertical_tail_size(self):
         static_stability = self.get_vertical_tail_size_static_stab()
         one_engine_inoperative = self.get_vertical_tail_size_one_engine_inoperative()
@@ -126,15 +152,19 @@ class vertical_tail_sizing:
         C_n_beta_p = self.calculate_C_n_beta_p()
         self.betas = C_n_beta_f + C_n_beta_i + C_n_beta_p
 
-        fig_23_input = float(input(f"Enter y_axis value for Fig 9.23\nx-axis value={self.X_axis}: "))
-        volume_value = float(input(f"Enter the volume value for the vertical tail:\nsum of betas={self.betas} "))
-        fig_23 = self.get_Sv_from_fig_9_23(y_axis=fig_23_input)
-        tail_volume = self.check_tail_volume(y_axis=volume_value)
+        # fig_23_input = float(input(f"Enter y_axis value for Fig 9.23\nx-axis value={self.X_axis}: "))
+        # volume_value = float(input(f"Enter the volume value for the vertical tail:\nsum of betas={self.betas} "))
+
+        fig_23 = self.get_fig_23()
+        fig_23_tail = self.get_Sv_from_fig_9_23(fig_23)
+        tail_volume = self.get_fig_24()
+        tail_volume_area = self.check_tail_volume(tail_volume)
+        # print(fig_23, tail_volume)
 
         # print(f"Static Stability: {static_stability}, One Engine Inoperative: {one_engine_inoperative}, Fig 9.23: {fig_23}, Tail Volume: {tail_volume}")
 
 
-        tail_size = max(static_stability, one_engine_inoperative, fig_23, tail_volume)
+        tail_size = max(static_stability, one_engine_inoperative, fig_23_tail, tail_volume_area)
         self.update_vertical_tail_dimensions(tail_size)
         self.aircraft_data.save_design(design_file=self.design_file)
         return tail_size

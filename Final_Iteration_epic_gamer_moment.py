@@ -124,7 +124,7 @@ class FinalIteration:
 
     def plot_convergence(self):
         # plot self.MTOM, self.fuel_economy, self.cruise_sppeds and self.cost agains iteration number, range(0, length of the lists)
-        iterations = range(len(self.MTOM))  # Assuming all lists have the same length
+        iterations = range(len(self.MTOM)-1)  # Assuming all lists have the same length
 
         plt.figure(figsize=(12, 8))
 
@@ -196,12 +196,9 @@ def is_close(val1, val2, tolerance):
     :return: True if values are within the tolerance, False otherwise.
     """
     if isinstance(val1, (int, float)) and isinstance(val2, (int, float)):
-        # You can define your own tolerance logic here (percentage or absolute)
-        if abs(val1 - val2) <= tolerance:
+
+        if (val1 == 0 and val2 == 0) or abs(val1 - val2) / max(abs(val1), abs(val2)) <= tolerance:
             return True
-        if max(val1, val2) > 0:  # Allow percentage-based comparison if the numbers are large enough
-            if abs(val1 - val2) / max(abs(val1), abs(val2)) <= tolerance:
-                return True
     if isinstance(val1, list) and isinstance(val2, list):
         if len(val1) != len(val2):
             return False
