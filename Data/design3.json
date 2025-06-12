@@ -945,16 +945,16 @@
         },
         "costs": {
             "unit_costs": {
-                "cost_with_inflation_correction": 14080.770786679857,
-                "unit_cost_with_inflation_correction": 400
+                "cost_with_inflation_correction": 15404.373746353971,
+                "unit_cost_with_inflation_correction": 285.2661804880365
             },
             "operational_costs": {
-                "fuel_price_design_mission": 57715.31240905289,
-                "crew_cost_design_mission": 16692.023573604234,
+                "fuel_price_design_mission": 91208.6564488042,
+                "crew_cost_design_mission": 17154.02261089854,
                 "maintenance_cost_per_mission": 67200.0,
-                "total_operational_cost_design_mission": 74407.33598265712,
-                "operational_cost_design_mission_per_hr": 6200.611331888093,
-                "operational_cost_per_tonne_km": 0.5
+                "total_operational_cost_design_mission": 108362.67905970274,
+                "operational_cost_design_mission_per_hr": 9030.223254975228,
+                "operational_cost_per_tonne_km": 0.3250620322165309
             },
             "operational_costs_c5": {
                 "fuel_price_design_mission": 215750.7,
