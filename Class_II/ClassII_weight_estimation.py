@@ -91,7 +91,7 @@ class ClassII:
         # self.q = Pa2lbfpftsq(0.5*ISA(self.aircraft_data.data['inputs']['cruise_altitude']).rho * self.aircraft_data.data['requirements']['cruise_speed']**2) # dynamic pressure
         self.R_kva = 50 # system electrical rating based on typical values Raymer
         self.S_c = msq2ftsq(7 * self.aircraft_data.data['outputs']['fuselage_dimensions']['cargo_length']) # cargo floor surface area
-        self.S_cs = msq2ftsq(self.aircraft_data.data['outputs']['control_surfaces']['aileron']['area_single']*2 + self.aircraft_data.data['outputs']['control_surfaces']['elevator']['area']*2 + self.aircraft_data.data['outputs']['control_surfaces']['rudder']*2) # total control surface area
+        self.S_cs = msq2ftsq(self.aircraft_data.data['outputs']['control_surfaces']['aileron']['area_single']*2 + self.aircraft_data.data['outputs']['control_surfaces']['elevator']['area']*2 + self.aircraft_data.data['outputs']['control_surfaces']['rudder']['area']*2) # total control surface area
         self.S_csw = 2*msq2ftsq(self.aircraft_data.data['outputs']['control_surfaces']['aileron']['area_single']) # control surface area wing mounted 
         self.S_e = 2*msq2ftsq(self.aircraft_data.data['outputs']['control_surfaces']['aileron']['area_single']) # elevator area
         self.S_f = msq2ftsq(cdest.fuselage_wet())
