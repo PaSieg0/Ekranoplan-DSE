@@ -26,8 +26,8 @@ def main(create_excel: bool = False) -> None:
         file_path = f"design{i}.json"
         aircraft_data = Data(file_path)
         
-        fuselage = Fuselage(aircraft_data=aircraft_data)
-        fuselage.CalcFuseLen()
+        # fuselage = Fuselage(aircraft_data=aircraft_data)
+        # fuselage.CalcFuseLen()
 
         for mission in MissionType:
             print(f"Running iteration for mission type {mission.name}...")
