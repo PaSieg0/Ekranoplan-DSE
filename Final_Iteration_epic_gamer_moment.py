@@ -229,7 +229,6 @@ def is_close(val1, val2, tolerance):
     return val1 == val2  # Fallback for non-numeric values
 
 if __name__ == "__main__":
-
     aircraft_data = Data('design3.json')
 
     try:
@@ -237,6 +236,5 @@ if __name__ == "__main__":
         final_iteration.main(mission_type=MissionType.DESIGN)
     except Exception as e:
         pass
-    
     final_iteration.plot_convergence()
     
