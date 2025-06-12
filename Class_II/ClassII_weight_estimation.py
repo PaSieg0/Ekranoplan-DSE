@@ -143,17 +143,17 @@ class ClassII:
         # return lbs2kg(W_fuselage_lbs)*9.81
         return self.aircraft_data.data['outputs']['component_weights']['fuselage']
     
-    def epoxy_fuselage(self) -> float:
-        return self.aircraft_data.data['outputs']['component_weights']['epoxy_fuselage']
+    # def epoxy_fuselage(self) -> float:
+    #     return self.aircraft_data.data['outputs']['component_weights']['epoxy_fuselage']
     
-    def epoxy_wing(self) -> float:
-        return self.aircraft_data.data['outputs']['component_weights']['epoxy_wing']
+    # def epoxy_wing(self) -> float:
+    #     return self.aircraft_data.data['outputs']['component_weights']['epoxy_wing']
     
-    def epoxy_vertical_tail(self) -> float:
-        return self.aircraft_data.data['outputs']['component_weights']['epoxy_vertical']
+    # def epoxy_vertical_tail(self) -> float:
+    #     return self.aircraft_data.data['outputs']['component_weights']['epoxy_vertical']
     
-    def epoxy_horizontal_tail(self) -> float:
-        return self.aircraft_data.data['outputs']['component_weights']['epoxy_horizontal']
+    # def epoxy_horizontal_tail(self) -> float:
+    #     return self.aircraft_data.data['outputs']['component_weights']['epoxy_horizontal']
 
     def main_landing_gear(self):
         return 0
@@ -270,7 +270,7 @@ class ClassII:
         self.W_floater = self.floater()
         self.W_floater_endplate = self.floater_endplate()
         self.W_hull = self.hull()
-        self.W_epoxy = self.epoxy_fuselage() + self.epoxy_wing() + self.epoxy_vertical_tail() + self.epoxy_horizontal_tail()
+        # self.W_epoxy = self.epoxy_fuselage() + self.epoxy_wing() + self.epoxy_vertical_tail() + self.epoxy_horizontal_tail()
 
         self.perc_wing = self.W_wing / (self.aircraft_data.data['outputs']['max']['OEW']) * 100
         self.perc_horizontal_tail = self.W_horizontal_tail / (self.aircraft_data.data['outputs']['max']['OEW']) * 100
@@ -322,8 +322,8 @@ class ClassII:
             self.W_door +
             self.W_anchor +
             self.W_floater +
-            self.W_floater_endplate +
-            self.W_epoxy
+            self.W_floater_endplate
+            # self.W_epoxy
             # self.W_hull
         )
 
