@@ -191,7 +191,7 @@ def compare_dicts(dict1, dict2, tolerance=0.01):
     return True
 
 def change_initial_values(dictionary):
-    exclude = ['kinematic_viscosity', 'design_id', 'inputs', 'requirements', 'rho_water', 'viscosity_air', 'rho_air']
+    exclude = ['kinematic_viscosity', 'design_id', 'inputs', 'requirements', 'rho_water', 'viscosity_air', 'rho_air', 'fuselage_dimensions']
     for key, value in dictionary.items():
         if key in exclude:
             continue
