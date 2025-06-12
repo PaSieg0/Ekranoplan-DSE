@@ -26,6 +26,9 @@ class FuselageThickness:
         self.t_wing = self.aircraft_data.data['inputs']['structures']['wing_box']['t_wing']/1000
 
         self.frame_material = self.aircraft_data.data['inputs']['structures']['materials'][frame_mat.name.lower()]
+        self.epoxy_in = self.aircraft_data.data['inputs']['structures']['fuselage']['epoxy_in']
+        self.epoxy_out = self.aircraft_data.data['inputs']['structures']['fuselage']['epoxy_out']
+        self.rho_epoxy = self.aircraft_data.data['inputs']['structures']['materials']['Epoxy']['rho']
 
         self.b = self.aircraft_data.data['outputs']['wing_design']['b']
         self.b_h = self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['b']
@@ -675,20 +678,29 @@ class FuselageThickness:
 
         skin_area_along_fuselage = np.zeros(len(self.x_points))
         stringer_area_along_fuselage = np.zeros(len(self.x_points))
-
+        stringer_area_epoxy = np.zeros(len(self.x_points))
+        skin_area_epoxy = np.zeros(len(self.x_points))
+        max_thickness = max([max(i) for i in self.final_thicknesses])
+        epoxy_thickness_in = max_thickness*self.epoxy_in
+        epoxy_thickness_out = max_thickness*self.epoxy_out
         for i, x in enumerate(self.x_points):
             station_idx = np.argmin(np.abs(np.array(self.thresholds) - x))
 
             skin_area = 0.0
+            epoxy_skin_area = 0.0
             for sec_idx, sec in enumerate(section_names):
                 thickness = self.final_thicknesses[sec_idx][station_idx] if isinstance(self.final_thicknesses[sec_idx], (list, np.ndarray)) else self.final_thicknesses[sec_idx]
                 length = self.section_lengths[sec_idx][station_idx] if isinstance(self.section_lengths[sec_idx], (list, np.ndarray, np.ndarray)) else self.section_lengths[sec_idx]
                 skin_area += thickness * length
+                epoxy_skin_area += length*(epoxy_thickness_in + epoxy_thickness_out)
 
             stringer_area = self.stringer_areas[station_idx] * self.n_stringers[station_idx]
+            stringer_epoxy = stringer_area * (self.epoxy_in + self.epoxy_out)
 
             skin_area_along_fuselage[i] = skin_area
             stringer_area_along_fuselage[i] = stringer_area
+            stringer_area_epoxy[i] = stringer_epoxy
+            skin_area_epoxy[i] = epoxy_skin_area
 
         rib_volume = 0.0
         for rib in range(len(self.rib_positions)):
@@ -704,14 +716,15 @@ class FuselageThickness:
         print(len(skin_area_along_fuselage))
         skin_mass = np.trapz(skin_area_along_fuselage, self.x_points) * self.density
         stringer_mass = np.trapz(stringer_area_along_fuselage, self.x_points) * self.density
-
+        self.epoxy_mass = np.trapz(skin_area_epoxy, self.x_points) * self.rho_epoxy + np.trapz(stringer_area_epoxy, self.x_points) * self.rho_epoxy
         total_mass = skin_mass + stringer_mass + self.rib_mass
         self.fuselage_mass = total_mass
 
         print(f"Skin Mass: {skin_mass:.2f} kg")
         print(f"Frame Mass: {self.rib_mass:.2f} kg")
         print(f"Stringer Mass: {stringer_mass:.2f} kg")
-        print(f"Fuselage Mass (total): {total_mass:.2f} kg")
+        print(f"Epoxy Mass: {self.epoxy_mass:.2f} kg")
+        print(f"Fuselage Mass (total): {(total_mass+self.epoxy_mass):.2f} kg")
 
         # Optional: plot area distributions
         if self.plot:
@@ -753,7 +766,8 @@ class FuselageThickness:
         self.aircraft_data.data['outputs']['fuselage_stress']['I_zz'] = float(sum(self.I_zz_all))
         self.aircraft_data.data['outputs']['fuselage_stress']['critical_margins'] = json_friendly_margins
         self.aircraft_data.data['outputs']['component_weights']['fuselage'] = self.fuselage_mass*9.81
-        print(f'Fuselage mass: {self.fuselage_mass:.2f} kg')
+        self.aircraft_data.data['outputs']['component_weights']['epoxy_fuselage'] = self.epoxy_mass*9.81
+
         self.aircraft_data.save_design(self.design_file)
 
 
