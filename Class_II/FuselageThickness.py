@@ -718,7 +718,7 @@ class FuselageThickness:
         stringer_mass = np.trapz(stringer_area_along_fuselage, self.x_points) * self.density
         self.epoxy_mass = np.trapz(skin_area_epoxy, self.x_points) * self.rho_epoxy + np.trapz(stringer_area_epoxy, self.x_points) * self.rho_epoxy
         total_mass = skin_mass + stringer_mass + self.rib_mass + self.epoxy_mass
-        self.fuselage_mass = total_mass 
+        self.fuselage_mass = total_mass*1.05
 
         print(f"Skin Mass: {skin_mass:.2f} kg")
         print(f"Frame Mass: {self.rib_mass:.2f} kg")
