@@ -37,6 +37,7 @@ class FinalIteration:
         self.cruise_speeds = [self.aircraft_data.data['requirements']['cruise_speed']]
         self.unit_cost = [self.aircraft_data.data['outputs']['costs']['unit_costs']['unit_cost_with_inflation_correction']]  
         self.operational_cost = [self.aircraft_data.data['outputs']['costs']['operational_costs']['operational_cost_per_tonne_km']]  
+        print(self.unit_cost, self.operational_cost, self.MTOM)
         while True:
             # Run iteration lil broski
             iteration_number += 1
