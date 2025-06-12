@@ -242,7 +242,9 @@ if __name__ == "__main__":
     change_initial_values(aircraft_data.data)
     print(aircraft_data.data['outputs']['max']['MTOM'])
 
-    final_iteration = FinalIteration(aircraft_data=aircraft_data)
-    final_iteration.main(mission_type=MissionType.DESIGN)
-    final_iteration.plot_convergence()
+    try:
+        final_iteration = FinalIteration(aircraft_data=aircraft_data)
+        final_iteration.main(mission_type=MissionType.DESIGN)
+    except Exception as e:
+        final_iteration.plot_convergence()
     
