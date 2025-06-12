@@ -156,7 +156,7 @@ class FinalIteration:
 
         plt.subplot(2, 3, 4)
         plt.plot(iterations, self.unit_cost, marker='o', color='purple')
-        plt.title("Const vs Iteration")
+        plt.title("Cost vs Iteration")
         plt.xlabel("Iteration")
         plt.ylabel("Unit Cost")
 
