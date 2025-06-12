@@ -1,9 +1,10 @@
 import os
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from utils import Data#, W2hp, ms2kts, N2lbf
+from utils import Data
 import numpy as np
 import matplotlib.pyplot as plt
+from aero.lift_curve import lift_curve
 
 
 class Simulation:
@@ -11,10 +12,11 @@ class Simulation:
         self.aircraft_data = aircraft_data
         self.design_file = f"design{self.aircraft_data.data['design_id']}.json"
 
-        self.t_end = 190
+        self.t_end = 120
         self.dt = 0.1
         self.t = 0.0
 
+        self.lift_curve = lift_curve()
 
         self.C_delta_0 = self.calculate_C_delta_0()
         self.determine_thrust_function()
@@ -52,9 +54,9 @@ class Simulation:
     def determine_thrust_function(self):
         vc = (self.aircraft_data.data['requirements']['cruise_speed'])
         vh = (self.aircraft_data.data['outputs']['optimum_speeds']['max'])
-        T_static  = (110000)
-        T_C = (312000) #181000
-        T_H = (223000) #223000
+        T_static  = (110000)*6
+        T_C = (312000)*1.5 #181000
+        T_H = (223000)*1.5 #223000
         eta_p = self.aircraft_data.data['inputs']['engine']['engine_efficiency']
         P_BHP = self.aircraft_data.data['inputs']['engine']['engine_power']
         A_matrix = np.array([
@@ -125,13 +127,15 @@ class Simulation:
 
     def update_C_delta(self):
         B = self.aircraft_data.data['outputs']['fuselage_dimensions']['w_fuselage'] #self.calculate_wetted_width()
+        rho_water = self.aircraft_data.data['rho_water']
+        g = 9.81
         # print(f"Wetted width (B): {B}")
         if B < 0:
             raise ValueError("Wetted width cannot be negative. Check the height (h) value.")
         if B == 0:
             # print("Returning infinity for C_delta due to zero wetted width.")
             return float('inf')
-        self.C_delta = 1/(B**3)
+        self.C_delta = rho_water * g * self.calculate_wetted_volume() / (rho_water * g * B**3)
 
     def update_buoyancy(self):
         rho_water = self.aircraft_data.data['rho_water']
@@ -155,7 +159,7 @@ class Simulation:
     def update_R(self):
         rho_water = self.aircraft_data.data['rho_water']
         g = 9.81
-        self.R = max(0, self.C_R_delta * rho_water * g * self.aircraft_data.data['outputs']['fuselage_dimensions']['w_fuselage']**3)
+        self.R = max(0, self.C_R_delta * rho_water * g * self.calculate_wetted_volume())
 
     def update_Thrust(self):
         v = self.v_x
@@ -171,17 +175,22 @@ class Simulation:
 
 
     def update_D(self):
-        Cd0 = self.aircraft_data.data['inputs']['Cd0']
-        A = self.aircraft_data.data['outputs']['wing_design']['aspect_ratio']
-        e = self.aircraft_data.data['inputs']['oswald_factor']
-        Cl = 2.15
-        Cd = Cd0 + (Cl**2 / (np.pi * A * e))
-        print(f"Cd: {Cd}, Cl: {Cl}, A: {A}, e: {e}")
+        h_b = (self.y + self.aircraft_data.data['outputs']['fuselage_dimensions']['wing_height']) / self.aircraft_data.data['outputs']['wing_design']['b']
+        if self.v_x > 70:
+            Cl_clean = self.aircraft_data.data['inputs']['CLmax_clean']
+        else:
+            Cl_clean = self.aircraft_data.data['inputs']['CLmax_takeoff']
+        Cd = self.lift_curve.calc_drag_butbetter(h_b=h_b, cl=Cl_clean)
         self.D = 0.5 * 1.225 * (self.v_x**2) * self.aircraft_data.data['outputs']['wing_design']['S'] * Cd
 
     def update_L(self):
-        Cl = 2.15
-        self.L = 0.5 * 1.225 * (self.v_x**2) * self.aircraft_data.data['outputs']['wing_design']['S'] * Cl
+        h_b = (self.y + self.aircraft_data.data['outputs']['fuselage_dimensions']['wing_height']) / self.aircraft_data.data['outputs']['wing_design']['b']
+        if self.v_x > 70:
+            Cl = self.aircraft_data.data['inputs']['CLmax_clean']
+        else:
+            Cl = self.aircraft_data.data['inputs']['CLmax_takeoff']
+        CL_WIG = self.lift_curve.Cl_correction_GE(h_b=h_b, cl=Cl)
+        self.L = 0.5 * 1.225 * (self.v_x**2) * self.aircraft_data.data['outputs']['wing_design']['S'] * CL_WIG
 
 
     def update_all_states(self):
@@ -219,14 +228,14 @@ class Simulation:
 
     def plot_results(self):
         plt.plot(self.time_list, self.R_list, 'k-', label='R')
-        # plt.plot(self.time_list, self.D_list, 'r-', label='D')
-        # plt.plot(self.time_list, self.Thrust_list, 'g-', label='Thrust')
-        # plt.plot(self.time_list, self.R_froude_list, 'm-', label='R_froude')
-        # plt.plot(self.time_list, self.total_drag_list, 'c-', label='Total D')
+        plt.plot(self.time_list, self.D_list, 'r-', label='D')
+        plt.plot(self.time_list, self.Thrust_list, 'g-', label='Thrust')
+        plt.plot(self.time_list, self.R_froude_list, 'm-', label='R_froude')
+        plt.plot(self.time_list, self.total_drag_list, 'c-', label='Total D')
         # plt.plot(self.time_list, self.y_list, "k-", label='y')
         # plt.plot(self.time_list, self.buoyance_list)
-        # plt.plot(self.time_list, self.L_list, label='L')
-        # plt.plot(self.time_list, self.v_x_list, label='V_X')
+        plt.plot(self.time_list, self.L_list, label='L')
+        plt.plot(self.time_list, self.v_x_list, label='V_X')
         # plt.plot(self.time_list, self.v_y_list, label='V_X')
         # plt.plot(self.time_list, self.a_x_list, label='A_X')
         plt.xlabel('Time (S)')
@@ -242,6 +251,13 @@ class Simulation:
 
         plt.plot(self.time_list, self.total_power_list)
         plt.show()
+
+    def save_takeoff_power(self):
+        to_speed = self.aircraft_data.data['requirements']['stall_speed_takeoff'] * 1.05
+        diff_list = abs(np.array(self.v_x_list) - to_speed)
+        takeoff_power = self.total_power_list[np.argmin(diff_list)]
+        self.aircraft_data.data['outputs']['takeoff_power'] = takeoff_power
+        self.aircraft_data.save_design(self.design_file)
 
         
     def run_simulation(self):
@@ -277,6 +293,7 @@ class Simulation:
             self.store_all_states()
 
         self.plot_results()
+        self.save_takeoff_power()
 
 if __name__ == "__main__":
     aircraft_data = Data('design3.json')
