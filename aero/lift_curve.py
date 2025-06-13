@@ -35,6 +35,7 @@ class lift_curve():
 
         #lift coefficient data
         self.cl_lst=self.data[:,1] / (1+ self.data[:,1]/(np.pi * self.AR))
+        # print(max(self.cl_lst))
         self.cd_lst=self.data[:,2]
         self.cm_lst=self.data[:,3]
    
@@ -310,27 +311,30 @@ class lift_curve():
 
         #cmx__c plot
         ax[0][0].plot(self.alpha,self.cmx__c)
-        ax[0][0].set_title('cm at x/c for alpha')
+        # ax[0][0].set_title('cm at x/c for alpha')
         ax[0][0].set_ylim(0,-0.2)
-        ax[0][0].set_ylabel('cmac_x__c')
+        ax[0][0].set_ylabel('cm')
+        ax[0][0].set_xlabel('α (degrees)')
+        
+
 
         #x_ac plot
         ax[0][1].plot(self.alpha,self.xac)
-        ax[0][1].set_title('Position of the ac at alpha')
+        # ax[0][1].set_title('Position of the ac at alpha')
         ax[0][1].set_ylim(-1,1)
         ax[0][1].set_ylabel('x_ac')
-        ax[0][1].set_xlabel('alpha')
+        ax[0][1].set_xlabel('α (degrees)')
         ax[0][1].hlines(self.xac_segm1,self.seg1[0],self.seg1[1],color='red',linestyle='dashed')
         ax[0][1].hlines(self.xac_segm2,self.seg2[0],self.seg2[1],color='red',linestyle='dashed')
         ax[0][1].plot(self.segm15,self.xac_segm15,color='red',linestyle='dashed')
 
         #cmac1
         ax[1][0].plot(self.alpha_seg1,self.cmac_seg1)
-        ax[1][0].set_title('cm at first range of alpha')
+        # ax[1][0].set_title('cm at first range of alpha')
         ax[1][0].set_ylim(-0.09,-0.1)
         ax[1][0].set_xlim(-7,22)
         ax[1][0].set_ylabel('cm')
-        ax[1][0].set_xlabel('alpha')
+        ax[1][0].set_xlabel('α (degrees)')
 
         #cmac2
         ax[1][1].plot(self.alpha_seg2,self.cmac_seg2)
@@ -338,18 +342,21 @@ class lift_curve():
         ax[1][1].set_xlim(-7,22)
         # ax[1][1].set_title('cm at second range of alpha')
         ax[1][1].set_ylabel('cm')
-        ax[1][1].set_xlabel('alpha')
+        ax[1][1].set_xlabel('α (degrees)')
 
         
         plt.show()
             
     def dcl_dalpha(self,h__b='no'):
     # Convert alpha to numpy array if it's not already
+        alpha_arr = np.array(self.alpha)
         if h__b=='no':
             cl_arr = np.array(self.cl_lst)
+            # print((cl_arr[0]-cl_arr[100])/(alpha_arr[0]-alpha_arr[100]))
         else:
-            cl_arr=self.Cl_correction_GE(self.cl_lst)
-        alpha_arr = np.array(self.alpha)
+            cl_arr=self.Cl_correction_GE(h_b=h__b)
+            # print((cl_arr[0]-cl_arr[100])/(alpha_arr[0]-alpha_arr[100]))
+        
 
         # Find index where alpha is closest to 5
         
@@ -420,35 +427,40 @@ class lift_curve():
         ax=fig.subplots(2,2)
 
         # drag polar
-        ax[0][0].set_title('Drag curve')
+        ax[0][0].set_title('Drag Polar')
+        
         # ax[0][0].plot(self.alpha[0:self.idx_cl_max], self.ind_lst[:self.idx_cl_max], label='h_b=0.050(old)') # Add a label
         # ax[0][0].plot(self.alpha[0:self.idx_cl_max], self.ind_lst2[:self.idx_cl_max], label='out GE(old)') # Add a label
-        ax[0][0].plot(self.alpha[0:self.idx_cl_max], self.ind_lst3[:self.idx_cl_max], label='h_b=0.050') # Add a label
-        ax[0][0].plot(self.alpha[0:self.idx_cl_max], self.ind_lst4[:self.idx_cl_max], label='out GE') # Add a label
-        ax[0][0].set_xlabel('alpha')
-        ax[0][0].set_ylabel('CD')
+        ax[0][0].plot(self.cl_lst_GE[:self.idx_cl_max], self.ind_lst3[:self.idx_cl_max], label='h_b=0.050') # Add a label
+        ax[0][0].plot(self.cl_lst[:self.idx_cl_max], self.ind_lst4[:self.idx_cl_max], label='out GE') # Add a label
+        ax[0][0].set_xlabel('Cl')
+        # ax[0][0].set_ylabel('Cd')
         ax[0][0].legend() # Call legend() to display the labels
 
 
         #lift curve
         ax[0][1].set_title('lift curve')
-        ax[0][1].plot(self.alpha[:self.idx_cl_max],self.cl_lst[:self.idx_cl_max], label='no GE')
+        ax[0][1].set_xlabel('α (degrees)')
+        ax[0][1].set_ylabel('Cl')
+        ax[0][1].plot(self.alpha[:self.idx_cl_max],self.cl_lst[:self.idx_cl_max], label='No GE')
         ax[0][1].plot(self.alpha[:self.idx_cl_max],self.cl_lst_GE[:self.idx_cl_max], label='GE')
-        ax[0][1].plot(self.alpha[:self.idx_cl_max],self.cl_fit_no_WIG[:self.idx_cl_max], '--r', label='no GE fit')
+        # ax[0][1].plot(self.alpha[:self.idx_cl_max],self.cl_fit_no_WIG[:self.idx_cl_max], '--r', label='no GE fit')
         ax[0][1].legend()
 
         #L/D
-        ax[1][0].set_title('L/D')
+        # ax[1][0].set_title('L/D')
+        ax[1][0].set_xlabel('α (degrees)')
+        ax[1][0].set_ylabel('L/D')
         ax[1][0].set_ylim(0,70)
-        ax[1][0].plot(self.alpha[:self.idx_cl_max],self.L_D_lst[:self.idx_cl_max], label='old')
+        ax[1][0].plot(self.alpha[:self.idx_cl_max],self.L_D_lst[:self.idx_cl_max], label='No GE')
 
         #L/D WIG
-        ax[1][0].plot(self.alpha[:self.idx_cl_max],self.L_D_GE_lst[:self.idx_cl_max], label='new')
+        ax[1][0].plot(self.alpha[:self.idx_cl_max],self.L_D_GE_lst[:self.idx_cl_max], label='GE')
         ax[1][0].legend()
 
 
         #Spanwise distribution
-        ax[1][1].set_title('lift spanwise')
+        # ax[1][1].set_title('lift spanwise')
         ax[1][1].plot(self.span, self.Cl_array_span)
         ax[1][1].set_ylim(0,2)
         ax[1][1].set_xlim(-40,40)
@@ -532,6 +544,8 @@ if __name__ == "__main__":  #if run seperately
     
     curves=lift_curve()
     curves.plot_moment_ac()
+    # print('jhi')
+    # print(curves.dcl_dalpha())
     curves.printing()
     # print(curves.interpolate_Cl(5))
     curves.plotting()

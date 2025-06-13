@@ -76,27 +76,30 @@ class lateral_centre():
     
     def plot_distr(self):
         #importing pos and L
-        pos,L,M,D=self.determine_distr(20,11,4,1.225,90)
+        pos,L,M,D=self.determine_distr(74.5/2,13.3,5.32,1.225,61.73*1.05)
 
         #making plots
         fig=plt.figure()
-        ax=fig.subplots(4,1)
+        ax=fig.subplots(2,1)
         ax[0].plot(pos,self.cll)
         # ax.vlines(self.mu*self.b,0,2.5,color='red',linestyle='dashed')
         ax[0].plot(self.pos,self.cl)
-        ax[0].set_ylabel('corrected cl')
+        ax[0].set_ylabel('Corrected cl')
         # ax.set_title('spanwise lift distribution')
         # ax.set_xlabel('spanwise position')
         # ax.set_ylabel('lift coefficient')
-        ax[1].set_xlim(-1.5,36.5)
-        ax[1].set_ylabel('corrected L')
-        ax[1].plot(pos,L)
-        ax[2].plot(pos,M)
-        ax[2].set_xlim(-1.5,36.5)
-        ax[2].set_ylabel('corrected M')
-        ax[3].plot(pos,D)
-        ax[3].set_xlim(-1.5,36.5)
-        ax[3].set_ylabel('corrected D')
+        # ax[1].set_xlim(-1.5,36.5)
+        # ax[1].set_ylabel('L Distrubution')
+        # ax[1].set_xlabel('Spanwise Position')
+        # ax[1].plot(pos,L)
+        # ax[1].plot(pos,M)
+        # # ax[2].set_xlim(-1.5,36.5)
+        # ax[1].set_ylabel('M Distrubution')
+        # ax[1].set_xlabel('Spanwise Position')
+        ax[1].plot(pos,D)
+        # ax[3].set_xlim(-1.5,36.5)
+        ax[1].set_ylabel('D Distrubution')
+        ax[1].set_xlabel('Spanwise Position')
         plt.show()
 
 
@@ -108,7 +111,7 @@ class lateral_centre():
         C_L=sc.trapezoid(self.cl,self.pos)/self.b
         self.cll=self.cl*cl_max/C_L
         self.cm=self.cm1__4*cl_max/C_L
-        self.cd=(self.Cdi+self.cd0)*cl_max/C_L
+        self.cd=(self.Cdi+self.cd0)*(cl_max/C_L)**2
 
         #calculating l/q
         self.l__q=self.cl*((ct-cr)*pos/self.b+cr)
