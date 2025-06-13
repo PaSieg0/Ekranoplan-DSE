@@ -108,14 +108,20 @@ class ElevatorRudder:
     def calculate_engine_OEI_yaw(self):
         right_yaw_moment = 0
 
-        for i in self.engine_positions:
-            i += 1/4*self.prop_diameter
-            right_yaw_moment += self.engine_thrust * i
-        
+        right_yaw_moment = 0
         left_yaw_moment = 0
-        for i in self.engine_positions[:2]:
-            i -= 1/4*self.prop_diameter
-            left_yaw_moment += self.engine_thrust * i
+        # Alternate +1/4 and -1/4 prop_diameter from right to left
+        sign = 1
+        for idx, i in enumerate(self.engine_positions):
+            offset = sign * (1/4 * self.prop_diameter)
+            right_yaw_moment += self.engine_thrust * (i + offset)
+            sign *= -1  # Alternate sign
+
+        sign = 1
+        for idx, i in enumerate(self.engine_positions[:2]):
+            offset = sign * (1/4 * self.prop_diameter)
+            left_yaw_moment += self.engine_thrust * (i - offset)
+            sign *= -1  # Alternate sign
         
         self.CN_OEI = (right_yaw_moment - left_yaw_moment)/2 / (self.S*self.b*0.5*self.rho*self.V**2)*1.5
         return self.CN_OEI
