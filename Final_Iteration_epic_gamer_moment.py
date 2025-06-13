@@ -120,7 +120,7 @@ class FinalIteration:
                 print('The wing box is weak bro 😔')
                 break
             
-            stop_condition = compare_dicts(self.aircraft_data.data, self.prev_json, tolerance=0.1) or iteration_number >= self.max_iterations
+            stop_condition = compare_dicts(self.aircraft_data.data, self.prev_json, tolerance=0.01) or iteration_number >= self.max_iterations
 
             self.MTOM.append(self.aircraft_data.data['outputs']['design']['MTOM'])
             self.fuel_economy.append(self.aircraft_data.data['outputs']['max']['fuel_economy'])
@@ -261,10 +261,8 @@ def is_close(val1, val2, tolerance):
 if __name__ == "__main__":
     aircraft_data = Data('backup_design3.json')
 
-    try:
-        final_iteration = FinalIteration(aircraft_data=aircraft_data)
-        final_iteration.main(mission_type=MissionType.DESIGN)
-    except Exception as e:
-        pass
+ 
+    final_iteration = FinalIteration(aircraft_data=aircraft_data)
+    final_iteration.main(mission_type=MissionType.DESIGN)
     final_iteration.plot_convergence()
     
