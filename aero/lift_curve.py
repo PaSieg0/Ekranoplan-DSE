@@ -420,11 +420,13 @@ class lift_curve():
         ax=fig.subplots(2,2)
 
         # drag polar
-        ax[0][0].set_title('Drag polar')
+        ax[0][0].set_title('Drag curve')
         # ax[0][0].plot(self.alpha[0:self.idx_cl_max], self.ind_lst[:self.idx_cl_max], label='h_b=0.050(old)') # Add a label
         # ax[0][0].plot(self.alpha[0:self.idx_cl_max], self.ind_lst2[:self.idx_cl_max], label='out GE(old)') # Add a label
         ax[0][0].plot(self.alpha[0:self.idx_cl_max], self.ind_lst3[:self.idx_cl_max], label='h_b=0.050') # Add a label
         ax[0][0].plot(self.alpha[0:self.idx_cl_max], self.ind_lst4[:self.idx_cl_max], label='out GE') # Add a label
+        ax[0][0].set_xlabel('alpha')
+        ax[0][0].set_ylabel('CD')
         ax[0][0].legend() # Call legend() to display the labels
 
 
