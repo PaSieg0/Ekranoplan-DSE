@@ -113,8 +113,8 @@ class AileronHLD:
             self.aileron_start = 7
         
         aileron_integral = quad(self.c, self.aileron_start, self.aileron_end)[0]
-        self.Clda = -2*np.rad2deg(self.airfoil_Cl_alpha)*self.tau/self.S/self.b*aileron_integral
-
+        self.Clda = -2*self.airfoil_Cl_alpha*self.tau/self.S/self.b*aileron_integral
+        print(self.Clda)
         L = self.Clda*self.max_aileron_deflection*self.S*self.b
         mid_point = (self.aileron_start + self.aileron_end)/2
 
@@ -260,7 +260,7 @@ class AileronHLD:
         self.aircraft_data.data['outputs']['control_surfaces']['aileron']['turn_radius'] = self.turn_radius
         self.aircraft_data.data['outputs']['control_surfaces']['aileron']['object_distance'] = self.object_distance
         self.aircraft_data.data['outputs']['control_surfaces']['aileron']['Clda'] = self.Clda
-        self.aircraft_data.data['outputs']['aerodynamic_stability_coefficients_asym']['C_l_delta_a'] = -self.Clda
+        self.aircraft_data.data['outputs']['aerodynamic_stability_coefficients_asym']['C_l_delta_a'] = self.Clda
         self.aircraft_data.data['outputs']['HLD']['b1'] = self.flap_start
         self.aircraft_data.data['outputs']['HLD']['b2'] = self.flap_end
         self.aircraft_data.data['outputs']['HLD']['Swf_single'] = self.flap_area
@@ -313,15 +313,15 @@ class AileronHLD:
         ax.plot([0, self.b/2], [y_root_TE, y_tip_TE], color='blue')
         ax.plot([0, -self.b/2], [y_root_TE, y_tip_TE], color='blue')  # Mirror
 
-        # # Ailerons
-        # ax.plot([self.aileron_start, self.aileron_start], [y_root_LE_aileron, y_root_TE_aileron], color='red')
-        # ax.plot([-self.aileron_start, -self.aileron_start], [y_root_LE_aileron, y_root_TE_aileron], color='red')  # Mirror
+        # Ailerons
+        ax.plot([self.aileron_start, self.aileron_start], [y_root_LE_aileron, y_root_TE_aileron], color='red')
+        ax.plot([-self.aileron_start, -self.aileron_start], [y_root_LE_aileron, y_root_TE_aileron], color='red')  # Mirror
 
-        # ax.plot([self.aileron_end, self.aileron_end], [y_tip_LE_aileron, y_tip_TE_aileron], color='red')
-        # ax.plot([-self.aileron_end, -self.aileron_end], [y_tip_LE_aileron, y_tip_TE_aileron], color='red')  # Mirror
+        ax.plot([self.aileron_end, self.aileron_end], [y_tip_LE_aileron, y_tip_TE_aileron], color='red')
+        ax.plot([-self.aileron_end, -self.aileron_end], [y_tip_LE_aileron, y_tip_TE_aileron], color='red')  # Mirror
 
-        # ax.plot([self.aileron_start, self.aileron_end], [y_root_LE_aileron, y_tip_LE_aileron], color='red')
-        # ax.plot([-self.aileron_start, -self.aileron_end], [y_root_LE_aileron, y_tip_LE_aileron], color='red')  # Mirror
+        ax.plot([self.aileron_start, self.aileron_end], [y_root_LE_aileron, y_tip_LE_aileron], color='red')
+        ax.plot([-self.aileron_start, -self.aileron_end], [y_root_LE_aileron, y_tip_LE_aileron], color='red')  # Mirror
 
         # Flaps
         ax.plot([self.flap_start, self.flap_start], [y_root_LE_flap, y_root_TE_flap], color='orange')
