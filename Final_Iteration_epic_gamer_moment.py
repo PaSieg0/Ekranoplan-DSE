@@ -114,7 +114,7 @@ class FinalIteration:
                 print('The wing box is weak bro 😔')
                 break
             
-            stop_condition = compare_dicts(self.aircraft_data.data, self.prev_json, tolerance=0.0001) or iteration_number >= self.max_iterations
+            stop_condition = compare_dicts(self.aircraft_data.data, self.prev_json, tolerance=0.01) or iteration_number >= self.max_iterations
 
             self.MTOM.append(self.aircraft_data.data['outputs']['design']['MTOM'])
             self.fuel_economy.append(self.aircraft_data.data['outputs']['max']['fuel_economy'])
@@ -229,10 +229,15 @@ def is_close(val1, val2, tolerance):
     :param tolerance: Tolerance (absolute or relative difference) allowed.
     :return: True if values are within the tolerance, False otherwise.
     """
-    if isinstance(val1, (int, float)) and isinstance(val2, (int, float)):
+    if isinstance(val1, (float)) and isinstance(val2, (float)):
 
         if (val1 == 0 and val2 == 0) or abs(val1 - val2) / max(abs(val1), abs(val2)) <= tolerance:
             return True
+    elif isinstance(val1, (int)) and isinstance(val2, (int)):
+
+        if abs(val1 - val2) <= 1:
+            return True
+        
     if isinstance(val1, list) and isinstance(val2, list):
         if len(val1) != len(val2):
             return False

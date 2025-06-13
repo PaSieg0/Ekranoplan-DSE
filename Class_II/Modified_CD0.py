@@ -68,7 +68,7 @@ class Cd0Estimation:
         correction_factor = 1.5  # Example correction factor, adjust as needed
 
         S_wet = np.pi * self.d_nacelle * self.l_nacelle + np.pi * self.d_nacelle**2 / 4  # Wetted area of the nacelle
-        S_wet *= correction_factor * self.aircraft_data.data['inputs']['n_engines']  # Apply the correction factor to the wetted area
+        S_wet *= correction_factor * (self.aircraft_data.data['inputs']['n_engines'] +2) # Apply the correction factor to the wetted area
         return S_wet
 
     
