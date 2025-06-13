@@ -945,7 +945,7 @@
         "costs": {
             "unit_costs": {
                 "cost_with_inflation_correction": 15404.371328405,
-                "unit_cost_with_inflation_correction": 260.7550145681455 
+                "unit_cost_with_inflation_correction": 260.7550145681455
             },
             "operational_costs": {
                 "fuel_price_design_mission": 91208.63668646468,
