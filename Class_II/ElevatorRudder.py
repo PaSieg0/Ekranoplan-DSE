@@ -154,7 +154,7 @@ class ElevatorRudder:
     
     def calculate_elevator_surface(self):
         self.pitch_rate = self.calculate_pitch_rate()
-        self.required_Cmde_Cmq = -self.pitch_rate/np.deg2rad(-self.elevator_deflection)*(self.MAC/self.V)/2
+        self.required_Cmde_Cmq = -self.pitch_rate/np.deg2rad(-self.elevator_deflection)*(self.MAC/self.V)
         self.calculate_elevator_position()
 
     def calculate_elevator_position(self):

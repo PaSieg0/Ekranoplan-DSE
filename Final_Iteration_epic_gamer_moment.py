@@ -87,6 +87,12 @@ class FinalIteration:
             # EmpennageOptimizer (Vertical Tail, main_empennage)
             empennage_optimizer = EmpennageOptimizer(self.aircraft_data)
             empennage_optimizer.run()
+
+            print('Stab again')
+            stab_coeff_sym = DerivativesDatcom_sym(self.aircraft_data)
+            stab_coeff_sym.update_json()
+            stab_coeff_asym = DerivativesDatcom_asym(self.aircraft_data)
+            stab_coeff_asym.update_json()
             
             # AileronHLD 
             print('Control surfaces')
