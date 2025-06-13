@@ -118,8 +118,7 @@ class ClassII:
         # self.W_l = # landing gross weight
         # self.W_press = 11.9 # weight penalty due to pressurization
         self.W_uav = 1400 # uninstalled avionics weight
-        self.W_APU_uninstalled = 1336 # APU weight uninstalled
-        self.W_emergency_APU = kg2lbs(300)
+        self.W_APU_uninstalled = 1336+300 # APU weight uninstalled
 
 
 
@@ -190,10 +189,6 @@ class ClassII:
         W_APU_installed_lbs = 1.5*self.W_APU_uninstalled
         return lbs2kg(W_APU_installed_lbs)*9.81
     
-    def Emergency_APU(self):
-        W_Emergency_APU_lbs = 1.5*self.W_emergency_APU
-        return lbs2kg(W_Emergency_APU_lbs)*9.81
-    
     def instruments(self):
         W_instruments_lbs = 4.509 * self.K_r * self.K_tp * self.N_c**0.541 * self.N_en * (self.N_f + self.B_w)**0.5
         return lbs2kg(W_instruments_lbs)*9.81
@@ -261,7 +256,6 @@ class ClassII:
         self.W_fuel_system = self.fuel_system()
         self.W_flight_control = self.flight_control()
         self.W_APU_installed = self.APU_installed()
-        self.W_emergency_APU_installed = self.Emergency_APU()
         self.W_instruments = self.instruments()
         self.W_hydraulics = self.hydraulics()
         self.W_electrical = self.electrical()
@@ -289,7 +283,6 @@ class ClassII:
         self.perc_fuel_system = self.W_fuel_system / (self.aircraft_data.data['outputs']['max']['OEW']) * 100
         self.perc_flight_control = self.W_flight_control / (self.aircraft_data.data['outputs']['max']['OEW']) * 100
         self.perc_APU_installed = self.W_APU_installed / (self.aircraft_data.data['outputs']['max']['OEW']) * 100
-        self.perc_emergency_APU_installed = self.W_emergency_APU_installed / (self.aircraft_data.data['outputs']['max']['OEW']) * 100
         self.perc_instruments = self.W_instruments / (self.aircraft_data.data['outputs']['max']['OEW']) * 100
         self.perc_hydraulics = self.W_hydraulics / (self.aircraft_data.data['outputs']['max']['OEW']) * 100
         self.perc_electrical = self.W_electrical / (self.aircraft_data.data['outputs']['max']['OEW']) * 100
@@ -317,7 +310,6 @@ class ClassII:
             self.W_fuel_system + 
             self.W_flight_control + 
             self.W_APU_installed +
-            self.W_emergency_APU_installed +
             self.W_instruments + 
             self.W_hydraulics + 
             self.W_electrical + 
@@ -347,7 +339,6 @@ class ClassII:
             self.perc_fuel_system +
             self.perc_flight_control +
             self.perc_APU_installed +
-            self.perc_emergency_APU_installed +
             self.perc_instruments +
             self.perc_hydraulics +
             self.perc_electrical +
@@ -376,7 +367,6 @@ class ClassII:
             'Fuel system': self.W_fuel_system,
             'Flight control': self.W_flight_control,
             'APU installed': self.W_APU_installed,
-            'Emergency APU installed': self.W_emergency_APU_installed,
             'Instruments': self.W_instruments,
             'Hydraulics': self.W_hydraulics,
             'Electrical': self.W_electrical,
@@ -405,7 +395,6 @@ class ClassII:
             'Fuel system': self.perc_fuel_system,
             'Flight control': self.perc_flight_control,
             'APU installed': self.perc_APU_installed,
-            'Emergency APU installed': self.perc_emergency_APU_installed,
             'Instruments': self.perc_instruments,
             'Hydraulics': self.perc_hydraulics,
             'Electrical': self.perc_electrical,

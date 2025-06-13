@@ -17,7 +17,7 @@ def calculate_unit_cost(aircraft_data: Data, plot=True):
 
     N_eng = aircraft_data.data["inputs"]["n_engines"] # Number of engines
     T_max = 110000*0.2248089431 # Engine max thrust lb
-    M_max = 0.72 # Max mach number engine
+    M_max = 0.84 # Max mach number engine
     T_turbine = 1450*1.8 # Turbine inlet temperature in Rankine
 
 
@@ -65,14 +65,14 @@ def calculate_unit_cost(aircraft_data: Data, plot=True):
         plt.show()
 
 
-    C = C_D + C_F + C_M_mat + C_eng*N_eng + C_avionics + R_T*H_T + R_Q*H_Q + R_M*H_M
+    C = (C_D + C_F + C_M_mat + C_eng*N_eng + C_avionics + R_T*H_T + R_Q*H_Q + R_M*H_M)*2.92
 
     unit_costs = {
-        "cost_with_inflation_correction": (C/1e6)*2.92,
-        "unit_cost_with_inflation_correction": (C/1e6)*2.92/(Q+FTA)
+        "cost_with_inflation_correction": (C/1e6),
+        "unit_cost_with_inflation_correction": (C/1e6)/(Q+FTA)
     }
 
-    return unit_costs
+    return unit_costs, cost_values
 
 '''Operational Cost'''
 
@@ -233,5 +233,7 @@ if __name__ == "__main__":
     main_cost(aircraft_data=aircraft_data, design_file="design3.json")
 
     print("Design data has been updated with costs!")
+    a , b = calculate_unit_cost(aircraft_data)
+    print(b)
 
     
