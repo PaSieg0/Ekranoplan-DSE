@@ -118,7 +118,7 @@ class ClassII:
         # self.W_l = # landing gross weight
         # self.W_press = 11.9 # weight penalty due to pressurization
         self.W_uav = 1400 # uninstalled avionics weight
-        self.W_APU_uninstalled = 700 # APU weight uninstalled
+        self.W_APU_uninstalled = 1336 # APU weight uninstalled
 
 
 
@@ -186,7 +186,7 @@ class ClassII:
         return lbs2kg(W_flight_control_system_lbs)*9.81
     
     def APU_installed(self):
-        W_APU_installed_lbs = 2.2*self.W_APU_uninstalled
+        W_APU_installed_lbs = 1.5*self.W_APU_uninstalled
         return lbs2kg(W_APU_installed_lbs)*9.81
     
     def instruments(self):

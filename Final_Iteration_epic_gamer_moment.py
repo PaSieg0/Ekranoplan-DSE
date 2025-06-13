@@ -114,7 +114,7 @@ class FinalIteration:
                 print('The wing box is weak bro 😔')
                 break
             
-            stop_condition = compare_dicts(self.aircraft_data.data, self.prev_json, tolerance=0.01) or iteration_number >= self.max_iterations
+            stop_condition = compare_dicts(self.aircraft_data.data, self.prev_json, tolerance=0.1) or iteration_number >= self.max_iterations
 
             self.MTOM.append(self.aircraft_data.data['outputs']['design']['MTOM'])
             self.fuel_economy.append(self.aircraft_data.data['outputs']['max']['fuel_economy'])
