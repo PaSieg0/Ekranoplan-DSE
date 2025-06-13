@@ -263,8 +263,8 @@
             "prop_diameter": 6.0,
             "engine_length": 4.2,
             "engine_weight": 1900,
-            "engine_power": 8202000,
-            "engine_efficiency": 0.85,
+            "engine_power": 7402439,
+            "prop_efficiency": 0.82,
             "n_engines": 6.0,
             "n_blades": 6
         }
