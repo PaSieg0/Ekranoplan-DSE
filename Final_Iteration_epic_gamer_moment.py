@@ -126,6 +126,11 @@ class FinalIteration:
             
             if stop_condition:
                 self.aircraft_data.save_design(self.design_file)
+                # Stability derivatives
+                stab_coeff_sym = DerivativesDatcom_sym(self.aircraft_data)
+                stab_coeff_sym.update_json()
+                stab_coeff_asym = DerivativesDatcom_asym(self.aircraft_data)
+                stab_coeff_asym.update_json()
                 print("Final iteration completed successfully. LET'S GOOOOO BABY! Time to put the blinds up. 😎")
                 break
             
