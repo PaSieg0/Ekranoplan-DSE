@@ -334,9 +334,9 @@ class ElevatorRudder:
         plt.plot([b_elevator_mirror[-1], b_elevator_mirror[-1]], [le_elevator_actual_mirror[-1], te_elevator_mirror[-1]], color='red')
 
         # Final touches
-        plt.title('Horizontal Tail and Elevator Planform')
-        plt.xlabel('Spanwise Position (m)')
-        plt.ylabel('Chordwise Position (m)')
+        # plt.title('Horizontal Tail and Elevator Planform')
+        plt.xlabel('Lateral Position (m)')
+        plt.ylabel('Longitudinal Position (m)')
         plt.ylim(-5, 5)
         plt.xlim(-self.b_h/2 - 1, self.b_h/2 + 1)
         plt.gca().set_aspect('equal')
@@ -385,9 +385,9 @@ class ElevatorRudder:
         plt.plot([x_rudder_LE_root, x_rudder_LE_tip], [y_rudder_root, y_rudder_tip], color='red')
         plt.plot([x_rudder_TE_root, x_rudder_TE_tip], [y_rudder_root, y_rudder_tip], color='red')
         plt.gca().set_aspect('equal')
-        plt.title('Vertical Tail Chord Distribution with Rudder')
-        plt.xlabel('Chordwise Position (m)')
-        plt.ylabel('Spanwise Position (m)')
+        # plt.title('Vertical Tail Chord Distribution with Rudder')
+        plt.xlabel('Longitudinal Position (m)')
+        plt.ylabel('Vertical Position (m)')
         plt.grid()
         plt.show()
 

@@ -351,9 +351,9 @@ class AileronHLD:
 
 
         ax.set_aspect('equal', adjustable='box')
-        ax.set_title("Wing Planform with Flaps")
-        ax.set_xlabel("Spanwise Direction (b)")
-        ax.set_ylabel("Chord (m)")
+        # ax.set_title("Wing Planform with Flaps")
+        ax.set_xlabel("Lateral Position (m)")
+        ax.set_ylabel("Longitudinal Position (m)")
         ax.set_ylim(-10,10)
         ax.grid(True)
 
