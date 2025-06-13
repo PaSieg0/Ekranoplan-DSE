@@ -960,25 +960,17 @@
                 "fuel_price_design_mission": 215750.7,
                 "crew_cost_design_mission": 25730.503752916644,
                 "maintenance_cost_per_mission": 28000.0,
-                "total_operational_cost_design_mission": 269481.20375291666,
-                "operational_cost_design_mission_per_hr": 53896.24075058333,
-                "operational_cost_per_tonne_km": 0.552447654758488
+                "total_operational_cost_design_mission": 241481.20375291666,
+                "operational_cost_design_mission_per_hr": 48296.24075058333,
+                "operational_cost_per_tonne_km": 0.49504649238494997
             },
             "operational_costs_c17": {
                 "fuel_price_design_mission": 149361.6,
-                "crew_cost_design_mission": 9685.159326270099,
+                "crew_cost_design_mission": 9793.785464250237,
                 "maintenance_cost_per_mission": 30128.0,
-                "total_operational_cost_design_mission": 189174.7593262701,
-                "operational_cost_design_mission_per_hr": 35162.59467031043,
-                "operational_cost_per_tonne_km": 0.544724632389289
-            },
-            "operational_costs_c130": {
-                "fuel_price_design_mission": 27219.365853658543,
-                "crew_cost_design_mission": 6421.578246770547,
-                "maintenance_cost_per_mission": 52808.0,
-                "total_operational_cost_design_mission": 86448.94410042909,
-                "operational_cost_design_mission_per_hr": 9167.438398772969,
-                "operational_cost_per_tonne_km": 1.0381810809323868
+                "total_operational_cost_design_mission": 159155.38546425026,
+                "operational_cost_design_mission_per_hr": 29582.785402277,
+                "operational_cost_per_tonne_km": 0.4582844939174194
             }
         }
     },
