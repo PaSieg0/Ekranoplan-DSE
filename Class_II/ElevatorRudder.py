@@ -78,7 +78,11 @@ class ElevatorRudder:
         self.isa = ISA(altitude=high_altitude)
         self.rho_high = self.isa.rho
         self.Cd0 = self.aircraft_data.data['inputs']['Cd0']
-        self.engine_thrust = 0.5*self.rho*self.V**2*self.S*self.Cd0/4
+        self.V_climb = self.aircraft_data.data['outputs']['optimum_speeds']['max_roc']
+        self.MTOW = self.aircraft_data.data['outputs']['design']['MTOW']
+        self.CL = self.MTOW / (0.5 * self.rho * self.V**2 * self.S)
+        self.CD = self.Cd0 + self.CL**2 / (np.pi * self.aircraft_data.data['outputs']['wing_design']['aspect_ratio'] * self.aircraft_data.data['inputs']['oswald_factor'])
+        self.engine_thrust = 0.5*self.rho*self.V_climb**2*self.S*self.CD/6
         self.engine_thrust_TO = self.take_off_power / self.V_lof
 
         self.vertical_tail_first_x = self.w_fuselage/2 - self.vertical_tail_thickness/2
@@ -99,19 +103,25 @@ class ElevatorRudder:
     
     def chord_h(self, y):
 
-        return (self.chord_tip_h - self.chord_root_h) * (y / self.b_h) + self.chord_root_h
+        return (self.chord_tip_h - self.chord_root_h) * (y / (self.b_h/2)) + self.chord_root_h
     
     def calculate_engine_OEI_yaw(self):
         right_yaw_moment = 0
 
-        for i in self.engine_positions[:2]:
-            i += 1/4*self.prop_diameter
-            right_yaw_moment += self.engine_thrust * i
-        
+        right_yaw_moment = 0
         left_yaw_moment = 0
-        for i in self.engine_positions[:1]:
-            i -= 1/4*self.prop_diameter
-            left_yaw_moment += self.engine_thrust * i
+        # Alternate +1/4 and -1/4 prop_diameter from right to left
+        sign = 1
+        for idx, i in enumerate(self.engine_positions):
+            offset = sign * (1/4 * self.prop_diameter)
+            right_yaw_moment += self.engine_thrust * (i + offset)
+            sign *= -1  # Alternate sign
+
+        sign = 1
+        for idx, i in enumerate(self.engine_positions[:2]):
+            offset = sign * (1/4 * self.prop_diameter)
+            left_yaw_moment += self.engine_thrust * (i - offset)
+            sign *= -1  # Alternate sign
         
         self.CN_OEI = (right_yaw_moment - left_yaw_moment)/2 / (self.S*self.b*0.5*self.rho*self.V**2)*1.5
         return self.CN_OEI
@@ -142,7 +152,7 @@ class ElevatorRudder:
 
     def calculate_pitch_rate(self):
 
-        pitch_rate = (self.nmax-1)*9.81/self.V*1.5
+        pitch_rate = (self.nmax-1)*9.81/self.V*2
         return pitch_rate
     
     def calculate_Cmde_Cmq(self,b):
