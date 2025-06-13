@@ -254,6 +254,7 @@ if __name__ == "__main__":
         final_iteration = FinalIteration(aircraft_data=aircraft_data)
         final_iteration.main(mission_type=MissionType.DESIGN)
     except Exception as e:
+        print(f"An error occurred during the final iteration: {e}")
         pass
     final_iteration.plot_convergence()
     
