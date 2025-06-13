@@ -33,7 +33,7 @@ class ElevatorRudder:
         self.elevator_deflection = self.aircraft_data.data['inputs']['control_surfaces']['elevator_deflection']
 
         self.engine_power = self.aircraft_data.data['inputs']['engine']['engine_power']
-        self.prop_efficiency = self.aircraft_data.data['inputs']['prop_efficiency']
+        self.prop_efficiency = self.aircraft_data.data['inputs']['engine']['prop_efficiency']
         self.V = self.aircraft_data.data['requirements']['cruise_speed']
         self.S = self.aircraft_data.data['outputs']['wing_design']['S']
         self.b = self.aircraft_data.data['outputs']['wing_design']['b']
@@ -60,7 +60,7 @@ class ElevatorRudder:
         self.i_h = self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['i_h']
 
         self.take_off_drag = self.take_off_power / self.V_lof * self.prop_efficiency
-        self.highest_cg = self.aircraft_data.data['outputs']['cg_range']['highest_cg']
+        self.highest_cg = self.aircraft_data.data['outputs']['cg_range']['lowest_cg']
 
         self.MAC = self.aircraft_data.data['outputs']['wing_design']['MAC']
 
@@ -79,13 +79,14 @@ class ElevatorRudder:
         self.rho_high = self.isa.rho
         self.Cd0 = self.aircraft_data.data['inputs']['Cd0']
         self.engine_thrust = 0.5*self.rho*self.V**2*self.S*self.Cd0/4
+        self.engine_thrust_TO = self.take_off_power / self.V_lof
 
         self.vertical_tail_first_x = self.w_fuselage/2 - self.vertical_tail_thickness/2
         self.vertical_tail_second_x = self.vertical_tail_first_x + self.vertical_tail_thickness
 
         self.main_lift_moment = np.trapz(self.aeroforces.L_y, self.aeroforces.b_array)*2*self.aeroforces.lift_arm*0.6
         self.main_moment = np.trapz(self.aeroforces.M_y, self.aeroforces.b_array)*2
-        self.engine_moments = sum(self.engine_thrust * np.array(self.vertical_engine_arms))*2
+        self.engine_moments = sum(self.engine_thrust_TO * np.array(self.vertical_engine_arms))
 
         self.cmq = np.deg2rad(self.aircraft_data.data['outputs']['aerodynamic_stability_coefficients_sym']['C_m_q'])
 
@@ -153,7 +154,7 @@ class ElevatorRudder:
     
     def calculate_elevator_surface(self):
         self.pitch_rate = self.calculate_pitch_rate()
-        self.required_Cmde_Cmq = -self.pitch_rate/np.deg2rad(-self.elevator_deflection)*(self.MAC/self.V)/2
+        self.required_Cmde_Cmq = -self.pitch_rate/np.deg2rad(-self.elevator_deflection)*(self.MAC/self.V)
         self.calculate_elevator_position()
 
     def calculate_elevator_position(self):

@@ -87,6 +87,12 @@ class FinalIteration:
             # EmpennageOptimizer (Vertical Tail, main_empennage)
             empennage_optimizer = EmpennageOptimizer(self.aircraft_data)
             empennage_optimizer.run()
+
+            print('Stab again')
+            stab_coeff_sym = DerivativesDatcom_sym(self.aircraft_data)
+            stab_coeff_sym.update_json()
+            stab_coeff_asym = DerivativesDatcom_asym(self.aircraft_data)
+            stab_coeff_asym.update_json()
             
             # AileronHLD 
             print('Control surfaces')
@@ -114,7 +120,7 @@ class FinalIteration:
                 print('The wing box is weak bro 😔')
                 break
             
-            stop_condition = compare_dicts(self.aircraft_data.data, self.prev_json, tolerance=0.0001) or iteration_number >= self.max_iterations
+            stop_condition = compare_dicts(self.aircraft_data.data, self.prev_json, tolerance=0.1) or iteration_number >= self.max_iterations
 
             self.MTOM.append(self.aircraft_data.data['outputs']['design']['MTOM'])
             self.fuel_economy.append(self.aircraft_data.data['outputs']['max']['fuel_economy'])
@@ -126,6 +132,11 @@ class FinalIteration:
             
             if stop_condition:
                 self.aircraft_data.save_design(self.design_file)
+                # Stability derivatives
+                stab_coeff_sym = DerivativesDatcom_sym(self.aircraft_data)
+                stab_coeff_sym.update_json()
+                stab_coeff_asym = DerivativesDatcom_asym(self.aircraft_data)
+                stab_coeff_asym.update_json()
                 print("Final iteration completed successfully. LET'S GOOOOO BABY! Time to put the blinds up. 😎")
                 break
             
@@ -229,10 +240,15 @@ def is_close(val1, val2, tolerance):
     :param tolerance: Tolerance (absolute or relative difference) allowed.
     :return: True if values are within the tolerance, False otherwise.
     """
-    if isinstance(val1, (int, float)) and isinstance(val2, (int, float)):
+    if isinstance(val1, (float)) and isinstance(val2, (float)):
 
         if (val1 == 0 and val2 == 0) or abs(val1 - val2) / max(abs(val1), abs(val2)) <= tolerance:
             return True
+    elif isinstance(val1, (int)) and isinstance(val2, (int)):
+
+        if abs(val1 - val2) <= 1:
+            return True
+        
     if isinstance(val1, list) and isinstance(val2, list):
         if len(val1) != len(val2):
             return False

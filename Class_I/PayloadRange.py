@@ -242,7 +242,7 @@ class RangeCalculator:
 
         # Annotate all points
         labels = ['0 nm', 'Harmonic', 'Design', 'Max', 'Ferry']
-        xylabel = [(30, 5),(70, -6),(60, 0),(75, -20),(0, 50)]
+        xylabel = [(30, 5),(70, -6),(60, 0),(75, -20),(-15, 90)]
         for i, (x, y) in enumerate(points):
             if i == 0:
                 continue

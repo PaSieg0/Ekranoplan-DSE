@@ -88,7 +88,7 @@ class CGCalculation:
         self.aircraft_data.data['outputs']['component_positions']['nacelle_group'] = [engine_x, 0, engine_z]
         self.aircraft_data.data['outputs']['component_positions']['horizontal_tail'] = [self.x_LE_horizontal_tail + self.x_MAC_horizontal_tail / 2, 0, self.horizontal_tail_height]
         self.aircraft_data.data['outputs']['component_positions']['vertical_tail'] = [self.x_LE_vertical_tail + self.x_MAC_vertical_tail / 2, 0, self.vertical_tail_height]
-        self.aircraft_data.data['outputs']['component_positions']['door'] = [self.nose_length, 0, self.fuselage_height / 2]
+        self.aircraft_data.data['outputs']['component_positions']['door'] = [self.total_fuselage_length - self.fus_tailcone_length/2, 0, self.fuselage_height / 2]
         self.aircraft_data.data['outputs']['component_positions']['flight_control'] = [self.nose_length, 0, self.fuselage_height / 2]
         self.aircraft_data.data['outputs']['component_positions']['anchor'] = [self.nose_length / 2, 0, self.fuselage_height / 4]
         mid_fuse = [self.total_fuselage_length / 2, 0, self.fuselage_height / 2]
