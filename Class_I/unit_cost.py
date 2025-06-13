@@ -95,7 +95,7 @@ def calculate_operational_cost(aircraft_data: Data):
     
     
     density_SAF = 0.76  # kg/liter
-    price_SAF = 1.10    # $/liter
+    price_SAF = 1.18    # $/liter
     density_kerosene = 0.82 # kg/liter
     price_kerosene = 1.11 # $/liter    
     fuel_mass_design_mission = aircraft_data.data['outputs']['design']['total_fuel'] / 9.81  # kg
@@ -138,7 +138,7 @@ def calculate_operational_cost(aircraft_data: Data):
     crew_cost_hour_c130 = 2.92 * (47 * (cruise_speed_c130 * (MTOM_c130 / (10**5)))**0.3 + 118) + (2.92 * (35 * (cruise_speed_c130 * (MTOM_c130 / (10**5)))**0.3 + 84))
     crew_cost_c130 = crew_cost_hour_c130 * time_design_mission_c130
 
-    MMH_FH = 40   # Maintenance Man Hours per Flight Hour, conservative choice of about 1.5 the hours as C5 due to marine environment
+    MMH_FH = 41   # Maintenance Man Hours per Flight Hour, conservative choice of about 1.5 the hours as C5 due to marine environment
     labor_wrap_rate = 140  # $/hour
     maintenance_cost = (flighthours_year * MMH_FH * labor_wrap_rate) / amount_design_missions
     maintenance_cost_c5 = (flighthours_year_c5 * MMH_FH * labor_wrap_rate) / amount_design_missions_c5
