@@ -112,8 +112,8 @@ class ClassII:
         # self.W = # fuselage structural width
         self.W_c = kg2lbs(100000) # maximum weight of cargo
         self.W_dg = kg2lbs(self.aircraft_data.data['outputs']['max']['MTOM']) # design gross weight
-        self.W_ec = kg2lbs(2600) # weight of engine and contents
-        self.W_en = kg2lbs(2500) # weight of engine
+        self.W_ec = kg2lbs(self.aircraft_data.data['inputs']['engine']['engine_weight']+100) # weight of engine and contents
+        self.W_en = kg2lbs(self.aircraft_data.data['inputs']['engine']['engine_weight']) # weight of engine
         # self.W_fw = # weight of fuel in wing
         # self.W_l = # landing gross weight
         # self.W_press = 11.9 # weight penalty due to pressurization
