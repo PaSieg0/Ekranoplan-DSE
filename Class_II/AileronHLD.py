@@ -203,6 +203,7 @@ class AileronHLD:
 
         self.LE_flap_end = self.calculate_flap_endpoint(LE=True)
         self.CL_increase_TO = self.calculate_CLmax_increase(self.tot_LE_flap_area,self.clmax_increase*0.6)
+
         self.CL_max_TO = self.CLMax_clean + self.CL_increase_TO + self.CL_increase_TO_TE
 
         self.actual_LE_flap_area = self.chord_span_function((self.LE_flap_end - self.flap_start)/2)*self.rel_LE_flap_chord*(self.LE_flap_end - self.flap_start)
@@ -228,8 +229,7 @@ class AileronHLD:
             return
 
         self.CL_increase_TO = self.calculate_CLmax_increase(self.tot_flap_area,self.clmax_increase*0.6)
-        self.CL_max_TO = self.CLMax_clean + self.CL_increase_TO
-
+        self.CL_max_TO = self.CLMax_clean + self.CL_increase_TO/1.5
         self.CL_increase = self.calculate_CLmax_increase(self.tot_flap_area,self.clmax_increase)
 
         self.actual_flap_area = self.chord_span_function((self.flap_end - self.flap_start)/2)*self.rel_flap_chord*(self.flap_end - self.flap_start)
