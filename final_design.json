@@ -263,8 +263,8 @@
             "prop_diameter": 6.0,
             "engine_length": 4.2,
             "engine_weight": 1900,
-            "engine_power": 8202000,
-            "engine_efficiency": 0.85,
+            "engine_power": 7402439,
+            "prop_efficiency": 0.82,
             "n_engines": 6.0,
             "n_blades": 6
         }
@@ -530,7 +530,7 @@
                 "LE_pos": 49.45323097163536,
                 "relative_pos_mac/4": 0.9506166930472658,
                 "Cl_alpha": 0.119,
-                "i_h": -0.1,
+                "i_h": -0.8,
                 "y_MAC": 5.4911458056388485
             }
         },
@@ -572,7 +572,7 @@
                 "elevator_lift": -9656.998042603189,
                 "Se": 57.02736321074312,
                 "b1": 0,
-                "TO_deflection": 4.0,
+                "TO_deflection": -6.0,
                 "b1_s1": 0,
                 "b2_s1": 2.4904174114346076,
                 "b1_s2": 3.209582588565393,
