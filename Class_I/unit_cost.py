@@ -215,8 +215,8 @@ def calculate_operational_cost(aircraft_data: Data):
     return operational_costs, operational_costs_c5, operational_costs_c17, operational_costs_c130
 
 def main_cost(aircraft_data: Data, plot=True, design_file = "design3.json"):
-    unit_costs = calculate_unit_cost(aircraft_data,plot)  # returns a dictionary
-    operational_costs, operational_costs_c5, operational_costs_c17, operational_costs_c130 = calculate_operational_cost(aircraft_data)  # returns two dictionaries
+    unit_costs = calculate_unit_cost(aircraft_data,plot)  
+    operational_costs, operational_costs_c5, operational_costs_c17, operational_costs_c130 = calculate_operational_cost(aircraft_data)  
     aircraft_data.data["outputs"]["costs"] = {
         "unit_costs": unit_costs,
         "operational_costs": operational_costs,
@@ -233,3 +233,5 @@ if __name__ == "__main__":
     main_cost(aircraft_data=aircraft_data, design_file="design3.json")
 
     print("Design data has been updated with costs!")
+
+    
