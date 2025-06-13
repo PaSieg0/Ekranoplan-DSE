@@ -215,7 +215,7 @@ def calculate_operational_cost(aircraft_data: Data):
     return operational_costs, operational_costs_c5, operational_costs_c17, operational_costs_c130
 
 def main_cost(aircraft_data: Data, plot=True, design_file = "design3.json"):
-    unit_costs = calculate_unit_cost(aircraft_data,plot)  
+    unit_costs = calculate_unit_cost(aircraft_data,plot)[0]  
     operational_costs, operational_costs_c5, operational_costs_c17, operational_costs_c130 = calculate_operational_cost(aircraft_data)  
     aircraft_data.data["outputs"]["costs"] = {
         "unit_costs": unit_costs,
