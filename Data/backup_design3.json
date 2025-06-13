@@ -107,13 +107,13 @@
             "wing_box": {
                 "front_spar": 0.15,
                 "rear_spar": 0.65,
-                "t_skin": 13.5,
+                "t_skin": 14,
                 "t_spar": 17,
-                "t_wing": 3,
+                "t_wing": 4,
                 "epoxy_out": 0.05,
                 "epoxy_in": 0.05,
-                "stringer_area": 1700,
-                "n_stringers": 37,
+                "stringer_area": 1800,
+                "n_stringers": 40,
                 "n_cells": 3,
                 "C": 4,
                 "L_stringer": 200,
@@ -121,16 +121,16 @@
                 "min_spar_thickness": 10,
                 "thickness_threshold": 0.35,
                 "cutout_spacing": 0.3,
-                "Ip_MAC": 10708.706605960173,
-                "J_MAC": 0.04045731781380031,
-                "section_mass_MAC": 5.647941743206513,
-                "I_xx_MAC": 0.09225753013720495,
-                "centroid_x": 3.967101857525403
+                "Ip_MAC": 14519.076510401559,
+                "J_MAC": 0.06400526693859537,
+                "section_mass_MAC": 6.841396454745549,
+                "I_xx_MAC": 0.12910433373164223,
+                "centroid_x": 4.285151472517838
             },
             "horizontal_wing_box": {
                 "front_spar": 0.15,
                 "rear_spar": 0.6,
-                "t_skin": 5,
+                "t_skin": 7,
                 "t_spar": 8,
                 "t_wing": 1,
                 "epoxy_out": 0.05,
@@ -139,16 +139,16 @@
                 "n_stringers": 25,
                 "n_cells": 1,
                 "C": 4,
-                "L_stringer": 130,
+                "L_stringer": 180,
                 "min_skin_thickness": 3,
                 "min_spar_thickness": 3,
                 "thickness_threshold": 0.4,
                 "cutout_spacing": 0.3,
-                "Ip_MAC": 961.1849541210205,
-                "J_MAC": 0.002526551567076625,
-                "section_mass_MAC": 0.9244448956113721,
-                "I_xx_MAC": 0.002743435308213727,
-                "centroid_x": 2.0995312515101765
+                "Ip_MAC": 2853.2061281679266,
+                "J_MAC": 0.006901701034222897,
+                "section_mass_MAC": 1.1650346832179816,
+                "I_xx_MAC": 0.007869696775241448,
+                "centroid_x": 2.7364306521012565
             },
             "vertical_wing_box": {
                 "front_spar": 0.15,
@@ -379,7 +379,7 @@
             "w_fuselage_3_4": 5.7,
             "wing_height": 8.4,
             "cargo_bottom": 3.2,
-            "endplate_height": 3.7,
+            "endplate_height": 5.8,
             "cross_sectional_area_1": 29.4,
             "cross_sectional_area_2": 37.99,
             "cross_sectional_area_3": 29.4,
@@ -746,6 +746,11 @@
                 3.8
             ],
             "apu_installed": [
+                26.052500000000002,
+                0,
+                3.8
+            ],
+            "emergency_apu_installed": [
                 26.052500000000002,
                 0,
                 3.8

@@ -57,11 +57,11 @@ class CGCalculation:
                                     self.fus_afterbody_length + self.fus_tailcone_length)
         
         self.cargo_bottom = self.aircraft_data.data['outputs']['fuselage_dimensions']['cargo_bottom']
+        self.wing_height = self.aircraft_data.data['outputs']['fuselage_dimensions']['wing_height']
         
         self.fuselage_height = self.aircraft_data.data['outputs']['fuselage_dimensions']['h_fuselage']
-        self.endplate_height = self.aircraft_data.data['outputs']['fuselage_dimensions']['endplate_height']
+        self.endplate_height = self.wing_height - self.aircraft_data.data['outputs']['fuselage_dimensions']['endplate_height']
 
-        self.wing_height = self.aircraft_data.data['outputs']['fuselage_dimensions']['wing_height']
 
         self.horizontal_tail_height = self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['tail_height']
         self.vertical_tail_height = self.fuselage_height + self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['b']/2
@@ -79,7 +79,7 @@ class CGCalculation:
         self.aircraft_data.data['outputs']['component_positions']['fuselage'] = [0.45*self.total_fuselage_length, 0, self.fuselage_height/2]
         self.aircraft_data.data['outputs']['component_positions']['wing'] = [self.x_LEMAC_wing + self.MAC_wing / 2, 0, self.wing_height]
         # TODO: CHANGE THE Z POSITION OF THE FLOATER
-        self.aircraft_data.data['outputs']['component_positions']['floater'] = [self.x_LEMAC_wing + self.MAC_wing / 2, 0, 0]
+        self.aircraft_data.data['outputs']['component_positions']['floater'] = [self.x_LEMAC_wing + self.MAC_wing / 2, 0, self.wing_height]
         self.aircraft_data.data['outputs']['component_positions']['floater_endplate'] = [self.x_LEMAC_wing, 0, self.endplate_height]
         # TODO: MAKE ENGINE POSITION DYNAMIC
         engine_x = self.x_LEMAC_wing - self.aircraft_data.data['inputs']['engine']['engine_length']/2
@@ -88,7 +88,7 @@ class CGCalculation:
         self.aircraft_data.data['outputs']['component_positions']['nacelle_group'] = [engine_x, 0, engine_z]
         self.aircraft_data.data['outputs']['component_positions']['horizontal_tail'] = [self.x_LE_horizontal_tail + self.x_MAC_horizontal_tail / 2, 0, self.horizontal_tail_height]
         self.aircraft_data.data['outputs']['component_positions']['vertical_tail'] = [self.x_LE_vertical_tail + self.x_MAC_vertical_tail / 2, 0, self.vertical_tail_height]
-        self.aircraft_data.data['outputs']['component_positions']['door'] = [self.nose_length, 0, self.fuselage_height / 2]
+        self.aircraft_data.data['outputs']['component_positions']['door'] = [self.total_fuselage_length - self.fus_tailcone_length/2, 0, self.fuselage_height / 2]
         self.aircraft_data.data['outputs']['component_positions']['flight_control'] = [self.nose_length, 0, self.fuselage_height / 2]
         self.aircraft_data.data['outputs']['component_positions']['anchor'] = [self.nose_length / 2, 0, self.fuselage_height / 4]
         mid_fuse = [self.total_fuselage_length / 2, 0, self.fuselage_height / 2]

@@ -87,6 +87,12 @@ class FinalIteration:
             # EmpennageOptimizer (Vertical Tail, main_empennage)
             empennage_optimizer = EmpennageOptimizer(self.aircraft_data)
             empennage_optimizer.run()
+
+            print('Stab again')
+            stab_coeff_sym = DerivativesDatcom_sym(self.aircraft_data)
+            stab_coeff_sym.update_json()
+            stab_coeff_asym = DerivativesDatcom_asym(self.aircraft_data)
+            stab_coeff_asym.update_json()
             
             # AileronHLD 
             print('Control surfaces')
@@ -126,6 +132,11 @@ class FinalIteration:
             
             if stop_condition:
                 self.aircraft_data.save_design(self.design_file)
+                # Stability derivatives
+                stab_coeff_sym = DerivativesDatcom_sym(self.aircraft_data)
+                stab_coeff_sym.update_json()
+                stab_coeff_asym = DerivativesDatcom_asym(self.aircraft_data)
+                stab_coeff_asym.update_json()
                 print("Final iteration completed successfully. LET'S GOOOOO BABY! Time to put the blinds up. 😎")
                 break
             
@@ -250,11 +261,8 @@ def is_close(val1, val2, tolerance):
 if __name__ == "__main__":
     aircraft_data = Data('backup_design3.json')
 
-    try:
-        final_iteration = FinalIteration(aircraft_data=aircraft_data)
-        final_iteration.main(mission_type=MissionType.DESIGN)
-    except Exception as e:
-        print(f"An error occurred during the final iteration: {e}")
-        pass
+ 
+    final_iteration = FinalIteration(aircraft_data=aircraft_data)
+    final_iteration.main(mission_type=MissionType.DESIGN)
     final_iteration.plot_convergence()
     
