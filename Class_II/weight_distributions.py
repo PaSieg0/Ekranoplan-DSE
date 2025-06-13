@@ -73,10 +73,10 @@ class load_diagram:
         self.x_points = np.arange(0, self.l_fuselage, 0.01)
         self.OEW_loads = np.zeros_like(self.x_points)
         self.fuel_margin = 0 #TODO link to json?
-        self.nose_share=0.15
-        self.forebody_share=0.45
-        self.afterbody_share=0.20
-        self.tailcone_share=0.20
+        self.nose_share=0.1
+        self.forebody_share=0.25
+        self.afterbody_share=0.4
+        self.tailcone_share=0.25
 
     def get_weights(self):
 
@@ -174,16 +174,17 @@ class load_diagram:
             'tail': np.zeros_like(self.x_points)
         }
 
+        
         # Calculate load distribution for each section
         self.section_distributions = {
             'nose': self.section_weights['nose'] / self.lengths['nose'] if self.lengths['nose'] != 0 else 0,
             'forebody': self.section_weights['forebody'] / self.lengths['forebody'] if self.lengths['forebody'] != 0 else 0,
             'cargo': self.section_weights['cargo'] / self.lengths['cargo'] if self.lengths['cargo'] != 0 else 0,
-            'wing': (self.section_weights['wing'] + self.mtow_from_sections) / self.lengths['wing'] if self.lengths['wing'] != 0 else 0, # Corrected: wing weight and total MTOW
+            'wing': (self.section_weights['wing'] + (self.mtow_from_sections-75552.16346682305)) / self.lengths['wing'] if self.lengths['wing'] != 0 else 0, # Corrected: wing weight and total MTOW
             'fuel': self.section_weights['fuel'] / self.lengths['fuel'] if self.lengths['fuel'] != 0 else 0,
             'afterbody': self.section_weights['afterbody'] / self.lengths['afterbody'] if self.lengths['afterbody'] != 0 else 0,
             'tailcone': self.section_weights['tailcone'] / self.lengths['tailcone'] if self.lengths['tailcone'] != 0 else 0,
-            'tail': self.section_weights['tail'] / self.lengths['tail'] if self.lengths['tail'] != 0 else 0
+            'tail': (self.section_weights['tail']+75552.16346682305) / self.lengths['tail'] if self.lengths['tail'] != 0 else 0
         }
 
         # Sum all section distributions into a final load distribution
@@ -206,14 +207,23 @@ class load_diagram:
 
         # Calculate bending moment by integrating the shear force
         self.moment = np.cumsum(self.shear * delta_x)
+        moment_to_counteract = self.moment[-1]
         # Add wing moment
         wing_root_center = self.x_LEMAC_wing + self.MAC_wing / 2
         point_moment_mask = self.x_points >= wing_root_center
-        self.moment[point_moment_mask] += 2*self.root_moment
+        #self.moment[point_moment_mask] += 0
 
-        tail_root_center = self.x_LE_vertical_tail + self.v_tail_chord_root / 2
-        tail_point_mask = self.x_points >= tail_root_center
-        self.moment[tail_point_mask] += 2*self.tail_moment
+        tail_point_mask = self.x_points >= self.x_LE_vertical_tail
+        # add a linearly increasing moment to the vertical tail mask which starts at 0 and ends at moment_to_counteract
+        if np.any(tail_point_mask):
+            tail_indices = np.where(tail_point_mask)[0]
+            n_tail = len(tail_indices)
+            if n_tail > 1:
+                linear_moment = np.linspace(0, moment_to_counteract, n_tail)
+                self.moment[tail_indices] -= linear_moment
+            elif n_tail == 1:
+                self.moment[tail_indices[0]] -= moment_to_counteract
+        self.moment[tail_point_mask] += 75552.16346682305+1
     
 
         bending_moment_MNm = self.moment / 1e6 # Convert to MNm
