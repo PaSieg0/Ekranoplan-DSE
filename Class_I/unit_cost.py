@@ -49,7 +49,7 @@ def calculate_unit_cost(aircraft_data: Data, plot=True):
         C_D,
         C_F,
         C_M_mat,
-        C_eng * N_eng,
+        C_eng,
         C_avionics,
         C_E,
         C_T,
@@ -80,28 +80,35 @@ def calculate_operational_cost(aircraft_data: Data):
     time_design_mission = 12  # h
     time_design_mission_c5 = 5 # h
     time_design_mission_c17 = 5.38 # h 
+    time_design_mission_c130 = 9.43 # h
 
     amount_design_missions = 50 # Assume about 50 design missions per year
    
     flighthours_year = amount_design_missions * time_design_mission 
     flighthours_year_c5 = 760 
     flighthours_year_c17 = 7800
+    flighthours_year_c130 = 720
+
     amount_design_missions_c5 = flighthours_year_c5 / time_design_mission_c5
     amount_design_missions_c17 = flighthours_year_c17 / time_design_mission_c17
+    amount_design_missions_c130 = flighthours_year_c130 / time_design_mission_c130
     
-    crew_ratio = 1.5
+    
     density_SAF = 0.76  # kg/liter
     price_SAF = 1.10    # $/liter
     density_kerosene = 0.82 # kg/liter
     price_kerosene = 1.11 # $/liter    
     fuel_mass_design_mission = aircraft_data.data['outputs']['design']['total_fuel'] / 9.81  # kg
-    fuel_volume_design = fuel_mass_design_mission / density_SAF #liters
-    fuel_volume_c5 = 194370 #liters
-    fuel_volume_c17 = 134560 #liters
-    
+    fuel_mass_c130 = 20108 # kg
+    fuel_volume_design = fuel_mass_design_mission / density_SAF # liters
+    fuel_volume_c5 = 194370 # liters
+    fuel_volume_c17 = 134560 # liters 
+    fuel_volume_c130 = fuel_mass_c130 / density_kerosene # liters
+   
     fuel_price = fuel_volume_design * price_SAF
     fuel_price_c5 = fuel_volume_c5 * price_kerosene
     fuel_price_c17 = fuel_volume_c17 * price_kerosene
+    fuel_price_c130 = fuel_volume_c130 * price_kerosene
 
     cruise_speed = aircraft_data.data['requirements']['cruise_speed'] / 0.5144444  # kts
     MTOM = aircraft_data.data['outputs']['design']['MTOM'] * 0.2248089431  # lb
@@ -109,8 +116,11 @@ def calculate_operational_cost(aircraft_data: Data):
     cruise_speed_c5 = 869*0.539956803 # kts
     MTOM_c5 = 840000 # lb
 
-    cruise_spped_c17 = 830*0.539956803 # kts
+    cruise_speed_c17 = 830*0.539956803 # kts
     MTOM_c17 = 585000 # lb
+
+    cruise_speed_c130 = 602*0.539956803 # kts
+    MTOM_c130 = 70305** 0.2248089431  # lb
 
     # n crew = 4. Formula is for n crew = 2, so multiply by 2
     crew_cost_hour = 2.92 * 2 * (35 * (cruise_speed * (MTOM / (10**5)))**0.3 + 84) # With inflation correction factor of 2.92
@@ -121,17 +131,21 @@ def calculate_operational_cost(aircraft_data: Data):
     crew_cost_c5 = crew_cost_hour_c5 * time_design_mission_c5
 
     # n crew = 3
-    crew_cost_hour_c17 =  2.92 * (47 * (cruise_speed_c5 * (MTOM_c17 / (10**5)))**0.3 + 118) # With inflation correction factor of 2.92
+    crew_cost_hour_c17 =  2.92 * (47 * (cruise_speed_c17 * (MTOM_c17 / (10**5)))**0.3 + 118) # With inflation correction factor of 2.92
     crew_cost_c17 = crew_cost_hour_c17 * time_design_mission_c17
 
+    # n crew = 5 
+    crew_cost_hour_c130 = 2.92 * (47 * (cruise_speed_c130 * (MTOM_c130 / (10**5)))**0.3 + 118) + (2.92 * (35 * (cruise_speed_c130 * (MTOM_c130 / (10**5)))**0.3 + 84))
+    crew_cost_c130 = crew_cost_hour_c130 * time_design_mission_c130
 
     MMH_FH = 40   # Maintenance Man Hours per Flight Hour, conservative choice of about 1.5 the hours as C5 due to marine environment
     labor_wrap_rate = 140  # $/hour
     maintenance_cost = (flighthours_year * MMH_FH * labor_wrap_rate) / amount_design_missions
     maintenance_cost_c5 = (flighthours_year_c5 * MMH_FH * labor_wrap_rate) / amount_design_missions_c5
     maintenance_cost_c17 = (flighthours_year_c17 * MMH_FH * labor_wrap_rate) / amount_design_missions_c17
-
-    operational_cost_design_mission = crew_cost + fuel_price #+ maintenance_cost
+    maintenance_cost_c130 = (flighthours_year_c130 * MMH_FH * labor_wrap_rate) / amount_design_missions_c130
+   
+    operational_cost_design_mission = crew_cost + fuel_price #+ (maintenance_cost*1.5)
     operational_cost_design_mission_per_hr = operational_cost_design_mission / time_design_mission
 
     operational_cost_design_mission_c5 = crew_cost_c5 +  fuel_price_c5 #+ maintenance_cost_c5
@@ -139,6 +153,9 @@ def calculate_operational_cost(aircraft_data: Data):
 
     operational_cost_design_mission_c17 = crew_cost_c17 + fuel_price_c17 #+ maintenance_cost_c17
     operational_cost_design_mission_per_hr_c17 = operational_cost_design_mission_c17 / time_design_mission_c17
+
+    operational_cost_design_mission_c130 = crew_cost_c130 + fuel_price_c130 #+ maintenance_cost_c130
+    operational_cost_design_mission_per_hr_c130 = operational_cost_design_mission_c130 / time_design_mission_c130
 
 
     design_payload = aircraft_data.data['requirements']['design_payload'] / 1000  # Design payload in tonnes
@@ -152,6 +169,11 @@ def calculate_operational_cost(aircraft_data: Data):
     design_payload_c17 = 77.519 # tonnes
     design_range_c17 = 4480 # km 
     operational_cost_payload_c17 = operational_cost_design_mission_c17 / (design_payload_c17 * design_range_c17)
+
+    design_payload_c130 = 15.876 # tonnes
+    design_range_c130 = 5245 # km 
+    operational_cost_payload_c130 = operational_cost_design_mission_c130 / (design_payload_c130 * design_range_c130)
+
 
     # Collect all outputs in a dictionary.
     operational_costs = {
@@ -181,16 +203,26 @@ def calculate_operational_cost(aircraft_data: Data):
         "operational_cost_per_tonne_km": operational_cost_payload_c17,
     }
 
-    return operational_costs, operational_costs_c5, operational_costs_c17
+    operational_costs_c130 = {
+        "fuel_price_design_mission": fuel_price_c130,
+        "crew_cost_design_mission": crew_cost_c130,
+        "maintenance_cost_per_mission": maintenance_cost_c130,
+        "total_operational_cost_design_mission": operational_cost_design_mission_c130,
+        "operational_cost_design_mission_per_hr": operational_cost_design_mission_per_hr_c130,
+        "operational_cost_per_tonne_km": operational_cost_payload_c130,
+    }
+
+    return operational_costs, operational_costs_c5, operational_costs_c17, operational_costs_c130
 
 def main_cost(aircraft_data: Data, plot=True, design_file = "design3.json"):
     unit_costs = calculate_unit_cost(aircraft_data,plot)  # returns a dictionary
-    operational_costs, operational_costs_c5, operational_costs_c17 = calculate_operational_cost(aircraft_data)  # returns two dictionaries
+    operational_costs, operational_costs_c5, operational_costs_c17, operational_costs_c130 = calculate_operational_cost(aircraft_data)  # returns two dictionaries
     aircraft_data.data["outputs"]["costs"] = {
         "unit_costs": unit_costs,
         "operational_costs": operational_costs,
         "operational_costs_c5": operational_costs_c5,
-        "operational_costs_c17": operational_costs_c17
+        "operational_costs_c17": operational_costs_c17,
+        "operational_costs_c130": operational_costs_c130
     }
 
     aircraft_data.save_design(design_file=design_file)
