@@ -145,16 +145,16 @@ def calculate_operational_cost(aircraft_data: Data):
     maintenance_cost_c17 = (flighthours_year_c17 * MMH_FH * labor_wrap_rate) / amount_design_missions_c17
     maintenance_cost_c130 = (flighthours_year_c130 * MMH_FH * labor_wrap_rate) / amount_design_missions_c130
    
-    operational_cost_design_mission = crew_cost + fuel_price + (maintenance_cost*1.5)
+    operational_cost_design_mission = crew_cost + fuel_price #+ (maintenance_cost*1.5)
     operational_cost_design_mission_per_hr = operational_cost_design_mission / time_design_mission
 
-    operational_cost_design_mission_c5 = crew_cost_c5 +  fuel_price_c5 + maintenance_cost_c5
+    operational_cost_design_mission_c5 = crew_cost_c5 +  fuel_price_c5 #+ maintenance_cost_c5
     operational_cost_design_mission_per_hr_c5 = operational_cost_design_mission_c5 / time_design_mission_c5
 
-    operational_cost_design_mission_c17 = crew_cost_c17 + fuel_price_c17 + maintenance_cost_c17
+    operational_cost_design_mission_c17 = crew_cost_c17 + fuel_price_c17 #+ maintenance_cost_c17
     operational_cost_design_mission_per_hr_c17 = operational_cost_design_mission_c17 / time_design_mission_c17
 
-    operational_cost_design_mission_c130 = crew_cost_c130 + fuel_price_c130 + maintenance_cost_c130
+    operational_cost_design_mission_c130 = crew_cost_c130 + fuel_price_c130 #+ maintenance_cost_c130
     operational_cost_design_mission_per_hr_c130 = operational_cost_design_mission_c130 / time_design_mission_c130
 
 
