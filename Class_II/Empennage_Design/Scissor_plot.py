@@ -82,16 +82,16 @@ class Tail_area:
         X_cg_aft_bar = X_cg_bar[1]
 
         plt.figure(figsize=(8, 5))
-        plt.plot(Xcg_range, Sh_S_stability_vals, label='Sh/S (Stability)', color='red', linewidth=2)
-        plt.plot(Xcg_range, Sh_S_control_vals, label='Sh/S (Controllability)', color='blue', linestyle='--', linewidth=2)
+        plt.plot(Xcg_range, Sh_S_stability_vals, label='Sh/S (Stability)', color='tab:red', linewidth=2)
+        plt.plot(Xcg_range, Sh_S_control_vals, label='Sh/S (Controllability)', color='tab:green', linestyle='--', linewidth=2)
 
         # Add vertical lines for CG range
-        plt.axvline(x=X_cg_fwd_bar, color='green', linestyle='-.', linewidth=1.5, label='X_cg (min)')
-        plt.axvline(x=X_cg_aft_bar, color='purple', linestyle='-.', linewidth=1.5, label='X_cg (max)')
+        plt.axvline(x=X_cg_fwd_bar, color='tab:blue', linestyle='-.', linewidth=1.5, label='X_cg (min)')
+        plt.axvline(x=X_cg_aft_bar, color='tab:orange', linestyle='-.', linewidth=1.5, label='X_cg (max)')
 
         plt.xlabel('X_cg')
         plt.ylabel('Sh/S')
-        plt.title('Scissor plot')
+        # plt.title('Scissor plot')
         plt.grid(True)
         plt.legend()
         plt.xlim(-0.2, 1)
