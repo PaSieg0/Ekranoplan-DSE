@@ -289,6 +289,7 @@ class AerodynamicForces:
         plt.xlabel("y-span")
         plt.ylabel("L [N]")
         plt.title("Vertical Tail Lift Distribution over Span")
+        print(np.trapz(self.horizontal_tail_lift, self.b_h_array))
         plt.xlim(left=0)
         plt.grid(True)
         plt.show()
