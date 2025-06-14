@@ -159,6 +159,7 @@ class ElevatorRudder:
         self.pitch_rate = self.calculate_pitch_rate()
         integral, _ = quad(self.chord_h, self.elevator_start, b)
         elevator_effectiveness = self.control_surface_effectiveness(self.elevator_chord_ratio)
+        print(elevator_effectiveness)
         ratio = -2*self.airfoil_cl_alpha * elevator_effectiveness * self.l_h/(self.S*self.MAC)/self.cmq*integral
         return ratio
     
