@@ -132,6 +132,7 @@ class ElevatorRudder:
         CNe_dr = -CNe/np.deg2rad(self.rudder_deflection)
         self.b_test = np.arange(self.rudder_start, self.b_v+0.001, 0.001)
         tolerance = 0.000001
+        print(self.control_surface_effectiveness(self.rudder_chord_ratio))
         for b in self.b_test:
             integral_test, _ = quad(self.chord_v,self.rudder_start, b)
             cndr_test = integral_test * -(self.airfoil_cl_alpha * self.control_surface_effectiveness(self.rudder_chord_ratio)*self.l_v) / (self.S * self.b)

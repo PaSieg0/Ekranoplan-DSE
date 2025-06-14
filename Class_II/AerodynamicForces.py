@@ -130,6 +130,7 @@ class AerodynamicForces:
         for id, i in enumerate(self.aileron_lift_dist):
             idx = np.argmin(np.abs(self.b_array - self.aileron_array[id]))
             self.aileron_lift_array[idx] = i
+        return self.aileron_lift_array
 
     def get_elevator_lift_distribution(self):
         self.elevator_lift_array = np.zeros(len(self.b_h_array))
@@ -206,7 +207,7 @@ class AerodynamicForces:
         # self.L_y = self.elliptic_lift_distribution(self.b_array, self.b/2, self.CL_max)* 0.5*self.rho*self.V_land**2*self.S
         y_vals, lift_vals, moment_vals, drag_vals = self.lateral_centre.determine_distr(self.b/2, self.chord_root, self.chord_tip, self.rho, self.V_land, self.CL_max)
         poly_lift = Polynomial.fit(y_vals, lift_vals, 8)
-        self.L_y = poly_lift(self.b_array)
+        self.L_y = poly_lift(self.b_array) + self.get_aileron_lift_distribution()
         poly_drag = Polynomial.fit(y_vals, drag_vals, 8)
         self.D_y = poly_drag(self.b_array) 
         poly_moment = Polynomial.fit(y_vals, moment_vals, 8)

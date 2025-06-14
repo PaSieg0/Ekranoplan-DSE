@@ -33,7 +33,7 @@ class AileronHLD:
         self.turn_radius = self.aircraft_data.data['outputs']['general']['min_turn_radius']
         self.bank_angle = np.deg2rad(self.aircraft_data.data['outputs']['general']['max_bank_angle'])
         self.V = np.sqrt(self.turn_radius*9.81*np.tan(self.bank_angle))
-        self.object_distance = self.turn_radius*1.4
+        self.object_distance = self.turn_radius*1.8
 
         self.aileron_end = self.aircraft_data.data['inputs']['control_surfaces']['aileron_end']*self.b/2
 
@@ -115,10 +115,8 @@ class AileronHLD:
         aileron_integral = quad(self.c, self.aileron_start, self.aileron_end)[0]
         self.Clda = -2*self.airfoil_Cl_alpha*self.tau/self.S/self.b*aileron_integral
         print(self.Clda)
-        L = self.Clda*self.max_aileron_deflection*self.S*self.b
-        mid_point = (self.aileron_start + self.aileron_end)/2
+        self.aileron_lift = self.Clda*self.max_aileron_deflection*self.S*0.5*self.rho*self.V**2/1.5
 
-        self.aileron_lift = L/mid_point/2
         self.aileroned_area = quad(self.Swa, self.aileron_start, self.aileron_end)[0]
 
     def calculate_aileron_size(self):
