@@ -76,6 +76,8 @@ class ClassI:
             range_fraction_2 = np.exp(-self.altitude_range_WOG*self.jet_consumption*9.81/self.cruise_speed * (self.LD)**-1)
             range_fraction = range_fraction_1*range_fraction_2
 
+        print(range_fraction)
+
         self.fuel_fractions[5] = range_fraction
 
     def update_fuel_fractions_prop(self) -> None:
@@ -88,6 +90,9 @@ class ClassI:
             range_fraction_1 = np.exp(-self.altitude_range_WIG*self.prop_consumption*9.81/self.prop_efficiency * (self.k*self.LD)**-1)
             range_fraction_2 = np.exp(-self.altitude_range_WOG*self.prop_consumption*9.81/self.prop_efficiency * (self.LD)**-1)
             range_fraction = range_fraction_1*range_fraction_2
+
+        print(range_fraction)
+        
 
         self.fuel_fractions[5] = range_fraction
 
@@ -128,6 +133,7 @@ class ClassI:
         x *= 9.81
         y *= 9.81
         self.slope, self.intersection = np.polyfit(x, y, 1)
+        print(f"Linear relation: slope = {self.slope}, intersection = {self.intersection}")
         return self.slope, self.intersection
     
     def load_reference_aircraft(self) -> pd.DataFrame:
