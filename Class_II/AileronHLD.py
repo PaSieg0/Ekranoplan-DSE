@@ -123,7 +123,7 @@ class AileronHLD:
         self.required_roll_rate = self.calculate_roll_rate()
         self.required_Cla_Clp = -self.required_roll_rate/(self.max_aileron_deflection*(2*self.V/self.b))
         self.calculate_aileron_position()
-        self.aileron_area = self.chord_span_function((self.aileron_end - self.aileron_start)/2)*self.aileron_chord_ratio*(self.aileron_end - self.aileron_start)
+        self.aileron_area = self.aileroned_area*self.aileron_chord_ratio
 
     def get_clmax_increase(self, LE=False):
         #@self.flap_deflection = 40
@@ -312,14 +312,14 @@ class AileronHLD:
         ax.plot([0, -self.b/2], [y_root_TE, y_tip_TE], color='blue')  # Mirror
 
         # Ailerons
-        ax.plot([self.aileron_start, self.aileron_start], [y_root_LE_aileron, y_root_TE_aileron], color='red')
-        ax.plot([-self.aileron_start, -self.aileron_start], [y_root_LE_aileron, y_root_TE_aileron], color='red')  # Mirror
+        # ax.plot([self.aileron_start, self.aileron_start], [y_root_LE_aileron, y_root_TE_aileron], color='red')
+        # ax.plot([-self.aileron_start, -self.aileron_start], [y_root_LE_aileron, y_root_TE_aileron], color='red')  # Mirror
 
-        ax.plot([self.aileron_end, self.aileron_end], [y_tip_LE_aileron, y_tip_TE_aileron], color='red')
-        ax.plot([-self.aileron_end, -self.aileron_end], [y_tip_LE_aileron, y_tip_TE_aileron], color='red')  # Mirror
+        # ax.plot([self.aileron_end, self.aileron_end], [y_tip_LE_aileron, y_tip_TE_aileron], color='red')
+        # ax.plot([-self.aileron_end, -self.aileron_end], [y_tip_LE_aileron, y_tip_TE_aileron], color='red')  # Mirror
 
-        ax.plot([self.aileron_start, self.aileron_end], [y_root_LE_aileron, y_tip_LE_aileron], color='red')
-        ax.plot([-self.aileron_start, -self.aileron_end], [y_root_LE_aileron, y_tip_LE_aileron], color='red')  # Mirror
+        # ax.plot([self.aileron_start, self.aileron_end], [y_root_LE_aileron, y_tip_LE_aileron], color='red')
+        # ax.plot([-self.aileron_start, -self.aileron_end], [y_root_LE_aileron, y_tip_LE_aileron], color='red')  # Mirror
 
         # Flaps
         ax.plot([self.flap_start, self.flap_start], [y_root_LE_flap, y_root_TE_flap], color='orange')
