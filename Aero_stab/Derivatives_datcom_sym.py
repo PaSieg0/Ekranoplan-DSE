@@ -56,19 +56,24 @@ class DerivativesDatcom_sym:
         float: Pitch moment coefficient.
         """
         #p.2686
-        K_wb = 0.95 #1047
-        K_bw = 0.11 #p.1047
+        K_wb = 1.3 #0.95 #1047
+        K_bw = 0.4 #0.3 #p.1047
         Cmqe = -0.7 * self.Cl_alpha * np.cos(np.radians(self.Delta_c4)) * ((self.A * (0.5 * self.x_bar / self.MAC + 2 * (self.x_bar / self.MAC)**2))/(self.A + 2 * np.cos(np.radians(self.Delta_c4))) + 1/24 * self.A**3 * np.tan(np.radians(self.Delta_c4))**2 / (self.A + 6 * np.cos(np.radians(self.Delta_c4))) + 1/8) #p.2488
         
+        self.MAC_h = self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['MAC']  # Mean Aerodynamic Chord of the horizontal tail
+        self.x_LEMAC = aircraft_data.data['outputs']['wing_design']['X_LEMAC']
         x_m = self.x_cg # longtitudinal
         x_c = self.l_f/2 # cross-sectional
         S_b = self.S_b
         CmqB = 2 * self.Cmalpha() * (((1 - x_m/self.l_b)**2 - self.V_b /(S_b * self.l_b)*(x_c/self.l_b - x_m / self.l_b)) / ((1-x_m/self.l_b) - self.V_b/(S_b*self.l_b))) #p.2655
         Cm_wb = (K_wb + K_bw)*(self.Sh/self.S)*(self.c_h/self.MAC)**2 * Cmqe + CmqB * (S_b / self.S)*(self.l_b/self.MAC)**2
         
-        
-        Cm_tail = 2*(K_wb + K_bw)*(self.Sh / self.S) * ((x_m - self.x_h)/self.MAC)**2 * (self.Cl_alpha_h) #p.2743
-        
+        Cm_tail = 2*(K_wb + K_bw)*(self.Sh / self.S) * ((x_m - (self.x_h+self.MAC_h/1.8))/self.MAC)**2 * (self.Cl_alpha_h) #p.2743
+        # print(f'Sh: {self.Sh}, S: {self.S}, MAC: {self.MAC}, x_m: {x_m}, x_h: {self.x_h}, Cl_alpha_h: {self.Cl_alpha_h}')
+        # print(f'xm-xcg= {x_m - self.x_h}) xm: {x_m}, x_h: {self.x_h}')
+        # print(Cm_wb, Cm_tail)
+        # print(f'final Cmq: {Cm_wb - Cm_tail}')
+        print(Cm_wb - Cm_tail)
         return Cm_wb - Cm_tail
     
     def C_z_alpha(self):
