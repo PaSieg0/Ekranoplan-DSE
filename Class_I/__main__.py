@@ -12,11 +12,11 @@ from Class_I.Cd0Estimation import Cd0Estimation
 from Class_I.cgRange import CGRange
 from Class_I.empennage import Empennage
 from Optimum_Performance.Optimum_speeds import OptimumSpeeds
-from Fuselage import Fuselage
-from PrelimWingPlanformDesign import WingPlanform
-from Cd0Estimation import Cd0Estimation
-from cgRange import CGRange
-from empennage import Empennage
+# from Class_I.Fuselage import Fuselage
+from Class_I.PrelimWingPlanformDesign import WingPlanform
+from Class_I.Cd0Estimation import Cd0Estimation
+from Class_I.cgRange import CGRange
+from Class_I.empennage import Empennage
 from engine_height import EngineHeight
 
 
