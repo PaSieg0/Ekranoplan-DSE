@@ -293,7 +293,7 @@ class DerivativesDatcom_asym:
 
 if __name__ == '__main__':
     aircraft_data = Data("design3.json")
-    derivatives = DerivativesDatcom_asym(aircraft_data=aircraft_data, mission_type=MissionType.DESIGN)
+    derivatives = DerivativesDatcom_asym(aircraft_data=aircraft_data)
 
     derivatives.update_json()
 
