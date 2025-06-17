@@ -117,12 +117,12 @@ class load_diagram:
                 self.section_weights['tailcone'] += weight * self.tailcone_share 
                 
         # Add cargo weight
-        cargo_weight = self.cargo_mass * 9.81
+        cargo_weight = (self.cargo_mass + 10000) * 9.81
         self.section_weights['cargo'] += cargo_weight
         # print(f"Adding cargo weight: {cargo_weight} N to cargo section")
         # Add fuel weight   
         
-        self.section_weights['fuel'] += self.fuel_weight
+        # self.section_weights['fuel'] += self.fuel_weight
         # print(f"Adding fuel weight: {self.fuel_weight} N to fuel section")
         # print(f"Calculated OEW: {sum(self.section_weights.values())-self.section_weights['fuel']-self.section_weights['cargo']} N")
         # print(f"Actual OEW by summing component weights: {sum([v['weight'] for v in self.component_weights.values()])} N")

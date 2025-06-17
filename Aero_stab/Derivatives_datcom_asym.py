@@ -102,9 +102,11 @@ class DerivativesDatcom_asym:
         # cl_alpha_V_tail = 0.16*180/np.pi #p.1600 smthng
         dcyB_Vtail = -K * self.Cl_alpha_Vtail * self.Sv / self.S
         zp = self.zp
-        dclB_Vtail = dcyB_Vtail * (zp * np.cos(np.radians(self.alpha)) - self.lp*np.sin((self.alpha))) / self.b
+        dclB_Vtail = dcyB_Vtail * (zp * np.cos(np.radians(self.alpha)) - self.lp*np.sin(np.radians(self.alpha))) / self.b #changed the sin to also take in radians
 
         # print(ClB_wb + dclB_Vtail)
+        # print('ClB:',ClB_wb, dclB_Vtail)
+        # print(f'final ClB: {ClB_wb + dclB_Vtail}')
         return ClB_wb + dclB_Vtail
     
     def CnB(self):
@@ -188,9 +190,9 @@ class DerivativesDatcom_asym:
         float: Roll moment coefficient.
         """
         # p2580
-        B = np.sqrt(1 - self.M**2 * np.cos(np.radians(self.Delta_c4))**2) # p.2522
-        Clr__cl_M0 = 0.24 #p.2589
-        Clr__Cl = (1 + (self.A*(1-B**2))/(2*B*(self.A*B + 2*np.cos(np.radians(self.Delta_c4)))) + (self.A*B+2*np.cos(np.radians(self.Delta_c4)))/(self.A*B+4*np.cos(np.radians(self.Delta_c4))) * np.tan(np.radians(self.Delta_c4))**2 / 8 * Clr__cl_M0) / (1 + (self.A + 2 * np.cos(np.radians(self.Delta_c4))) / (self.A + 4 * np.cos(np.radians(self.Delta_c4))) * np.tan(np.radians(self.Delta_c4))**2 / 8) #p.2581
+        B = np.sqrt(1 - self.M**2 * (np.cos(np.radians(self.Delta_c4)))**2) # p.2522
+        Clr__cl_M0 = 0.2 #p.2589
+        Clr__Cl = (1 + (self.A*(1-B**2))/(2*B*(self.A*B + 2*np.cos(np.radians(self.Delta_c4)))) + (self.A*B+2*np.cos(np.radians(self.Delta_c4)))/(self.A*B+4*np.cos(np.radians(self.Delta_c4))) * np.tan(np.radians(self.Delta_c4))**2 / 8) / (1 + (self.A + 2 * np.cos(np.radians(self.Delta_c4))) / (self.A + 4 * np.cos(np.radians(self.Delta_c4))) * np.tan(np.radians(self.Delta_c4))**2 / 8) * Clr__cl_M0 #p.2581
 
         clB__cl_s = -0.002/5 # from plot->p1563
         Km_s = 1.03 #from plot p1564
@@ -204,7 +206,10 @@ class DerivativesDatcom_asym:
         Clr_wb = self.Cl * Clr__Cl + dClr_Cl + dClr__dihedral * np.radians(self.dihedral)
 
         zp = self.zp # Distance from the centerline of the body to the centerline of the vertical tail
+        # print(f'Cl: {self.Cl}, Clr__Cl: {Clr__Cl},dClr_cl: {dClr_Cl}, dClr_dihedral: {dClr__dihedral}, dihedral: {self.dihedral}')
         Clr_tail = - 2 / self.b**2 * (self.lp * np.cos(np.radians(self.alpha)) + zp * np.sin(np.radians(self.alpha)))*(zp*np.cos(np.radians(self.alpha) - self.lp * np.sin(np.radians(self.alpha)))) * self.CyB()[1] #p.2802
+        # print('Clr_wb:',Clr_wb, 'Clr_tail:', Clr_tail)
+        # print('Clr:',Clr_wb+ Clr_tail)
         return Clr_wb + Clr_tail
     
     def Cnr(self):
@@ -293,7 +298,7 @@ class DerivativesDatcom_asym:
 
 if __name__ == '__main__':
     aircraft_data = Data("design3.json")
-    derivatives = DerivativesDatcom_asym(aircraft_data=aircraft_data, mission_type=MissionType.DESIGN)
+    derivatives = DerivativesDatcom_asym(aircraft_data=aircraft_data)
 
     derivatives.update_json()
 

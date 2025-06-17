@@ -58,6 +58,8 @@ class ElevatorRudder:
         self.take_off_power = self.aircraft_data.data['outputs']['general']['take_off_power']
         self.V_lof = self.aircraft_data.data['requirements']['stall_speed_takeoff']*1.05
         self.i_h = self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['i_h']
+        self.i_h_trim = self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['i_h_trim']
+
 
         self.take_off_drag = self.take_off_power / self.V_lof * self.prop_efficiency
         self.highest_cg = self.aircraft_data.data['outputs']['cg_range']['lowest_cg']
@@ -91,6 +93,9 @@ class ElevatorRudder:
         self.main_lift_moment = np.trapz(self.aeroforces.L_y, self.aeroforces.b_array)*2*self.aeroforces.lift_arm*0.6
         self.main_moment = np.trapz(self.aeroforces.M_y, self.aeroforces.b_array)*2
         self.engine_moments = sum(self.engine_thrust_TO * np.array(self.vertical_engine_arms))
+
+        self.aeroforces.get_nominal_aero_dist()
+        self.nominal_lift_moment = np.trapz(self.aeroforces.L_y, self.aeroforces.b_array)*2*self.aeroforces.lift_arm
 
         self.cmq = np.deg2rad(self.aircraft_data.data['outputs']['aerodynamic_stability_coefficients_sym']['C_m_q'])
 
@@ -202,9 +207,17 @@ class ElevatorRudder:
         zero_elevator_lift = self.i_h*self.tail_lift_slope * self.Sh/2 * 0.5 * self.rho * self.V**2
         self.required_elevator_lift = self.horizontal_tail_lift - zero_elevator_lift
         # print(f'required elevator lift: {self.required_elevator_lift}')
-        self.trim_deflection_TO = np.ceil(-self.required_elevator_lift * self.l_h*1.5/(0.5*self.rho*self.V**2*self.MAC*self.S) / self.CMde * 180/np.pi)
+        self.trim_deflection_TO = np.floor(-self.required_elevator_lift * self.l_h*1.5/(0.5*self.rho*self.V**2*self.MAC*self.S) / self.CMde * 180/np.pi)
         # print(f'trim deflection TO: {self.trim_deflection_TO} deg')
 
+        #trim in flight
+        print((self.nominal_lift_moment + self.main_moment - self.engine_moments*0.6))
+        self.horizontal_tail_lift = (self.nominal_lift_moment + self.main_moment - self.engine_moments*0.6) / self.l_h * self.Sh / self.S / 2
+        zero_elevator_lift = self.i_h_trim * self.tail_lift_slope * self.Sh / 2 * 0.5 * self.rho * self.V**2
+        self.required_elevator_lift = self.horizontal_tail_lift - zero_elevator_lift
+        print(self.required_elevator_lift)
+        self.trim_deflection = round(-self.required_elevator_lift * self.l_h*1.5/(0.5*self.rho*self.V**2*self.MAC*self.S) / self.CMde * 180/np.pi,2)
+        print(self.trim_deflection)
     #TODO calculate normal trim deflection
 
     def main(self):
@@ -245,6 +258,7 @@ class ElevatorRudder:
         self.aircraft_data.data['outputs']['control_surfaces']['rudder']['CN_OEI'] = self.CN_OEI
         self.aircraft_data.data['outputs']['control_surfaces']['rudder']['cndr'] = self.cndr
         self.aircraft_data.data['outputs']['control_surfaces']['elevator']['TO_deflection'] = self.trim_deflection_TO
+        self.aircraft_data.data['outputs']['control_surfaces']['elevator']['trim_deflection'] = self.trim_deflection
         self.aircraft_data.data['outputs']['control_surfaces']['elevator']['CMde'] = 2*self.CMde
         self.aircraft_data.data['outputs']['control_surfaces']['elevator']['elevator_lift'] = self.elevator_lift
         self.aircraft_data.data['outputs']['aerodynamic_stability_coefficients_sym']['C_z_delta_e'] = 2*self.elevator_lift / (np.deg2rad(self.elevator_deflection) * 0.5 * self.rho * self.V**2 * self.S * self.MAC)
@@ -334,9 +348,9 @@ class ElevatorRudder:
         plt.plot([b_elevator_mirror[-1], b_elevator_mirror[-1]], [le_elevator_actual_mirror[-1], te_elevator_mirror[-1]], color='red')
 
         # Final touches
-        plt.title('Horizontal Tail and Elevator Planform')
-        plt.xlabel('Spanwise Position (m)')
-        plt.ylabel('Chordwise Position (m)')
+        # plt.title('Horizontal Tail and Elevator Planform')
+        plt.xlabel('Lateral Position (m)')
+        plt.ylabel('Longitudinal Position (m)')
         plt.ylim(-5, 5)
         plt.xlim(-self.b_h/2 - 1, self.b_h/2 + 1)
         plt.gca().set_aspect('equal')
@@ -385,9 +399,9 @@ class ElevatorRudder:
         plt.plot([x_rudder_LE_root, x_rudder_LE_tip], [y_rudder_root, y_rudder_tip], color='red')
         plt.plot([x_rudder_TE_root, x_rudder_TE_tip], [y_rudder_root, y_rudder_tip], color='red')
         plt.gca().set_aspect('equal')
-        plt.title('Vertical Tail Chord Distribution with Rudder')
-        plt.xlabel('Chordwise Position (m)')
-        plt.ylabel('Spanwise Position (m)')
+        # plt.title('Vertical Tail Chord Distribution with Rudder')
+        plt.xlabel('Longitudinal Position (m)')
+        plt.ylabel('Vertical Position (m)')
         plt.grid()
         plt.show()
 
