@@ -559,7 +559,7 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
             self.plot_rib(id=0)
             self.plot_rib(id=len(self.rib_positions)-1)
 
-        # self.plot_wing_ribs()
+        self.plot_wing_ribs()
 
         if self.runs == 1 and self.evaluate == EvaluateType.WING:
             self.update_attributes()
@@ -780,13 +780,20 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
             plt.plot(self.b_array, ref, label=f'{labels[1:][idx]} ({n_dict[self.evaluate_case]})', linestyle='--')
 
         plt.xlabel('Spanwise Position [m]')
-        plt.ylabel(f'{output_type.name} {unit}')
-        plt.title(f'{output_type.name} Distribution')
+        if not self.evaluate == EvaluateType.VERTICAL:
+            plt.ylabel(f'{output_type.name.lower().capitalize().replace('_', ' ')} {unit}')
+        else:
+            if output_type == StressOutput.RESULTANT_VERTICAL:
+                plt.ylabel(f'Resultant lateral {unit}')
+            else:
+                plt.ylabel(f'{output_type.name.lower().capitalize().replace("_", " ")} {unit}')
+        # plt.title(f'{output_type.name} Distribution')
         plt.grid()
         if output_type == StressOutput.DEFLECTION:
             plt.gca().set_aspect('equal')
         plt.tight_layout()
-        plt.legend(loc='best') 
+        # plt.legend(loc='best') 
+        plt.grid(True)
         plt.show()
 
 def main(all=True):
@@ -811,6 +818,10 @@ def main(all=True):
         stress_analysis = StressAnalysisWing(aircraft_data=Data("design3.json"), wingbox_mat=wingbox_material, wing_mat=wing_material, stringer_mat=stringer_material, evaluate=EvaluateType.HORIZONTAL, 
                                              PLOT=False)
         stress_analysis.main_analysis(run_all=True)
+        stress_analysis.plot_any(StressOutput.RESULTANT_VERTICAL)
+        stress_analysis.plot_any(StressOutput.INTERNAL_SHEAR_VERTICAL)
+        stress_analysis.plot_any(StressOutput.INTERNAL_MOMENT_X)
+
         # stress_analysis.plot_any(StressOutput.INTERNAL_TORQUE)
         flutter_analysis = FlutterAnalysis(aircraft_data=Data("design3.json"), wing_mat=wingbox_material, evaluate=EvaluateType.WING)
         flutter_analysis.main(plot=True)

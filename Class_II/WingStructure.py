@@ -233,20 +233,20 @@ class WingStructure:
         top_flange = patches.Rectangle(
             (x - top_w / 2, top_y - thickness),
             top_w,
-            thickness*5,
+            thickness*20,
             facecolor=color
         )
 
         bottom_flange = patches.Rectangle(
             (x - bottom_w / 2, bottom_y),
             bottom_w,
-            thickness*5,
+            thickness*20,
             facecolor=color
         )
 
         web = patches.Rectangle(
             (x - thickness / 2, bottom_y + thickness),
-            thickness*5,
+            thickness*20,
             web_h - 2 * thickness,
             facecolor=color
         )
@@ -1472,9 +1472,9 @@ class WingStructure:
                 fc='black', ec='black', linewidth=2, zorder=20)
         plt.text(centroid_x - arrow_length - 0.08 * arrow_length, centroid_z,
                 'x', fontsize=10, ha='right', va='center')
-        plt.title(f"Airfoil with Spar Positions, Wing Box and Stringers, chord = {chord:.2f} m")
-        plt.xlabel("x")
-        plt.ylabel("y")
+        # plt.title(f"Airfoil with Spar Positions, Wing Box and Stringers, chord = {chord:.2f} m")
+        plt.xlabel("x (m)")
+        plt.ylabel("z (m)")
         plt.axis("equal")
         plt.grid(True)
         plt.show()
@@ -1486,7 +1486,7 @@ if __name__ == "__main__":
     wingbox_material = Materials.Al7075
     wing_material = Materials.Al5052
     wing_structure = WingStructure(aircraft_data, wingbox_mat=wingbox_material,
-                                   wing_mat=wing_material, stringer_mat=stringer_material, evaluate=EvaluateType.WING)
+                                   wing_mat=wing_material, stringer_mat=stringer_material, evaluate=EvaluateType.VERTICAL)
     wing_structure.get_wing_structure()
     wing_structure.plot_moment_of_inertia()
     wing_structure.plot_thickness_distribution()

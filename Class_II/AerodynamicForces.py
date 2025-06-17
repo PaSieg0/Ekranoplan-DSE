@@ -59,10 +59,12 @@ class AerodynamicForces:
         self.aileron_end = self.aircraft_data.data['outputs']['control_surfaces']['aileron']['b2']
         self.aileroned_area = self.aircraft_data.data['outputs']['control_surfaces']['aileron']['Swa']
 
-        self.elevator_start = self.aircraft_data.data['outputs']['control_surfaces']['elevator']['b1']
-        self.elevator_end = self.aircraft_data.data['outputs']['control_surfaces']['elevator']['b2']
+        self.elevator_start1 = self.aircraft_data.data['outputs']['control_surfaces']['elevator']['b1_s1']
+        self.elevator_end1 = self.aircraft_data.data['outputs']['control_surfaces']['elevator']['b2_s1']
+        self.elevator_start2 = self.aircraft_data.data['outputs']['control_surfaces']['elevator']['b1_s2']
+        self.elevator_end2 = self.aircraft_data.data['outputs']['control_surfaces']['elevator']['b2_s2']
         self.elevatored_area = self.aircraft_data.data['outputs']['control_surfaces']['elevator']['Se']
-        self.elevator_array = np.arange(self.elevator_start, self.elevator_end+0.01, 0.01)
+        self.elevator_array = np.arange(self.elevator_start1, self.elevator_end2+0.01, 0.01)
 
         self.chord_root = self.aircraft_data.data['outputs']['wing_design']['chord_root']
         self.chord_tip = self.aircraft_data.data['outputs']['wing_design']['chord_tip']
@@ -120,6 +122,18 @@ class AerodynamicForces:
         self.get_elevator_lift_distribution()
 
         self.k = self.aircraft_data.data['outputs']['design']['k']
+        self.CL = self.MTOW / (0.5 * self.rho * self.V**2 * self.S)
+        self.Cd0 = self.aircraft_data.data['inputs']['Cd0']
+        self.prop_diameter = self.aircraft_data.data['inputs']['engine']['prop_diameter'] 
+        self.bottom_prop = 7.6
+        self.highest_cg = self.aircraft_data.data['outputs']['cg_range']['highest_cg']
+        self.V_climb = self.aircraft_data.data['outputs']['optimum_speeds']['max_roc']
+
+        self.engine_zs = np.array([self.bottom_prop+self.prop_diameter/2, self.bottom_prop+self.prop_diameter/2, self.bottom_prop+self.prop_diameter/2])
+        self.vertical_engine_arms = self.engine_zs - self.highest_cg
+        self.CD = self.Cd0 + self.CL**2 / (np.pi * self.aircraft_data.data['outputs']['wing_design']['aspect_ratio'] * self.aircraft_data.data['inputs']['oswald_factor'])
+        self.engine_thrust = 0.5*self.rho*self.V_climb**2*self.S*self.CD/4
+        self.engine_moments = sum(self.engine_thrust * np.array(self.vertical_engine_arms))
 
     def chord_span_function_aero(self,y):
         return self.chord_root + (self.chord_tip - self.chord_root) / (self.b/2) * y
@@ -251,14 +265,14 @@ class AerodynamicForces:
         return self.vertical_tail_lift
     
     def get_horizontal_tail_lift_distribution(self):
-        self.horizontal_tail_lift = (self.L_y * self.lift_arm + self.M_y)/self.l_h * self.Sh/self.S
+        self.horizontal_tail_lift = (self.L_y * self.lift_arm + self.M_y - self.engine_moments*0.6)/self.l_h * self.Sh/self.S
         CL_horizontal = self.horizontal_tail_lift / (0.5 * self.rho * self.V_land**2 * self.Sh)
         CL_tot_horizontal = np.trapz(CL_horizontal, self.b_array)
         self.horizontal_tail_lift = self.elliptic_lift_distribution(self.b_h_array, self.b_h/2, CL_tot_horizontal) * 0.5 * self.rho * self.V**2 * self.Sh
         for i, pos in enumerate(self.b_h_array):
-            if self.elevator_start <= pos <= self.elevator_end:
+            if self.elevator_start1 <= pos <= self.elevator_end1 or self.elevator_start2 <= pos <= self.elevator_end2:
                 idx = np.argmin(np.abs(self.b_h_array - pos))
-                self.horizontal_tail_lift[idx] -= self.elevator_lift_array[i]
+                self.horizontal_tail_lift[idx] += self.elevator_lift_array[i]
 
         return self.horizontal_tail_lift
 
