@@ -14,7 +14,7 @@ def f(x,a,b,c,d,e,f,g):
 
 class lateral_centre():
     def __init__(self):
-        self.aircraft_data = Data("design3.json")
+        self.aircraft_data = Data("final_design.json")
         self.import_data()
         
 
