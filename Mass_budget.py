@@ -4,7 +4,8 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from utils import Data
 import matplotlib.pyplot as plt
 
-aircraft_data = Data('design3.json') #TODO check if all components are here from main, otherwise fix pls
+aircraft_data = Data('final_design.json') #TODO check if all components are here from main, otherwise fix pls
+print(aircraft_data.data)
 Masses = aircraft_data.data['outputs']['component_weights'] #{ add cargo and fuel
             # "anti_ice": 3980.672971974585,
             # "apu_installed": 6852.601370538002,
@@ -46,14 +47,14 @@ Masses_new['misscelaneous']=(Masses['anti_ice']+Masses['apu_installed']+Masses['
 Masses_new['empennage']=(Masses['horizontal_tail']+Masses['vertical_tail'])/9.81
 Masses_new['door']=Masses['door']/9.81
 Masses_new['anchor']=Masses['anchor']/9.81
-Masses_new['floater']=Masses['floater']/9.81
-Masses_new['cargo_mass']=90000
-Masses_new['fuel']=aircraft_data.data['outputs']['max']['max_fuel']/9.81
+Masses_new['floater']=(Masses['floater']+Masses['floater_endplate'])/9.81
+# Masses_new['cargo_mass']=90000
+# Masses_new['fuel']=aircraft_data.data['outputs']['max']['max_fuel']/9.81
 
 
 
 print(Masses_new)
-print(sum(Masses.values())/9.81)
+print(sum(Masses_new.values())*9.81)
 
 plt.pie(list(Masses_new.values()), labels=Masses_new.keys())
 plt.show()
