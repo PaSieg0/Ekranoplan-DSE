@@ -94,6 +94,7 @@ class FlutterAnalysis:
 
         # Change these damping values to the critical damping coef * percentage (0.02-0.05)
         self.Ch  = 2*np.sqrt(self.Kh*self.constant['m'])* self.damping_coeff
+        print(self.Ch)
         self.Cth = 2*np.sqrt(self.Kth*self.constant['Ith'])* self.damping_coeff
         self.Cbt = 2*np.sqrt(self.Kbt*self.constant['Ibt'])* self.damping_coeff
 
@@ -114,8 +115,8 @@ class FlutterAnalysis:
         # region Eigenvalue analysis - velocity sweep:
 
     def eigenvalue_analysis(self):
-        self.w_n = np.zeros((self.nn,3))
-        self.zeta = np.zeros((self.nn,3))
+        self.w_n = np.zeros((self.nn,2))
+        self.zeta = np.zeros((self.nn,2))
 
         for i, U_i in enumerate(self.U):
 
@@ -132,7 +133,7 @@ class FlutterAnalysis:
 
             idx = np.argsort(eval_cc.imag)
 
-            eval_cc = eval_cc[idx]
+            eval_cc = eval_cc[idx][:2]
             evec_cc = evec_cc[:, idx]
 
             # uncomment this part if the you are interrested in 1 paritcular velocity only:
@@ -146,11 +147,13 @@ class FlutterAnalysis:
 
             # if len(eval_cc)>3:
             #     # print(eval_cc)
+            # print(len(eval_cc))
+            # print(len(self.w_n[i,:]))
             self.w_n[i,:] = np.absolute(eval_cc)
             self.zeta[i,:] = -eval_cc.real/np.absolute(eval_cc)
 
-            if np.any(self.zeta[i, :] < 0):
-                raise ValueError(f'Warning, flutter detected at U = {self.U[i]:.2f} m/s for mode {self.idx+1}')
+            # if np.any(self.zeta[i, :] < 0):
+            #     raise ValueError(f'Warning, flutter detected at U = {self.U[i]:.2f} m/s for mode {self.idx+1}')
 
         # endregion
 
@@ -160,7 +163,7 @@ class FlutterAnalysis:
         # Use a color per mode index
         color = self.plot_colors[self.idx % len(self.plot_colors)]
 
-        linestyles = ['-', '--']  # Solid for h, dashed for alpha0
+        linestyles = ['-', '--', 'dashdot']  # Solid for h, dashed for alpha0
 
         for i in range(2):  # h and alpha0
             ax[0].plot(self.U, self.w_n[:, i],
@@ -231,6 +234,6 @@ class FlutterAnalysis:
 if __name__ == '__main__':
     aircraft_data = Data('design3.json')
     wing_material = Materials.Al7075
-    evaluate_type = EvaluateType.VERTICAL
+    evaluate_type = EvaluateType.WING
     flutter_analysis = FlutterAnalysis(aircraft_data, wing_material, evaluate= evaluate_type)
     flutter_analysis.main(plot=True)

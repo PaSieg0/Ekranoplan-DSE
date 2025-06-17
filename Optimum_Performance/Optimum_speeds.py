@@ -93,6 +93,15 @@ class OptimumSpeeds(AltitudeVelocity):
         v_max = res.x
         return v_max
     
+    def v_stall(self, h: float, W: float = None) -> float:
+        """
+        Calculate the stall speed at a given altitude.
+        """
+        if W is None:
+            W = self._current_weight
+        v_stall = self.calculate_stall_speed(h, W=W)
+        return v_stall
+    
     def L_over_D(self, V: float, h: float, W: float) -> float:
         """
         Calculate the lift-to-drag ratio at a given altitude.
@@ -133,17 +142,28 @@ if __name__ == "__main__":
     optimum_speeds.update_json(h)
 
     v_range = optimum_speeds.v_range(h)
+    v_range_10k = optimum_speeds.v_range(3048)  # Example altitude at 10,000 feet
     v_endurance = optimum_speeds.v_endurance(h)
     v_max = optimum_speeds.v_max(h)
-    _, v_max_roc = optimum_speeds.calculate_max_RoC(h)
+    roc_0, v_max_roc = optimum_speeds.calculate_max_RoC(h)
+    roc_10k, v_max_roc_10k = optimum_speeds.calculate_max_RoC(3048)
     _, v_max_aod = optimum_speeds.calculate_max_AoC(h)
     _, v_min_rod = optimum_speeds.calculate_min_RoD(h)
     _, v_min_aod = optimum_speeds.calculate_min_AoD(h)
 
-    print(f"Optimum range speed: {v_range:.2f} m/s")
-    print(f"Optimum endurance speed: {v_endurance:.2f} m/s")
-    print(f"Maximum speed: {v_max:.2f} m/s")
-    print(f"Maximum rate of climb speed: {v_max_roc:.2f} m/s")
-    print(f"Maximum angle of climb speed: {v_max_aod:.2f} m/s")
-    print(f"Minimum rate of descent speed: {v_min_rod:.2f} m/s")
-    print(f"Minimum angle of descent speed: {v_min_aod:.2f} m/s")
+    pr_cruise = optimum_speeds.calculate_power_required(v_range, h)
+    pr_cruise_10k = optimum_speeds.calculate_power_required(v_range_10k, 3048)
+    pr_climb = optimum_speeds.calculate_power_required(v_max_roc, h, roc_0)
+    pr_climb_high = optimum_speeds.calculate_power_required(v_max_roc_10k, 3048, roc_10k)
+
+    print(f"Speeds at {h}m altitude:")
+    print(f"Range speed: {v_range:.2f} m/s")
+    print(f"Range speed at 10k ft: {v_range_10k:.2f} m/s")
+    print(f"Max RoC speed: {v_max_roc:.2f} m/s")
+    print(f"Max RoC speed at 10k ft: {v_max_roc_10k:.2f} m/s")
+
+    print(f"\nPower Requirements:")
+    print(f"Cruise power (at range speed): {pr_cruise:.2f} W")
+    print(f"Cruise power at 10k ft: {pr_cruise_10k:.2f} W")
+    print(f"Climb power: {pr_climb:.2f} W")
+    print(f"Climb power at high altitude: {pr_climb_high:.2f} W")

@@ -125,10 +125,10 @@ class RangeAnalyzer:
         """Check if the aircraft can fly at given speed and weight."""
         self.opt._current_weight = weight
         angle_of_climb = self.opt.calculate_AoC(V, h)
-        
+        stall_speed = self.opt.calculate_stall_speed(h)
         if angle_of_climb < 0-1e-6:  # Allow small negative AoC for numerical stability
-            print(f"Warning: Cannot fly at V={V:.2f} m/s with weight={weight/9.81:.2f} kg")
-            print(f"Angle of climb: {angle_of_climb:.4f} degrees")
+            return False
+        if V < stall_speed:
             return False
         return True
     
@@ -237,8 +237,8 @@ class RangeAnalyzer:
                         payload_leg1: float = None, 
                         payload_leg2: float = 0, 
                         h: float = 10,
-                        numerical: bool = False
-                        ) -> Tuple[float, float, float]:
+                        numerical: bool = False,
+                        no_stop: bool = False) -> Tuple[float, float, float]:
         """
         Calculate total range for the mission using both legs.
         
@@ -253,16 +253,30 @@ class RangeAnalyzer:
         Returns:
             Total range in meters and time in seconds for both legs.
         """
+        prev_mtow = self.opt._mtow
         if payload_leg1 is None:
             payload_leg1 = self.aircraft_data.data['requirements']['design_payload']
         else:
+            # Store previous MTOW for comparison
             # Update MTOW based on the new payload
             payload_diff = payload_leg1 - self.aircraft_data.data['requirements']['design_payload']
-            self.opt._mtow += payload_diff * 9.81  # Adjust MTOW by payload difference
+            max_fuel_capacity = self.aircraft_data.data['outputs']['design']['max_fuel']
+            mission_fuel = self.aircraft_data.data['outputs']['design']['mission_fuel']
+            
+            # MTOW only reduces when payload reduction exceeds available fuel margin
+            fuel_margin = (max_fuel_capacity - mission_fuel)/9.81 # Convert to kg
+            if payload_diff < -fuel_margin:
+                # Only reduce MTOW for the amount beyond the fuel margin
+                mtow_reduction = abs(payload_diff) - fuel_margin
+                # print(f"Reducing MTOW by {mtow_reduction:.2f} kg due to payload reduction of {payload_diff:.2f} kg")
+                self.opt._mtow -= mtow_reduction * 9.81
 
         W4_leg1 = self.opt._mtow * self.rng.Mff_nocruise  # Weight at start of cruise for leg 1
         W5_leg1 = 0 # this is the variable we want to calculate for R_leg1 = R_leg2
-        W4_leg2 = (W5_leg1 - (payload_leg1-payload_leg2) * 9.81) * self.rng.Mff_nocruise  # Weight at start of cruise for leg 2
+        if no_stop:
+            W4_leg2 = W5_leg1
+        else:
+            W4_leg2 = (W5_leg1 - (payload_leg1-payload_leg2) * 9.81) * self.rng.Mff_nocruise  # Weight at start of cruise for leg 2
         W5_leg2 = self.aircraft_data.data['outputs']['design']['ZFW'] + self.aircraft_data.data['outputs']['design']['reserve_fuel'] - (self.aircraft_data.data['requirements']['design_payload']-payload_leg2) * 9.81
 
         # Iteratively find W5_leg1 such that R_leg1 equals R_leg2
@@ -272,18 +286,25 @@ class RangeAnalyzer:
         tolerance = 10000  # Big tolerance for convergence (meters)
 
         max_iterations = 100
-        dW = self.weight_step*5  # Initial weight step for numerical integration
+        dW = self.weight_step*4  # Initial weight step for numerical integration
         range_diff = float('inf')  # Initialize range difference
 
         for iteration in range(max_iterations):
             prev_range_diff = range_diff
-            W5_leg1 = (W5_leg1_min + W5_leg1_max) / 2 + random.uniform(-dW, dW)  # Randomize W5_leg1 within bounds
-            W4_leg2 = (W5_leg1 - (payload_leg1 - payload_leg2) * 9.81) * self.rng.Mff_nocruise
+            W5_leg1 = (W5_leg1_min + W5_leg1_max) / 2
+            if no_stop:
+                W4_leg2 = W5_leg1
+            else:
+                W4_leg2 = (W5_leg1 - (payload_leg1 - payload_leg2) * 9.81) * self.rng.Mff_nocruise
             
             if numerical:
                 # Calculate numerical range for both legs
-                R_leg1, time_leg1, _ = self.calculate_numerical_range(W4_leg1, W5_leg1, vfunc_leg1, h, dW=dW)
-                R_leg2, time_leg2, _ = self.calculate_numerical_range(W4_leg2, W5_leg2, vfunc_leg2, h, dW=dW)
+                R_leg1, time_leg1, details1 = self.calculate_numerical_range(W4_leg1, W5_leg1, vfunc_leg1, h, dW=dW)
+                R_leg2, time_leg2, details2 = self.calculate_numerical_range(W4_leg2, W5_leg2, vfunc_leg2, h, dW=dW)
+                if details1['invalid_points'] != 0 or details2['invalid_points'] != 0:
+                    # print(f"Invalid points found during numerical integration: ")
+                    self.opt._mtow = prev_mtow
+                    return None, None, None
             else:
                 R_leg1, time_leg1 = self.calculate_analytical_range(W4_leg1, W5_leg1, vfunc_leg1, h)
                 R_leg2, time_leg2 = self.calculate_analytical_range(W4_leg2, W5_leg2, vfunc_leg2, h)
@@ -303,6 +324,7 @@ class RangeAnalyzer:
 
             # print(f"Iteration {iteration+1}: W5_leg1 = {W5_leg1:.2f} N, R_leg1 = {R_leg1/1852:.2f} nmi, R_leg2 = {R_leg2/1852:.2f} nmi, Range diff = {range_diff/1852:.2f} nmi")
 
+        self.opt._mtow = prev_mtow
         total_range= R_leg1 + R_leg2
 
         return total_range, time_leg1, time_leg2
@@ -348,7 +370,7 @@ class RangeAnalyzer:
         velocity_func_list=None,
         labels=None,
         h: float = 10,
-        dW: float = 10
+        dW: float = 100
     ):
         """
         Plot speed versus weight for the cruise segment for multiple strategies.
@@ -371,6 +393,7 @@ class RangeAnalyzer:
         plt.figure(figsize=(10, 6))
 
         mtow = self.opt._mtow
+        oew = self.opt._oew + self.aircraft_data.data['outputs']['design']['reserve_fuel']
 
         for idx, velocity_func in enumerate(velocity_func_list):
             weights_frac = []
@@ -388,15 +411,18 @@ class RangeAnalyzer:
                     weights_frac.append(weight / mtow)  # Fraction of MTOW
                     speeds.append(V)
             if weights_frac:
-                plt.plot(weights_frac, speeds, linewidth=2, marker='o', markersize=4, label=labels[idx])
+                plt.plot(weights_frac, speeds, linewidth=2, label=labels[idx])
             else:
                 print(f"No valid flight points found for plotting: {labels[idx]}")
 
+        # Add vertical lines for MTOW and OEW
+        plt.axvline(x=1.0, color='tab:purple', linestyle='--', alpha=0.7, label='MTOW')
+        plt.axvline(x=oew/mtow, color='tab:brown', linestyle='--', alpha=0.7, label='OEW')
+
         plt.xlabel('Weight / MTOW')
         plt.ylabel('Speed (m/s)')
-        plt.title('Speed vs Weight Fraction During Cruise')
         plt.grid(True, alpha=0.3)
-        plt.legend()
+        plt.legend(loc='upper right', bbox_to_anchor=(1, 0.9))
         plt.gca().invert_xaxis()  # Reverse the weight axis
         plt.tight_layout()
         plt.show()
@@ -536,7 +562,6 @@ def sea_state_comparison():
     plt.plot(sea_states_list, ranges, marker='o', label='Range (nmi)')
     plt.xlabel('Sea State')
     plt.ylabel('Range (nmi)')
-    plt.title('Range vs Sea State')
     plt.grid(True, alpha=0.3)
     plt.xticks(sea_states_list)  # Set x-axis ticks to sea state values (step 1)
     plt.tight_layout()
