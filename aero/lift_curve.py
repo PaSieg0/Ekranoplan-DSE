@@ -27,7 +27,7 @@ class lift_curve():
         self.data=np.loadtxt('aero\\lift curve no WIG.txt')
         self.data_span = np.loadtxt('aero\\spanwise curves.txt')
         self.data_tail_NACA0012 = np.loadtxt('aero\\Tail_NACA0012_XFLR.txt')
-        #print(self.data)
+        # print(self.data)
 
         #angle of attack data
         self.alpha=self.data[:, 0]
@@ -50,15 +50,15 @@ class lift_curve():
     
     def interpolate_Cl(self, alpha,h_b='no'):   #gets a cl for a given alpha and linearly interpolates
         #distance list in alpha
-        # print(self.alpha)
-        # print(alpha)
+        print(self.alpha)
+        print(alpha)
         dist=abs(self.alpha-alpha)
-        # print(dist)
+        print(dist)
 
 
         #determines the index of the closest alpha
         ind=np.where(min(dist)==dist)[0][0]
-        # print(ind)
+        print(ind)
 
         #uses point below
         if h_b=='no':
@@ -103,15 +103,15 @@ class lift_curve():
     
     # def interpolate_Cd(self, alpha):   #gets a cd for a given alpha and linearly interpolates
     #     #distance list in alpha
-    #     # print(self.alpha)
-    #     # print(alpha)
+        # print(self.alpha)
+        # print(alpha)
     #     dist=abs(self.alpha-alpha)
-    #     # print(dist)
+        # print(dist)
 
 
     #     #determines the index of the closest alpha
     #     ind=np.where(min(dist)==dist)[0][0]
-    #     # print(ind)
+        # print(ind)
 
     #     #uses point below
     #     if dist[ind] > 0:
@@ -130,15 +130,15 @@ class lift_curve():
  
     def interpolate_Cm(self, alpha):   #gets a cl for a given alpha and linearly interpolates
         #distance list in alpha
-        # print(self.alpha)
-        # print(alpha)
+        print(self.alpha)
+        print(alpha)
         dist=abs(self.alpha-alpha)
-        # print(dist)
+        print(dist)
 
 
         #determines the index of the closest alpha
         ind=np.where(min(dist)==dist)[0][0]
-        # print(ind)
+        print(ind)
 
         #uses point below
         if dist[ind] > 0:
@@ -293,11 +293,11 @@ class lift_curve():
 
 
 
-        #print
-        print('--------cmac-------')
-        print(f'cmac for {self.seg1[0]} < α < {self.seg1[1]} = {round(self.cmac_segm1,4)} and xac = {round(self.xac_segm1,3)}.')
-        print(f'cmac for {self.seg2[0]} < α < {self.seg2[1]} = {round(self.cmac_segm2,4)} and xac = {round(self.xac_segm2,3)}.')
-        print('\t')
+        print
+        # print('--------cmac-------')
+        # print(f'cmac for {self.seg1[0]} < α < {self.seg1[1]} = {round(self.cmac_segm1,4)} and xac = {round(self.xac_segm1,3)}.')
+        # print(f'cmac for {self.seg2[0]} < α < {self.seg2[1]} = {round(self.cmac_segm2,4)} and xac = {round(self.xac_segm2,3)}.')
+        # print('\t')
     
 
     def plot_moment_ac(self): #plots xac and mx/c
@@ -354,7 +354,7 @@ class lift_curve():
         # Find index where alpha is closest to 5
         
         idx=np.argmin(np.abs(alpha_arr - 7))
-        # print(alpha_arr[idx])
+        print(alpha_arr[idx])
         
         # Slice arrays up to and including that index
         alpha_fit = alpha_arr[:idx+1]
@@ -374,15 +374,22 @@ class lift_curve():
 
         idx = np.argmin(np.abs(alpha - 7))
 
+    def dcl_dalpha(self):
+        # Convert alpha to numpy array if it's not already
+        alpha_arr = np.array(self.alpha)
+        cl_arr = np.array(self.cl_lst)
+
+        # Find index where alpha is closest to 5
+        idx = np.argmin(np.abs(alpha_arr - 4))
+        
         # Slice arrays up to and including that index
-        alpha_fit = alpha[:idx+1]
-        cl_fit = cl[:idx+1]
+        alpha_fit = alpha_arr[:idx+1]
+        cl_fit = cl_arr[:idx+1]
         
         # Perform linear fit
-        self.slope_tail, self.intercept_tail = np.polyfit(alpha_fit, cl_fit, 1)
+        slope, intercept = np.polyfit(alpha_fit, cl_fit, 1)
 
-        # print(self.slope_tail)
-        return self.slope_tail
+        return slope, intercept
 
     def make_plot_data(self):
         #drag polar
@@ -411,7 +418,6 @@ class lift_curve():
         self.L_D_GE_lst=self.cl_lst_GE/self.ind_lst3
 
         
-
 
     def plotting(self):
         
@@ -456,24 +462,24 @@ class lift_curve():
 
     def printing(self):
         self.make_plot_data()
-        print('---------clmax----------')
-        print(f'Cl_max_GE: {round(max(self.cl_lst_GE),3)}')
+        # print('---------clmax----------')
+        # print(f'Cl_max_GE: {round(max(self.cl_lst_GE),3)}')
         for i, cl in enumerate(self.cl_lst_GE):
             if cl == max(self.cl_lst_GE):
-                print(f'alpha for Clmax: {self.alpha[i]}')
+                # print(f'alpha for Clmax: {self.alpha[i]}')
                 self.cL_max=cl
                 self.idx_cl_max=i
                 break
-        print('\t')
+        # print('\t')
 
-        print('--------L/D---------')
-        print(f'L/D_max_GE: {round(max(self.L_D_GE_lst),1)}')
+        # print('--------L/D---------')
+        # print(f'L/D_max_GE: {round(max(self.L_D_GE_lst),1)}')
         for i, cl in enumerate(self.L_D_GE_lst):
             if cl == max(self.L_D_GE_lst):
-                print(f'alpha for max L/D: {self.alpha[i]} degrees')
+                # print(f'alpha for max L/D: {self.alpha[i]} degrees')
                 
                 break
-        print('\t')
+        # print('\t')
 
         #spanwise distr this is not prety but well coding
         CL = self.cL_max
@@ -531,7 +537,7 @@ if __name__ == "__main__":  #if run seperately
     curves=lift_curve()
     curves.plot_moment_ac()
     curves.printing()
-    # print(curves.interpolate_Cl(5))
+    print(curves.interpolate_Cl(5))
     curves.plotting()
     curves.calc_e()
     curves.dcl_dalpha_tail()

@@ -17,8 +17,8 @@ class Cd0Estimation:
         self.t_c_wing = self.aircraft_data.data['inputs']['airfoils']['wing']
         self.t_c_htail = self.aircraft_data.data['inputs']['airfoils']['horizontal_tail']
         self.t_c_vtail = self.aircraft_data.data['inputs']['airfoils']['vertical_tail']
-        self.d_F = self.aircraft_data.data['outputs']['general']['d_fuselage_equivalent_straight']
-        self.l_F = self.aircraft_data.data['outputs']['general']['l_fuselage']
+        self.d_F = 12
+        self.l_F = 70
         self.lambda_F = self.l_F / self.d_F
         self.l_nacelle = self.aircraft_data.data['inputs']['engine']['engine_length']
         self.d_nacelle = 0.92  # diameter in meters
@@ -128,9 +128,9 @@ class Cd0Estimation:
                 self.aircraft_data.data['outputs'][mission_type]['T'] = None
 
             '''if self.mission_type == MissionType.DESIGN:
-                self.aircraft_data.data['outputs'][mission_type]['fuel_economy'] = self.iteration.aircraft_data.data['outputs'][mission_type]['Fuel_used'] / 9.81 / 0.82 / (self.aircraft_data.data['requirements']['design_payload']/1000) / (self.iteration.aircraft_data.data['requirements']['design_range'] / 1000)
+                self.aircraft_data.data['outputs'][mission_type]['fuel_economy'] = self.iteration.aircraft_data.data['outputs'][mission_type]['Fuel_used'] / 9.81 / 0.76 / (self.aircraft_data.data['requirements']['design_payload']/1000) / (self.iteration.aircraft_data.data['requirements']['design_range'] / 1000)
             elif self.mission_type == MissionType.ALTITUDE:
-                self.aircraft_data.data['outputs'][mission_type]['fuel_economy'] = self.iteration.aircraft_data.data['outputs'][mission_type]['fuel_used'] / 9.81 / 0.82 / (self.aircraft_data.data['requirements']['altitude_payload']/1000) / ((self.iteration.aircraft_data.data['requirements']['altitude_range_WIG']+self.iteration.aircraft_data.data['requirements']['altitude_range_WOG']) / 1000)
+                self.aircraft_data.data['outputs'][mission_type]['fuel_economy'] = self.iteration.aircraft_data.data['outputs'][mission_type]['fuel_used'] / 9.81 / 0.76 / (self.aircraft_data.data['requirements']['altitude_payload']/1000) / ((self.iteration.aircraft_data.data['requirements']['altitude_range_WIG']+self.iteration.aircraft_data.data['requirements']['altitude_range_WOG']) / 1000)
             '''
             self.aircraft_data.data['outputs']['max']['MTOM'] = max(self.iteration.aircraft_data.data['outputs']['design']['MTOM'], self.iteration.aircraft_data.data['outputs']['ferry']['MTOM'], self.iteration.aircraft_data.data['outputs']['altitude']['MTOM'])
             self.aircraft_data.data['outputs']['max']['MTOW'] = self.iteration.aircraft_data.data['outputs']['max']['MTOM']*9.81

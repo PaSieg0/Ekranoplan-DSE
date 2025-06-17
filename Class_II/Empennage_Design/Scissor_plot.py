@@ -47,8 +47,8 @@ class Tail_area:
             
     def Sh_S_stability(self,X_cg):
         # TODO: link to json
-        CL_alpha_h = 0.132 #need to account for the tail
-        CL_alpha_A_h = 0.132
+        CL_alpha_h = 0.1187 #need to account for the tail
+        CL_alpha_A_h = 0.10126
         lh = self.l_h
         downwash = self.get_downwash()
         c = self.MAC
@@ -64,9 +64,9 @@ class Tail_area:
     def Sh_S_controllability(self,X_cg):
         X_ac = self.get_aerodynamic_center()
         # TODO: link to json
-        C_m_ac = -0.26 #outta Martin's ass, change later 
-        CL_A_h = 1.36 #5def AOA
-        CL_h = 0.665
+        C_m_ac = -0.25 #outta Martin's ass, change later 
+        CL_A_h = 1.13 #5def AOA
+        CL_h = 0.59
         Vh_V = 1
         lh = self.l_h
         c = self.MAC
@@ -94,6 +94,8 @@ class Tail_area:
         plt.title('Scissor plot')
         plt.grid(True)
         plt.legend()
+        plt.xlim(-0.2, 1)
+        plt.ylim(0, 1)
         plt.tight_layout()
         plt.show()
 
@@ -113,8 +115,8 @@ if __name__ == "__main__":
     file_path = "design3.json"
     aircraft_data = Data(file_path)
     Xcg_values = np.linspace(-0.5, 1.2, 200)
-    fwd_cg = 0.182
-    aft_cg = 0.472
+    fwd_cg = 0.2416
+    aft_cg = 0.4874
     tail = Tail_area(aircraft_data=aircraft_data, fwd_cg=fwd_cg, aft_cg=aft_cg)
     plot = tail.plot(Xcg_values)
     tail_area = tail.get_tail_area()

@@ -5,6 +5,7 @@ import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from utils import Data, ISA, MissionType
 from Class_I.AltitudeVelocity import AltitudeVelocity
+from scipy.optimize import minimize_scalar
 
 
 class OptimumSpeeds(AltitudeVelocity):
@@ -30,57 +31,95 @@ class OptimumSpeeds(AltitudeVelocity):
         """
         self._current_weight += dw
 
-    def v_range(self, h: float) -> float:
+    def v_range(self, h: float, W: float = None) -> float:
         """
         Calculate the maximum range velocity at a given altitude.
         """
+        if W is None:
+            W = self._current_weight
+            
         V_stall = self.calculate_stall_speed(h)
-        velocity_range = np.linspace(V_stall, self.dive_speed, self.velocity_steps*5)
+        def drag_func(V):
+            return self.calculate_drag(V, h, W)
 
-        # Compute drag for each velocity
-        drag = np.array([self.calculate_drag(v, h) for v in velocity_range])
-
-        # Find velocity at which drag is minimized
-        min_drag_index = np.argmin(drag)
-        v_max_range = velocity_range[min_drag_index]
-
+        res = minimize_scalar(
+            drag_func,
+            bounds=(V_stall, self.dive_speed),
+            method='bounded',
+            options={'xatol': 1e-6}
+        )
+        v_max_range = res.x
         return v_max_range
     
-    def v_endurance(self, h: float) -> float:
+    def v_endurance(self, h: float, W: float = None) -> float:
         """
         Calculate the maximum endurance velocity at a given altitude.
         """
+        if W is None:
+            W = self._current_weight
+
         V_stall = self.calculate_stall_speed(h)
-        velocity_range = np.linspace(V_stall, self.dive_speed, self.velocity_steps*5)
+        def power_func(V):
+            return self.calculate_power_required(V, h)
 
-        # Compute drag for each velocity
-        Pr = np.array([self.calculate_power_required(v, h) for v in velocity_range])
-
-        # Find velocity at which drag is minimized
-        min_pr_index = np.argmin(Pr)
-        v_max_endurance = velocity_range[min_pr_index]
-
+        res = minimize_scalar(
+            power_func,
+            bounds=(V_stall, self.dive_speed),
+            method='bounded',
+            options={'xatol': 1e-6}
+        )
+        v_max_endurance = res.x
         return v_max_endurance
     
-    def L_over_D(self, h: float, v: float) -> float:
+    def v_max(self, h: float, W: float = None) -> float:
+        """
+        Calculate the maximum velocity at a given altitude (where rate of climb = 0).
+        """
+        if W is None:
+            W = self._current_weight
+
+        V_stall = self.calculate_stall_speed(h)
+        
+        def roc_func(V):
+            roc = self.calculate_RoC(V, h)
+            return abs(roc)  # Minimize absolute value to find where RoC = 0
+
+        res = minimize_scalar(
+            roc_func,
+            bounds=(V_stall, self.dive_speed*2),
+            method='bounded',
+            options={'xatol': 1e-6}
+        )
+        v_max = res.x
+        return v_max
+    
+    def L_over_D(self, V: float, h: float, W: float) -> float:
         """
         Calculate the lift-to-drag ratio at a given altitude.
         """
 
         # Compute drag for each velocity
-        drag = self.calculate_drag(v, h)
-        lift = self._current_weight
+        drag = self.calculate_drag(V, h, W)
+        lift = W
 
         # Calculate L/D ratio
         L_over_D = lift / drag
 
         return L_over_D
     
-    def update_cruise_speed(self, h: float) -> None:
+    def update_json(self, h: float) -> None:
         """
         Update the cruise speed based on the current altitude.
         """
         self.data.data['requirements']['cruise_speed'] = self.v_range(h)
+        self.data.data['outputs']['optimum_speeds']['range'] = self.v_range(h)
+        self.data.data['outputs']['optimum_speeds']['endurance'] = self.v_endurance(h)
+        self.data.data['outputs']['optimum_speeds']['max'] = self.v_max(h)
+        self.data.data['outputs']['optimum_speeds']['max_roc'] = self.calculate_max_RoC(h)[1]
+        self.data.data['outputs']['optimum_speeds']['max_aoc'] = self.calculate_max_AoC(h)[1]
+        self.data.data['outputs']['optimum_speeds']['min_rod'] = self.calculate_min_RoD(h)[1]
+        self.data.data['outputs']['optimum_speeds']['min_aod'] = self.calculate_min_AoD(h)[1]
+        self.data.save_design("design3.json")
 
 if __name__ == "__main__":
     # Example usage
@@ -90,11 +129,12 @@ if __name__ == "__main__":
 
     h = h_WIG = 10  # Example altitude in meters
 
-    optimum_speeds._current_weight = 1839082
-    v = optimum_speeds.v_range(h)
+    optimum_speeds._current_weight = optimum_speeds._mtow  # Set current weight to MTOW for calculations
+    optimum_speeds.update_json(h)
 
     v_range = optimum_speeds.v_range(h)
     v_endurance = optimum_speeds.v_endurance(h)
+    v_max = optimum_speeds.v_max(h)
     _, v_max_roc = optimum_speeds.calculate_max_RoC(h)
     _, v_max_aod = optimum_speeds.calculate_max_AoC(h)
     _, v_min_rod = optimum_speeds.calculate_min_RoD(h)
@@ -102,6 +142,7 @@ if __name__ == "__main__":
 
     print(f"Optimum range speed: {v_range:.2f} m/s")
     print(f"Optimum endurance speed: {v_endurance:.2f} m/s")
+    print(f"Maximum speed: {v_max:.2f} m/s")
     print(f"Maximum rate of climb speed: {v_max_roc:.2f} m/s")
     print(f"Maximum angle of climb speed: {v_max_aod:.2f} m/s")
     print(f"Minimum rate of descent speed: {v_min_rod:.2f} m/s")

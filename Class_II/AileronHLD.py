@@ -7,6 +7,8 @@ from utils import Data, FlapType
 from scipy.integrate import quad
 from aero.lift_curve import lift_curve
 
+
+
 class AileronHLD:
     def __init__(self, aircraft_data: Data):
         self.aircraft_data = aircraft_data
@@ -14,7 +16,6 @@ class AileronHLD:
         self.design_file = f"design{self.design_number}.json"
 
         self.flaptype = FlapType[self.aircraft_data.data['inputs']['control_surfaces']['flap_type']]
-
         self.S = self.aircraft_data.data['outputs']['wing_design']['S']
         self.b = self.aircraft_data.data['outputs']['wing_design']['b']
 
@@ -32,7 +33,7 @@ class AileronHLD:
         self.turn_radius = self.aircraft_data.data['outputs']['general']['min_turn_radius']
         self.bank_angle = np.deg2rad(self.aircraft_data.data['outputs']['general']['max_bank_angle'])
         self.V = np.sqrt(self.turn_radius*9.81*np.tan(self.bank_angle))
-        self.object_distance = self.turn_radius*1.6
+        self.object_distance = self.turn_radius*1.8
 
         self.aileron_end = self.aircraft_data.data['inputs']['control_surfaces']['aileron_end']*self.b/2
 
@@ -55,7 +56,8 @@ class AileronHLD:
 
         self.CLMax_landing = self.aircraft_data.data['inputs']['CLmax_landing']
         self.CLMax_clean = self.aircraft_data.data['inputs']['CLmax_clean']
-        self.required_CLmax_increase = self.CLMax_landing - self.CLMax_clean
+        self.required_CLmax_increase = (self.CLMax_landing - self.CLMax_clean)*1.5
+        self.Clp = self.aircraft_data.data['outputs']['aerodynamic_stability_coefficients_asym']['Clp']
 
         self.LE_flap = False
         self.tau = self.aileron_effectiveness()
@@ -64,11 +66,11 @@ class AileronHLD:
         return self.root_chord/2 - np.deg2rad(self.sweep)*y
     
     def chord_span_function(self,y):
+
         return self.root_chord + (self.tip_chord - self.root_chord)/(self.b/2) * y
     
     def Swa(self, y):
         return self.chord_span_function(y)
-
     def c(self, y):
         return self.chord_span_function(y)*y
     
@@ -80,43 +82,48 @@ class AileronHLD:
         return -6.624*r**4 + 12.07*r**3 - 8.292*r**2 + 3.295*r + 0.004942
 
     def calculate_roll_rate(self):
-        self.roll_rate = self.bank_angle/((self.object_distance-self.turn_radius)/self.V)
+        self.roll_rate = self.bank_angle/((self.object_distance-self.turn_radius)/self.V)*1.5
         return self.roll_rate
     
     def calculate_Clp_integral(self):
         integral,_ = quad(self.c_Clp, 0, self.b/2)
-        #self.Clp = -4*(self.airfoil_Cl_alpha+self.airfoil_Cd0)/self.aileron_area/self.b**2*integral
         return integral
+    
+    # def Clda_Clp_ratio(self,b):
+    #     integral,_ = quad(self.c, b, self.aileron_end)
+    #     return -1/2*self.airfoil_Cl_alpha*self.tau*integral*self.b/(self.airfoil_Cl_alpha+self.airfoil_Cd0)/self.calculate_Clp_integral()
     
     def Clda_Clp_ratio(self,b):
         integral,_ = quad(self.c, b, self.aileron_end)
-        return 2*self.airfoil_Cl_alpha*self.tau*self.b/(-4*(self.airfoil_Cl_alpha+self.airfoil_Cd0))*integral/self.calculate_Clp_integral()
-    
+        ratio = 2*self.airfoil_Cl_alpha*self.tau/(self.S*self.b)*integral/self.Clp
+        return ratio
+
     def calculate_aileron_position(self):
         self.b_test = np.arange(0, self.b/2+0.001, 0.001)
         tolerance = 0.0001
         for b in self.b_test:
             ratio = self.Clda_Clp_ratio(b)
-            #print(ratio, self.required_Cla_Clp)
+            # print(ratio, self.required_Cla_Clp)
             if abs(ratio - self.required_Cla_Clp) < tolerance:
                 self.aileron_start = b
                 break
+
+        if not hasattr(self, 'aileron_start'):
+            print('Aint gonna work cuh')
+            self.aileron_start = 7
         
         aileron_integral = quad(self.c, self.aileron_start, self.aileron_end)[0]
-        self.Clda = 2*self.airfoil_Cl_alpha*self.tau/self.S/self.b*aileron_integral
-        L = self.Clda*self.max_aileron_deflection*0.5*self.rho*self.V**2*self.S*self.b
-        mid_point = (self.aileron_start + self.aileron_end)/2
+        self.Clda = -2*self.airfoil_Cl_alpha*self.tau/self.S/self.b*aileron_integral
+        print(self.Clda)
+        self.aileron_lift = self.Clda*self.max_aileron_deflection*self.S*0.5*self.rho*self.V**2/1.5
 
-        self.aileron_lift = L/mid_point/2
         self.aileroned_area = quad(self.Swa, self.aileron_start, self.aileron_end)[0]
-        print(f"Aileron lift: {self.aileron_lift}")
 
     def calculate_aileron_size(self):
         self.required_roll_rate = self.calculate_roll_rate()
-        print(self.required_roll_rate)
         self.required_Cla_Clp = -self.required_roll_rate/(self.max_aileron_deflection*(2*self.V/self.b))
         self.calculate_aileron_position()
-        self.aileron_area = self.chord_span_function((self.aileron_end - self.aileron_start)/2)*self.aileron_chord_ratio*(self.aileron_end - self.aileron_start)
+        self.aileron_area = self.aileroned_area*self.aileron_chord_ratio
 
     def get_clmax_increase(self, LE=False):
         #@self.flap_deflection = 40
@@ -194,6 +201,7 @@ class AileronHLD:
 
         self.LE_flap_end = self.calculate_flap_endpoint(LE=True)
         self.CL_increase_TO = self.calculate_CLmax_increase(self.tot_LE_flap_area,self.clmax_increase*0.6)
+
         self.CL_max_TO = self.CLMax_clean + self.CL_increase_TO + self.CL_increase_TO_TE
 
         self.actual_LE_flap_area = self.chord_span_function((self.LE_flap_end - self.flap_start)/2)*self.rel_LE_flap_chord*(self.LE_flap_end - self.flap_start)
@@ -219,8 +227,7 @@ class AileronHLD:
             return
 
         self.CL_increase_TO = self.calculate_CLmax_increase(self.tot_flap_area,self.clmax_increase*0.6)
-        self.CL_max_TO = self.CLMax_clean + self.CL_increase_TO
-
+        self.CL_max_TO = self.CLMax_clean + self.CL_increase_TO/1.5
         self.CL_increase = self.calculate_CLmax_increase(self.tot_flap_area,self.clmax_increase)
 
         self.actual_flap_area = self.chord_span_function((self.flap_end - self.flap_start)/2)*self.rel_flap_chord*(self.flap_end - self.flap_start)
@@ -241,19 +248,26 @@ class AileronHLD:
 
         self.aircraft_data.data['outputs']['control_surfaces']['aileron']['b1'] = self.aileron_start
         self.aircraft_data.data['outputs']['control_surfaces']['aileron']['b2'] = self.aileron_end
+        self.aircraft_data.data['outputs']['control_surfaces']['aileron']['Swa'] = self.aileroned_area
+        self.aircraft_data.data['outputs']['control_surfaces']['aileron']['aileron_lift'] = self.aileron_lift
         self.aircraft_data.data['outputs']['control_surfaces']['aileron']['area_single'] = self.aileron_area
         self.aircraft_data.data['outputs']['control_surfaces']['aileron']['Swa'] = self.aileroned_area
+        self.aircraft_data.data['outputs']['control_surfaces']['aileron']['Clda'] = self.Clda
         self.aircraft_data.data['outputs']['control_surfaces']['aileron']['roll_rate'] = np.rad2deg(self.roll_rate)
         self.aircraft_data.data['outputs']['control_surfaces']['aileron']['bank_angle'] = np.rad2deg(self.bank_angle)
         self.aircraft_data.data['outputs']['control_surfaces']['aileron']['turn_radius'] = self.turn_radius
         self.aircraft_data.data['outputs']['control_surfaces']['aileron']['object_distance'] = self.object_distance
         self.aircraft_data.data['outputs']['control_surfaces']['aileron']['Clda'] = self.Clda
-        self.aircraft_data.data['outputs']['aerodynamic_stability_coefficients_asym']['C_l_delta_a'] = -self.Clda
+        self.aircraft_data.data['outputs']['aerodynamic_stability_coefficients_asym']['C_l_delta_a'] = self.Clda
         self.aircraft_data.data['outputs']['HLD']['b1'] = self.flap_start
         self.aircraft_data.data['outputs']['HLD']['b2'] = self.flap_end
         self.aircraft_data.data['outputs']['HLD']['Swf_single'] = self.flap_area
         self.aircraft_data.data['outputs']['HLD']['flap_area'] = self.actual_flap_area
-        self.aircraft_data.data['outputs']['control_surfaces']['aileron']['aileron_lift'] = self.aileron_lift
+        self.aircraft_data.data['outputs']['control_surfaces']['aileron']['aileron_lift'] = abs(self.aileron_lift)
+        self.aircraft_data.data['inputs']['CLmax_takeoff'] = self.CL_max_TO
+        self.aircraft_data.data['inputs']['CLmax_landing'] = self.CLMax_landing
+
+
         if self.LE_flap:
             self.aircraft_data.data['outputs']['HLD']['b2'] = self.LE_flap_end
             self.aircraft_data.data['outputs']['HLD']['b1'] = self.flap_start
@@ -298,14 +312,14 @@ class AileronHLD:
         ax.plot([0, -self.b/2], [y_root_TE, y_tip_TE], color='blue')  # Mirror
 
         # Ailerons
-        ax.plot([self.aileron_start, self.aileron_start], [y_root_LE_aileron, y_root_TE_aileron], color='red')
-        ax.plot([-self.aileron_start, -self.aileron_start], [y_root_LE_aileron, y_root_TE_aileron], color='red')  # Mirror
+        # ax.plot([self.aileron_start, self.aileron_start], [y_root_LE_aileron, y_root_TE_aileron], color='red')
+        # ax.plot([-self.aileron_start, -self.aileron_start], [y_root_LE_aileron, y_root_TE_aileron], color='red')  # Mirror
 
-        ax.plot([self.aileron_end, self.aileron_end], [y_tip_LE_aileron, y_tip_TE_aileron], color='red')
-        ax.plot([-self.aileron_end, -self.aileron_end], [y_tip_LE_aileron, y_tip_TE_aileron], color='red')  # Mirror
+        # ax.plot([self.aileron_end, self.aileron_end], [y_tip_LE_aileron, y_tip_TE_aileron], color='red')
+        # ax.plot([-self.aileron_end, -self.aileron_end], [y_tip_LE_aileron, y_tip_TE_aileron], color='red')  # Mirror
 
-        ax.plot([self.aileron_start, self.aileron_end], [y_root_LE_aileron, y_tip_LE_aileron], color='red')
-        ax.plot([-self.aileron_start, -self.aileron_end], [y_root_LE_aileron, y_tip_LE_aileron], color='red')  # Mirror
+        # ax.plot([self.aileron_start, self.aileron_end], [y_root_LE_aileron, y_tip_LE_aileron], color='red')
+        # ax.plot([-self.aileron_start, -self.aileron_end], [y_root_LE_aileron, y_tip_LE_aileron], color='red')  # Mirror
 
         # Flaps
         ax.plot([self.flap_start, self.flap_start], [y_root_LE_flap, y_root_TE_flap], color='orange')
@@ -335,9 +349,9 @@ class AileronHLD:
 
 
         ax.set_aspect('equal', adjustable='box')
-        ax.set_title("Wing Planform with Sweep")
-        ax.set_xlabel("Spanwise Direction (b)")
-        ax.set_ylabel("Chord (m)")
+        # ax.set_title("Wing Planform with Flaps")
+        ax.set_xlabel("Lateral Position (m)")
+        ax.set_ylabel("Longitudinal Position (m)")
         ax.set_ylim(-10,10)
         ax.grid(True)
 

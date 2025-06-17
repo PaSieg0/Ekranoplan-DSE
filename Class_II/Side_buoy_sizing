@@ -1,0 +1,229 @@
+import sys
+import os
+import numpy as np
+from scipy.optimize import fsolve
+import matplotlib.pyplot as plt
+from scipy.integrate import solve_ivp
+from scipy.signal import TransferFunction
+
+
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.append(project_root)
+
+from utils import Data
+import pandas as pd
+import numpy as np
+from enum import Enum, auto
+import matplotlib.pyplot as plt
+
+class side_Buoy_sizing:
+    def __init__(self, aircraft_data: Data):
+        self.aircraft_data = aircraft_data
+        self.MTOW = self.aircraft_data.data['outputs']['max']['MTOW']
+        self.b = self.aircraft_data.data['outputs']['design']['b']
+        self.MTOM = self.aircraft_data.data['outputs']['max']['MTOM']
+        self.OEW = self.aircraft_data.data['outputs']['design']['OEW']
+
+    def buoy_gain(self):
+        b = self.b/2
+        w_buoy = 1
+        l_bouy = 4
+        g = 9.80665
+        rho = 1000
+        k = b**2/4*l_bouy*w_buoy*g*rho          #Nm/rad
+        print(k)
+        return k
+        
+
+    #linearly inverted pendulum model
+    ######################!!!!!!!!!!!! Not use anymore but it looks nice here so i kept it lolllllllllllllllllllllll
+    ######################Call complete model to simulate a more accurate time domain response!!!!!!!!!!!!!!!!!
+    def LIPM(self):
+
+        g = 9.81      
+        l = 5       # pendulum length (m)  #from hydro force center to Cg (height) HARDCODED OUT OF MY A**!!!!!!!!!!!
+        m = self.MTOM       
+        k = self.buoy_gain()
+
+        def lip_dynamics(t, y):
+            theta, theta_dot = y
+            Mg = (g / l) * theta #moment due to Cg              
+            Mb = -(k / (m * l**2)) * theta  #moment due to buoy
+            dtheta_dt = theta_dot
+            dtheta_dot_dt = Mg + Mb
+            return [dtheta_dt, dtheta_dot_dt]
+        
+        def root_locus_plot():
+            k_vals = np.linspace(5e6, 5e9, 1000)
+            poles = []
+            k_map = []
+
+            for k_val in k_vals:
+                a = (g / l) - (k_val / (m * l**2))
+                if a >= 0:
+                    p1 = np.sqrt(a)
+                else:
+                    p1 = 1j * np.sqrt(-a)
+                poles.append([p1, -p1])
+                k_map.append(k_val)
+                k_map.append(k_val)
+
+            poles = np.array(poles).reshape(-1)
+            k_map = np.array(k_map)
+
+            fig, ax = plt.subplots(figsize=(6, 5))
+            ax.plot(poles.real, poles.imag, 'b.', label='Pole path')
+            ax.axvline(0, color='k', linestyle='--', label='Imaginary axis')
+            ax.set_xlabel('Real')
+            ax.set_ylabel('Imaginary')
+            ax.set_title('Root Locus (k from 5e6 to 5e9)')
+            ax.grid(True)
+            ax.legend()
+            plt.tight_layout()
+
+            def on_click(event):
+                if event.inaxes != ax:
+                    return
+
+                click_point = complex(event.xdata, event.ydata)
+                distances = np.abs(poles - click_point)
+                idx = np.argmin(distances)
+
+                selected_pole = poles[idx]
+                selected_k = k_map[idx]
+                print(f"Clicked pole: {selected_pole:.4f}, Gain k = {selected_k:.2e}")
+
+                ax.plot(selected_pole.real, selected_pole.imag, 'ro')
+                fig.canvas.draw()
+
+            fig.canvas.mpl_connect('button_press_event', on_click)
+            plt.show()
+
+        # Initial conditions
+        theta0 = np.radians(0.5)  # 0.5 degrees from vertical
+        y0 = [theta0, 0.0]
+
+        # Time span
+        t_span = (0, 300)
+        t_eval = np.linspace(*t_span, 1000)
+
+        # Solve ODE
+        sol = solve_ivp(lip_dynamics, t_span, y0, t_eval=t_eval)
+
+        # Plot
+        plt.figure(figsize=(8, 4))
+        plt.plot(sol.t, np.degrees(sol.y[0]), label='Pitch angle (deg)')
+        plt.xlabel('Time (s)')
+        plt.ylabel('Pitch angle (degrees)')
+        plt.title('Linear Inverted Pendulum with Corrective Force')
+        plt.grid(True)
+        plt.legend()
+        plt.tight_layout()
+        plt.show()
+
+        root_locus_plot()
+
+    #complete dynamic model, considering both parallel axis terms (point mass) and inertial term (distributed mass)
+    #complete model, as in, no restoring moment from hydro forces are considered, no damping terms are considered
+    #obtaining an oscillatory response is enough to demonstrate stability, hydro forces will provide natural damping (not modeled)
+    #which returns sytem to zero anyway.....not modeled to save time
+    def Model(self):
+        g = 9.81      
+        l = 4.5                 #Distance from center of hydro force center (pivot) to CG height
+        m = 2*self.OEW/g       # most unstable case is OEW as one bouy gets lifted out of water, both bouy under water at MTOW
+        k = self.buoy_gain()  # Buoy gain 
+        I_xx = 4*10**7      # only the aircraft, parallel axis terms considered later
+
+        def get_inertia():
+            I = I_xx + l**2*m
+            #print(I)
+            return I
+
+        def dynamics(t, y):
+            I = get_inertia()
+            theta, theta_dot = y
+            Mg = m * g * l * theta             # Gravitational moment 
+            Mb = -k * theta                      # Buoyancy moment 
+            dtheta_dt = theta_dot
+            dtheta_dot_dt = (Mg + Mb) / I
+            return [dtheta_dt, dtheta_dot_dt]
+
+        def root_locus_plot():
+            I = get_inertia()
+            k_vals = np.linspace(5e6, 5e8, 5000)
+            poles = []
+            k_map = []
+
+            for k_val in k_vals:
+                a = (m * g * l - k_val) / I
+                if a >= 0:
+                    p1 = np.sqrt(a)
+                else:
+                    p1 = 1j * np.sqrt(-a)
+                poles.append([p1, -p1])
+                k_map.append(k_val)
+                k_map.append(k_val)
+
+            poles = np.array(poles).reshape(-1)
+            k_map = np.array(k_map)
+
+            fig, ax = plt.subplots(figsize=(6, 5))
+            ax.plot(poles.real, poles.imag, 'b.', label='Pole path')
+            ax.axvline(0, color='k', linestyle='--', label='Imaginary axis')
+            ax.set_xlabel('Real')
+            ax.set_ylabel('Imaginary')
+            ax.set_title('Root Locus (k from 5e6 to 5e9)')
+            ax.grid(True)
+            ax.legend()
+            plt.tight_layout()
+
+            def on_click(event):
+                if event.inaxes != ax:
+                    return
+                click_point = complex(event.xdata, event.ydata)
+                distances = np.abs(poles - click_point)
+                idx = np.argmin(distances)
+                selected_pole = poles[idx]
+                selected_k = k_map[idx]
+                print(f"Clicked pole: {selected_pole:.4f}, Gain k = {selected_k:.2e}")
+                ax.plot(selected_pole.real, selected_pole.imag, 'ro')
+                fig.canvas.draw()
+
+            fig.canvas.mpl_connect('button_press_event', on_click)
+            plt.show()
+
+        # Initial conditions
+        theta0 = np.radians(0.5)
+        y0 = [theta0, 0.0]
+
+        # Time span
+        t_span = (0, 300)
+        t_eval = np.linspace(*t_span, 1000)
+
+        # Solve ODE
+        sol = solve_ivp(dynamics, t_span, y0, t_eval=t_eval)
+
+        # Plot response
+        plt.figure(figsize=(8, 4))
+        plt.plot(sol.t, np.degrees(sol.y[0]), label='Pitch angle (deg)')
+        plt.xlabel('Time (s)')
+        plt.ylabel('Pitch angle (degrees)')
+        plt.title('Roll axis dynamic response on water')
+        plt.grid(True)
+        plt.legend()
+        plt.tight_layout()
+        plt.show()
+
+        # Root locus plot
+        root_locus_plot()
+
+            
+
+if __name__ == "__main__":
+    # Load the aircraft data
+    aircraft = "design3.json"
+    aircraft_data = Data(aircraft)
+    buoy = side_Buoy_sizing(aircraft_data)
+    LIPM_mod = buoy.Model()
+    #bouy_depth =  buoy.get_buoys(0.1,6,4,4) #percentage of weight supported by buoys, length of buoy, diameter, number of buoys
+

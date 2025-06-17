@@ -37,6 +37,7 @@ class StressOutput(Enum):
     SHEAR_STRESS_TOP = auto()
     SHEAR_STRESS_BOTTOM = auto()
     WING_BENDING_STRESS = auto()
+    RESULTANT_TORQUE = auto()
 
 class EvaluateType(Enum):
     VERTICAL = auto()
@@ -506,6 +507,27 @@ def design_json_to_excel(json_file: str, excel_file: str) -> None:
     auto_adjust_column_widths(sheet)
 
     excelsheet.save(excel_file)
+
+import matplotlib.pyplot as plt
+
+# Set matplotlib parameters for technical report quality
+plt.rcParams.update({
+    'font.size': 12,
+    'font.family': 'serif',
+    'axes.labelsize': 16,
+    'axes.titlesize': 18,
+    'xtick.labelsize': 14,
+    'ytick.labelsize': 14,
+    'legend.fontsize': 14,
+    'figure.titlesize': 18,
+    'axes.grid': True,
+    'grid.alpha': 0.3,
+    'lines.linewidth': 2,
+    'axes.linewidth': 1.2,
+    'xtick.major.width': 1.2,
+    'ytick.major.width': 1.2,
+    'axes.titleweight': 'bold'
+})
 
 class ISA:
     """

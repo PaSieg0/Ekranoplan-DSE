@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 import sys
-from termcolor import colored
+#from termcolor import colored
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from utils import Data, EigenMotion, EigenMotionType, ISA
@@ -16,7 +16,7 @@ class StateSpaceModel:
         self.stability_coefficients_asym = aircraft_data.data['outputs']['aerodynamic_stability_coefficients_asym']
 
         self.time_step = 0.1
-        self.time_vector = np.arange(0, 10, self.time_step)
+        self.time_vector = np.arange(0, 300, self.time_step)
 
         self.elevator_deflection = np.zeros_like(self.time_vector)
         self.aileron_deflection = np.zeros_like(self.time_vector)
@@ -35,7 +35,7 @@ class StateSpaceModel:
         self.gamma_0 = np.deg2rad(0)  # Initial flight path angle (assumed level flight)
 
         mu_c = self.MTOM/(self.rho*self.S*self.c)
-        C_z_alpha_dot = self.stability_coefficients_sym['C_Z_alphadot']
+        C_z_alpha_dot = self.stability_coefficients_sym['C_z_alpha_dot']
         self.I_yy = self.aircraft_data.data['outputs']['inertia']['I_yy']
         K_yy = self.I_yy/(self.MTOM*self.c**2)
         C_m_alpha_dot = self.stability_coefficients_sym['C_m_alphadot']
@@ -56,7 +56,7 @@ class StateSpaceModel:
         C_mdelta_e = self.stability_coefficients_sym['C_m_delta_e']
 
         C_Ybeta_dot = self.stability_coefficients_asym['CyBdot']
-        C_nbeta_dot = self.stability_coefficients_asym['C_nBdot']
+        C_nbeta_dot = self.stability_coefficients_asym['CnBdot']
         self.I_xx = self.aircraft_data.data['outputs']['inertia']['I_xx']
         self.I_xz = self.aircraft_data.data['outputs']['inertia']['I_xz']
         self.I_zz = self.aircraft_data.data['outputs']['inertia']['I_zz']
@@ -122,6 +122,10 @@ class StateSpaceModel:
             [0],
             [0]
         ])
+        print(A_sym)
+        print(B_sym)
+        print(C_sym)
+        print(D_sym)
         
         P_asym = np.array([
             [(C_Ybeta_dot-2*mu_b)*self.b/self.v, 0                 , 0                            , 0                            ],
@@ -160,6 +164,11 @@ class StateSpaceModel:
             [0.0, 0.0],
             [0.0, 0.0]
         ])
+
+        print(A_asym)
+        print(B_asym)
+        print(C_asym)
+        print(D_asym)
         
         self.sym_model = ss(A_sym, B_sym, C_sym, D_sym)
         self.asym_model = ss(A_asym, B_asym, C_asym, D_asym)
@@ -299,12 +308,13 @@ if __name__ == "__main__":
     # Example usage
     aircraft_data = Data('design3.json')
     state_space_model = StateSpaceModel(aircraft_data)
-    eigenmotion_type = EigenMotion.PHUGOID
+    eigenmotion_type = EigenMotion.ROLL
 
 
     state_space_model.plot_input(eigenmotion_type)
     state_space_model.plot_response(eigenmotion_type)
 
+'''
     print("Eigenvalues for symmetric model:")
     for idx, eig in enumerate(state_space_model.eigenvalues_sym, 1):
         stability_str = "STABLE" if eig.real < 0 else "UNSTABLE"
@@ -314,4 +324,4 @@ if __name__ == "__main__":
     for idx, eig in enumerate(state_space_model.eigenvalues_asym, 1):
         stability_str = "STABLE" if eig.real < 0 else "UNSTABLE"
         stability_col = colored(f"{stability_str}", "green" if eig.real < 0 else "red")
-        print(f"  λ{idx}: {eig.real:.4f} {'+' if eig.imag >= 0 else '-'} {abs(eig.imag):.4f}j  [{stability_col}]")
+        print(f"  λ{idx}: {eig.real:.4f} {'+' if eig.imag >= 0 else '-'} {abs(eig.imag):.4f}j  [{stability_col}]") '''

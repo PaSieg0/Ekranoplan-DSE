@@ -66,9 +66,9 @@ class AircraftIteration:
         self.A_ratio = Ainf_Ah(self.h_b)
         self.new_k = np.sqrt(1 / self.A_ratio)
         self.new_Cd0 = self.aircraft_data.data['inputs']['Cd0']
-        self.d_fuselage = self.aircraft_data.data['outputs']['general']['d_fuselage_equivalent_straight']
-        self.l_fuselage = self.aircraft_data.data['outputs']['general']['l_fuselage']
-        self.n_fuselages = self.aircraft_data.data['inputs']['n_fuselages']
+        self.d_fuselage = 12
+        self.l_fuselage = 70
+        self.n_fuselages = 1
         self.wing_type = WingType[self.aircraft_data.data['inputs']['wing_type']]
 
         if self.wing_type == WingType.HIGH:
@@ -157,9 +157,9 @@ class AircraftIteration:
         n_engines_takeoff = np.ceil(self.aircraft_data.data['outputs']['general']['take_off_power']/ self.aircraft_data.data['inputs']['engine']['engine_power'])
         self.aircraft_data.data['inputs']['engine']['n_engines'] = max(n_engines_flight, n_engines_takeoff)
         if self.mission_type == MissionType.DESIGN:
-            self.aircraft_data.data['outputs'][mission_type]['fuel_economy'] = self.class_i.mission_fuel / 9.81 / 0.82 / (self.aircraft_data.data['requirements']['design_payload']/1000) / (2*self.class_i.design_range / 1000)
+            self.aircraft_data.data['outputs'][mission_type]['fuel_economy'] = self.class_i.mission_fuel / 9.81 / 0.76 / (self.aircraft_data.data['requirements']['design_payload']/1000) / (2*self.class_i.design_range / 1000)
         elif self.mission_type == MissionType.ALTITUDE:
-            self.aircraft_data.data['outputs'][mission_type]['fuel_economy'] = self.class_i.mission_fuel / 9.81 / 0.82 / (self.aircraft_data.data['requirements']['altitude_payload']/1000) / (2*(self.class_i.altitude_range_WIG+self.class_i.altitude_range_WOG) / 1000)
+            self.aircraft_data.data['outputs'][mission_type]['fuel_economy'] = self.class_i.mission_fuel / 9.81 / 0.76 / (self.aircraft_data.data['requirements']['altitude_payload']/1000) / (2*(self.class_i.altitude_range_WIG+self.class_i.altitude_range_WOG) / 1000)
         
 
         self.aircraft_data.data['outputs']['max']['MTOM'] = max(self.aircraft_data.data['outputs']['design']['MTOM'], self.aircraft_data.data['outputs']['ferry']['MTOM'], self.aircraft_data.data['outputs']['altitude']['MTOM'])

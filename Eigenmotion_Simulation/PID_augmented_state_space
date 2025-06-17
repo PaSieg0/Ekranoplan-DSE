@@ -1,0 +1,88 @@
+from control.matlab import *
+import control as ctrl
+import numpy as np
+import matplotlib.pyplot as plt
+import os
+import sys
+#from termcolor import colored
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from utils import Data, EigenMotion, EigenMotionType, ISA
+
+from Eigenmotion_Simulation.setup_state_space import StateSpaceModel
+
+class PID_augmentation:
+    def __init__(self, aircraft_data: Data):
+        self.aircraft_data = aircraft_data
+        self.stability_coefficients_sym = aircraft_data.data['outputs']['aerodynamic_stability_coefficients_sym']
+        self.stability_coefficients_asym = aircraft_data.data['outputs']['aerodynamic_stability_coefficients_asym']
+
+        model = StateSpaceModel(aircraft_data)
+
+        self.sym_model = model.sym_model
+        self.asym_model = model.asym_model
+        #print(self.asym_model)
+
+    def PID_augmentation_sym(self):
+        A = self.sym_model.A
+        B = self.sym_model.B
+        C = self.sym_model.C
+        D = self.sym_model.D
+        print("A:",A,"B:",B,"C:",C,"D:",D)
+        model = ctrl.ss(A,B,C,D)
+
+        x_ref = np.array([100,0,0,0])
+        Kp = np.array([20,20,20,20])
+        Kd = np.array([500,500,500,500])
+
+        dt = 0.01
+        T = np.arange(0, 5, dt)
+        x = np.array([100.01,0,0,0.01])
+
+        prev_e = np.zeros(4)
+        y_hist, u_hist = [], []
+
+        for t in T:
+            y = C @ x  # 4 outputs
+            e = x_ref - y
+            de = (e - prev_e) / dt
+            
+            # Scalar control input (weighted sum)
+            u = np.dot(Kp, e) + np.dot(Kd, de)  # scalar
+            
+            # State update
+            dx = A @ x + B.flatten() * u
+            x += dx * dt
+            
+            y_hist.append(y)
+            u_hist.append(u)
+            prev_e = e
+
+        y_hist = np.array(y_hist)
+        u_hist = np.array(u_hist)
+
+        plt.figure(figsize=(10,6))
+        for i in range(4):
+            plt.plot(T, y_hist[:, i], label=f'Output {i+1}')
+            plt.plot(T, x_ref[i] * np.ones_like(T), 'k--')  # constant reference line
+        plt.plot([], [], 'k--', label='References')  # legend entry for references
+        plt.plot(T, u_hist, 'r-', label='Control input u')
+        plt.legend()
+        plt.title("4 Output, Single Input PD Control")
+        plt.xlabel("Time [s]")
+        plt.ylabel("Values")
+        plt.grid()
+        plt.show()
+
+
+
+
+        
+
+
+if __name__ == "__main__":
+    # Example usage
+    aircraft_data = Data('design3.json')
+    state_space_model_aug = PID_augmentation(aircraft_data)
+    model = state_space_model_aug.PID_augmentation_sym()
+    

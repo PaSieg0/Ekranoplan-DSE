@@ -235,15 +235,15 @@ class ClassI:
         self.aircraft_data.data['outputs'][self.mission_type.name.lower()]['ZFW'] = self.ZFW
         self.aircraft_data.data['outputs'][self.mission_type.name.lower()]['MTOM'] = self.MTOM
         self.aircraft_data.data['outputs'][self.mission_type.name.lower()]['max_fuel'] = self.fuel_max
-        self.aircraft_data.data['outputs'][self.mission_type.name.lower()]['max_fuel_L'] = self.fuel_max/9.81/0.82
-        self.aircraft_data.data['outputs'][self.mission_type.name.lower()]['total_fuel_L'] = self.total_fuel/9.81/0.82
-        self.aircraft_data.data['outputs'][self.mission_type.name.lower()]['mission_fuel_L'] = self.mission_fuel/9.81/0.82
-        self.aircraft_data.data['outputs'][self.mission_type.name.lower()]['reserve_fuel_L'] = self.reserve_fuel/9.81/0.82
+        self.aircraft_data.data['outputs'][self.mission_type.name.lower()]['max_fuel_L'] = self.fuel_max/9.81/0.76
+        self.aircraft_data.data['outputs'][self.mission_type.name.lower()]['total_fuel_L'] = self.total_fuel/9.81/0.76
+        self.aircraft_data.data['outputs'][self.mission_type.name.lower()]['mission_fuel_L'] = self.mission_fuel/9.81/0.76
+        self.aircraft_data.data['outputs'][self.mission_type.name.lower()]['reserve_fuel_L'] = self.reserve_fuel/9.81/0.76
 
 
 
 if __name__=="__main__":
-    data = Data("design1.json")
+    data = Data("design3.json")
     
     classI = ClassI(
         aircraft_data=data,

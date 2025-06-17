@@ -1,0 +1,8 @@
+{
+    "python.testing.pytestArgs": [
+        "Class_II",
+        "tests"
+    ],
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true
+}

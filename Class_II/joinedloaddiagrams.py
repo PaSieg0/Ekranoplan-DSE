@@ -1,11 +1,10 @@
-from maneuverloads import calculate_n_limits, max_n, min_n, calculate_n
-from gustloads import Calculate_K_g, Calculate_mu, Calculate_V_b, Calculate_U_ref
-
 import numpy as np
 import matplotlib.pyplot as plt
 import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from Class_II.maneuverloads import calculate_n_limits, max_n, min_n, calculate_n
+from Class_II.gustloads import Calculate_K_g, Calculate_mu, Calculate_V_b, Calculate_U_ref
 from utils import Data, ISA
 
 class LoadDiagram:
@@ -16,28 +15,28 @@ class LoadDiagram:
     def plot_complete_load_diagram(self, plot=False):
         # ====== Gust Load Point Calculation ======
         g = 9.80665  # m/s²
-        W_final = aircraft_data.data["outputs"]["design"]["MTOW"]
+        W_final = self.aircraft_data.data["outputs"]["design"]["MTOW"]
         U_ref = Calculate_U_ref(self.h / 0.3048)  # Altitude in ft
-        S = aircraft_data.data["outputs"]["design"]["S"]
+        S = self.aircraft_data.data["outputs"]["design"]["S"]
         rho = ISA(self.h).rho
         CL_alpha = 5 #            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!     HARDOCDED FOR NOW
         w = W_final/S  # N/m^2
         w = w * 2.20462262 / (g * 3.2808399**2)  # lb/ft^2
-        b = np.sqrt(aircraft_data.data["inputs"]["aspect_ratio"] * S)
+        b = np.sqrt(self.aircraft_data.data["inputs"]["aspect_ratio"] * S)
         chord = S / b
         mu = Calculate_mu(w, rho * 0.0019403203319541, chord, CL_alpha, g)
         K_g = Calculate_K_g(mu)
         V_b = Calculate_V_b(
-            aircraft_data.data["requirements"]["stall_speed_clean"],
+            self.aircraft_data.data["requirements"]["stall_speed_clean"],
             K_g, U_ref,
-            aircraft_data.data["requirements"]["cruise_speed"],
+            self.aircraft_data.data["requirements"]["cruise_speed"],
             CL_alpha, w
         )
-        dive_speed = aircraft_data.data["requirements"]["cruise_speed"] / 0.8  # m/s, TBD
+        dive_speed = self.aircraft_data.data["requirements"]["cruise_speed"] / 0.8  # m/s, TBD
 
         gust_data = [
             [float(V_b), U_ref],
-            [aircraft_data.data["requirements"]["cruise_speed"], U_ref],
+            [self.aircraft_data.data["requirements"]["cruise_speed"], U_ref],
             [dive_speed, U_ref / 2]
         ]
 
@@ -46,11 +45,11 @@ class LoadDiagram:
             gust_data[i].append(float(delta_n))
 
         # ====== Maneuver Load Calculation ======
-        CLmax_clean = aircraft_data.data["inputs"]["CLmax_clean"]
+        CLmax_clean = self.aircraft_data.data["inputs"]["CLmax_clean"]
         W = W_final
         nmax = max_n(W)
         nmin = min_n()
-        V_cruise = aircraft_data.data["requirements"]["cruise_speed"]
+        V_cruise = self.aircraft_data.data["requirements"]["cruise_speed"]
         V_dive = V_cruise / 0.8
         V_range = np.arange(0, V_dive, 0.1)
         n_positive = [calculate_n_limits(rho, CLmax_clean, W, S, V, nmax, nmin, V_cruise, V_dive) for V in V_range]
@@ -158,6 +157,7 @@ class LoadDiagram:
         """
         Update the aircraft data.
         """
+        self.plot_complete_load_diagram(plot=False)
         self.aircraft_data.data['outputs']['general']['nmax'] = self.nmax
         self.aircraft_data.data['outputs']['general']['nmin'] = self.nmin
         return

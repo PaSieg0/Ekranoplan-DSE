@@ -10,32 +10,139 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from utils import Data, Materials, EvaluateType
 
 class WingStructure:
-    def __init__(self, aircraft_data: Data, airfoil_data: Data, wingbox_mat: Materials, 
-                 stringer_mat: Materials, wing_mat: Materials, evaluate: EvaluateType):
-        self.data = airfoil_data.data
+    def __init__(self, aircraft_data: Data, wingbox_mat: Materials, 
+                 stringer_mat: Materials, wing_mat: Materials, evaluate: EvaluateType,
+                 plot: bool = True):
         self.aircraft_data = aircraft_data
         self.evaluate = evaluate
         self.front_spar = self.aircraft_data.data['inputs']['structures']['wing_box']['front_spar']
         self.rear_spar = self.aircraft_data.data['inputs']['structures']['wing_box']['rear_spar']
+        self.plot = plot
+        self.rho_epoxy = self.aircraft_data.data['inputs']['structures']['materials']['Epoxy']['rho']
 
-        self.t_spar = self.aircraft_data.data['inputs']['structures']['wing_box']['t_spar']/1000
-        self.t_skin = self.aircraft_data.data['inputs']['structures']['wing_box']['t_skin']/1000
-        self.t_wing = self.aircraft_data.data['inputs']['structures']['wing_box']['t_wing']/1000
+        if self.evaluate == EvaluateType.WING:
+            self.airfoil_data = Data('Airfoil_data.dat', 'airfoil_geometry')
+            self.data = self.airfoil_data.data
+            self.b = self.aircraft_data.data['outputs']['wing_design']['b']
+            self.chord_root = self.aircraft_data.data['outputs']['wing_design']['chord_root']
+            self.chord_tip = self.aircraft_data.data['outputs']['wing_design']['chord_tip']
+            self.b_array = np.arange(0, self.b/2+0.01, 0.01)
+            self.chord_array = self.chord_span_function(self.b_array)
+            self.chord_length = self.chord_root
+            self.epoxy_out = self.aircraft_data.data['inputs']['structures']['wing_box']['epoxy_out']
+            self.epoxy_in = self.aircraft_data.data['inputs']['structures']['wing_box']['epoxy_in']
+            self.S = self.aircraft_data.data['outputs']['wing_design']['S']
+            self.min_skin_thickness = self.aircraft_data.data['inputs']['structures']['wing_box']['min_skin_thickness']/1000
+            self.min_spar_thickness = self.aircraft_data.data['inputs']['structures']['wing_box']['min_spar_thickness']/1000
+            self.thickness_threshold = int(self.aircraft_data.data['inputs']['structures']['wing_box']['thickness_threshold']*self.b/2*100)
+            self.n_cells = self.aircraft_data.data['inputs']['structures']['wing_box']['n_cells']
+            self.fuel_volume = self.aircraft_data.data['outputs']['max']['max_fuel_L']/1000
+            self.flap_start = self.aircraft_data.data['outputs']['HLD']['b1']
+            self.flap_end = self.aircraft_data.data['outputs']['HLD']['b2']
+            self.y_MAC = self.aircraft_data.data['outputs']['wing_design']['y_MAC']
 
-        self.b = self.aircraft_data.data['outputs']['wing_design']['b']
-        self.chord_root = self.aircraft_data.data['outputs']['wing_design']['chord_root']
-        self.chord_tip = self.aircraft_data.data['outputs']['wing_design']['chord_tip']
+            self.t_spar = self.aircraft_data.data['inputs']['structures']['wing_box']['t_spar']/1000
+            self.t_skin = self.aircraft_data.data['inputs']['structures']['wing_box']['t_skin']/1000
+            self.t_wing = self.aircraft_data.data['inputs']['structures']['wing_box']['t_wing']/1000
 
-        self.b_array = np.arange(0, self.b/2, 0.01)
-        self.chord_array = self.chord_span_function(self.b_array)
+            self.aileron_start = self.aircraft_data.data['outputs']['control_surfaces']['aileron']['b1']
+            self.aileron_end = self.aircraft_data.data['outputs']['control_surfaces']['aileron']['b2']
 
-        self.chord_length = self.chord_root
+            self.L_stringer = self.aircraft_data.data['inputs']['structures']['wing_box']['L_stringer']
+            self.stringer_area = self.aircraft_data.data['inputs']['structures']['wing_box']['stringer_area']/1000000
 
-        self.S = self.aircraft_data.data['outputs']['wing_design']['S']
+            self.C = self.aircraft_data.data['inputs']['structures']['wing_box']['C']
 
-        self.n_stringers = self.aircraft_data.data['inputs']['structures']['wing_box']['n_stringers']
+            self.n_stringers = self.aircraft_data.data['inputs']['structures']['wing_box']['n_stringers']
 
-        self.fuel_tank = self.aircraft_data.data['inputs']['fuel_tank']
+            self.fuel_tank = self.aircraft_data.data['inputs']['fuel_tank']
+            self.buoy_mass = 950 #TODO link to json
+            self.fuselage_fuel = self.aircraft_data.data['inputs']['fuel_fuselage']
+            self.cutout_spacing = self.aircraft_data.data['inputs']['structures']['wing_box']['cutout_spacing']
+
+            self.fuel_wing = (1- self.fuselage_fuel)/2*self.fuel_volume
+            self.engine_positions = self.aircraft_data.data['outputs']['engine_positions']['y_engines']
+            self.engine_weight = self.aircraft_data.data['inputs']['engine']['engine_weight']
+            self.fuel_tank_thickness = self.aircraft_data.data['inputs']['fuel_tank_thickness']/1000
+            self.bottom_spar_margin = 0.05
+            self.top_spar_margin = 0.98
+
+        elif self.evaluate == EvaluateType.HORIZONTAL:
+            self.airfoil_data = Data('VerticalTailfoil.dat', 'airfoil_geometry')
+            self.data = self.airfoil_data.data
+            self.b = self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['b']
+            self.chord_root = self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['chord_root']
+            self.chord_tip = self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['chord_tip']
+            self.b_array = np.arange(0, self.b/2+0.01, 0.01)
+            self.chord_array = self.chord_span_function(self.b_array)
+            self.chord_length = self.chord_root
+            self.S = self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['S']
+            self.y_MAC = self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['y_MAC']
+            self.epoxy_out = self.aircraft_data.data['inputs']['structures']['horizontal_wing_box']['epoxy_out']
+            self.epoxy_in = self.aircraft_data.data['inputs']['structures']['horizontal_wing_box']['epoxy_in']
+            self.t_spar = self.aircraft_data.data['inputs']['structures']['horizontal_wing_box']['t_spar']/1000
+            self.t_skin = self.aircraft_data.data['inputs']['structures']['horizontal_wing_box']['t_skin']/1000
+            self.t_wing = self.aircraft_data.data['inputs']['structures']['horizontal_wing_box']['t_wing']/1000
+            self.fuel_tank = 0
+            self.buoy_mass = 0
+            self.fuel_wing = 0
+            self.engine_positions = None
+            self.cutout_spacing = self.aircraft_data.data['inputs']['structures']['horizontal_wing_box']['cutout_spacing']
+            self.bottom_spar_margin = 0.05
+            self.top_spar_margin = 0.98
+            self.min_skin_thickness = self.aircraft_data.data['inputs']['structures']['horizontal_wing_box']['min_skin_thickness']/1000
+            self.min_spar_thickness = self.aircraft_data.data['inputs']['structures']['horizontal_wing_box']['min_spar_thickness']/1000
+            self.thickness_threshold = int(self.aircraft_data.data['inputs']['structures']['horizontal_wing_box']['thickness_threshold']*self.b/2*100)
+            self.n_cells = self.aircraft_data.data['inputs']['structures']['horizontal_wing_box']['n_cells']
+
+            self.L_stringer = self.aircraft_data.data['inputs']['structures']['horizontal_wing_box']['L_stringer']
+            self.stringer_area = self.aircraft_data.data['inputs']['structures']['horizontal_wing_box']['stringer_area']/1000000
+
+            self.C = self.aircraft_data.data['inputs']['structures']['horizontal_wing_box']['C']
+
+            self.n_stringers = self.aircraft_data.data['inputs']['structures']['horizontal_wing_box']['n_stringers']
+
+            self.elevator_start = self.aircraft_data.data['outputs']['control_surfaces']['elevator']['b1']
+            self.elevator_end = self.aircraft_data.data['outputs']['control_surfaces']['elevator']['b2']
+
+        elif self.evaluate == EvaluateType.VERTICAL:
+            self.airfoil_data = Data('VerticalTailfoil.dat', 'airfoil_geometry')
+            self.data = self.airfoil_data.data
+            self.b = self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['b']
+            self.chord_root = self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['chord_root']
+            self.chord_tip = self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['chord_tip']
+            self.b_array = np.arange(0, self.b+0.01, 0.01)
+            self.chord_array = self.chord_span_function(self.b_array)
+            self.epoxy_out = self.aircraft_data.data['inputs']['structures']['vertical_wing_box']['epoxy_out']
+            self.epoxy_in = self.aircraft_data.data['inputs']['structures']['vertical_wing_box']['epoxy_in']
+            self.chord_length = self.chord_root
+            self.S = self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['S']
+            self.fuel_tank = 0
+            self.buoy_mass = 0
+            self.fuel_wing = 0
+            
+            self.y_MAC = self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['z_MAC']
+            self.t_spar = self.aircraft_data.data['inputs']['structures']['vertical_wing_box']['t_spar']/1000
+            self.t_skin = self.aircraft_data.data['inputs']['structures']['vertical_wing_box']['t_skin']/1000
+            self.t_wing = self.aircraft_data.data['inputs']['structures']['vertical_wing_box']['t_wing']/1000
+            self.engine_positions = None
+            self.cutout_spacing = self.aircraft_data.data['inputs']['structures']['vertical_wing_box']['cutout_spacing']
+            self.bottom_spar_margin = 0.02
+            self.top_spar_margin = 0.98
+            self.min_skin_thickness = self.aircraft_data.data['inputs']['structures']['vertical_wing_box']['min_skin_thickness']/1000
+            self.min_spar_thickness = self.aircraft_data.data['inputs']['structures']['vertical_wing_box']['min_spar_thickness']/1000
+            self.thickness_threshold = int(self.aircraft_data.data['inputs']['structures']['vertical_wing_box']['thickness_threshold']*self.b/2*100)
+            self.n_cells = self.aircraft_data.data['inputs']['structures']['vertical_wing_box']['n_cells']
+
+            self.L_stringer = self.aircraft_data.data['inputs']['structures']['vertical_wing_box']['L_stringer']
+            self.stringer_area = self.aircraft_data.data['inputs']['structures']['vertical_wing_box']['stringer_area']/1000000
+
+            self.C = self.aircraft_data.data['inputs']['structures']['vertical_wing_box']['C']
+
+            self.n_stringers = self.aircraft_data.data['inputs']['structures']['vertical_wing_box']['n_stringers']
+
+            self.rudder_start = self.aircraft_data.data['outputs']['control_surfaces']['rudder']['b1']
+            self.rudder_end = self.aircraft_data.data['outputs']['control_surfaces']['rudder']['b2']
 
         self.material = self.aircraft_data.data['inputs']['structures']['materials'][wingbox_mat.name.lower()]
         self.G = self.material['G']
@@ -48,37 +155,17 @@ class WingStructure:
         self.E_stringer = self.material_stringer['E']
         self.sigma_y_stringer = self.material_stringer['sigma_y']
         self.rho_stringer = self.material_stringer['rho']
-        self.min_skin_thickness = self.aircraft_data.data['inputs']['structures']['wing_box']['min_skin_thickness']/1000
-        self.min_spar_thickness = self.aircraft_data.data['inputs']['structures']['wing_box']['min_spar_thickness']/1000
-        self.thickness_threshold = int(self.aircraft_data.data['inputs']['structures']['wing_box']['thickness_threshold']*self.b/2*100)
+
         self.y = 0
         self.idx = 0
         self.poisson_ratio_stringer = self.material_stringer['poisson_ratio']
-        self.n_cells = self.aircraft_data.data['inputs']['structures']['wing_box']['n_cells']
-        self.fuel_volume = self.aircraft_data.data['outputs']['max']['max_fuel_L']/1000
-        self.flap_start = self.aircraft_data.data['outputs']['HLD']['b1']
-        self.flap_end = self.aircraft_data.data['outputs']['HLD']['b2']
-
-        self.aileron_start = self.aircraft_data.data['outputs']['control_surfaces']['aileron']['b1']
-        self.aileron_end = self.aircraft_data.data['outputs']['control_surfaces']['aileron']['b2']
-
-        self.L_stringer = self.aircraft_data.data['inputs']['structures']['wing_box']['L_stringer']
-        self.stringer_area = self.aircraft_data.data['inputs']['structures']['wing_box']['stringer_area']/1000000
-
-        self.C = self.aircraft_data.data['inputs']['structures']['wing_box']['C']
 
         self.fuel_density = self.aircraft_data.data['inputs']['rho_fuel']
-        self.buoy_mass = 950 #TODO link to json
 
-        self.cutout_spacing = self.aircraft_data.data['inputs']['structures']['wing_box']['cutout_spacing']
-
-        self.fuselage_fuel = self.aircraft_data.data['inputs']['fuel_fuselage']
-
-        self.fuel_wing = (1- self.fuselage_fuel)/2*self.fuel_volume
         self.wing_material = self.aircraft_data.data['inputs']['structures']['materials'][wing_mat.name.lower()]
         self.rho_wing = self.wing_material['rho']
 
-        self.w_fuselage = self.aircraft_data.data['outputs']['general']['w_fuselage']
+        self.w_fuselage = self.aircraft_data.data['outputs']['fuselage_dimensions']['w_fuselage']
         self.fuel_start = self.w_fuselage/2 + 0.3
 
         self.leading_edge = self.chord_root - np.tan(np.deg2rad(self.aircraft_data.data['outputs']['wing_design']['sweep_x_c'])) * self.b_array
@@ -88,15 +175,12 @@ class WingStructure:
             for i in range(1, self.n_cells)
         ]
 
-        self.bottom_spar_margin = 0.05
-        self.top_spar_margin = 0.98
-
-        self.engine_positions = self.aircraft_data.data['outputs']['engine_positions']['y_engines']
-        self.engine_weight = self.aircraft_data.data['inputs']['engine']['engine_weight']
-        self.fuel_tank_thickness = self.aircraft_data.data['inputs']['fuel_tank_thickness']/1000
         self.I_xx_list = []
+        # print(self.evaluate)
 
     def chord_span_function(self,y):
+        if self.evaluate == EvaluateType.VERTICAL:
+            return self.chord_root + (self.chord_tip - self.chord_root) / (self.b) * y
         return self.chord_root + (self.chord_tip - self.chord_root) / (self.b/2) * y
     
     def smoothstep(self,x, edge0, edge1):
@@ -149,20 +233,20 @@ class WingStructure:
         top_flange = patches.Rectangle(
             (x - top_w / 2, top_y - thickness),
             top_w,
-            thickness,
+            thickness*5,
             facecolor=color
         )
 
         bottom_flange = patches.Rectangle(
             (x - bottom_w / 2, bottom_y),
             bottom_w,
-            thickness,
+            thickness*5,
             facecolor=color
         )
 
         web = patches.Rectangle(
             (x - thickness / 2, bottom_y + thickness),
-            thickness,
+            thickness*5,
             web_h - 2 * thickness,
             facecolor=color
         )
@@ -251,9 +335,7 @@ class WingStructure:
         if self.n_cells > 1:
             spar_positions.extend(self.mid_spar_positions)
         spar_positions.append(self.rear_spar)
-
         spar_xs = [pos * self.chord_length for pos in spar_positions]
-
         spar_data = {}
         spar_data['max_y'] = []
         spar_data['min_y'] = []
@@ -633,8 +715,6 @@ class WingStructure:
                 stringer_info['bottom']['I_yy'] += np.sum(self.stringer_area * dx ** 2) + self.I_yy_stringer * n_bottom
                 stringer_info['bottom']['I_xy'] += np.sum(self.stringer_area * dx * dy) + self.I_xy_stringer * n_bottom
 
-        if not any_stringers_placed:
-            raise ValueError("No stringers could be placed with the given geometry and constraints.")
 
         self.stringer_dict = stringer_info
 
@@ -715,7 +795,7 @@ class WingStructure:
                 
                 # print(mid_spar_height, self.t_spar)
                 # print(self.beam_standard_Ixx(mid_spar_height, self.t_spar,
-                #                                         abs(mid_spar_height / 2 - self.centroid[1]), np.pi / 2))
+                #                                          abs(mid_spar_height / 2 - self.centroid[1]), np.pi / 2))
 
         I_xx_wing_top = 0
         I_yy_wing_top = 0
@@ -763,7 +843,7 @@ class WingStructure:
             I_yy_wing_bottom += self.beam_standard_Iyy(length, self.t_wing, abs(distance_yy), angle)
             I_xy_wing_bottom += self.beam_standard_Ixy(length, self.t_wing, xy, angle)
 
-        #print(I_xx_front_spar + I_xx_rear_spar + I_xx_mid_spars)
+        # print(I_xx_front_spar + I_xx_rear_spar + I_xx_mid_spars)
         self.I_xx = (I_xx_front_spar + I_xx_rear_spar + I_xx_panels +
                  + I_xx_wing_bottom + I_xx_wing_top + I_xx_mid_spars + self.stringer_dict['top']['I_xx'] + self.stringer_dict['bottom']['I_xx'])
         self.I_yy = (I_yy_front_spar + I_yy_rear_spar + I_yy_panels +
@@ -773,6 +853,131 @@ class WingStructure:
 
         # print(I_xx_front_spar, I_xx_rear_spar, I_xx_panels, I_xx_wing_bottom, I_xx_wing_top, I_xx_mid_spars, self.stringer_dict['top']['I_xx'], self.stringer_dict['bottom']['I_xx'])
         # print(self.I_xx)
+
+    def standard_MMOI_beam(self, length, thickness, distance, effective_mass):
+        Ip = 1/12 * effective_mass * (length**2 + thickness**2) + effective_mass * distance
+        return Ip
+
+    def get_mass_MOI(self):
+
+        # Calculate centroid positions for front and rear spars
+        front_spar_centroid_x = self.spar_info['front_spar_x']
+        front_spar_centroid_y = self.spar_info['front_spar_height'] / 2
+        d_front = (front_spar_centroid_x - self.centroid[0])**2 + (front_spar_centroid_y - self.centroid[1])**2
+        rear_spar_centroid_x = self.spar_info['rear_spar_x']
+        rear_spar_centroid_y = self.spar_info['rear_spar_height'] / 2
+        d_rear = (rear_spar_centroid_x - self.centroid[0])**2 + (rear_spar_centroid_y - self.centroid[1])**2
+        Ip_front_spar = self.standard_MMOI_beam(
+            self.spar_info['front_spar_height'],
+            self.spar_thickness_span_function(self.y),
+            d_front,
+            self.rho_wingbox * self.spar_info['front_spar_height'] * self.spar_thickness_span_function(self.y)
+        )
+
+        Ip_rear_spar = self.standard_MMOI_beam(
+            self.spar_info['rear_spar_height'],
+            self.spar_thickness_span_function(self.y),
+            d_rear,
+            self.rho_wingbox * self.spar_info['rear_spar_height'] * self.spar_thickness_span_function(self.y)
+        )
+        Ip_mid_spars = 0
+        Ip_panels = 0
+        for i in range(1, self.n_cells + 1):
+
+            top_panel_length = self.panel_info[f'top_panel_length_{i}']
+            bottom_panel_length = self.panel_info[f'bottom_panel_length_{i}']
+            left_spar_top = self.spar_info[f'{self.get_spar_label(i - 1)}_top']
+            left_spar_bottom = self.spar_info[f'{self.get_spar_label(i - 1)}_bottom']
+
+            # Euclidean distance from centroid to panel centroid (top)
+            top_panel_angle = self.panel_info[f'top_panel_angle_{i}']
+            top_panel_centroid_x = 0.5 * top_panel_length * np.cos(top_panel_angle)
+
+            top_panel_centroid_y = 0.5 * top_panel_length * np.sin(top_panel_angle) + left_spar_top
+            d_top = (top_panel_centroid_x - self.centroid[0])**2 + (top_panel_centroid_y - self.centroid[1])**2
+
+            # Euclidean distance from centroid to panel centroid (bottom)
+            bottom_panel_angle = self.panel_info[f'bottom_panel_angle_{i}']
+            bottom_panel_centroid_x = 0.5 * bottom_panel_length * np.cos(bottom_panel_angle)
+            bottom_panel_centroid_y = 0.5 * bottom_panel_length * np.sin(bottom_panel_angle) + left_spar_bottom
+            d_bottom = (bottom_panel_centroid_x - self.centroid[0])**2 + (bottom_panel_centroid_y - self.centroid[1])**2
+            Ip_panels += self.standard_MMOI_beam(top_panel_length, self.skin_thickness_span_function(self.y),
+                             d_top,
+                             self.rho_wingbox * top_panel_length * self.skin_thickness_span_function(self.y))
+            Ip_panels += self.standard_MMOI_beam(bottom_panel_length, self.skin_thickness_span_function(self.y),
+                             d_bottom,
+                             self.rho_wingbox * bottom_panel_length * self.skin_thickness_span_function(self.y))
+
+            if i < self.n_cells:
+                mid_spar_height = self.spar_info[f'mid_spar_{i}_height']
+                mid_spar_x = self.spar_info[f'mid_spar_{i}_x']
+                # Euclidean distance from centroid to mid spar centroid
+                mid_spar_centroid_x = mid_spar_x
+                mid_spar_centroid_y = mid_spar_height / 2
+                d_mid = np.sqrt((mid_spar_centroid_x - self.centroid[0])**2 + (mid_spar_centroid_y - self.centroid[1])**2)
+                Ip_mid_spars += self.standard_MMOI_beam(mid_spar_height, self.spar_thickness_span_function(self.y),
+                                    d_mid,
+                                    self.rho_wingbox * mid_spar_height * self.spar_thickness_span_function(self.y))
+                
+        for elem in self.element_functions['upper']:
+            length = elem['length']
+            x_start = elem['x_start']
+            x_end = elem['x_end']
+
+            slope = elem['slope']
+            intercept = elem['intercept']
+            x_centroid = (x_start + x_end) / 2
+            y_centroid = slope * x_centroid + intercept
+
+            distance_xx = y_centroid - self.centroid[1]
+            distance_yy = x_centroid - self.centroid[0]
+            distance = distance_xx**2 + distance_yy**2
+            Ip_panels += self.standard_MMOI_beam(length, self.t_wing, distance, self.t_wing * self.rho_wingbox * length)
+        
+        for elem in self.element_functions['lower']:
+            length = elem['length']
+            x_start = elem['x_start']
+            x_end = elem['x_end']
+
+            slope = elem['slope']
+            intercept = elem['intercept']
+            x_centroid = (x_start + x_end) / 2
+            y_centroid = slope * x_centroid + intercept
+
+            distance_xx = y_centroid - self.centroid[1]
+            distance_yy = x_centroid - self.centroid[0]
+            distance = distance_xx**2 + distance_yy**2
+
+            Ip_panels += self.standard_MMOI_beam(length, self.t_wing, distance, self.t_wing * self.rho_wingbox * length)
+
+        stringers = self.stringer_dict
+
+        Ip_stringers_top = 0
+        Ip_stringers_bottom = 0
+        for i in range(len(stringers['top']['x'])):
+            x = stringers['top']['x'][i]
+            y = stringers['top']['y'][i]
+            angle = stringers['top']['angle'][i]
+
+            distance_xx = y - self.centroid[1]
+            distance_yy = x - self.centroid[0]
+            distance = distance_xx**2 + distance_yy**2
+
+            Ip_stringers_top += self.stringer_area * self.rho_stringer * (distance)
+
+        for i in range(len(stringers['bottom']['x'])):
+            x = stringers['bottom']['x'][i]
+            y = stringers['bottom']['y'][i]
+            angle = stringers['bottom']['angle'][i]
+
+            distance_xx = y - self.centroid[1]
+            distance_yy = x - self.centroid[0]
+            distance = distance_xx**2 + distance_yy**2
+
+            Ip_stringers_bottom += self.stringer_area * self.rho_stringer * (distance)
+
+        self.Ip = (Ip_front_spar + Ip_rear_spar + Ip_mid_spars +
+                    Ip_panels + Ip_stringers_top + Ip_stringers_bottom)
 
     def get_wing_rib(self, ribs: dict = None):  
 
@@ -789,7 +994,6 @@ class WingStructure:
         if ribs:
             self.x_positions = ribs['x_positions']
             self.thicknesses = ribs['thicknesses']
-            print(f'rib amount: {len(self.x_positions)}')
             self.rib_masses = []
             self.cutout_positioning = {}
             for i in range(len(self.x_positions)):
@@ -829,7 +1033,7 @@ class WingStructure:
 
             if self.evaluate == EvaluateType.WING:
                 self.split_airfoil_surfaces()
-            elif self.evaluate == EvaluateType.VERTICAL:
+            elif self.evaluate == EvaluateType.VERTICAL or self.evaluate == EvaluateType.HORIZONTAL:
                 self.split_symmetric_airfoil()
             self.get_element_functions()  
             self.get_spar_heights()
@@ -838,6 +1042,7 @@ class WingStructure:
             self.get_stringer_placement()
             self.get_moment_of_inertia()
             self.get_polar_moment()
+            self.get_mass_MOI()
             self.get_wing_rib()
 
             self.wing_structure[idx]['elements'] = self.element_functions
@@ -853,6 +1058,7 @@ class WingStructure:
             self.wing_structure[idx]['y_upper'] = self.y_upper
             self.wing_structure[idx]['y_lower'] = self.y_lower
             self.wing_structure[idx]['I_xx'] = self.I_xx
+            self.wing_structure[idx]['Ip'] = self.Ip
             self.wing_structure[idx]['I_yy'] = self.I_yy
             self.wing_structure[idx]['I_xy'] = self.I_xy
             self.wing_structure[idx]['J'] = self.J
@@ -873,13 +1079,35 @@ class WingStructure:
         self.normalized_data['bottom_skin_lengths'] = root_chord_data['panel_info']['bottom_skin_length']/self.chord_root
 
         self.calculate_wing_mass()
-        # self.plot_moment_of_inertia()
-        # self.plot_polar_moment()
 
-        self.plot_wing_weight()
+        self.MAC_idx = np.argmin(np.abs(self.b_array - self.y_MAC))
+        self.MAC_Ip = self.wing_structure[self.MAC_idx]['Ip']
+        self.MAC_J = self.wing_structure[self.MAC_idx]['J']
+        self.MAC_m = self.section_masses[self.MAC_idx]
+        self.I_xx_MAC = self.wing_structure[self.MAC_idx]['I_xx']
+        self.centroid_x_MAC = self.wing_structure[self.MAC_idx]['centroid'][0]
+
+        if self.plot:
+            # self.plot_Ip()
+            self.plot_airfoil(chord_idx = self.MAC_idx)
+            # self.plot_moment_of_inertia()
+            # self.plot_polar_moment()
+
+            self.plot_wing_weight()
+            #self.plot_spacing_2we()
+
         self.spar_thicknesses = self.spar_thickness_span_function(self.b_array)
         self.skin_thicknesses = self.skin_thickness_span_function(self.b_array)
-        #self.plot_spacing_2we()
+        
+    def plot_Ip(self):
+        fig, ax = plt.subplots()
+        ax.plot(self.b_array, [self.wing_structure[i]['Ip'] for i in range(len(self.b_array))], label='Polar Moment of Inertia', color='green')
+        ax.set_xlabel('Spanwise Position (m)')
+        ax.set_ylabel('Polar Moment of Inertia (kg*m^2)')
+        ax.set_title('Polar Moment of Inertia Distribution vs Spanwise Position')
+        ax.legend()
+        ax.grid()
+        plt.show()
         
     def plot_spacing_2we(self):
 
@@ -896,8 +1124,11 @@ class WingStructure:
     def calculate_wing_mass(self):
 
         wing_area = []
+        wing_epoxy_area = []
         wing_box_area = []
+        wing_box_epoxy_area = []
         stringers_area = []
+        stringer_area_epoxy = []
         for i in range(len(self.b_array)):
             elements = self.wing_structure[i]['elements']
 
@@ -905,31 +1136,47 @@ class WingStructure:
             lower_length = sum(elem['length'] for elem in elements['lower'])
             total_length = upper_length + lower_length
             airfoil_area = total_length * self.t_wing
+            airfoil_epoxy_area = total_length * self.t_wing * self.epoxy_out + total_length * self.t_wing * self.epoxy_in
 
             spar_heights = self.wing_structure[i]['spar_info']['spar_heights']
             spar_area = sum(spar_heights) * self.spar_thickness_span_function(i)
+            spar_epoxy_area = sum(spar_heights) * self.spar_thickness_span_function(i) * self.epoxy_out + sum(spar_heights) * self.spar_thickness_span_function(i) * self.epoxy_in
 
             panel_lengths_top = self.wing_structure[i]['panel_info']['widths_top']
             panel_lengths_bottom = self.wing_structure[i]['panel_info']['widths_bottom']
             panel_area = sum(panel_lengths_top) * self.skin_thickness_span_function(i) + sum(panel_lengths_bottom) * self.skin_thickness_span_function(i)
+
+            panel_epoxy_area = (sum(panel_lengths_top) + sum(panel_lengths_bottom)) * self.skin_thickness_span_function(i) * self.epoxy_out + (sum(panel_lengths_top) + sum(panel_lengths_bottom)) * self.skin_thickness_span_function(i) * self.epoxy_in
+
             stringer_info = self.wing_structure[i]['stringers']
 
             n_stringers = sum(stringer_info['top']['n_stringers']) + sum(stringer_info['bottom']['n_stringers'])
             stringer_area = n_stringers * self.stringer_area
+            stringer_epoxy_area = n_stringers * self.stringer_area * self.epoxy_out + n_stringers * self.stringer_area * self.epoxy_in
+
             wing_area.append(airfoil_area)
-            wing_box_area.append(panel_area + spar_area + stringer_area)
+            wing_box_area.append(panel_area + spar_area)
             stringers_area.append(stringer_area)
+            wing_epoxy_area.append(airfoil_epoxy_area)
+            wing_box_epoxy_area.append(panel_epoxy_area + spar_epoxy_area)
+            stringer_area_epoxy.append(stringer_epoxy_area)
 
         wing_area = np.array(wing_area)
         wing_box_area = np.array(wing_box_area)
         stringers_area = np.array(stringers_area)
 
+        wing_masses = np.array(wing_area)*self.rho_wing*np.gradient(self.b_array)
+        wing_box_masses = np.array(wing_box_area)*self.rho_wingbox*np.gradient(self.b_array)
+        stringers_masses = np.array(stringers_area)*self.rho_stringer*np.gradient(self.b_array)
 
-
+        self.section_masses = wing_masses + wing_box_masses + stringers_masses
         wing_volume = np.trapz(wing_area, self.b_array)
         wing_box_volume = np.trapz(wing_box_area, self.b_array)
         stringers_volume = np.trapz(stringers_area, self.b_array)
-        self.wing_mass = (wing_volume * self.rho_wing + wing_box_volume * self.rho_wingbox + stringers_volume * self.rho_stringer)
+        epoxy_volume = np.trapz(wing_epoxy_area, self.b_array) + np.trapz(wing_box_epoxy_area, self.b_array) + np.trapz(stringer_area_epoxy, self.b_array)
+        self.epoxy_mass = epoxy_volume * self.rho_epoxy
+        # print(f'wing epoxy mass: {self.epoxy_mass} kg')
+        self.wing_mass = wing_volume * self.rho_wing + wing_box_volume * self.rho_wingbox + stringers_volume * self.rho_stringer + self.epoxy_mass
 
         return self.wing_mass
     
@@ -959,7 +1206,6 @@ class WingStructure:
         area_intercept = area1
 
         self.fuel_length = self.get_fuel_length(area_slope, area_intercept)
-        print(f"Fuel Length: {self.fuel_length:.2f} m")
         self.fuel_mass_distribution = np.zeros_like(self.b_array)
 
         for i, y in enumerate(self.b_array):
@@ -988,31 +1234,42 @@ class WingStructure:
         TE_panel_area = (front_height_rear_spar + rear_height_rear_spar) / 2 * (self.fuel_length - self.fuel_start)
         LE_panel_area = (front_height_front_spar + rear_height_front_spar) / 2 * (self.fuel_length - self.fuel_start)
 
-        self.tank_mass = (mid_panel_area + front_panel_area + rear_panel_area + TE_panel_area + LE_panel_area)*self.fuel_tank_thickness*self.rho_wingbox
-                
+        if self.evaluate == EvaluateType.WING:
+            self.tank_mass = (mid_panel_area + front_panel_area + rear_panel_area + TE_panel_area + LE_panel_area)*self.fuel_tank_thickness*self.rho_wingbox
+        else:
+            self.tank_mass = 0
         return self.fuel_mass_distribution
 
     def gaussian_peak(self,x, x0, A, sigma=0.1):
         return A * np.exp(-((x - x0)**2) / (2 * sigma**2)) / (sigma * np.sqrt(2 * np.pi))
     
     def wing_weight_dist(self):
-        fuel_dist = self.get_fuel_mass_distribution()
+        if self.evaluate == EvaluateType.WING:
+            fuel_dist = self.get_fuel_mass_distribution()
+        else:
+            fuel_dist = np.zeros_like(self.b_array)
+            self.tank_mass = 0
         if hasattr(self, 'rib_masses'):
-            print(f'tot rib mass: {sum(self.rib_masses)} kg')
+            # print(f'tot rib mass: {sum(self.rib_masses)} kg')
             self.wing_mass = self.calculate_wing_mass() + sum(self.rib_masses) + self.tank_mass
         else:
             self.wing_mass = self.calculate_wing_mass() + self.tank_mass
 
-        self.weight_dist = self.wing_mass/(self.S/2)*self.chord_span_function(self.b_array)*9.81 + fuel_dist
-        for engine_y in self.engine_positions:
-            self.weight_dist[int(round(engine_y,2)*100)] += self.engine_weight*9.81
+        if self.evaluate == EvaluateType.VERTICAL:
+            self.weight_dist = self.wing_mass/(self.S)*self.chord_span_function(self.b_array)*9.81 + fuel_dist
+        else:
+            self.weight_dist = self.wing_mass/(self.S/2)*self.chord_span_function(self.b_array)*9.81 + fuel_dist
+
+        if self.evaluate == EvaluateType.WING:
+            for engine_y in self.engine_positions:
+                self.weight_dist[int(round(engine_y,2)*100)] += self.engine_weight*9.81
         
         self.wing_mass = self.wing_mass + self.tank_mass
-        print(f"Wing mass without fuel: {self.wing_mass:.2f} kg")
+        # print(f"Wing mass without fuel: {self.wing_mass:.2f} kg")
         self.weight_dist[-1] += self.buoy_mass*9.81
 
         self.tot_weight = np.trapz(self.weight_dist, self.b_array)
-        print(f"Wing mass all inc: {self.tot_weight/9.81:.2f} kg")
+        # print(f"Wing mass all inc: {self.tot_weight/9.81:.2f} kg")
         return self.weight_dist
 
     def plot_wing_ribs(self):
@@ -1021,30 +1278,39 @@ class WingStructure:
             rib_x = self.x_positions[i]
             idx = np.argmin(np.abs(self.b_array - rib_x))
             rib_length = self.chord_span_function(rib_x)
-            if self.flap_start <= rib_x <= self.flap_end:
-                rib_length -= (1-self.rear_spar)*rib_length
-            if self.aileron_start <= rib_x <= self.aileron_end:
-                rib_length -= (1-self.rear_spar)*rib_length
+            if self.evaluate == EvaluateType.WING:
+                if self.flap_start <= rib_x <= self.flap_end:
+                    rib_length -= (1-self.rear_spar)*rib_length
+                if self.aileron_start <= rib_x <= self.aileron_end:
+                    rib_length -= (1-self.rear_spar)*rib_length
+            elif self.evaluate == EvaluateType.VERTICAL:
+                if self.rudder_start <= rib_x <= self.rudder_end:
+                    rib_length -= (1-self.rear_spar)*rib_length
+            elif self.evaluate == EvaluateType.HORIZONTAL:
+                if self.elevator_start <= rib_x <= self.elevator_end:
+                    rib_length -= (1-self.rear_spar)*rib_length
+
             ax.plot(self.b_array, self.leading_edge, color='blue', label='Leading Edge' if i == 0 else "")
             ax.plot(self.b_array, self.leading_edge - self.chord_span_function(self.b_array), color='blue', label='Trailing Edge' if i == 0 else "")
             ax.plot([rib_x, rib_x], [self.leading_edge[idx], self.leading_edge[idx]-rib_length], color='green')
 
-        front_idx = np.argmin(np.abs(self.b_array - self.fuel_start))
-        rear_idx = np.argmin(np.abs(self.b_array - self.fuel_length))
+        if self.evaluate == EvaluateType.WING:
+            front_idx = np.argmin(np.abs(self.b_array - self.fuel_start))
+            rear_idx = np.argmin(np.abs(self.b_array - self.fuel_length))
 
-        fuel_tank_start_LE = self.leading_edge[front_idx] - np.sqrt(self.fuel_tank)/2*(self.rear_spar-self.front_spar)* self.chord_span_function(self.fuel_start)
-        fuel_tank_start_TE = fuel_tank_start_LE - (1-np.sqrt(self.fuel_tank)/2)*(self.rear_spar - self.front_spar)* self.chord_span_function(self.fuel_start)
-        fuel_tank_rear_LE = self.leading_edge[rear_idx] - np.sqrt(self.fuel_tank)/2*(self.rear_spar - self.front_spar)* self.chord_span_function(self.fuel_length)
-        fuel_tank_rear_TE = fuel_tank_rear_LE - (1-np.sqrt(self.fuel_tank)/2)*(self.rear_spar - self.front_spar)* self.chord_span_function(self.fuel_length)
-        x_coords = [self.fuel_start, self.fuel_length, self.fuel_length, self.fuel_start]
-        y_coords = [fuel_tank_start_LE, fuel_tank_rear_LE, fuel_tank_rear_TE, fuel_tank_start_TE]
+            fuel_tank_start_LE = self.leading_edge[front_idx] - np.sqrt(self.fuel_tank)/2*(self.rear_spar-self.front_spar)* self.chord_span_function(self.fuel_start)
+            fuel_tank_start_TE = fuel_tank_start_LE - (1-np.sqrt(self.fuel_tank)/2)*(self.rear_spar - self.front_spar)* self.chord_span_function(self.fuel_start)
+            fuel_tank_rear_LE = self.leading_edge[rear_idx] - np.sqrt(self.fuel_tank)/2*(self.rear_spar - self.front_spar)* self.chord_span_function(self.fuel_length)
+            fuel_tank_rear_TE = fuel_tank_rear_LE - (1-np.sqrt(self.fuel_tank)/2)*(self.rear_spar - self.front_spar)* self.chord_span_function(self.fuel_length)
+            x_coords = [self.fuel_start, self.fuel_length, self.fuel_length, self.fuel_start]
+            y_coords = [fuel_tank_start_LE, fuel_tank_rear_LE, fuel_tank_rear_TE, fuel_tank_start_TE]
 
-        ax.fill(x_coords, y_coords, color='red', alpha=0.3, label='Fuel Tank')
-        ax.plot([self.fuel_start, self.fuel_start], [fuel_tank_start_LE, fuel_tank_start_TE], color='red')
-        ax.plot([self.fuel_length, self.fuel_length], [fuel_tank_rear_LE, fuel_tank_rear_TE], color='red')
-        ax.plot([self.fuel_start, self.fuel_length], [fuel_tank_start_LE, fuel_tank_rear_LE], color='red')
-        ax.plot([self.fuel_start, self.fuel_length], [fuel_tank_start_TE, fuel_tank_rear_TE], color='red')
-        ax.axvline(self.w_fuselage/2, color='red', linestyle='--')
+            ax.fill(x_coords, y_coords, color='red', alpha=0.3, label='Fuel Tank')
+            ax.plot([self.fuel_start, self.fuel_start], [fuel_tank_start_LE, fuel_tank_start_TE], color='red')
+            ax.plot([self.fuel_length, self.fuel_length], [fuel_tank_rear_LE, fuel_tank_rear_TE], color='red')
+            ax.plot([self.fuel_start, self.fuel_length], [fuel_tank_start_LE, fuel_tank_rear_LE], color='red')
+            ax.plot([self.fuel_start, self.fuel_length], [fuel_tank_start_TE, fuel_tank_rear_TE], color='red')
+            ax.axvline(self.w_fuselage/2, color='red', linestyle='--')
         ax.set_xlabel('Lateral Position (m)')
         ax.set_ylabel('Longitudinal Position (m)')
         ax.set_title('Wing Ribs along Span and Fuel Tank')
@@ -1057,9 +1323,9 @@ class WingStructure:
         fig, ax = plt.subplots()
         ax.plot(self.b_array, self.spar_thickness_span_function(self.b_array), label='Thickness Distribution', color='blue')
         ax.plot(self.b_array, self.skin_thickness_span_function(self.b_array), label='Skin Thickness Distribution', color='orange')
-        ax.set_xlabel('Chord Length (m)')
+        ax.set_xlabel('Span (m)')
         ax.set_ylabel('Thickness (m)')
-        ax.set_title('Wing Thickness Distribution vs Chord Length')
+        ax.set_title('Wing Thickness Distribution Along Span')
         ax.legend()
         ax.grid()
         plt.show()
@@ -1083,9 +1349,9 @@ class WingStructure:
         ax.plot(self.b_array, [wing['I_xx'] for wing in self.wing_structure.values()], label='I_xx', color='blue')
         #ax.plot(self.b_array, [wing['I_yy'] for wing in self.wing_structure.values()], label='I_yy', color='red')
         ax.plot(self.b_array, [wing['I_xy'] for wing in self.wing_structure.values()], label='I_xy', color='green')
-        ax.set_xlabel('Chord Length (m)')
+        ax.set_xlabel('Span (m)')
         ax.set_ylabel('Moment of Inertia (m^4)')
-        ax.set_title('Moment of Inertia vs Chord Length')
+        ax.set_title('Moment of Inertia vs Span')
         ax.legend()
         ax.grid()
         plt.show()
@@ -1094,15 +1360,14 @@ class WingStructure:
         fig, ax = plt.subplots()
 
         ax.plot(self.b_array, [wing['J'] for wing in self.wing_structure.values()], label='Polar Moment of Inertia', color='purple')
-        ax.set_xlabel('Chord Length (m)')
+        ax.set_xlabel('Span (m)')
         ax.set_ylabel('Polar Moment of Inertia (m^4)')
-        ax.set_title('Polar Moment of Inertia vs Chord Length')
+        ax.set_title('Polar Moment of Inertia vs Span')
         ax.legend()
         ax.grid()
         plt.show()
 
     def plot_rib(self,id=40):
-        print(len(self.cutout_positioning))
         cutout_positions = self.cutout_positioning[id]
         idx = np.argmin(np.abs(self.b_array - self.x_positions[id]))
         x_coords = self.wing_structure[idx]['x_coords']
@@ -1193,6 +1458,20 @@ class WingStructure:
             self.draw_I_beam(x, y, self.L_stringer/1000, self.t_stringer/1000, top=False, color='purple',angle=0)
 
         plt.scatter(centroid[0], centroid[1], color='green', label='Centroid')
+        centroid_x, centroid_z = centroid
+        arrow_length = 0.05 * chord
+        plt.arrow(centroid_x, centroid_z, 0, arrow_length,
+                head_width=0.05 * arrow_length, head_length=0.05 * arrow_length,
+                fc='black', ec='black', linewidth=2, zorder=20)
+        plt.text(centroid_x, centroid_z + arrow_length + 0.02 * arrow_length,
+                'z', fontsize=10, ha='center', va='bottom')
+
+        # Arrow: Left in X (negative X direction)
+        plt.arrow(centroid_x, centroid_z, -arrow_length, 0,
+                head_width=0.05 * arrow_length, head_length=0.05 * arrow_length,
+                fc='black', ec='black', linewidth=2, zorder=20)
+        plt.text(centroid_x - arrow_length - 0.08 * arrow_length, centroid_z,
+                'x', fontsize=10, ha='right', va='center')
         plt.title(f"Airfoil with Spar Positions, Wing Box and Stringers, chord = {chord:.2f} m")
         plt.xlabel("x")
         plt.ylabel("y")
@@ -1202,17 +1481,14 @@ class WingStructure:
 
 
 if __name__ == "__main__":
-    airfoil_data = Data("Airfoil_data.dat","airfoil_geometry")
     aircraft_data = Data("design3.json")
     stringer_material = Materials.Al7075
     wingbox_material = Materials.Al7075
     wing_material = Materials.Al5052
-    wing_structure = WingStructure(aircraft_data, airfoil_data, wingbox_mat=wingbox_material,
+    wing_structure = WingStructure(aircraft_data, wingbox_mat=wingbox_material,
                                    wing_mat=wing_material, stringer_mat=stringer_material, evaluate=EvaluateType.WING)
     wing_structure.get_wing_structure()
-    #3187
-    wing_structure.plot_airfoil(chord_idx=0)
     wing_structure.plot_moment_of_inertia()
     wing_structure.plot_thickness_distribution()
-    print(f"Stringer Length, thickness in mm:{wing_structure.calculate_stringer_thickness()}")
-    print(f"Crippling stress stringer in MPa: {wing_structure.crippling_stress_stringer()}")
+    # print(f"Stringer Length, thickness in mm:{wing_structure.calculate_stringer_thickness()}")
+    # print(f"Crippling stress stringer in MPa: {wing_structure.crippling_stress_stringer()}")

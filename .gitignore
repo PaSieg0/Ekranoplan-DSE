@@ -6,6 +6,9 @@ __pycache__/
 # C extensions
 *.so
 
+# json extensions
+Data/*.json
+
 # Distribution / packaging
 .Python
 build/
@@ -169,6 +172,8 @@ cython_debug/
 
 # Ruff stuff:
 .ruff_cache/
+
+Data/
 
 # PyPI configuration file
 .pypirc

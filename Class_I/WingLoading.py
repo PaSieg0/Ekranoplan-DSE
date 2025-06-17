@@ -32,7 +32,7 @@ class WingLoading:
         self.V_lof = 1.05*self.stall_speed_takeoff
         self.L = self.aircraft_data.data['outputs']['fuselage_dimensions']['l_fuselage']
         self.tail_length = self.aircraft_data.data['outputs']['fuselage_dimensions']['l_tailcone']
-        self.r_float = self.aircraft_data.data['inputs']['r_float']
+        # self.r_float = self.aircraft_data.data['inputs']['r_float']
         self.cruise_altitude = self.aircraft_data.data['inputs']['cruise_altitude']
         self.high_altitude = self.aircraft_data.data['requirements']['high_altitude']
         self.climb_rate = self.aircraft_data.data['requirements']['climb_rate']
@@ -43,10 +43,10 @@ class WingLoading:
         self.rho_water = self.aircraft_data.data['rho_water']
         self.depth = self.aircraft_data.data['inputs']['depth']
         self.prop_efficiency = self.aircraft_data.data['inputs']['prop_efficiency']
-        self.CL_hydro = self.aircraft_data.data['inputs']['CL_hydro']
+        # self.CL_hydro = self.aircraft_data.data['inputs']['CL_hydro']
         self.upsweep = self.aircraft_data.data['inputs']['upsweep']
         self.d_fuselage = self.aircraft_data.data['outputs']['fuselage_dimensions']['d_fuselage_equivalent_station2']
-        self.hull_surface = self.calculate_hull_surface()
+        self.hull_surface = self.aircraft_data.data['outputs']['fuselage_dimensions']['hull_surface']
         self.TW = None
         self.WP = None
         self.max_WS = None
@@ -89,7 +89,7 @@ class WingLoading:
     def calculate_hull_surface(self):
         self.w_fuselage = self.aircraft_data.data['inputs']['w_fuselage']
         self.h_fuselage = self.aircraft_data.data['inputs']['h_fuselage']
-        self.t_fuselage = self.aircraft_data.data['inputs']['t_fuselage']
+        self.t_fuselage = self.aircraft_data.data['inputs']['structures']['fuselage']['t_fuselage']
 
         rho_water = self.aircraft_data.data['rho_water']
         V_disp = self.aircraft_data.data['outputs']['max']['MTOM'] / rho_water
@@ -103,7 +103,7 @@ class WingLoading:
     def take_off_requirement(self):
         CL_takeoff = self.CLmax_takeoff/1.21
         Cd = self.calculate_Cd()
-        self.hull_surface = self.calculate_hull_surface()
+        self.hull_surface = self.aircraft_data.data['outputs']['fuselage_dimensions']['hull_surface']
         self.aircraft_data.data['outputs']['general']['Cd_water'] = Cd
         self.aircraft_data.data['outputs']['general']['hull_surface'] = self.hull_surface
         D = 0.5 * self.rho_water * (self.V_lof)**2 * Cd * self.hull_surface

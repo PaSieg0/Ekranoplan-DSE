@@ -51,6 +51,9 @@ class OptimumClimb(AltitudeVelocity):
             t += dt
 
             V_prev = V_tas
+            if dh <= 1e-4:
+                print(" \nWarning: Climb rate is zero or negative, stopping integration.")
+                break
         return energy, t
 
 
@@ -60,15 +63,15 @@ if __name__ == "__main__":
     mission_type = MissionType.ALTITUDE  # Example mission type
     optimum_climb = OptimumClimb(aircraft_data, mission_type)
 
-    h_start = 0  # Starting altitude in meters
+    h_start = 10  # Starting altitude in meters
     h_end = 3048  # Ending altitude in meters
-    V_ias = 86.05860123201985  # Indicated airspeed in m/s
+    # V_ias = 86.05860123201985  # Indicated airspeed in m/s
     
     opt_time = optimum_climb.calculate_t_climb(h_start=h_start, h_end=h_end, V_ias=None)
 
     times = []  # Initialize an empty array to store times
     energies = []  # Initialize an empty array to store energies
-    V_ias_list = np.arange(65, 105, 1)  # Example range of V_ias values from 50 m/s to 200 m/s
+    V_ias_list = np.arange(70, 115, 1)  # Example range of V_ias values from 50 m/s to 200 m/s
     for V_ias in tqdm(V_ias_list, desc="Calculating times for different V_ias"):
         energy, time = optimum_climb.energy_to_climb(h_start=h_start, h_end=h_end, V_ias=V_ias)
         times.append(time)
