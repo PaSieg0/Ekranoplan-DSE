@@ -427,7 +427,7 @@ class lift_curve():
         ax=fig.subplots(2,2)
 
         # drag polar
-        ax[0][0].set_title('Drag Polar')
+        # ax[0][0].set_title('Drag Polar')
         
         # ax[0][0].plot(self.alpha[0:self.idx_cl_max], self.ind_lst[:self.idx_cl_max], label='h_b=0.050(old)') # Add a label
         # ax[0][0].plot(self.alpha[0:self.idx_cl_max], self.ind_lst2[:self.idx_cl_max], label='out GE(old)') # Add a label
@@ -439,7 +439,7 @@ class lift_curve():
 
 
         #lift curve
-        ax[0][1].set_title('lift curve')
+        # ax[0][1].set_title('lift curve')
         ax[0][1].set_xlabel('α (degrees)')
         ax[0][1].set_ylabel('Cl')
         ax[0][1].plot(self.alpha[:self.idx_cl_max],self.cl_lst[:self.idx_cl_max], label='No GE')
