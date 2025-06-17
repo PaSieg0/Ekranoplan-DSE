@@ -234,6 +234,6 @@ class FlutterAnalysis:
 if __name__ == '__main__':
     aircraft_data = Data('design3.json')
     wing_material = Materials.Al7075
-    evaluate_type = EvaluateType.WING
+    evaluate_type = EvaluateType.HORIZONTAL
     flutter_analysis = FlutterAnalysis(aircraft_data, wing_material, evaluate= evaluate_type)
     flutter_analysis.main(plot=True)

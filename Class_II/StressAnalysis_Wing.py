@@ -181,7 +181,7 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
             return self.vertical_distribution
         elif self.evaluate_case == 'min':
             if self.evaluate == EvaluateType.WING:
-                self.vertical_distribution = self.lift_function - self.wing_weight
+                self.vertical_distribution = 1.7*self.get_max_aero_dist() - self.wing_weight
                 self.vertical_distribution[-1] += self.F_slam
             else:
                 self.vertical_distribution = self.min_load_factor*self.lift_function - self.wing_weight if self.evaluate == EvaluateType.HORIZONTAL else self.lift_function
@@ -559,7 +559,7 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
                 
             # self.plot_rib(id=0)
 
-            # self.plot_wing_ribs()
+        self.plot_wing_ribs()
         self.plot_any(StressOutput.RESULTANT_VERTICAL)
         self.plot_any(StressOutput.INTERNAL_SHEAR_VERTICAL)
         self.plot_any(StressOutput.INTERNAL_MOMENT_X)
@@ -820,12 +820,9 @@ def main(all=True):
             flutter_analysis.main(plot=False)
 
     else:
-        stress_analysis = StressAnalysisWing(aircraft_data=Data("design3.json"), wingbox_mat=wingbox_material, wing_mat=wing_material, stringer_mat=stringer_material, evaluate=EvaluateType.HORIZONTAL, 
+        stress_analysis = StressAnalysisWing(aircraft_data=Data("design3.json"), wingbox_mat=wingbox_material, wing_mat=wing_material, stringer_mat=stringer_material, evaluate=EvaluateType.WING, 
                                              PLOT=False)
         stress_analysis.main_analysis(run_all=True)
-        stress_analysis.plot_any(StressOutput.RESULTANT_VERTICAL)
-        stress_analysis.plot_any(StressOutput.INTERNAL_SHEAR_VERTICAL)
-        stress_analysis.plot_any(StressOutput.INTERNAL_MOMENT_X)
 
         # stress_analysis.plot_any(StressOutput.INTERNAL_TORQUE)
         flutter_analysis = FlutterAnalysis(aircraft_data=Data("design3.json"), wing_mat=wingbox_material, evaluate=EvaluateType.WING)

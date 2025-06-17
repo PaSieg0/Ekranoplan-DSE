@@ -535,24 +535,6 @@ class WingStructure:
         I_xy = I_web + A_web * xy
 
         return I_xy
-
-    def get_polar_moment(self):
-
-        polar_moment_wingbox = 0
-        for i in range(1, self.n_cells + 1):
-            top_panel_length = self.panel_info[f'top_panel_length_{i}']
-            bottom_panel_length = self.panel_info[f'bottom_panel_length_{i}']
-            cell_area = self.cell_areas[i - 1]
-
-            left_spar_height = self.spar_info[f'{self.get_spar_label(i - 1)}_height']
-            right_spar_height = self.spar_info[f'{self.get_spar_label(i)}_height']
-
-            length_thickness_cell = (top_panel_length + bottom_panel_length) / self.t_skin + \
-                (left_spar_height + right_spar_height) / self.t_wing
-            
-            polar_moment_wingbox += 4*cell_area**2 / length_thickness_cell
-
-        self.J = polar_moment_wingbox
     
 
     def get_moment_of_inertia(self):
@@ -573,7 +555,7 @@ class WingStructure:
 
         I_xx_front_spar = self.beam_standard_Ixx(front_spar_height, 0.001,
                                                 abs(front_spar_height / 2 - self.centroid[1]), np.pi / 2)
-        I_yy_front_spar = self.beam_standard_Iyy(front_spar_height, self.spar_thickness_span_function(self.y),
+        I_yy_front_spar = self.beam_standard_Iyy(front_spar_height, 0.001,
                                                 abs(front_spar_x - self.centroid[0]), np.pi / 2)
         I_xy_front_spar = self.beam_standard_Ixy(front_spar_height, self.spar_thickness_span_function(self.y),
                                                 (front_spar_x - self.centroid[0]) * (front_spar_height / 2 - self.centroid[1]),
@@ -586,57 +568,17 @@ class WingStructure:
         I_xy_rear_spar = self.beam_standard_Ixy(rear_spar_height, self.spar_thickness_span_function(self.y),
                                                 (rear_spar_x - self.centroid[0]) * (rear_spar_height / 2 - self.centroid[1]),
                                                 np.pi / 2)
+        
+        I_xx_panels = self.beam_standard_Ixx(0.5,0.001,0.5,0)*2
+        I_yy_panels = self.beam_standard_Iyy(1,0.001,0,0)*2
+        
 
-        for i in range(1, self.n_cells + 1):
-            top_panel_angle = self.panel_info[f'top_panel_angle_{i}']
-            bottom_panel_angle = self.panel_info[f'bottom_panel_angle_{i}']
-
-            top_panel_length = self.panel_info[f'top_panel_length_{i}']
-            bottom_panel_length = self.panel_info[f'bottom_panel_length_{i}']
-
-            left_spar_top = self.spar_info[f'{self.get_spar_label(i - 1)}_top']
-            left_spar_bottom = self.spar_info[f'{self.get_spar_label(i - 1)}_bottom']
-
-            I_xx_panels += self.beam_standard_Ixx(top_panel_length, self.skin_thickness_span_function(self.y),
-                                                abs(0.5 * top_panel_length * np.sin(top_panel_angle) + left_spar_top - self.centroid[1]),
-                                                top_panel_angle)
-            I_yy_panels += self.beam_standard_Iyy(top_panel_length, self.skin_thickness_span_function(self.y),
-                                                abs(0.5 * top_panel_length * np.cos(top_panel_angle) - self.centroid[0]),
-                                                top_panel_angle)
-            I_xy_panels += self.beam_standard_Ixy(top_panel_length, self.skin_thickness_span_function(self.y),
-                                                (0.5 * top_panel_length * np.cos(top_panel_angle) - self.centroid[0]) *
-                                                (0.5 * top_panel_length * np.sin(top_panel_angle) + left_spar_top - self.centroid[1]),
-                                                top_panel_angle)
-
-            I_xx_panels += self.beam_standard_Ixx(bottom_panel_length, self.skin_thickness_span_function(self.y),
-                                                abs(0.5 * bottom_panel_length * np.sin(bottom_panel_angle) + left_spar_bottom - self.centroid[1]),
-                                                bottom_panel_angle)
-            I_yy_panels += self.beam_standard_Iyy(bottom_panel_length, self.skin_thickness_span_function(self.y),
-                                                abs(0.5 * bottom_panel_length * np.cos(bottom_panel_angle) - self.centroid[0]),
-                                                bottom_panel_angle)
-            I_xy_panels += self.beam_standard_Ixy(bottom_panel_length, self.skin_thickness_span_function(self.y),
-                                                (0.5 * bottom_panel_length * np.cos(bottom_panel_angle) - self.centroid[0]) *
-                                                (0.5 * bottom_panel_length * np.sin(bottom_panel_angle) + left_spar_bottom - self.centroid[1]),
-                                                bottom_panel_angle)
-            if i < self.n_cells:
-                mid_spar_height = self.spar_info[f'mid_spar_{i}_height']
-                mid_spar_x = self.spar_info[f'mid_spar_{i}_x']
-
-                I_xx_mid_spars += self.beam_standard_Ixx(mid_spar_height, self.spar_thickness_span_function(self.y),
-                                                        abs(mid_spar_height / 2 - self.centroid[1]), np.pi / 2)
-                I_yy_mid_spars += self.beam_standard_Iyy(mid_spar_height, self.spar_thickness_span_function(self.y),
-                                                        abs(mid_spar_x - self.centroid[0]), np.pi / 2)
-                I_xy_mid_spars += self.beam_standard_Ixy(mid_spar_height, self.spar_thickness_span_function(self.y),
-                                                        (mid_spar_x - self.centroid[0]) * (mid_spar_height / 2 - self.centroid[1]),
-                                                        np.pi / 2)
-                
                 # print(mid_spar_height, self.t_spar)
                 # print(self.beam_standard_Ixx(mid_spar_height, self.t_spar,
                 #                                          abs(mid_spar_height / 2 - self.centroid[1]), np.pi / 2))
 
-        I_xx_wing = self.beam_standard_Ixx(1, 0.001, 0.5, 0)*2
-        I_yy_wing = self.beam_standard_Iyy(1, 0.001, 0.5, np.pi/2)*2
-
+        I_xx_wing = self.beam_standard_Ixx(1, 0.001, 0.5, 0)*2 + self.beam_standard_Ixx(1,0.001, 0, np.pi/2)*2
+        I_yy_wing = self.beam_standard_Iyy(1, 0.001, 0.5, np.pi/2)*2 + self.beam_standard_Iyy(0.5,0.001, 0, 0)*2
 
         # print(I_xx_front_spar + I_xx_rear_spar + I_xx_mid_spars)
         self.I_xx = (I_xx_front_spar + I_xx_rear_spar + I_xx_panels +
@@ -648,48 +590,6 @@ class WingStructure:
 
         # print(I_xx_front_spar, I_xx_rear_spar, I_xx_panels, I_xx_wing_bottom, I_xx_wing_top, I_xx_mid_spars, self.stringer_dict['top']['I_xx'], self.stringer_dict['bottom']['I_xx'])
         # print(self.I_xx)
-
-
-    def get_wing_rib(self, ribs: dict = None):  
-
-        available_length = self.chord_length - 2 * self.cutout_spacing
-
-        self.cutout_amount = int(available_length // self.cutout_spacing)
-
-        tot_cutout_area = self.airfoil_area/3.5
-
-        self.cutout_area = tot_cutout_area / self.cutout_amount
-        self.cutout_diameter = np.sqrt(self.cutout_area / (np.pi / 4)) * 2  
-
-    def calculate_rib_masses(self, ribs: dict = None):
-        if ribs:
-            self.x_positions = ribs['x_positions']
-            self.thicknesses = ribs['thicknesses']
-            self.rib_masses = []
-            self.cutout_positioning = {}
-            for i in range(len(self.x_positions)):
-                idx = np.argmin(np.abs(self.b_array - self.x_positions[i]))
-                self.cutout_positioning[i] = {'x': [], 'y': []}
-                spar_height = max(self.wing_structure[idx]['spar_info']['spar_heights'])
-                front_spar_x = self.wing_structure[idx]['spar_info']['front_spar_x']
-                rear_spar_x = self.wing_structure[idx]['spar_info']['rear_spar_x']
-                rib_area = self.wing_structure[idx]['airfoil_area'] - self.wing_structure[idx]['ribs']['area'] * self.wing_structure[idx]['ribs']['amount']
-                self.rib_volume = rib_area * self.thicknesses[i]
-                self.rib_masses.append(self.rib_volume * self.rho_wingbox)
-
-                first_x = front_spar_x - 2*self.cutout_spacing 
-                last_x = rear_spar_x 
-
-                for j in range(self.cutout_amount):
-                    cutout_x = first_x + j * (self.cutout_spacing+self.wing_structure[idx]['ribs']['diameter'])
-                    if cutout_x < front_spar_x:
-                        continue
-                    if cutout_x > last_x:
-                        break
-
-                    cutout_y = spar_height / 2 
-                    self.cutout_positioning[i]['x'].append(cutout_x)
-                    self.cutout_positioning[i]['y'].append(cutout_y)
 
     def get_wing_structure(self):
         self.wing_structure = {}
@@ -709,8 +609,6 @@ class WingStructure:
             self.get_wingbox_panels()
             self.compute_total_centroid()
             self.get_moment_of_inertia()
-            self.get_polar_moment()
-            self.get_wing_rib()
 
             self.wing_structure[idx]['elements'] = self.element_functions
             self.wing_structure[idx]['area'] = self.wingbox_area
@@ -727,13 +625,6 @@ class WingStructure:
             self.wing_structure[idx]['I_xx'] = self.I_xx
             self.wing_structure[idx]['I_yy'] = self.I_yy
             self.wing_structure[idx]['I_xy'] = self.I_xy
-            self.wing_structure[idx]['J'] = self.J
-            self.wing_structure[idx]['ribs'] = {
-                'diameter': self.cutout_diameter,
-                'amount': self.cutout_amount,
-                'spacing': self.cutout_spacing,
-                'area': self.cutout_area,
-            }
 
         
         root_chord_data = self.wing_structure[0]
@@ -743,122 +634,12 @@ class WingStructure:
         self.normalized_data['bottom_skin_lengths'] = root_chord_data['panel_info']['bottom_skin_length']/self.chord_root
         print(root_chord_data['I_xx'], root_chord_data['I_yy'], root_chord_data['I_xy'])
 
-        if self.plot:
+        # if self.plot:
             # self.plot_Ip()
-            self.plot_airfoil(chord_idx = 0)
             # self.plot_moment_of_inertia()
             # self.plot_polar_moment()
 
             #self.plot_spacing_2we()
-
-        self.spar_thicknesses = self.spar_thickness_span_function(self.b_array)
-        self.skin_thicknesses = self.skin_thickness_span_function(self.b_array)
-
-    def plot_moment_of_inertia(self):
-
-        fig, ax = plt.subplots()
-
-        ax.plot(self.b_array, [wing['I_xx'] for wing in self.wing_structure.values()], label='I_xx', color='blue')
-        #ax.plot(self.b_array, [wing['I_yy'] for wing in self.wing_structure.values()], label='I_yy', color='red')
-        ax.plot(self.b_array, [wing['I_xy'] for wing in self.wing_structure.values()], label='I_xy', color='green')
-        ax.set_xlabel('Span (m)')
-        ax.set_ylabel('Moment of Inertia (m^4)')
-        ax.set_title('Moment of Inertia vs Span')
-        ax.legend()
-        ax.grid()
-        plt.show()
-
-
-    def plot_airfoil(self, chord_idx=0):
-        wing_data = self.wing_structure[chord_idx]
-        
-        spar_info = wing_data['spar_info']
-
-        x_array = wing_data['x_coords']
-        y_upper = wing_data['y_upper']
-        y_lower = wing_data['y_lower']
-        centroid = wing_data['centroid']
-        area = wing_data['area']
-        cell_areas = wing_data['cell_areas']
-        chord = self.chord_array[chord_idx]
-
-        plt.figure(figsize=(10, 5))
-        plt.plot(x_array, y_upper, label='Airfoil Profile', color='blue')
-        plt.plot(x_array, y_lower, color='blue')
-
-        spar_x_positions = []
-        spar_tops = []
-        spar_bottoms = []
-
-        front_x = self.front_spar
-        spar_x_positions.append(front_x)
-        spar_tops.append(spar_info['front_spar_top'])
-        spar_bottoms.append(spar_info['front_spar_bottom'])
-
-        for i in range(1, self.n_cells):
-            mid_x = self.mid_spar_positions[i - 1] 
-            spar_x_positions.append(mid_x)
-            spar_tops.append(spar_info[f'mid_spar_{i}_top'])
-            spar_bottoms.append(spar_info[f'mid_spar_{i}_bottom'])
-
-        rear_x = self.rear_spar 
-        spar_x_positions.append(rear_x)
-        spar_tops.append(spar_info['rear_spar_top'])
-        spar_bottoms.append(spar_info['rear_spar_bottom'])
-
-        for i, (x, top, bottom) in enumerate(zip(spar_x_positions, spar_tops, spar_bottoms)):
-            label = None
-            if i == 0:
-                label = 'Front Spar'
-            elif i == len(spar_x_positions) - 1:
-                label = 'Rear Spar'
-            else:
-                label = f'Mid Spar {i}'
-            plt.plot([x, x], [bottom, top], color='red', label=label)
-
-        for i in range(len(spar_x_positions) - 1):
-            x_left = spar_x_positions[i]
-            x_right = spar_x_positions[i + 1]
-            top_left = spar_tops[i]
-            top_right = spar_tops[i + 1]
-            bottom_left = spar_bottoms[i]
-            bottom_right = spar_bottoms[i + 1]
-
-            plt.plot([x_left, x_right], [top_left, top_right], color='red')
-            plt.plot([x_left, x_right], [bottom_left, bottom_right], color='red')
-            plt.fill_between([x_left, x_right], [bottom_left, bottom_right], [top_left, top_right],
-                            color='gray', alpha=0.5, label='Wing Box' if i == 0 else None)
-
-        stringers = self.wing_structure[chord_idx]['stringers']
-
-        for x,y,a in zip(stringers['top']['x'], stringers['top']['y'], stringers['top']['angle']):
-            self.draw_I_beam(x, y, self.L_stringer/1000, self.t_stringer/1000, top=True, color='black',angle=a)
-        for x,y,a in zip(stringers['bottom']['x'], stringers['bottom']['y'], stringers['bottom']['angle']):
-            self.draw_I_beam(x, y, self.L_stringer/1000, self.t_stringer/1000, top=False, color='purple',angle=0)
-
-        plt.plot([1,1],[0,1], color='blue')
-        plt.scatter(centroid[0], centroid[1], color='green', label='Centroid')
-        centroid_x, centroid_z = centroid
-        arrow_length = 0.05 * chord
-        plt.arrow(centroid_x, centroid_z, 0, arrow_length,
-                head_width=0.05 * arrow_length, head_length=0.05 * arrow_length,
-                fc='black', ec='black', linewidth=2, zorder=20)
-        plt.text(centroid_x, centroid_z + arrow_length + 0.05 * arrow_length,
-                'z', fontsize=10, ha='center', va='bottom')
-
-        # Arrow: Left in X (negative X direction)
-        plt.arrow(centroid_x, centroid_z, arrow_length, 0,
-                head_width=0.05 * arrow_length, head_length=0.05 * arrow_length,
-                fc='black', ec='black', linewidth=2, zorder=20)
-        plt.text(centroid_x + arrow_length + 0.08 * arrow_length, centroid_z,
-                'x', fontsize=10, ha='right', va='center')
-        # plt.title(f"Airfoil with Spar Positions, Wing Box and Stringers, chord = {chord:.2f} m")
-        plt.xlabel("x")
-        plt.gca().invert_xaxis()
-        plt.ylabel("y")
-        plt.axis("equal")
-        plt.grid(True)
-        plt.show()
 
 
 if __name__ == "__main__":
@@ -869,7 +650,5 @@ if __name__ == "__main__":
     wing_structure = WingStructure(aircraft_data, wingbox_mat=wingbox_material,
                                    wing_mat=wing_material, stringer_mat=stringer_material, evaluate=EvaluateType.VERTICAL)
     wing_structure.get_wing_structure()
-    wing_structure.plot_moment_of_inertia()
-    wing_structure.plot_thickness_distribution()
     # print(f"Stringer Length, thickness in mm:{wing_structure.calculate_stringer_thickness()}")
     # print(f"Crippling stress stringer in MPa: {wing_structure.crippling_stress_stringer()}")
