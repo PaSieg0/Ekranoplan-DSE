@@ -21,13 +21,16 @@ def get_constant(aircraft_data: Data, evaluate_type='wing_box'):
     if evaluate_type == 'wing_box':
         chord = aircraft_data.data['outputs']['wing_design']['MAC']
         b = aircraft_data.data['outputs']['wing_design']['b']
+        xh = (1-aircraft_data.data['inputs']['control_surfaces']['aileron_chord'])*chord
     elif evaluate_type == 'horizontal_wing_box':
         chord = aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['MAC']
         b = aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['b']
+        xh = (1-aircraft_data.data['inputs']['control_surfaces']['elevator_chord'])*chord
     elif evaluate_type == 'vertical_wing_box':
         chord = aircraft_data.data['outputs']['empennage_design']['vertical_tail']['MAC']
         b = aircraft_data.data['outputs']['empennage_design']['vertical_tail']['b']
-    
+        xh = (1-aircraft_data.data['inputs']['control_surfaces']['rudder_chord'])*chord
+
     m = aircraft_data.data['inputs']['structures'][evaluate_type]['section_mass_MAC']
     Ip = aircraft_data.data['inputs']['structures'][evaluate_type]['Ip_MAC']
     Ip_control = 1e6
@@ -35,14 +38,19 @@ def get_constant(aircraft_data: Data, evaluate_type='wing_box'):
     y_MAC_norm = (centroid_x)/(b/2) - 1
     
     S = m*(chord/2 - centroid_x)
-
+    I_alpha = m/3*(chord**2 - 3*centroid_x*chord+3*centroid_x**2)
+    # print(I_alpha)
+    S_b = m*(chord - xh)**2/2/chord
+    I_b = m*(chord-xh)**3/3/chord
+    I_ab = I_b + S_b*(xh - centroid_x)
+    ch = xh/(b/2) - 1  # control surface (xh/b -1) [-]
     constant = {
         'm': m,  # section mass [kg]
         'S': S,  # section static moment [kgm]
         'Sbt': 0.1055,  # control surface static moment about the its hinge axis [kgm]
-        'Ith': Ip,  # section moment of inertia about pitch axis [kgm**2]
+        'Ith': I_alpha,  # section moment of inertia about pitch axis [kgm**2]
         'Ibt': Ip_control,  # section moment of inertia about pitch axis [kgm**2]
-        'Ith_bt': 0.0136,  # section moment of inertia about pitch axis [kgm**2]
+        'Ith_bt': 100,  # section moment of inertia about pitch axis [kgm**2]
         'c': chord,  # chord [m]
         'b': chord/2,  # semi-chord (chord/2) [m]
         'a': y_MAC_norm,  # main wing (xf/b -1) [-]
@@ -62,6 +70,12 @@ def get_constant(aircraft_data: Data, evaluate_type='wing_box'):
         'event': 'none'  # event to detect: 'none', 'pitch', 'plunge', 'control'
     }
 
+    exclude_keys = ['Sbt', 'Ith_bt', 'Ibt', 'xh', 'Kh3', 'Kth3', 'Kh','Kbt3', 'Kth','Kbt' 'rho', 'Cth', 'Cbt', 'Ch', 'event']
+    constant_copy = constant.copy()
+    for key in exclude_keys:
+        constant_copy.pop(key, None)
+
+    print(constant_copy)
 
     return constant
 

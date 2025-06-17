@@ -312,14 +312,17 @@ class AileronHLD:
         ax.plot([0, -self.b/2], [y_root_TE, y_tip_TE], color='blue')  # Mirror
 
         # Ailerons
-        # ax.plot([self.aileron_start, self.aileron_start], [y_root_LE_aileron, y_root_TE_aileron], color='red')
-        # ax.plot([-self.aileron_start, -self.aileron_start], [y_root_LE_aileron, y_root_TE_aileron], color='red')  # Mirror
+        ax.plot([self.aileron_start, self.aileron_start], [y_root_LE_aileron, y_root_TE_aileron], color='red')
+        ax.plot([-self.aileron_start, -self.aileron_start], [y_root_LE_aileron, y_root_TE_aileron], color='red')  # Mirror
 
-        # ax.plot([self.aileron_end, self.aileron_end], [y_tip_LE_aileron, y_tip_TE_aileron], color='red')
-        # ax.plot([-self.aileron_end, -self.aileron_end], [y_tip_LE_aileron, y_tip_TE_aileron], color='red')  # Mirror
+        ax.plot([self.aileron_end, self.aileron_end], [y_tip_LE_aileron, y_tip_TE_aileron], color='red')
+        ax.plot([-self.aileron_end, -self.aileron_end], [y_tip_LE_aileron, y_tip_TE_aileron], color='red')  # Mirror
 
-        # ax.plot([self.aileron_start, self.aileron_end], [y_root_LE_aileron, y_tip_LE_aileron], color='red')
-        # ax.plot([-self.aileron_start, -self.aileron_end], [y_root_LE_aileron, y_tip_LE_aileron], color='red')  # Mirror
+        ax.plot([self.aileron_start, self.aileron_end], [y_root_LE_aileron, y_tip_LE_aileron], color='red')
+        ax.plot([-self.aileron_start, -self.aileron_end], [y_root_LE_aileron, y_tip_LE_aileron], color='red')  # Mirror
+
+        ax.plot([self.aileron_start, self.aileron_end], [y_root_TE_aileron, y_tip_TE_aileron], color='red')
+        ax.plot([-self.aileron_start, -self.aileron_end], [y_root_TE_aileron, y_tip_TE_aileron], color='red')  # Mirror
 
         # Flaps
         ax.plot([self.flap_start, self.flap_start], [y_root_LE_flap, y_root_TE_flap], color='orange')
@@ -330,6 +333,9 @@ class AileronHLD:
 
         ax.plot([self.flap_start, self.flap_end], [y_root_LE_flap, y_tip_LE_flap], color='orange')
         ax.plot([-self.flap_start, -self.flap_end], [y_root_LE_flap, y_tip_LE_flap], color='orange')
+        ax.plot([self.flap_start, self.flap_end], [y_root_TE_flap, y_tip_TE_flap], color='orange')
+        ax.plot([-self.flap_start, -self.flap_end], [y_root_TE_flap, y_tip_TE_flap], color='orange')
+
 
 
         if self.LE_flap:

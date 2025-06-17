@@ -24,16 +24,16 @@ def turn_radius(n: float, V: float) -> float:
     """
     return V**2 / (9.81 * np.sqrt(n**2-1))  # n is the load factor, V in m/s, turn radius in meters
 
-def plot_pullup_trajectory(aircraft_data, reaction_time=1.0):
+def plot_pullup_trajectory(aircraft_data, reaction_time=5.0, distance_limit=2000):
     max_n_pullup = aircraft_data.data['outputs']['general']['nmax']
     v_start = aircraft_data.data['requirements']['cruise_speed']
     v_end = aircraft_data.data['requirements']['stall_speed_clean']
 
     # Example obstacles: list of (distance, height)
     obstacles = [
-        (150, 3),
-        (280, 20),
-        (350, 40)
+        (500, 5),
+        (350, 25),
+        (450, 50)
     ]
 
     # Initial conditions
@@ -54,9 +54,8 @@ def plot_pullup_trajectory(aircraft_data, reaction_time=1.0):
         x_traj.append(x_traj[-1] + dx)
         y_traj.append(y_traj[-1] + dy)
 
-    # Stop when height exceeds a target (e.g., clear the highest obstacle + margin)
-    target_height = max([h for _, h in obstacles]) + 10  # 10 m margin above highest obstacle
-    while y_traj[-1] < target_height:
+    # Stop when distance exceeds limit
+    while x_traj[-1] < distance_limit:
         # At each step, calculate turn radius for max load factor
         n = max_n_pullup
         R = pull_up_radius(n, V)
@@ -93,7 +92,7 @@ def plot_pullup_trajectory(aircraft_data, reaction_time=1.0):
     plt.legend()
     plt.show()
 
-def plot_turn_trajectory(aircraft_data, reaction_time=1.0):
+def plot_turn_trajectory(aircraft_data, reaction_time=5.0, distance_limit=2000):
     max_n_turn = aircraft_data.data['outputs']['general']['max_n_turn']
     v_start = aircraft_data.data['requirements']['cruise_speed']
     v_end = aircraft_data.data['requirements']['stall_speed_clean']
@@ -101,9 +100,9 @@ def plot_turn_trajectory(aircraft_data, reaction_time=1.0):
     # Example obstacles: list of (x, y) positions in meters (from above)
     # Make obstacles symmetric about x=0
     base_obstacles = [
-        (4, 300),
-        (10, 360),
-        (30, 450)
+        (10, 800),
+        (100, 1100),
+        (30, 1300)
     ]
     obstacles = []
     for x, y in base_obstacles:
@@ -126,14 +125,11 @@ def plot_turn_trajectory(aircraft_data, reaction_time=1.0):
         x_traj.append(x_traj[-1] + dx)
         y_traj.append(y_traj[-1] + dy)
 
-    # Stop when y exceeds the last obstacle's y + margin
-    target_y = max([y for _, y in obstacles]) + 50  # 50 m margin after last obstacle
-
     # Main (right) turn trajectory
     x_traj_right = x_traj.copy()
     y_traj_right = y_traj.copy()
     theta_right = theta
-    while y_traj_right[-1] < target_y:
+    while y_traj_right[-1] < distance_limit:
         n = max_n_turn
         R = turn_radius(n, V)
         dtheta = (V / R) * dt
@@ -147,7 +143,7 @@ def plot_turn_trajectory(aircraft_data, reaction_time=1.0):
     x_traj_left = [ -x for x in x_traj ]
     y_traj_left = y_traj.copy()
     theta_left = theta
-    while y_traj_left[-1] < target_y:
+    while y_traj_left[-1] < distance_limit:
         n = max_n_turn
         R = turn_radius(n, V)
         dtheta = -(V / R) * dt  # Negative for left turn
@@ -178,7 +174,8 @@ def plot_turn_trajectory(aircraft_data, reaction_time=1.0):
 if __name__ == "__main__":
     file_path = "design3.json"
     aircraft_data = Data(file_path)
-    reaction_time = 1.  # seconds
+    reaction_time = 5.  # seconds
+    distance_limit = 1500  # meters
 
-    plot_pullup_trajectory(aircraft_data, reaction_time=reaction_time)
-    plot_turn_trajectory(aircraft_data, reaction_time=reaction_time)
+    plot_pullup_trajectory(aircraft_data, reaction_time=reaction_time, distance_limit=distance_limit)
+    plot_turn_trajectory(aircraft_data, reaction_time=reaction_time, distance_limit=distance_limit)
