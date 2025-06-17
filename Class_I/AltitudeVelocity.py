@@ -88,7 +88,7 @@ class AltitudeVelocity:
         Calculate the power available for the aircraft at different velocities.
         Assume power available is constant for propeller engines.
         """
-        return self._engine_power * (self._get_density(h) / self._sea_level_density)**0.70 * 6 * self._prop_efficiency
+        return self._engine_power * (self._get_density(h) / self._sea_level_density)**0.70 * 5 * self._prop_efficiency
     
     def calculate_drag(self, V: float, h: float, W: float = None) -> float:
         return self.calculate_power_required(V, h, W=W)/V
@@ -96,12 +96,15 @@ class AltitudeVelocity:
     def calculate_thust(self, V: float, h: float) -> float:
         return self.calculate_power_available(h)/V
     
-    def calculate_stall_speed(self, h: float) -> float:
+    def calculate_stall_speed(self, h: float, W: float = None) -> float:
         """
         Calculate stall speed depending on altitude
         """
+        if W is None:
+            W = self._current_weight
+
         denom = 0.5 * self._get_density(h) * self._CLmax * self._S
-        return np.sqrt(self._current_weight / denom)
+        return np.sqrt(W / denom)
     
     def plot_power_curve(self, h_list: np.array) -> None:
         """
@@ -476,11 +479,11 @@ class AltitudeVelocity:
                 altitude_label,
                 (x_transform(h_max_point[0]), h_max_point[1]),
                 textcoords="offset points",
-                xytext=(30, -30),
+                xytext=(20, -50),
                 ha='left',
                 va='top',
                 color='b',
-                fontsize=10,
+                fontsize=12,
                 arrowprops=dict(arrowstyle="->", color='b')
             )
 
@@ -581,7 +584,7 @@ class AltitudeVelocity:
         
         # Calculate stall speed at 10000 ft
         V_stall_10k = self.calculate_stall_speed(h_10000 / self.m_to_ft if altitude_units == 'feet' else h_10000)
-        V_max_10k = 163.76
+        V_max_10k = 153.78
         
         # Plot horizontal line from stall speed to thrust limited speed at 10000 ft
         plt.plot([x_transform(V_stall_10k), x_transform(V_max_10k)], [h_10000, h_10000], 
@@ -696,4 +699,5 @@ if __name__ == "__main__":
     altitude_velocity.plot_limit_points(zero_points, stall_points, 
                                         airspeed_type='true', 
                                         altitude_units='feet', 
-                                        plot=('thrust_limit', 'stall_limit', 'Vy', 'Vx'))
+                                        plot=('thrust_limit', 'stall_limit', 'Vy', 'Vx', 
+                                              'max_h'))

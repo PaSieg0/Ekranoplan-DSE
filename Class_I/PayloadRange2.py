@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.interpolate import interp1d
 import os
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -12,7 +13,7 @@ class RangeCalculator:
     A class to calculate aircraft range and generate payload-range diagrams.
     
     This class encapsulates the range calculation logic and payload-range diagram 
-    generation for different aircraft types.
+    generation for different aircraft types with interpolation capabilities.
     """
     
     def __init__(self, data_file=None, data_object=None, mission_type=MissionType.DESIGN):
@@ -216,14 +217,130 @@ class RangeCalculator:
             (ranges_nm["ferry"], 0)
         ]
     
-    def plot_payload_range_diagram(self, points, show=True, save_path=None):
+    def interpolate_payload_range(self, ranges_nm, num_points=100):
         """
-        Plot the payload-range diagram.
+        Interpolate between payload-range points to create a smooth curve.
+        
+        Args:
+            ranges_nm (dict): Dictionary of ranges in nautical miles
+            num_points (int): Number of interpolated points
+            
+        Returns:
+            tuple: (range_interp, payload_interp) arrays for interpolated points
+        """
+        # Get the main points
+        points = self.generate_payload_range_points(ranges_nm)
+        
+        # Extract x and y coordinates
+        range_points = [p[0] for p in points]
+        payload_points = [p[1] for p in points]
+        
+        # Create interpolation function
+        interp_func = interp1d(range_points, payload_points, kind='linear', 
+                              bounds_error=False, fill_value="extrapolate")
+        
+        # Generate interpolated points
+        range_min = min(range_points)
+        range_max = max(range_points)
+        range_interp = np.linspace(range_min, range_max, num_points)
+        payload_interp = interp_func(range_interp)
+        
+        # Ensure no negative payloads
+        payload_interp = np.maximum(payload_interp, 0)
+        
+        return range_interp, payload_interp
+    
+    def calculate_fuel_economy_for_payload_range(self, payload_tonnes, range_nm):
+        """
+        Calculate fuel economy for a specific payload and range combination.
+        
+        Args:
+            payload_tonnes (float): Payload in tonnes
+            range_nm (float): Range in nautical miles
+            
+        Returns:
+            float: Fuel consumption in L/ton/km
+        """
+        if payload_tonnes <= 0 or range_nm <= 0:
+            return np.nan
+        
+        # Calculate required fuel for this specific payload and range using interpolation
+        range_m = range_nm * 1852  # Convert to meters
+
+        # Get the key mission points for interpolation
+        mass_fractions = self.calculate_mass_fractions()
+        weight_ratios = self.calculate_weight_ratios(mass_fractions)
+        ranges_m_key = self.calculate_ranges(weight_ratios)
+
+        # Define key points for interpolation: (range_m, payload_kg, fuel_used_kg)
+        key_points = [
+            (ranges_m_key["harmonic"], self.max_payload, (1 - mass_fractions["harmonic"]) * self.MTOW),
+            (ranges_m_key["design"], self.design_payload, (1 - mass_fractions["design"]) * self.MTOW),
+            (ranges_m_key["maxrange"], self.design_payload - (self.fuel_max - self.fuel_design), (1 - mass_fractions["maxrange"]) * self.MTOW),
+            (ranges_m_key["ferry"], 0, (1 - mass_fractions["ferry"]) * (self.MTOW - self.design_payload * self.g))
+        ]
+
+        # Sort points by range for interpolation
+        key_points.sort(key=lambda x: x[0])
+        ranges_key = [p[0] for p in key_points]
+        fuels_key = [p[2] for p in key_points]
+
+        # Interpolate fuel consumption based on range
+        if range_m <= min(ranges_key):
+            fuel_used_N = fuels_key[0]
+        elif range_m >= max(ranges_key):
+            fuel_used_N = fuels_key[-1]
+        else:
+            fuel_interp_func = interp1d(ranges_key, fuels_key, kind='linear')
+            fuel_used_N = fuel_interp_func(range_m)
+
+        # Convert fuel from N to liters (assuming fuel density of 0.76 kg/L)
+        fuel_used_L = fuel_used_N / 9.81 / 0.76
+        
+        # Calculate fuel economy in L/ton/km
+        range_km = range_nm * 1.852  # Convert nautical miles to kilometers
+        
+        if self.mission_type == MissionType.ALTITUDE or self.mission_type == MissionType.DESIGN:
+            # Round trip mission
+            fuel_economy = fuel_used_L / (payload_tonnes * range_km * 2)
+        else:
+            # One-way mission
+            fuel_economy = fuel_used_L / (payload_tonnes * range_km)
+            
+        return fuel_economy
+    
+    def calculate_interpolated_fuel_economy(self, ranges_nm, num_points=100):
+        """
+        Calculate fuel economy for interpolated payload-range points.
+        
+        Args:
+            ranges_nm (dict): Dictionary of ranges in nautical miles
+            num_points (int): Number of interpolated points
+            
+        Returns:
+            tuple: (range_interp, payload_interp, fuel_economy_interp) arrays
+        """
+        # Get interpolated points
+        range_interp, payload_interp = self.interpolate_payload_range(ranges_nm, num_points)
+        
+        # Calculate fuel economy for each point
+        fuel_economy_interp = np.array([
+            self.calculate_fuel_economy_for_payload_range(payload, range_val)
+            for range_val, payload in zip(range_interp, payload_interp)
+        ])
+        
+        return range_interp, payload_interp, fuel_economy_interp
+    
+    def plot_payload_range_diagram(self, points, show=True, save_path=None, show_interpolation=True, num_interp_points=100):
+        """
+        Plot the payload-range diagram with optional interpolation.
         
         Args:
             points (list): List of (range, payload) points
             show (bool): Whether to display the plot
             save_path (str, optional): Path to save the plot image
+            show_interpolation (bool): Whether to show interpolated curve
+            num_interp_points (int): Number of interpolation points
             
         Returns:
             tuple: Figure and axis objects
@@ -232,13 +349,34 @@ class RangeCalculator:
         x_coords, y_coords = zip(*points)
         
         # Create plot
-        fig, ax = plt.subplots(figsize=(10, 6))
-        ax.plot(x_coords, y_coords, marker='o', linestyle='-', color='b', label='Payload-Range Curve')
+        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 10))
+        
+        # Top plot: Payload-Range diagram
+        ax1.plot(x_coords, y_coords, marker='o', linestyle='-', color='b', 
+                label='Key Points', linewidth=2, markersize=8)
+        
+        if show_interpolation:
+            # Get ranges for interpolation
+            ranges_nm = {
+                "harmonic": points[1][0],
+                "design": points[2][0], 
+                "maxrange": points[3][0],
+                "ferry": points[4][0]
+            }
+            
+            # Calculate interpolated points
+            range_interp, payload_interp, fuel_economy_interp = self.calculate_interpolated_fuel_economy(
+                ranges_nm, num_interp_points)
+            
+            # Plot interpolated curve
+            ax1.plot(range_interp, payload_interp, '-', color='red', alpha=0.7, 
+                    linewidth=1, label='Interpolated Curve')
+        
         # Fill the area under the curve with light green
-        ax.fill_between(x_coords, y_coords, color='lightgreen', alpha=0.3)
+        ax1.fill_between(x_coords, y_coords, color='lightgreen', alpha=0.3)
         
         # Highlight the design point (index 2)
-        ax.plot(*points[2], color='lime', label='Design Point', marker='o', markersize=8)
+        ax1.plot(*points[2], color='lime', label='Design Point', marker='o', markersize=10)
 
         # Annotate all points
         labels = ['0 nm', 'Harmonic', 'Design', 'Max', 'Ferry']
@@ -248,39 +386,61 @@ class RangeCalculator:
                 continue
             x_format = int(float('%.3g' % x))
             y_format = float('%.3g' % y)
-            ax.annotate(f"{labels[i]}: {x_format} nm\n at {y_format} tonnes", 
+            ax1.annotate(f"{labels[i]}: {x_format} nm\nat {y_format} tonnes", 
                         (x, y), 
                         textcoords="offset points", 
                         xytext=xylabel[i], 
                         ha='center', 
-                        fontsize=11,
+                        fontsize=10,
                         arrowprops=dict(arrowstyle="->", color='black', lw=1))
         
-        ax.set_xlim(left=0)
-        ax.set_ylim(bottom=0)
-        ax.set_xlabel('Range (nautical miles)')
-        ax.set_ylabel('Payload (tonnes)')
-        # ax.legend(loc='upper right')
-        ax.grid(True)
+        ax1.set_xlim(left=0)
+        ax1.set_ylim(bottom=0)
+        ax1.set_xlabel('Range (nautical miles)')
+        ax1.set_ylabel('Payload (tonnes)')
+        ax1.legend(loc='upper right')
+        ax1.grid(True)
+        ax1.set_title('Payload-Range Diagram')
+        
+        # Bottom plot: Fuel Economy vs Range
+        if show_interpolation:
+            # Filter out invalid fuel economy values
+            valid_mask = ~np.isnan(fuel_economy_interp) & ~np.isinf(fuel_economy_interp)
+            valid_range = range_interp[valid_mask]
+            valid_fuel_economy = fuel_economy_interp[valid_mask]
+            
+            if len(valid_range) > 0:
+                ax2.plot(valid_range, valid_fuel_economy, '-', color='orange', 
+                        linewidth=2, label='Fuel Economy')
+                ax2.set_xlabel('Range (nautical miles)')
+                ax2.set_ylabel('Fuel Consumption (L/ton/km)')
+                ax2.grid(True)
+                ax2.legend()
+                ax2.set_title('Fuel Economy vs Range')
+                ax2.set_xlim(left=0)
+        
+        plt.tight_layout()
         
         if save_path:
-            plt.savefig(save_path)
+            plt.savefig(save_path, dpi=300, bbox_inches='tight')
             
         if show:
             plt.show()
             
-        return fig, ax
+        return fig, (ax1, ax2)
     
-    def analyze_and_plot(self, show=True, save_path=None):
+    def analyze_and_plot(self, show=True, save_path=None, show_interpolation=True, num_interp_points=100):
         """
-        Perform a complete analysis and generate the payload-range diagram.
+        Perform a complete analysis and generate the payload-range diagram with interpolation.
         
         Args:
             show (bool): Whether to display the plot
             save_path (str, optional): Path to save the plot image
+            show_interpolation (bool): Whether to show interpolated analysis
+            num_interp_points (int): Number of interpolation points
             
         Returns:
-            tuple: Ranges dictionary and points list
+            tuple: Ranges dictionary, points list, and interpolation data
         """
         # Calculate mass fractions
         mass_fractions = self.calculate_mass_fractions()
@@ -297,46 +457,60 @@ class RangeCalculator:
         # Generate points for the diagram
         points = self.generate_payload_range_points(ranges_nm)
         
+        # Calculate interpolated data if requested
+        interpolation_data = None
+        if show_interpolation:
+            range_interp, payload_interp, fuel_economy_interp = self.calculate_interpolated_fuel_economy(
+                ranges_nm, num_interp_points)
+            interpolation_data = (range_interp, payload_interp, fuel_economy_interp)
+        
         # Plot the diagram
         if show:
-            self.plot_payload_range_diagram(points, show=show, save_path=save_path)
+            self.plot_payload_range_diagram(points, show=show, save_path=save_path, 
+                                          show_interpolation=show_interpolation,
+                                          num_interp_points=num_interp_points)
         
-        return ranges_nm, points
+        return ranges_nm, points, interpolation_data
     
     def calculate_fuel_per_ton_km(self, mass_fractions, ranges_m):
-            """
-            Calculate fuel consumption in kg/ton/km for each scenario except ferry.
+        """
+        Calculate fuel consumption in kg/ton/km for each scenario except ferry.
 
-            Args:
-            mass_fractions (dict): Mass fractions for each scenario.
-            ranges_m (dict): Ranges in meters for each scenario.
+        Args:
+        mass_fractions (dict): Mass fractions for each scenario.
+        ranges_m (dict): Ranges in meters for each scenario.
 
-            Returns:
-            dict: Fuel consumption in kg/ton/km for each scenario.
-            """
-            fuel_per_ton_km = {}
-            for key in ['harmonic', 'design', 'maxrange']:
-                payload_ton = {
-                    'harmonic': self.max_payload / 1000,
-                    'design': self.design_payload / 1000,
-                    'maxrange': (self.design_payload - (self.fuel_max - self.fuel_design) / self.g) / 1000,
-                }[key]
-                range_km = ranges_m[key] / 1000
-                # Fuel used is (1 - mass_fraction) * MTOW
-                fuel_used = (1 - mass_fractions[key]) * self.MTOW / self.g / 0.76
-                if range_km > 0 and payload_ton > 0:
-                    if self.mission_type == MissionType.ALTITUDE or self.mission_type == MissionType.DESIGN:
-                        fuel_per_ton_km[key] = fuel_used / (payload_ton * range_km * 2)
-                    elif self.mission_type == MissionType.FERRY:
-                        fuel_per_ton_km[key] = fuel_used / (payload_ton * range_km)
-                else:
-                    fuel_per_ton_km[key] = float('nan')
+        Returns:
+        dict: Fuel consumption in kg/ton/km for each scenario.
+        """
+        fuel_per_ton_km = {}
+        for key in ['harmonic', 'design', 'maxrange']:
+            payload_ton = {
+                'harmonic': self.max_payload / 1000,
+                'design': self.design_payload / 1000,
+                'maxrange': (self.design_payload - (self.fuel_max - self.fuel_design) / self.g) / 1000,
+            }[key]
+            range_km = ranges_m[key] / 1000
+            # Fuel used is (1 - mass_fraction) * MTOW
+            fuel_used = (1 - mass_fractions[key]) * self.MTOW / self.g / 0.76
+            if range_km > 0 and payload_ton > 0:
+                if self.mission_type == MissionType.ALTITUDE or self.mission_type == MissionType.DESIGN:
+                    fuel_per_ton_km[key] = fuel_used / (payload_ton * range_km * 2)
+                elif self.mission_type == MissionType.FERRY:
+                    fuel_per_ton_km[key] = fuel_used / (payload_ton * range_km)
+            else:
+                fuel_per_ton_km[key] = float('nan')
 
-            return fuel_per_ton_km
+        return fuel_per_ton_km
             
-    def get_results_summary(self, short_summary=False):
+    def get_results_summary(self, short_summary=False, include_interpolation=False, num_interp_points=10):
         """
         Get a formatted summary of the calculation results.
+        
+        Args:
+            short_summary (bool): Whether to return a short summary
+            include_interpolation (bool): Whether to include interpolated results
+            num_interp_points (int): Number of interpolation points to show
         
         Returns:
             str: Text summary of the results
@@ -369,33 +543,68 @@ class RangeCalculator:
         summary += f"  - Max Range: {ranges_nm['maxrange']:.2f} nm ({ranges_m['maxrange']/1000:.2f} km)\n"
         summary += f"  - Ferry: {ranges_nm['ferry']:.2f} nm ({ranges_m['ferry']/1000:.2f} km)\n\n"
 
-        summary += f"Fuel Consumption:\n"
-
+        summary += f"Fuel Consumption (Key Points):\n"
         fuel_per_ton_km = self.calculate_fuel_per_ton_km(mass_fractions, ranges_m)
-
         summary += f"  - Harmonic: {fuel_per_ton_km['harmonic']:.4f} L/ton/km\n"
         summary += f"  - Design: {fuel_per_ton_km['design']:.4f} L/ton/km\n"
         summary += f"  - Max Range: {fuel_per_ton_km['maxrange']:.4f} L/ton/km\n"
+
+        
+        if include_interpolation:
+            summary += f"\nInterpolated Fuel Economy Analysis:\n"
+            summary += f"===================================\n"
+            
+            # Calculate interpolated data
+            range_interp, payload_interp, fuel_economy_interp = self.calculate_interpolated_fuel_economy(
+                ranges_nm, num_interp_points)
+            
+            # Show a sample of interpolated points
+            summary += f"Sample of {num_interp_points} interpolated points:\n"
+            for i in range(0, len(range_interp), max(1, len(range_interp)//num_interp_points)):
+                if not np.isnan(fuel_economy_interp[i]) and not np.isinf(fuel_economy_interp[i]):
+                    summary += f"  Range: {range_interp[i]:.1f} nm, "
+                    summary += f"Payload: {payload_interp[i]:.2f} t, "
+                    summary += f"Fuel Economy: {fuel_economy_interp[i]:.4f} L/t/km\n"
+
+        # Find the maximum fuel economy point from interpolation
+        if include_interpolation:
+            valid_mask = ~np.isnan(fuel_economy_interp) & ~np.isinf(fuel_economy_interp)
+            if np.any(valid_mask):
+                max_efficiency_idx = np.argmin(fuel_economy_interp[valid_mask])
+                valid_range_interp = range_interp[valid_mask]
+                valid_payload_interp = payload_interp[valid_mask]
+                valid_fuel_economy_interp = fuel_economy_interp[valid_mask]
+                
+                max_efficiency_range = valid_range_interp[max_efficiency_idx]
+                max_efficiency_payload = valid_payload_interp[max_efficiency_idx]
+                max_efficiency_value = valid_fuel_economy_interp[max_efficiency_idx]
+                
+                summary += f"\nMost Fuel Efficient Point:\n"
+                summary += f"  Range: {max_efficiency_range:.1f} nm, "
+                summary += f"Payload: {max_efficiency_payload:.2f} t, "
+                summary += f"Fuel Economy: {max_efficiency_value:.4f} L/t/km\n"
         
         return summary
-    
+
+
 def analyze_3_missions():
     data_file = "design3.json"
     all_ranges = {}
     for mission_type in [MissionType.DESIGN, MissionType.ALTITUDE, MissionType.FERRY]:
         range_calculator = RangeCalculator(data_file=data_file, mission_type=mission_type)
-        ranges_nm, points = range_calculator.analyze_and_plot(show=False)
+        ranges_nm, points, interpolation_data = range_calculator.analyze_and_plot(show=False)
         all_ranges[mission_type.name] = ranges_nm
         print(range_calculator.get_results_summary(short_summary=True)) 
     return all_ranges
 
-def plot_mission(mission_type):
+def plot_mission_with_interpolation(mission_type):
     data_file = "design3.json"
     range_calculator = RangeCalculator(data_file=data_file, mission_type=mission_type)
-    ranges_nm, points = range_calculator.analyze_and_plot(show=True)
-    print(range_calculator.get_results_summary(short_summary=False)) 
-    return ranges_nm, points
+    ranges_nm, points, interpolation_data = range_calculator.analyze_and_plot(
+        show=True, show_interpolation=True, num_interp_points=500)
+    print(range_calculator.get_results_summary(
+        short_summary=False, include_interpolation=True, num_interp_points=500)) 
+    return ranges_nm, points, interpolation_data
 
 if __name__ == "__main__":
-    analyze_3_missions()
-    plot_mission(MissionType.FERRY)
+    plot_mission_with_interpolation(MissionType.DESIGN)
