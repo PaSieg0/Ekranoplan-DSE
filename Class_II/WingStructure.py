@@ -36,7 +36,7 @@ class WingStructure:
             self.min_spar_thickness = self.aircraft_data.data['inputs']['structures']['wing_box']['min_spar_thickness']/1000
             self.thickness_threshold = int(self.aircraft_data.data['inputs']['structures']['wing_box']['thickness_threshold']*self.b/2*100)
             self.n_cells = self.aircraft_data.data['inputs']['structures']['wing_box']['n_cells']
-            self.fuel_volume = self.aircraft_data.data['outputs']['max']['max_fuel_L']/1000
+            self.fuel_volume = self.aircraft_data.data['outputs']['max']['max_fuel_L']/1000*1.1
             self.flap_start = self.aircraft_data.data['outputs']['HLD']['b1']
             self.flap_end = self.aircraft_data.data['outputs']['HLD']['b2']
             self.y_MAC = self.aircraft_data.data['outputs']['wing_design']['y_MAC']
@@ -1251,12 +1251,14 @@ class WingStructure:
             self.tank_mass = (mid_panel_area + front_panel_area + rear_panel_area + TE_panel_area + LE_panel_area)*self.fuel_tank_thickness*self.rho_wingbox
         else:
             self.tank_mass = 0
+        print(self.fuel_start, self.fuel_length)
         return self.fuel_mass_distribution
 
     def gaussian_peak(self,x, x0, A, sigma=0.1):
         return A * np.exp(-((x - x0)**2) / (2 * sigma**2)) / (sigma * np.sqrt(2 * np.pi))
     
     def wing_weight_dist(self):
+        
         if self.evaluate == EvaluateType.WING:
             fuel_dist = self.get_fuel_mass_distribution()
         else:
@@ -1515,7 +1517,7 @@ if __name__ == "__main__":
     wingbox_material = Materials.Al7075
     wing_material = Materials.Al5052
     wing_structure = WingStructure(aircraft_data, wingbox_mat=wingbox_material,
-                                   wing_mat=wing_material, stringer_mat=stringer_material, evaluate=EvaluateType.VERTICAL)
+                                   wing_mat=wing_material, stringer_mat=stringer_material, evaluate=EvaluateType.WING)
     wing_structure.get_wing_structure()
     wing_structure.plot_moment_of_inertia()
     wing_structure.plot_thickness_distribution()
