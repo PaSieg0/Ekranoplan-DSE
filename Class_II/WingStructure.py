@@ -61,6 +61,7 @@ class WingStructure:
             self.cutout_spacing = self.aircraft_data.data['inputs']['structures']['wing_box']['cutout_spacing']
 
             self.fuel_wing = (1- self.fuselage_fuel)/2*self.fuel_volume
+            print(self.fuel_wing)
             self.engine_positions = self.aircraft_data.data['outputs']['engine_positions']['y_engines']
             self.engine_weight = self.aircraft_data.data['inputs']['engine']['engine_weight']
             self.fuel_tank_thickness = self.aircraft_data.data['inputs']['fuel_tank_thickness']/1000
@@ -88,7 +89,7 @@ class WingStructure:
             self.fuel_wing = 0
             self.engine_positions = None
             self.cutout_spacing = self.aircraft_data.data['inputs']['structures']['horizontal_wing_box']['cutout_spacing']
-            self.bottom_spar_margin = 0.05
+            self.bottom_spar_margin = 0.02
             self.top_spar_margin = 0.98
             self.min_skin_thickness = self.aircraft_data.data['inputs']['structures']['horizontal_wing_box']['min_skin_thickness']/1000
             self.min_spar_thickness = self.aircraft_data.data['inputs']['structures']['horizontal_wing_box']['min_spar_thickness']/1000
@@ -166,14 +167,21 @@ class WingStructure:
         self.rho_wing = self.wing_material['rho']
 
         self.w_fuselage = self.aircraft_data.data['outputs']['fuselage_dimensions']['w_fuselage']
-        self.fuel_start = self.w_fuselage/2 + 0.3
+        self.fuel_start = self.w_fuselage/2 + 0.375
 
-        self.leading_edge = self.chord_root - np.tan(np.deg2rad(self.aircraft_data.data['outputs']['wing_design']['sweep_x_c'])) * self.b_array
+        if self.evaluate == EvaluateType.WING:
+            self.leading_edge = self.chord_root - np.tan(np.deg2rad(self.aircraft_data.data['outputs']['wing_design']['sweep_x_c'])) * self.b_array
+        elif self.evaluate == EvaluateType.HORIZONTAL:
+            self.leading_edge = self.chord_root - np.tan(np.deg2rad(self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['sweep'])) * self.b_array
+        elif self.evaluate == EvaluateType.VERTICAL:
+            self.leading_edge = np.tan(np.deg2rad(self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['sweep'])) * self.b_array
 
         self.mid_spar_positions = [
             self.front_spar + (self.rear_spar - self.front_spar) * i / self.n_cells
             for i in range(1, self.n_cells)
         ]
+
+        print(self.mid_spar_positions)
 
         self.I_xx_list = []
         # print(self.evaluate)
@@ -233,20 +241,20 @@ class WingStructure:
         top_flange = patches.Rectangle(
             (x - top_w / 2, top_y - thickness),
             top_w,
-            thickness*5,
+            thickness*20,
             facecolor=color
         )
 
         bottom_flange = patches.Rectangle(
             (x - bottom_w / 2, bottom_y),
             bottom_w,
-            thickness*5,
+            thickness*20,
             facecolor=color
         )
 
         web = patches.Rectangle(
             (x - thickness / 2, bottom_y + thickness),
-            thickness*5,
+            thickness*20,
             web_h - 2 * thickness,
             facecolor=color
         )
@@ -985,7 +993,7 @@ class WingStructure:
 
         self.cutout_amount = int(available_length // self.cutout_spacing)
 
-        tot_cutout_area = self.airfoil_area/3.5
+        tot_cutout_area = self.airfoil_area/3.75
 
         self.cutout_area = tot_cutout_area / self.cutout_amount
         self.cutout_diameter = np.sqrt(self.cutout_area / (np.pi / 4)) * 2  
@@ -1006,7 +1014,7 @@ class WingStructure:
                 self.rib_volume = rib_area * self.thicknesses[i]
                 self.rib_masses.append(self.rib_volume * self.rho_wingbox)
 
-                first_x = front_spar_x - 2*self.cutout_spacing 
+                first_x = front_spar_x - 2.4*self.cutout_spacing 
                 last_x = rear_spar_x 
 
                 for j in range(self.cutout_amount):
@@ -1019,6 +1027,8 @@ class WingStructure:
                     cutout_y = spar_height / 2 
                     self.cutout_positioning[i]['x'].append(cutout_x)
                     self.cutout_positioning[i]['y'].append(cutout_y)
+
+        print(f"Rib masses: {sum(self.rib_masses)}")
 
     def get_wing_structure(self):
         self.wing_structure = {}
@@ -1073,6 +1083,8 @@ class WingStructure:
             self.we2.append(self.stringer_width)
         
         root_chord_data = self.wing_structure[0]
+        fueltank_area = self.wing_structure[315]['area']*0.6
+        print(fueltank_area)
         self.normalized_data = {}
         self.normalized_data['spar_heights'] = root_chord_data['spar_info']['spar_heights']/self.chord_root
         self.normalized_data['top_skin_lengths'] = root_chord_data['panel_info']['top_skin_length']/self.chord_root
@@ -1206,6 +1218,7 @@ class WingStructure:
         area_intercept = area1
 
         self.fuel_length = self.get_fuel_length(area_slope, area_intercept)
+
         self.fuel_mass_distribution = np.zeros_like(self.b_array)
 
         for i, y in enumerate(self.b_array):
@@ -1213,7 +1226,7 @@ class WingStructure:
                 area_y = area_intercept + area_slope * y
                 chord_y = self.chord_span_function(y)
                 self.fuel_mass_distribution[i] = (
-                    self.fuel_density * self.fuel_wing*1000 / self.S * chord_y * 9.81
+                    self.fuel_density * self.fuel_wing*1000 / (self.S/2) * chord_y * 9.81
                 )
 
         front_idx = np.argmin(np.abs(self.b_array - self.fuel_start))
@@ -1274,6 +1287,15 @@ class WingStructure:
 
     def plot_wing_ribs(self):
         fig, ax = plt.subplots()
+        if self.evaluate == EvaluateType.WING or self.evaluate == EvaluateType.HORIZONTAL:
+            ax.plot(self.b_array, self.leading_edge, color='blue', label='Leading Edge')
+            ax.plot(self.b_array, self.leading_edge - self.chord_span_function(self.b_array), color='blue', label='Trailing Edge')
+        else:
+            ax.plot(self.leading_edge, self.b_array, color='blue', label='Leading Edge')
+            ax.plot(self.leading_edge + self.chord_span_function(self.b_array), self.b_array, color='blue', label='Trailing Edge')
+        self.elevator_end1 = self.aircraft_data.data['outputs']['control_surfaces']['elevator']['b2_s1']
+        self.elevator_start2 = self.aircraft_data.data['outputs']['control_surfaces']['elevator']['b1_s2']
+        self.elevator_end2 = self.aircraft_data.data['outputs']['control_surfaces']['elevator']['b2_s2']
         for i in range(len(self.x_positions)):
             rib_x = self.x_positions[i]
             idx = np.argmin(np.abs(self.b_array - rib_x))
@@ -1287,12 +1309,13 @@ class WingStructure:
                 if self.rudder_start <= rib_x <= self.rudder_end:
                     rib_length -= (1-self.rear_spar)*rib_length
             elif self.evaluate == EvaluateType.HORIZONTAL:
-                if self.elevator_start <= rib_x <= self.elevator_end:
+                if self.elevator_start <= rib_x <= self.elevator_end1 or self.elevator_start2 <= rib_x <= self.elevator_end2:
                     rib_length -= (1-self.rear_spar)*rib_length
 
-            ax.plot(self.b_array, self.leading_edge, color='blue', label='Leading Edge' if i == 0 else "")
-            ax.plot(self.b_array, self.leading_edge - self.chord_span_function(self.b_array), color='blue', label='Trailing Edge' if i == 0 else "")
-            ax.plot([rib_x, rib_x], [self.leading_edge[idx], self.leading_edge[idx]-rib_length], color='green')
+            if not self.evaluate == EvaluateType.VERTICAL:
+                ax.plot([rib_x, rib_x], [self.leading_edge[idx],self.leading_edge[idx]-rib_length], color='green')
+            else:
+                ax.plot([self.leading_edge[idx],self.leading_edge[idx]+rib_length], [rib_x, rib_x], color='green')
 
         if self.evaluate == EvaluateType.WING:
             front_idx = np.argmin(np.abs(self.b_array - self.fuel_start))
@@ -1311,9 +1334,8 @@ class WingStructure:
             ax.plot([self.fuel_start, self.fuel_length], [fuel_tank_start_LE, fuel_tank_rear_LE], color='red')
             ax.plot([self.fuel_start, self.fuel_length], [fuel_tank_start_TE, fuel_tank_rear_TE], color='red')
             ax.axvline(self.w_fuselage/2, color='red', linestyle='--')
-        ax.set_xlabel('Lateral Position (m)')
-        ax.set_ylabel('Longitudinal Position (m)')
-        ax.set_title('Wing Ribs along Span and Fuel Tank')
+        ax.set_xlabel('Lateral Position (m)', fontsize=25)
+        ax.set_ylabel('Longitudinal Position (m)', fontsize=25)
         ax.set_aspect('equal')
         ax.grid()
 
@@ -1321,14 +1343,20 @@ class WingStructure:
 
     def plot_thickness_distribution(self):
         fig, ax = plt.subplots()
-        ax.plot(self.b_array, self.spar_thickness_span_function(self.b_array), label='Thickness Distribution', color='blue')
-        ax.plot(self.b_array, self.skin_thickness_span_function(self.b_array), label='Skin Thickness Distribution', color='orange')
+        ax.plot(self.b_array, self.spar_thickness_span_function(self.b_array), label='tspar', color='blue')
+        ax.plot(self.b_array, self.skin_thickness_span_function(self.b_array), label='tskin', color='orange')
+        ax.plot(self.b_array, self.t_wing * np.ones_like(self.b_array), label='twing', color='green')
+
         ax.set_xlabel('Span (m)')
         ax.set_ylabel('Thickness (m)')
-        ax.set_title('Wing Thickness Distribution Along Span')
-        ax.legend()
-        ax.grid()
+        ax.set_ylim(0, None)
+        ax.grid(True)
+
+        # Move legend outside the plot and fix layout
+        ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.)
+        plt.tight_layout()  # leave space on the right for the legend
         plt.show()
+
                                          
 
     def plot_wing_weight(self):
@@ -1337,9 +1365,8 @@ class WingStructure:
         ax.plot(self.b_array, self.weight_dist, label='Weight Distribution', color='blue')
         ax.set_xlabel('Chord Length (m)')
         ax.set_ylabel('Weight (N)')
-        ax.set_title('Weight Distribution vs Chord Length')
-        ax.legend()
-        ax.grid()
+        # ax.legend()
+        ax.grid(True)
         plt.show()
 
     def plot_moment_of_inertia(self):
@@ -1378,14 +1405,14 @@ class WingStructure:
         ax.plot(x_coords, y_upper, label='Airfoil Upper Surface', color='blue')
         ax.plot(x_coords, y_lower, label='Airfoil Lower Surface', color='blue')
         ax.set_xlabel('x (m)')
-        ax.set_ylabel('y (m)')
+        ax.set_ylabel('z (m)')
 
         for i in cutout_positions['x']:
             cutout_x = i
             cutout_y = cutout_positions['y'][cutout_positions['x'].index(i)]
             circle = plt.Circle((cutout_x, cutout_y), self.cutout_diameter/2, color='red', alpha=0.5)
             ax.add_artist(circle)
-        ax.set_title(f"Rib Cutouts for Chord Index {idx}")
+        # ax.set_title(f"Rib Cutouts for Chord Index {idx}")
         ax.set_aspect('equal')
         plt.show()
 
@@ -1424,6 +1451,7 @@ class WingStructure:
 
         rear_x = self.rear_spar * chord
         spar_x_positions.append(rear_x)
+        
         spar_tops.append(spar_info['rear_spar_top'])
         spar_bottoms.append(spar_info['rear_spar_bottom'])
 
@@ -1458,6 +1486,7 @@ class WingStructure:
             self.draw_I_beam(x, y, self.L_stringer/1000, self.t_stringer/1000, top=False, color='purple',angle=0)
 
         plt.scatter(centroid[0], centroid[1], color='green', label='Centroid')
+        plt.scatter(0.25*chord,centroid[1], color='orange', label='Quarter Chord Point')
         centroid_x, centroid_z = centroid
         arrow_length = 0.05 * chord
         plt.arrow(centroid_x, centroid_z, 0, arrow_length,
@@ -1472,9 +1501,9 @@ class WingStructure:
                 fc='black', ec='black', linewidth=2, zorder=20)
         plt.text(centroid_x - arrow_length - 0.08 * arrow_length, centroid_z,
                 'x', fontsize=10, ha='right', va='center')
-        plt.title(f"Airfoil with Spar Positions, Wing Box and Stringers, chord = {chord:.2f} m")
-        plt.xlabel("x")
-        plt.ylabel("y")
+        # plt.title(f"Airfoil with Spar Positions, Wing Box and Stringers, chord = {chord:.2f} m")
+        plt.xlabel("x (m)")
+        plt.ylabel("z (m)")
         plt.axis("equal")
         plt.grid(True)
         plt.show()

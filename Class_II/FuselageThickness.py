@@ -610,6 +610,8 @@ class FuselageThickness:
                 self.plot_station_cross_section(1)
                 self.plot_shear_stress()
                 self.plot_bending_stress()
+                self.plot_frame_positions()
+            
             # print(f"Frame Amount: {self.rib_amount}")
             # print("Final Thicknesses:", self.final_thicknesses)
             # print("Final Boom Areas:", self.boom_map)
@@ -635,8 +637,10 @@ class FuselageThickness:
             if round(stress, 2) == 0.00:
                 b = 40 * 0.0254  
             else:
-                thickness = self.final_thicknesses[1][station_idx]
+                thickness = self.final_thicknesses[0][station_idx]
                 b = min(40 * 0.0254, thickness * np.sqrt(self.C * factor / stress))
+            if b < 0.4:
+                b = 0.4
             self.rib_spacings.append(b)
             x += b
 
@@ -886,6 +890,19 @@ class FuselageThickness:
         plt.show()
 
         return fig, ax
+    
+    def plot_frame_positions(self):
+        fig, ax = plt.subplots()
+        ax.plot(self.x_points, self.fuselage_width[0]/2*np.ones_like(self.x_points), color='blue')
+        ax.plot(self.x_points, -self.fuselage_width[0]/2*np.ones_like(self.x_points), color='blue')
+        for i, x in enumerate(self.rib_positions):
+            ax.plot([x, x], [-self.fuselage_width[0]/2, self.fuselage_width[0]/2], color='gray')
+        
+        ax.set_xlabel('Longitudinal Position (m)')
+        ax.set_ylabel('Lateral Position (m)')
+        ax.set_aspect('equal')
+        plt.grid()
+        plt.show()
 
         
 if __name__ == '__main__':

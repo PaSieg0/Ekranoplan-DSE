@@ -59,10 +59,12 @@ class AerodynamicForces:
         self.aileron_end = self.aircraft_data.data['outputs']['control_surfaces']['aileron']['b2']
         self.aileroned_area = self.aircraft_data.data['outputs']['control_surfaces']['aileron']['Swa']
 
-        self.elevator_start = self.aircraft_data.data['outputs']['control_surfaces']['elevator']['b1']
-        self.elevator_end = self.aircraft_data.data['outputs']['control_surfaces']['elevator']['b2']
+        self.elevator_start1 = self.aircraft_data.data['outputs']['control_surfaces']['elevator']['b1_s1']
+        self.elevator_end1 = self.aircraft_data.data['outputs']['control_surfaces']['elevator']['b2_s1']
+        self.elevator_start2 = self.aircraft_data.data['outputs']['control_surfaces']['elevator']['b1_s2']
+        self.elevator_end2 = self.aircraft_data.data['outputs']['control_surfaces']['elevator']['b2_s2']
         self.elevatored_area = self.aircraft_data.data['outputs']['control_surfaces']['elevator']['Se']
-        self.elevator_array = np.arange(self.elevator_start, self.elevator_end+0.01, 0.01)
+        self.elevator_array = np.arange(self.elevator_start1, self.elevator_end2+0.01, 0.01)
 
         self.chord_root = self.aircraft_data.data['outputs']['wing_design']['chord_root']
         self.chord_tip = self.aircraft_data.data['outputs']['wing_design']['chord_tip']
@@ -256,7 +258,7 @@ class AerodynamicForces:
         CL_tot_horizontal = np.trapz(CL_horizontal, self.b_array)
         self.horizontal_tail_lift = self.elliptic_lift_distribution(self.b_h_array, self.b_h/2, CL_tot_horizontal) * 0.5 * self.rho * self.V**2 * self.Sh
         for i, pos in enumerate(self.b_h_array):
-            if self.elevator_start <= pos <= self.elevator_end:
+            if self.elevator_start1 <= pos <= self.elevator_end1 or self.elevator_start2 <= pos <= self.elevator_end2:
                 idx = np.argmin(np.abs(self.b_h_array - pos))
                 self.horizontal_tail_lift[idx] -= self.elevator_lift_array[i]
 
