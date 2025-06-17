@@ -119,16 +119,16 @@ class ElevatorRudder:
         sign = 1
         for idx, i in enumerate(self.engine_positions):
             offset = sign * (1/4 * self.prop_diameter)
-            right_yaw_moment += self.engine_thrust * (i + offset)
+            right_yaw_moment += self.engine_thrust_TO * (i + offset)
             sign *= -1  # Alternate sign
 
         sign = 1
         for idx, i in enumerate(self.engine_positions[:2]):
             offset = sign * (1/4 * self.prop_diameter)
-            left_yaw_moment += self.engine_thrust * (i - offset)
+            left_yaw_moment += self.engine_thrust_TO * (i - offset)
             sign *= -1  # Alternate sign
-        
-        self.CN_OEI = (right_yaw_moment - left_yaw_moment)/2 / (self.S*self.b*0.5*self.rho*self.V**2)*1.5
+        # print(right_yaw_moment-left_yaw_moment)
+        self.CN_OEI = (right_yaw_moment - left_yaw_moment) / (self.S*self.b*0.5*self.rho*self.V**2)*1.5
         return self.CN_OEI
     
     def calculate_required_rudder_surface(self):
@@ -139,7 +139,7 @@ class ElevatorRudder:
         tolerance = 0.000001
         for b in self.b_test:
             integral_test, _ = quad(self.chord_v,self.rudder_start, b)
-            cndr_test = integral_test * -(self.airfoil_cl_alpha * self.control_surface_effectiveness(self.rudder_chord_ratio)*self.l_v) / (self.S * self.b)
+            cndr_test = integral_test * -(np.rad2deg(self.airfoil_cl_alpha) * self.control_surface_effectiveness(self.rudder_chord_ratio)*self.l_v) / (self.S * self.b)
             # print(cndr_test, CNe_dr)
             if 0 < abs(cndr_test - CNe_dr) <= tolerance:
                 self.rudder_end = b
@@ -153,7 +153,7 @@ class ElevatorRudder:
         integral, _ = quad(self.chord_v, self.rudder_start, self.rudder_end)
         self.Sr = integral
         self.rudder_area = self.rudder_chord_ratio * self.Sr
-        self.rudder_normal_force = self.cndr*np.deg2rad(self.rudder_deflection)*0.5*self.rho*self.V**2*self.S*self.b/self.l_v
+        self.rudder_normal_force = self.cndr*np.deg2rad(self.rudder_deflection)*0.5*self.rho*self.V**2*self.S*self.b/self.l_v/1.5
 
     def calculate_pitch_rate(self):
 
@@ -197,9 +197,9 @@ class ElevatorRudder:
         self.Se = area_elevator
 
         elevator_effectiveness = self.control_surface_effectiveness(self.elevator_chord_ratio)
-        self.CMde = -self.airfoil_cl_alpha * elevator_effectiveness * self.l_h/(self.S * self.MAC)*self.Se
+        self.CMde = -np.rad2deg(self.airfoil_cl_alpha) * elevator_effectiveness * self.l_h/(self.S * self.MAC)*self.Se
 
-        N = self.CMde * np.deg2rad(self.elevator_deflection) * 0.5 * self.rho * self.V**2 * self.S * self.MAC/self.l_h
+        N = self.CMde * np.deg2rad(self.elevator_deflection) * 0.5 * self.rho * self.V**2 * self.S * self.MAC/self.l_h/2
         return N
     
     def calculate_pitch_up_performance(self):
@@ -211,7 +211,7 @@ class ElevatorRudder:
         # print(f'trim deflection TO: {self.trim_deflection_TO} deg')
 
         #trim in flight
-        print((self.nominal_lift_moment + self.main_moment - self.engine_moments*0.6))
+        # print((self.nominal_lift_moment + self.main_moment - self.engine_moments*0.6))
         self.horizontal_tail_lift = (self.nominal_lift_moment + self.main_moment - self.engine_moments*0.6) / self.l_h * self.Sh / self.S / 2
         zero_elevator_lift = self.i_h_trim * self.tail_lift_slope * self.Sh / 2 * 0.5 * self.rho * self.V**2
         self.required_elevator_lift = self.horizontal_tail_lift - zero_elevator_lift
@@ -264,11 +264,11 @@ class ElevatorRudder:
         self.aircraft_data.data['outputs']['aerodynamic_stability_coefficients_sym']['C_z_delta_e'] = 2*self.elevator_lift / (np.deg2rad(self.elevator_deflection) * 0.5 * self.rho * self.V**2 * self.S * self.MAC)
         self.aircraft_data.data['outputs']['aerodynamic_stability_coefficients_sym']['C_m_delta_e'] = 2*self.CMde
         self.aircraft_data.data['outputs']['control_surfaces']['rudder']['rudder_lift'] = self.rudder_normal_force
-        self.aircraft_data.data['outputs']['aerodynamic_stability_coefficients_asym']['C_y_delta_r'] = self.rudder_normal_force / (-np.deg2rad(self.rudder_deflection) * 0.5 * self.rho * self.V**2 * self.S * self.b)
+        self.aircraft_data.data['outputs']['aerodynamic_stability_coefficients_asym']['C_y_delta_r'] = self.rudder_normal_force / (-np.deg2rad(self.rudder_deflection) * 0.5 * self.rho * self.V**2 * self.S)*1.5
         self.rudder_height = self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['b'] / 2 + self.aircraft_data.data['outputs']['fuselage_dimensions']['h_fuselage']
         # TODO: UPDATE THIS AFTER CG HEIGHT IS DETERMINED
         self.high_cg = self.aircraft_data.data['outputs']['cg_range']['highest_cg']
-        self.aircraft_data.data['outputs']['aerodynamic_stability_coefficients_asym']['C_l_delta_r'] = (self.rudder_height-self.high_cg) * self.rudder_normal_force / (np.deg2rad(self.rudder_deflection) * 0.5 * self.rho * self.V**2 * self.S * self.b)
+        self.aircraft_data.data['outputs']['aerodynamic_stability_coefficients_asym']['C_l_delta_r'] = (self.rudder_height-self.high_cg) * self.rudder_normal_force / (np.deg2rad(self.rudder_deflection) * 0.5 * self.rho * self.V**2 * self.S * self.b)*1.5
         self.aircraft_data.data['outputs']['aerodynamic_stability_coefficients_asym']['C_n_delta_r'] = self.cndr
 
 

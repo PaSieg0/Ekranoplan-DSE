@@ -177,7 +177,7 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
             if self.evaluate == EvaluateType.WING:
                 self.vertical_distribution = self.max_load_factor*self.lift_function - self.wing_weight
             else:
-                self.vertical_distribution = self.max_load_factor*self.lift_function - self.wing_weight if self.evaluate == EvaluateType.HORIZONTAL else self.max_load_factor*self.lift_function
+                self.vertical_distribution = self.max_load_factor*self.lift_function - self.wing_weight if self.evaluate == EvaluateType.HORIZONTAL else self.lift_function
             return self.vertical_distribution
         elif self.evaluate_case == 'min':
             if self.evaluate == EvaluateType.WING:
@@ -808,7 +808,7 @@ def main(all=True):
             flutter_analysis = FlutterAnalysis(aircraft_data=Data("design3.json"), wing_mat=wingbox_material, evaluate=evaluate)
             flutter_analysis.main(plot=False)
     else:
-        stress_analysis = StressAnalysisWing(aircraft_data=Data("design3.json"), wingbox_mat=wingbox_material, wing_mat=wing_material, stringer_mat=stringer_material, evaluate=EvaluateType.WING, 
+        stress_analysis = StressAnalysisWing(aircraft_data=Data("design3.json"), wingbox_mat=wingbox_material, wing_mat=wing_material, stringer_mat=stringer_material, evaluate=EvaluateType.HORIZONTAL, 
                                              PLOT=False)
         stress_analysis.main_analysis(run_all=True)
         # stress_analysis.plot_any(StressOutput.INTERNAL_TORQUE)
@@ -820,7 +820,6 @@ def main(all=True):
 if __name__ == "__main__":
 
     main(all=False)
-
 
 
     
