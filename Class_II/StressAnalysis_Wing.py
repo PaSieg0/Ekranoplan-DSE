@@ -548,7 +548,7 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
         self.margins[f'{self.evaluate_case}_vertical_shearforce'] = self.Vy_internal[0]
 
         if self.evaluate == EvaluateType.WING:
-            self.plot_any(StressOutput.DEFLECTION)
+            # self.plot_any(StressOutput.DEFLECTION)
             # self.plot_any(StressOutput.TWIST)
             # self.plot_any(StressOutput.INTERNAL_SHEAR_VERTICAL)
             self.margins[f'{self.evaluate_case}_deflection'] = self.wing_deflection[-1]
@@ -560,10 +560,10 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
             # self.plot_rib(id=0)
 
             # self.plot_wing_ribs()
-        self.plot_any(StressOutput.RESULTANT_VERTICAL)
-        self.plot_any(StressOutput.INTERNAL_SHEAR_VERTICAL)
-        self.plot_any(StressOutput.INTERNAL_MOMENT_X)
-        self.plot_any(StressOutput.INTERNAL_TORQUE)
+        # self.plot_any(StressOutput.RESULTANT_VERTICAL)
+        # self.plot_any(StressOutput.INTERNAL_SHEAR_VERTICAL)
+        # self.plot_any(StressOutput.INTERNAL_MOMENT_X)
+        # self.plot_any(StressOutput.INTERNAL_TORQUE)
 
         if self.runs == 1 and self.evaluate == EvaluateType.WING:
             self.update_attributes()

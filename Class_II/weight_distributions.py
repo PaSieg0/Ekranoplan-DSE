@@ -238,55 +238,47 @@ class load_diagram:
         section_labels = ['Nose', 'Forebody', 'Afterbody', 'Tailcone']
 
         if self.plot:
-            fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(12, 18), sharex=True) # Three subplots, shared x-axis
-
             # Plot 1: Load Distribution
+            plt.figure(figsize=(12, 5))
             if show_individual_contributions:
                 colors = plt.cm.get_cmap('tab10', len(self.load_distributions.keys()))
-                for i, (section_name, distribution_array) in enumerate(self.load_distributions.items()):
-                    ax1.plot(self.x_points, distribution_array/1000, label=f'{section_name.capitalize()} Contribution', color=colors(i), linestyle='-')
-
-            ax1.plot(self.x_points, self.total_load_distribution/1000, label='Total Load Distribution', color='k', linewidth=3, linestyle='-')
-            ax1.set_ylabel('Load Distribution (kN/m)')
-            ax1.set_title('Fuselage Load, Shear Force, and Bending Moment Diagrams')
-            ax1.grid(True, which='both', linestyle='--', linewidth=0.7, alpha=0.5)
-            ax1.legend(fontsize=8) # <--- Changed: Smaller legend font size
-            
-            # Add vertical lines and labels to ax1
-            ylim_ax1 = ax1.get_ylim()
+            for i, (section_name, distribution_array) in enumerate(self.load_distributions.items()):
+                plt.plot(self.x_points, distribution_array/1000, label=f'{section_name.capitalize()} Contribution', color=colors(i), linestyle='-')
+            plt.plot(self.x_points, self.total_load_distribution/1000, label='Total Load Distribution', color='k', linewidth=3, linestyle='-')
+            plt.ylabel('Load Distribution (kN/m)')
+            plt.xlabel('Longitudinal Position (m)')
+            plt.grid(True, which='both', linestyle='--', linewidth=0.7, alpha=0.5)
+            plt.legend(fontsize=8)
+            ylim_ax1 = plt.ylim()
             for x in section_boundaries:
-                ax1.axvline(x=x, color='gray', linestyle=':', linewidth=1, alpha=0.7)
+                plt.axvline(x=x, color='gray', linestyle=':', linewidth=1, alpha=0.7)
             for i in range(len(section_boundaries)-1):
                 mid = (section_boundaries[i] + section_boundaries[i+1]) / 2
-                ax1.text(mid, ylim_ax1[1]*0.95, section_labels[i], ha='center', va='top', fontsize=11, color='gray')
-
+            plt.text(mid, ylim_ax1[1]*0.95, section_labels[i], ha='center', va='top', fontsize=11, color='gray')
+            plt.show()
 
             # Plot 2: Shear Force
-            ax2.plot(self.x_points, shear_force_kN, label='Internal Shear Force', color='blue', linewidth=2)
-            ax2.set_ylabel('Shear Force (kN)') # Set y-label to kN
-            ax2.grid(True, which='both', linestyle='--', linewidth=0.7, alpha=0.5)
-            ax2.legend()
-            
-            # Add vertical lines to ax2
+            plt.figure(figsize=(12, 5))
+            plt.plot(self.x_points, shear_force_kN, label='Internal Shear Force', color='tab:blue', linewidth=2)
+            plt.ylabel('Shear Force (kN)')
+            plt.xlabel('Longitudinal Position (m)')
+            plt.grid(True, which='both', linestyle='--', linewidth=0.7, alpha=0.5)
+            # plt.legend()
             for x in section_boundaries:
-                ax2.axvline(x=x, color='gray', linestyle=':', linewidth=1, alpha=0.7)
+                plt.axvline(x=x, color='gray', linestyle=':', linewidth=1, alpha=0.7)
+            plt.show()
 
             # Plot 3: Bending Moment
-            ax3.plot(self.x_points, bending_moment_MNm, label='Internal Bending Moment', color='red', linewidth=2)
-            ax3.plot([self.x_points[-1], self.x_points[-1]], [bending_moment_MNm[-1], 0], color='red', linewidth=2)
-            ax3.set_xlabel('Fuselage Station (m)')
-            ax3.set_ylabel('Bending Moment (MNm)') # Set y-label to MNm
-            ax3.grid(True, which='both', linestyle='--', linewidth=0.7, alpha=0.5)
-            ax3.legend()
+            plt.figure(figsize=(12, 5))
+            plt.plot(self.x_points, bending_moment_MNm, label='Internal Bending Moment', color='tab:orange', linewidth=2)
+            plt.plot([self.x_points[-1], self.x_points[-1]], [bending_moment_MNm[-1], 0], color='tab:orange', linewidth=2)
+            plt.xlabel('Longitudinal Position (m)')
 
-            # Add vertical lines to ax3
+            plt.ylabel('Bending Moment (MNm)')
+            plt.grid(True, which='both', linestyle='--', linewidth=0.7, alpha=0.5)
+            # plt.legend()
             for x in section_boundaries:
-                ax3.axvline(x=x, color='gray', linestyle=':', linewidth=1, alpha=0.7)
-            # add space under the last plot
-            plt.tight_layout()
-            plt.subplots_adjust(top=0.95)
-            plt.subplots_adjust(bottom=0.1)
-
+                plt.axvline(x=x, color='gray', linestyle=':', linewidth=1, alpha=0.7)
             plt.show()
         
 if __name__ == "__main__":
