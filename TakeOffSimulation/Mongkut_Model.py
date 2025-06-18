@@ -1,7 +1,7 @@
 import os
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from utils import Data, plt, W2hp, ft2m, lbf2N
+from utils import Data, plt, W2hp, ft2m, lbf2N, kts2ms, N2lbf
 import numpy as np
 # import matplotlib.pyplot as plt
 from aero.lift_curve import lift_curve
@@ -85,8 +85,8 @@ class Simulation:
 
     def determine_thrust_function(self):
         if self.verify:
-            xs = np.array([0, 10, 20, 30,  40, 50, 60, 70, 80])
-            ys = lbf2N(np.array([670, 620, 555, 505, 455, 410, 375, 340, 340]))
+            xs = kts2ms(np.array([0, 10, 20, 30,  40, 50, 60, 70, 80]))
+            ys = lbf2N(np.array([680, 630, 560, 510, 460, 420, 380, 350, 350]))
             self.Thrust_function = lambda x: np.interp(x, xs, ys)
         else:
             A_matrix = np.array([
@@ -194,13 +194,13 @@ class Simulation:
 
     def update_R_froude(self):
         Sw = self.calculate_wetted_area()
-        print(f"Sw: {Sw:.4f} m²")
+        # print(f"Sw: {Sw:.4f} m²")
         # print(f"v_x: {self.v_x:.4f} m/s")
         # print(f"f: {self.f:.4f}")
         # print(f"sea_state_factor: {self.sea_state_factor:.4f}")
         # print(f"n: {self.n:.4f}")
         self.R_froude = self.sea_state_factor * self.f * Sw * self.v_x**self.n
-        print(f"R_froude: {self.R_froude:.4f} N")
+        # print(f"R_froude: {self.R_froude:.4f} N")
 
 
     def update_D(self):
@@ -210,6 +210,12 @@ class Simulation:
             Cd_WIG = 0.094 #0.02 + self.Cl**2 / (np.pi * self.A * self.e)
         # print(f"Cd_WIG: {Cd_WIG:.4f}")
         self.D = 0.5 * 1.225 * (self.v_x**2) * self.S * Cd_WIG
+        if self.verify:
+            self.D = N2lbf(self.D)
+        print(f"v_x: {self.v_x}")
+        print(f"S: {self.S}")
+        print(f"Cd: {Cd_WIG}")
+        print(f"D: {self.D}")
 
     def update_L(self):
         h_b = (self.y + self.wing_height) / self.b
@@ -247,6 +253,8 @@ class Simulation:
         self.L_list.append(self.L)
         self.buoyance_list.append(self.buoyancy)
         self.total_drag = self.R + self.D + self.R_froude
+        print(f"{self.D} + {self.R} + {self.R_froude}")
+        print(self.total_drag)
         self.total_drag_list.append(self.total_drag)
         self.total_power_req = (self.total_drag * self.v_x)
         self.total_power_ava = (self.Thrust * self.v_x)
@@ -256,6 +264,16 @@ class Simulation:
     def plot_results(self):
         import matplotlib.pyplot as plt
         # 1. Plot D, total_drag, R_froude, R, Thrust vs time
+
+        if self.verify:
+            self.D_list = list(N2lbf(np.array(self.D_list)))
+            self.total_drag_list = list(N2lbf(np.array(self.total_drag_list)))
+            self.R_froude_list = list(N2lbf(np.array(self.R_froude_list)))
+            self.R_list = list(N2lbf(np.array(self.R_list)))
+            self.Thrust_list = list(N2lbf(np.array(self.Thrust_list)))
+            self.buoyance_list = list(N2lbf(np.array(self.buoyance_list)))
+            self.L_list = list(N2lbf(np.array(self.L_list)))
+            
         plt.figure(figsize=(10, 6))
         plt.plot(self.time_list, self.D_list, label='Aerodynamic Drag D', color='tab:red')
         plt.plot(self.time_list, self.total_drag_list, label='Total Drag', color='tab:orange')
@@ -326,7 +344,9 @@ class Simulation:
         # plt.show()
             
         while self.t < self.t_end:
-
+            print(f"v_x {self.v_x}")
+            print(f"Thrust: {self.Thrust}")
+            print(f"total_drag: {self.total_drag}")
 
             self.r = 0.1 + 0.9*self.t/10 if self.t < 10 else 1
 

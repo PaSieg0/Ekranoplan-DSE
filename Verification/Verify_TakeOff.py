@@ -14,7 +14,7 @@ class Verification(Simulation):
         super().__init__(aircraft_data)
         self.verify = True
 
-        self.t_end = 100
+        self.t_end = 50
         self.dt = 0.01
 
         self.B = ft2m(4.27)
@@ -92,19 +92,18 @@ class Verification(Simulation):
         ax1.tick_params(axis='y', labelcolor='tab:purple')
         ax1.set_ylim(0, 3500)
         plt.grid(True)
-        plt.plot((np.array(self.v_x_list)), N2lbf(np.array(self.buoyance_list)), color='tab:purple', label='Buoyancy vs Velocity')
+        plt.plot((np.array(self.v_x_list)), (np.array(self.buoyance_list)), color='tab:purple', label='Buoyancy vs Velocity')
         ax2 = ax1.twinx()
         ax2.set_ylabel('Force (lbf)', fontsize=18)
         ax2.tick_params(axis='y', labelcolor='tab:blue')
         ax2.set_xlim(0, 70)
         ax2.set_ylim(0, 500)
-        self.total_drag_list = N2lbf(N2lbf(np.array(self.D_list))) + N2lbf(np.array(self.R_froude_list)) + N2lbf(np.array(self.R_list))
-        print(self.total_drag_list)
-        plt.plot((np.array(self.v_x_list)), N2lbf(N2lbf(np.array(self.D_list))), color='tab:green', label='Drag vs Velocity')
-        plt.plot((np.array(self.v_x_list)), N2lbf(N2lbf(np.array(self.L_list))), color='tab:blue', label='Lift vs Velocity')
-        plt.plot((np.array(self.v_x_list)), N2lbf(np.array(self.Thrust_list)), color='tab:orange', label='Thrust vs Velocity')
-        plt.plot((np.array(self.v_x_list)), N2lbf(np.array(self.R_froude_list)), color='tab:red', label='Froude Number vs Velocity')
-        plt.plot((np.array(self.v_x_list)), N2lbf(np.array(self.R_list)), color='tab:purple', label='R vs Velocity')
+        self.total_drag_list = ((np.array(self.D_list))) + (np.array(self.R_froude_list)) + (np.array(self.R_list))
+        plt.plot((np.array(self.v_x_list)), ((np.array(self.D_list))), color='tab:green', label='Drag vs Velocity')
+        plt.plot((np.array(self.v_x_list)), (N2lbf(np.array(self.L_list))), color='tab:blue', label='Lift vs Velocity')
+        # plt.plot((np.array(self.v_x_list)), (np.array(self.Thrust_list)), color='tab:orange', label='Thrust vs Velocity')
+        plt.plot((np.array(self.v_x_list)), (np.array(self.R_froude_list)), color='tab:red', label='Froude Number vs Velocity')
+        plt.plot((np.array(self.v_x_list)), (np.array(self.R_list)), color='tab:purple', label='R vs Velocity')
         plt.plot((np.array(self.v_x_list)), ((np.array(self.total_drag_list))), color='tab:orange', label='Total Drag vs Velocity')
         plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
         plt.xlabel('Velocity (KCAS)', fontsize=18)
@@ -116,6 +115,78 @@ class Verification(Simulation):
         plt.tight_layout()
         plt.show()
 
+    def verify_longitudinal(self):
+        self.run_simulation()
+        
+        plt.figure(figsize=(12, 8))
+        plt.plot(np.array(self.v_x_list), np.array(self.D_list), color='tab:orange', label='Drag')
+        # plt.plot(np.array(self.v_x_list), N2lbf(np.array(self.L_list)), color='tab:blue', label='Lift')
+        plt.plot(np.array(self.v_x_list), np.array(self.R_froude_list), color='tab:blue', label='Hydroplane Resistance')
+        plt.plot(np.array(self.v_x_list), np.array(self.R_list), color='gold', label='Water Resistance')
+        plt.plot(np.array(self.v_x_list), np.array(self.total_drag_list), color='tab:green', label='Total Resistance')
+        
+        plt.xlabel('Velocity (KCAS)', fontsize=18)
+        plt.ylabel('Force (lbf)', fontsize=18)
+        plt.xlim(0, 75)
+        plt.ylim(0, 500)
+        plt.grid(True)
+
+        # Place legend below the plot in 2 columns
+        plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15), ncol=2, fontsize=16, frameon=True)
+
+        plt.tight_layout()
+        plt.show()
+
+
+    def verify_vertical(self):
+        self.run_simulation()
+        fig, ax1 = plt.subplots(figsize=(12, 8))
+
+        ax1.set_xlabel('Velocity (KCAS)', fontsize=18)
+        ax1.set_ylabel('Buoyancy (lbf)', fontsize=18)
+        ax1.set_ylim(0, 3500)
+
+        # Plot on ax1
+        buoyancy_line, = ax1.plot(
+            np.array(self.v_x_list),
+            np.array(self.buoyance_list),
+            color='grey',
+            label='Buoyancy'
+        )
+
+        # Create second y-axis
+        ax2 = ax1.twinx()
+        ax2.set_ylabel('Force (lbf)', fontsize=18)
+        ax2.set_ylim(0, 500)
+
+        # Plot on ax2
+        lift_line, = ax2.plot(
+            np.array(self.v_x_list),
+            N2lbf(np.array(self.L_list)),
+            color='tab:blue',
+            label='Lift'
+        )
+
+        # Combine legends below the plot
+        lines = [buoyancy_line, lift_line]
+        labels = [line.get_label() for line in lines]
+        ax1.legend(
+            lines,
+            labels,
+            loc='upper center',
+            bbox_to_anchor=(0.5, -0.15),
+            ncol=2,
+            fontsize=16,
+            frameon=True
+        )
+
+        plt.xlim(0, 75)
+        plt.grid(True)
+        plt.tight_layout()
+        plt.show()
+
+
+
 
 if __name__ == "__main__":
     aircraft_data = Data('final_design.json')
@@ -124,7 +195,9 @@ if __name__ == "__main__":
 
     # simulation.verify_CR_Cv()
     # simulation.verify_thrust()
-    simulation.verify_drags()
+    # simulation.verify_drags()
+    # simulation.verify_longitudinal()
+    simulation.verify_vertical()
 
     
 
