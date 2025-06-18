@@ -241,20 +241,20 @@ class WingStructure:
         top_flange = patches.Rectangle(
             (x - top_w / 2, top_y - thickness),
             top_w,
-            thickness*20,
+            thickness*15,
             facecolor=color
         )
 
         bottom_flange = patches.Rectangle(
             (x - bottom_w / 2, bottom_y),
             bottom_w,
-            thickness*20,
+            thickness*15,
             facecolor=color
         )
 
         web = patches.Rectangle(
             (x - thickness / 2, bottom_y + thickness),
-            thickness*20,
+            thickness*15,
             web_h - 2 * thickness,
             facecolor=color
         )
@@ -1488,20 +1488,20 @@ class WingStructure:
             self.draw_I_beam(x, y, self.L_stringer/1000, self.t_stringer/1000, top=False, color='purple',angle=0)
 
         plt.scatter(centroid[0], centroid[1], color='green', label='Centroid')
-        plt.scatter(0.25*chord,centroid[1], color='orange', label='Quarter Chord Point')
+        # plt.scatter(0.25*chord,centroid[1], color='orange', label='Quarter Chord Point')
         centroid_x, centroid_z = centroid
         arrow_length = 0.05 * chord
-        plt.arrow(centroid_x, centroid_z, 0, arrow_length,
+        plt.arrow(centroid_x, centroid_z, 0, -arrow_length,
                 head_width=0.05 * arrow_length, head_length=0.05 * arrow_length,
                 fc='black', ec='black', linewidth=2, zorder=20)
-        plt.text(centroid_x, centroid_z + arrow_length + 0.02 * arrow_length,
-                'z', fontsize=10, ha='center', va='bottom')
+        plt.text(centroid_x, centroid_z - arrow_length-0.75*arrow_length,
+                'y', fontsize=10, ha='center', va='bottom')
 
         # Arrow: Left in X (negative X direction)
         plt.arrow(centroid_x, centroid_z, -arrow_length, 0,
                 head_width=0.05 * arrow_length, head_length=0.05 * arrow_length,
                 fc='black', ec='black', linewidth=2, zorder=20)
-        plt.text(centroid_x - arrow_length - 0.08 * arrow_length, centroid_z,
+        plt.text(centroid_x - arrow_length - 0.2 * arrow_length, centroid_z,
                 'x', fontsize=10, ha='right', va='center')
         # plt.title(f"Airfoil with Spar Positions, Wing Box and Stringers, chord = {chord:.2f} m")
         plt.xlabel("x (m)")
@@ -1517,7 +1517,7 @@ if __name__ == "__main__":
     wingbox_material = Materials.Al7075
     wing_material = Materials.Al5052
     wing_structure = WingStructure(aircraft_data, wingbox_mat=wingbox_material,
-                                   wing_mat=wing_material, stringer_mat=stringer_material, evaluate=EvaluateType.WING)
+                                   wing_mat=wing_material, stringer_mat=stringer_material, evaluate=EvaluateType.VERTICAL)
     wing_structure.get_wing_structure()
     wing_structure.plot_moment_of_inertia()
     wing_structure.plot_thickness_distribution()
