@@ -61,7 +61,7 @@ class DerivativesDatcom_sym:
         Cmqe = -0.7 * self.Cl_alpha * np.cos(np.radians(self.Delta_c4)) * ((self.A * (0.5 * self.x_bar / self.MAC + 2 * (self.x_bar / self.MAC)**2))/(self.A + 2 * np.cos(np.radians(self.Delta_c4))) + 1/24 * self.A**3 * np.tan(np.radians(self.Delta_c4))**2 / (self.A + 6 * np.cos(np.radians(self.Delta_c4))) + 1/8) #p.2488
         
         self.MAC_h = self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['MAC']  # Mean Aerodynamic Chord of the horizontal tail
-        self.x_LEMAC = aircraft_data.data['outputs']['wing_design']['X_LEMAC']
+        self.x_LEMAC = self.aircraft_data.data['outputs']['wing_design']['X_LEMAC']
         x_m = self.x_cg # longtitudinal
         x_c = self.l_f/2 # cross-sectional
         S_b = self.S_b
