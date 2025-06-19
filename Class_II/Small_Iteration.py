@@ -23,29 +23,29 @@ def solve_hb(target_A_A):
 
 def Ainf_Ah(h, b, endplante_height=0):
     matplotlib.rcParams['font.family'] = 'Arial'
-    HB = np.arange(0,1.5,0.001)
-    A_A = 1 - np.exp(-4.74*HB**0.814) - HB**2*np.exp(-3.88*HB**0.758)
+    HB = np.arange(0, 1.5, 0.001)
+    A_A = 1 - np.exp(-4.74 * HB**0.814) - HB**2 * np.exp(-3.88 * HB**0.758)
     fig, ax = plt.subplots()
-    fig.patch.set_facecolor('#222222')  # dark grey background
-    ax.set_facecolor('#222222')
+    fig.patch.set_alpha(0.0)  # transparent background
+    ax.set_facecolor('none')  # transparent axes background
     ax.plot(HB, A_A, color='yellow')
-    ax.set_xlabel('h/b', color='white', fontname='Arial')
-    ax.set_ylabel('CDi_out/CDi_in', color='white', fontname='Arial')
-    ax.set_xlim(-0.0001,1)
+    ax.set_xlabel(r'$h/b$', color='white', fontname='Arial')
+    ax.set_ylabel(r'$\frac{C_{D_{i,\mathrm{out}}}}{C_{D_{i,\mathrm{in}}}}$', color='white', fontname='Arial')
+    ax.set_xlim(-0.0001, 1)
     ax.set_title('Induced Drag Variation in Ground Effect', color='white', fontname='Arial')
     ax.grid(color='grey', linestyle='--', linewidth=0.5)
-    # Set axes spines and tick params to white for contrast
     for spine in ax.spines.values():
         spine.set_edgecolor('white')
     ax.tick_params(colors='white')
-    plt.show()
+    plt.savefig('Ainf_Ah_plot.png', transparent=True, bbox_inches='tight', dpi=300)
+    plt.close(fig)
     k = 1
 
-    h_b = h/b
-    WIG_term = 1 - np.exp(-4.74*h_b**0.814) - h_b**2*np.exp(-3.88*h_b**0.758)
+    h_b = h / b
+    WIG_term = 1 - np.exp(-4.74 * h_b**0.814) - h_b**2 * np.exp(-3.88 * h_b**0.758)
     k *= WIG_term
 
-    endplate_term = 1.0 + 1.9 * endplante_height/b
+    endplate_term = 1.0 + 1.9 * endplante_height / b
     k /= endplate_term
 
     return k
