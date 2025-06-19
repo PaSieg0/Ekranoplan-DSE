@@ -1336,8 +1336,8 @@ class WingStructure:
             ax.plot([self.fuel_start, self.fuel_length], [fuel_tank_start_LE, fuel_tank_rear_LE], color='red')
             ax.plot([self.fuel_start, self.fuel_length], [fuel_tank_start_TE, fuel_tank_rear_TE], color='red')
             ax.axvline(self.w_fuselage/2, color='red', linestyle='--')
-        ax.set_xlabel('Lateral Position (m)', fontsize=25)
-        ax.set_ylabel('Longitudinal Position (m)', fontsize=25)
+        ax.set_xlabel('Lateral Position (m)', fontsize=20)
+        ax.set_ylabel('Longitudinal Position (m)', fontsize=20)
         ax.set_aspect('equal')
         ax.grid()
 
@@ -1495,7 +1495,7 @@ class WingStructure:
                 head_width=0.05 * arrow_length, head_length=0.05 * arrow_length,
                 fc='black', ec='black', linewidth=2, zorder=20)
         plt.text(centroid_x, centroid_z - arrow_length-0.75*arrow_length,
-                'y', fontsize=10, ha='center', va='bottom')
+                'z', fontsize=10, ha='center', va='bottom')
 
         # Arrow: Left in X (negative X direction)
         plt.arrow(centroid_x, centroid_z, -arrow_length, 0,
@@ -1503,21 +1503,21 @@ class WingStructure:
                 fc='black', ec='black', linewidth=2, zorder=20)
         plt.text(centroid_x - arrow_length - 0.2 * arrow_length, centroid_z,
                 'x', fontsize=10, ha='right', va='center')
-        # plt.title(f"Airfoil with Spar Positions, Wing Box and Stringers, chord = {chord:.2f} m")
+        plt.title(f"Wing Box at MAC")
         plt.xlabel("x (m)")
         plt.ylabel("z (m)")
         plt.axis("equal")
-        plt.grid(True)
+        plt.grid(False)
         plt.show()
 
 
 if __name__ == "__main__":
-    aircraft_data = Data("design3.json")
+    aircraft_data = Data("final_design.json")
     stringer_material = Materials.Al7075
     wingbox_material = Materials.Al7075
     wing_material = Materials.Al5052
     wing_structure = WingStructure(aircraft_data, wingbox_mat=wingbox_material,
-                                   wing_mat=wing_material, stringer_mat=stringer_material, evaluate=EvaluateType.VERTICAL)
+                                   wing_mat=wing_material, stringer_mat=stringer_material, evaluate=EvaluateType.WING)
     wing_structure.get_wing_structure()
     wing_structure.plot_moment_of_inertia()
     wing_structure.plot_thickness_distribution()

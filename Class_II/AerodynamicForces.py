@@ -285,20 +285,17 @@ class AerodynamicForces:
                (self.b_v) * y
     
     def plot_horizontal_tail_lift_distribution(self):
-        plt.figure()
         plt.plot(self.b_h_array, self.horizontal_tail_lift, label="Horizontal Tail Lift Distribution")
         plt.xlabel("Horizontal Tail Span (m)", fontsize=20)
-        plt.ylabel("Lh (N)]", fontsize=20)
+        plt.ylabel("Lh (N)", fontsize=20)
         plt.xlim(left=0)
         plt.grid(True)
         plt.show()
 
     def plot_vertical_tail_lift_distribution(self):
-        plt.figure()
-        plt.plot(self.b_v_array, self.vertical_tail_lift, label="Vertical Tail Lift Distribution")
-        plt.xlabel("Vertical Tail Span (m)",fontsize=20)
-        plt.ylabel("Y (N)",fontsize=20)
-        plt.xlim(left=0)
+        plt.plot(self.vertical_tail_lift, self.b_v_array, label="Vertical Tail Lift Distribution")
+        plt.xlabel("Vertical Tail Span (m)", fontsize=20)
+        plt.ylabel("Lv (N)", fontsize=20)
         plt.grid(True)
         plt.show()
 

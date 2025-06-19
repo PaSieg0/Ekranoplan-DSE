@@ -560,10 +560,10 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
             # self.plot_rib(id=len(self.rib_positions)-1)
                 
             # self.plot_rib(id=0)
-        elif self.PLOT:
-            self.plot_output()
+        # elif self.PLOT:
+        #     self.plot_output()
 
-        # self.plot_wing_ribs()
+        self.plot_wing_ribs()
         self.plot_any(StressOutput.RESULTANT_VERTICAL)
         # self.plot_any(StressOutput.INTERNAL_SHEAR_VERTICAL)
         # self.plot_any(StressOutput.INTERNAL_MOMENT_X)
@@ -800,6 +800,8 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
             plt.gca().set_aspect('equal')
         plt.tight_layout()
         # plt.legend(loc='best') 
+        title = ' '.join([word.capitalize() for word in output_type.name.replace("_", " ").split(' ')])
+        plt.title(f'{title} for {self.evaluate.name.lower().capitalize()}')
         plt.grid(True)
         plt.show()
 
@@ -822,7 +824,7 @@ def main(all=True):
             flutter_analysis.main(plot=False)
 
     else:
-        stress_analysis = StressAnalysisWing(aircraft_data=Data("design3.json"), wingbox_mat=wingbox_material, wing_mat=wing_material, stringer_mat=stringer_material, evaluate=EvaluateType.VERTICAL, 
+        stress_analysis = StressAnalysisWing(aircraft_data=Data("design3.json"), wingbox_mat=wingbox_material, wing_mat=wing_material, stringer_mat=stringer_material, evaluate=EvaluateType.WING, 
                                              PLOT=True)
         stress_analysis.main_analysis(run_all=True)
 

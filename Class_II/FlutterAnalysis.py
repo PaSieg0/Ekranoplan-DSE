@@ -85,6 +85,7 @@ class FlutterAnalysis:
     def initialize_analysis(self,beta,n):
         self.omega_h = 2*np.pi*self.get_bending_fn(beta)
         self.omega_th = 2*np.pi*self.get_torsion_fn(n)
+        print(self.omega_h, self.omega_th)
         self.omega_bt = 2*np.pi*10
         self.constant = ts3.get_constant(self.aircraft_data, self.wing_box_string)
 
@@ -234,6 +235,6 @@ class FlutterAnalysis:
 if __name__ == '__main__':
     aircraft_data = Data('design3.json')
     wing_material = Materials.Al7075
-    evaluate_type = EvaluateType.HORIZONTAL
+    evaluate_type = EvaluateType.WING
     flutter_analysis = FlutterAnalysis(aircraft_data, wing_material, evaluate= evaluate_type)
     flutter_analysis.main(plot=True)
