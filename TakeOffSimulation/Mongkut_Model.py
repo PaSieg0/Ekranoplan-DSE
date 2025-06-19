@@ -14,10 +14,10 @@ class Simulation:
 
         self.verify = False
 
-        self.t_end = 150
+        self.t_end = 180
         self.dt = 0.1
         self.t = 0.0
-        self.sea_state_factor = 1
+        self.sea_state_factor = 1.7
 
         self.lift_curve = lift_curve()
 
@@ -42,7 +42,7 @@ class Simulation:
         self.P_bhp = W2hp(self.aircraft_data.data['inputs']['engine']['engine_power'])
 
         self.hull_length = self.aircraft_data.data['outputs']['fuselage_dimensions']['l_nose'] + self.aircraft_data.data['outputs']['fuselage_dimensions']['l_forebody']
-        self.f = 0.01
+        self.f = 0.075/( (np.log10(self.aircraft_data.data['outputs']['general']['Re']) - 2)**2)
         self.n = 1.83
 
         self.wing_height = self.aircraft_data.data['outputs']['fuselage_dimensions']['wing_height']
@@ -54,7 +54,7 @@ class Simulation:
         self.determine_thrust_function()
 
         self.x = 0
-        self.y = -3.1
+        self.y = -3.05
         self.v_x = 0
         self.v_y = 0
         self.a_x = 0
@@ -143,17 +143,17 @@ class Simulation:
 
             return self.B * self.Length * -self.y if self.y < 0 else 0
         if self.y <= -1.6:
-            triangle_area = 0.5*1.6*self.B
+            triangle_area = 0.85*0.5*1.6*self.B
             rect_area = (-self.y - 1.6) * self.B
         if -1.6 < self.y <= 0:
-            triangle_area = 0.5*-self.y*self.calculate_wetted_width()
+            triangle_area = 0.85*0.5*-self.y*self.calculate_wetted_width()
             rect_area = 0
         if self.y > 0:
             return 0
         tot_area = triangle_area + rect_area
         wetted_volume = self.hull_length * tot_area
         # print(wetted_volume)
-        return 0.93*wetted_volume
+        return wetted_volume
 
 
 
@@ -181,7 +181,7 @@ class Simulation:
         self.C_R_delta = self.C_R * (self.C_delta / self.C_delta_0)
 
     def update_R(self):
-        self.R = 18*self.sea_state_factor*max(0, self.C_R_delta * self.rho_water * self.g * self.calculate_wetted_volume())
+        self.R = self.sea_state_factor*max(0, self.C_R_delta * self.rho_water * self.g * self.calculate_wetted_volume())
 
     def update_Thrust(self):
         v = np.sqrt(self.v_x**2)
@@ -209,19 +209,21 @@ class Simulation:
         if self.verify:
             Cd_WIG = 0.094 #0.02 + self.Cl**2 / (np.pi * self.A * self.e)
         # print(f"Cd_WIG: {Cd_WIG:.4f}")
+        print(f"Cd_WIG: {Cd_WIG:.4f}")
         self.D = 0.5 * 1.225 * (self.v_x**2) * self.S * Cd_WIG
         if self.verify:
             self.D = N2lbf(self.D)
-        print(f"v_x: {self.v_x}")
-        print(f"S: {self.S}")
-        print(f"Cd: {Cd_WIG}")
-        print(f"D: {self.D}")
+        # print(f"v_x: {self.v_x}")
+        # print(f"S: {self.S}")
+        # print(f"Cd: {Cd_WIG}")
+        # print(f"D: {self.D}")
 
     def update_L(self):
         h_b = (self.y + self.wing_height) / self.b
         CL_WIG = self.lift_curve.Cl_correction_GE(h_b=h_b, cl=self.Cl)
         if self.verify:
             CL_WIG = 0.16
+        print(f"CL_WIG: {CL_WIG:.4f}")
         # print(f"CL_WIG: {CL_WIG:.4f}")
         self.L = 0.5 * 1.225 * (self.v_x**2) * self.S * CL_WIG
 
@@ -253,8 +255,6 @@ class Simulation:
         self.L_list.append(self.L)
         self.buoyance_list.append(self.buoyancy)
         self.total_drag = self.R + self.D + self.R_froude
-        print(f"{self.D} + {self.R} + {self.R_froude}")
-        print(self.total_drag)
         self.total_drag_list.append(self.total_drag)
         self.total_power_req = (self.total_drag * self.v_x)
         self.total_power_ava = (self.Thrust * self.v_x)
@@ -277,28 +277,28 @@ class Simulation:
         plt.figure(figsize=(10, 6))
         plt.plot(self.time_list, self.D_list, label='Aerodynamic Drag D', color='tab:red')
         plt.plot(self.time_list, self.total_drag_list, label='Total Drag', color='tab:orange')
-        plt.plot(self.time_list, self.R_froude_list, label='Fiction Resistance (Froude)', color='tab:purple')
+        plt.plot(self.time_list, self.R_froude_list, label='Friction Resistance (Froude)', color='tab:purple')
         plt.plot(self.time_list, self.R_list, label='Hydrodynamic Resistance', color='tab:blue')
         plt.plot(self.time_list, self.Thrust_list, label='Thrust', color='tab:green')
-        plt.xlabel('Time [s]', fontsize=18)
-        plt.ylabel('Force [N]', fontsize=18)
-        # plt.title('Forces vs Time')
-        plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=18)
+        plt.xlabel('Time (s)', fontsize=18)
+        plt.ylabel('Force (N)', fontsize=18)
+        plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15), ncol=2, fontsize=16)
         plt.grid(True)
         plt.tight_layout()
         plt.show()
+
 
         # 2. Plot MTOW, Buoyancy, Lift, and Total Lift vs time
         plt.figure(figsize=(10, 6))
         plt.plot(self.time_list, [self.MTOW]*len(self.time_list), label='Weight', color='black', linestyle='--')
         plt.plot(self.time_list, self.buoyance_list, label='Buoyancy', color='tab:blue')
-        # plt.plot(self.time_list, self.L_list, label='Lift', color='tab:green')
-        # total_lift = [b + l for b, l in zip(self.buoyance_list, self.L_list)]
-        # plt.plot(self.time_list, total_lift, label='Total Lift', color='tab:red', linestyle='-')
-        plt.xlabel('Time [s]', fontsize=18)
-        plt.ylabel('Force [N]', fontsize=18)
+        plt.plot(self.time_list, self.L_list, label='Lift', color='tab:green')
+        total_lift = [b + l for b, l in zip(self.buoyance_list, self.L_list)]
+        plt.plot(self.time_list, total_lift, label='Total Lift', color='tab:red', linestyle='-')
+        plt.xlabel('Time (s)', fontsize=18)
+        plt.ylabel('Force (N)', fontsize=18)
         # plt.title('MTOW, Buoyancy, Lift, and Total Lift vs Time')
-        plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=18)
+        plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15), ncol=2, fontsize=16)
         plt.grid(True)
         plt.tight_layout()
         plt.show()
@@ -307,20 +307,21 @@ class Simulation:
         plt.figure(figsize=(10, 6))
         plt.plot(self.time_list, self.y_list, label='Vertical Position (y)', color='tab:blue')
         plt.axhline(0, color='k', linestyle='--', label='Waterline')
-        plt.xlabel('Time [s]', fontsize=18)
-        plt.ylabel('Vertical Position y [m]', fontsize=18)
+        plt.xlabel('Time (s)', fontsize=18)
+        plt.ylabel('Vertical Position y (m)', fontsize=18)
         # plt.title('Vertical Position vs Time')
-        plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=18)
+        plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15), ncol=2, fontsize=16)
         plt.grid(True)
         plt.tight_layout()
         plt.show()
 
+        plt.figure(figsize=(10, 6))
         plt.plot(self.x_list, self.y_list, label='Flight Path', color='tab:blue')
-        plt.xlabel('Horizontal Position x [m]', fontsize=18)
-        plt.ylabel('Vertical Position y [m]', fontsize=18)
+        plt.xlabel('Horizontal Position x (m)', fontsize=18)
+        plt.ylabel('Vertical Position y (m)', fontsize=18)
         # plt.title('Flight Path')
         plt.axhline(0, color='k', linestyle='--', label='Waterline')
-        plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=18)
+        plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15), ncol=2, fontsize=16)
         plt.grid(True)
         plt.tight_layout()
 
@@ -344,10 +345,6 @@ class Simulation:
         # plt.show()
             
         while self.t < self.t_end:
-            print(f"v_x {self.v_x}")
-            print(f"Thrust: {self.Thrust}")
-            print(f"total_drag: {self.total_drag}")
-
             self.r = 0.1 + 0.9*self.t/10 if self.t < 10 else 1
 
             self.F_x = self.Thrust*self.r - self.R_froude - self.D - self.R
@@ -356,7 +353,6 @@ class Simulation:
             self.a_y = self.F_y / self.MTOM
 
             self.v_x += self.a_x * self.dt
-            # print(self.v_x)
             self.v_y += self.a_y * self.dt
 
             self.x += self.v_x * self.dt
@@ -364,11 +360,13 @@ class Simulation:
 
             self.t += self.dt
 
-            # if self.y >= 2.4:
-            #     if self.v_x > 58:
-            #         self.Cl = 1.9
-                # if self.v_x > 60:
-                #     self.Cl = 1.8
+            print(f"v_x: {self.v_x:.2f} m/s")
+
+            if self.y >= 2.4:
+                if self.v_x > 58:
+                    self.Cl = 1.9
+                if self.v_x > 60:
+                    self.Cl = 1.8
                 # if self.v_x > 62:
                 #     self.Cl = 1.7
                 # if self.v_x > 67:
