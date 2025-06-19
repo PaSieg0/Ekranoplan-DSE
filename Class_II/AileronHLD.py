@@ -324,7 +324,7 @@ class AileronHLD:
         ax.plot([self.aileron_start, self.aileron_end], [y_root_TE_aileron, y_tip_TE_aileron], color='red')
         ax.plot([-self.aileron_start, -self.aileron_end], [y_root_TE_aileron, y_tip_TE_aileron], color='red')  # Mirror
 
-        # Flaps
+        # # Flaps
         ax.plot([self.flap_start, self.flap_start], [y_root_LE_flap, y_root_TE_flap], color='orange')
         ax.plot([-self.flap_start, -self.flap_start], [y_root_LE_flap, y_root_TE_flap], color='orange')
 
@@ -352,6 +352,7 @@ class AileronHLD:
 
             ax.plot([self.LE_flap_end, self.LE_flap_end], [y_tip_LE_LE_flap, y_tip_TE_LE_flap], color='purple')
             ax.plot([-self.LE_flap_end, -self.LE_flap_end], [y_tip_LE_LE_flap, y_tip_TE_LE_flap], color='purple')
+            
 
 
         ax.set_aspect('equal', adjustable='box')
@@ -360,6 +361,7 @@ class AileronHLD:
         ax.set_ylabel("Longitudinal Position (m)")
         ax.set_ylim(-10,10)
         ax.grid(True)
+        # ax.set_axis_off()
 
         plt.show()
 
