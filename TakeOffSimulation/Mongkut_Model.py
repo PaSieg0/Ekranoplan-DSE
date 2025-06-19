@@ -14,10 +14,11 @@ class Simulation:
 
         self.verify = False
 
-        self.t_end = 180
         self.dt = 0.1
         self.t = 0.0
-        self.sea_state_factor = 1.7
+        self.sea_state_factor = 1
+        self.sea_state = 0 if self.sea_state_factor == 1 else 4
+        self.t_end = 80 if self.sea_state_factor == 1 else 180
 
         self.lift_curve = lift_curve()
 
@@ -54,7 +55,7 @@ class Simulation:
         self.determine_thrust_function()
 
         self.x = 0
-        self.y = -3.05
+        self.y = -3.061
         self.v_x = 0
         self.v_y = 0
         self.a_x = 0
@@ -282,6 +283,7 @@ class Simulation:
         plt.plot(self.time_list, self.Thrust_list, label='Thrust', color='tab:green')
         plt.xlabel('Time (s)', fontsize=18)
         plt.ylabel('Force (N)', fontsize=18)
+        plt.title(f'Longitudinal Forces vs Time (Sea State {self.sea_state})')
         plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15), ncol=2, fontsize=16)
         plt.grid(True)
         plt.tight_layout()
@@ -297,7 +299,7 @@ class Simulation:
         plt.plot(self.time_list, total_lift, label='Total Lift', color='tab:red', linestyle='-')
         plt.xlabel('Time (s)', fontsize=18)
         plt.ylabel('Force (N)', fontsize=18)
-        # plt.title('MTOW, Buoyancy, Lift, and Total Lift vs Time')
+        plt.title(f'Vertical Forces vs Time (Sea State {self.sea_state})')
         plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15), ncol=2, fontsize=16)
         plt.grid(True)
         plt.tight_layout()
@@ -309,7 +311,7 @@ class Simulation:
         plt.axhline(0, color='k', linestyle='--', label='Waterline')
         plt.xlabel('Time (s)', fontsize=18)
         plt.ylabel('Vertical Position y (m)', fontsize=18)
-        # plt.title('Vertical Position vs Time')
+        plt.title(f'Vertical Position vs Time (Sea State {self.sea_state})')
         plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15), ncol=2, fontsize=16)
         plt.grid(True)
         plt.tight_layout()
@@ -319,7 +321,7 @@ class Simulation:
         plt.plot(self.x_list, self.y_list, label='Flight Path', color='tab:blue')
         plt.xlabel('Horizontal Position x (m)', fontsize=18)
         plt.ylabel('Vertical Position y (m)', fontsize=18)
-        # plt.title('Flight Path')
+        plt.title(f'Take-Off Trajectory (Sea State {self.sea_state})')
         plt.axhline(0, color='k', linestyle='--', label='Waterline')
         plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15), ncol=2, fontsize=16)
         plt.grid(True)
