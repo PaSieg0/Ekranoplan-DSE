@@ -175,6 +175,7 @@ class FlutterAnalysis:
         ax[0].set_ylabel('omega_n [rad/s]')
         ax[1].set_xlabel('U [m/s]')
         ax[1].set_ylabel('zeta [-]')
+        plt.title(f'Flutter Analysis Results for the {self.evaluate.name.lower().capitalize()}')
     
     def main(self, plot=True):
         self.idx = 0
@@ -232,7 +233,7 @@ class FlutterAnalysis:
         self.aircraft_data.save_design(design_file=f"design{self.aircraft_data.data['design_id']}.json")
 
 if __name__ == '__main__':
-    aircraft_data = Data('design3.json')
+    aircraft_data = Data('final_design.json')
     wing_material = Materials.Al7075
     evaluate_type = EvaluateType.WING
     flutter_analysis = FlutterAnalysis(aircraft_data, wing_material, evaluate= evaluate_type)
