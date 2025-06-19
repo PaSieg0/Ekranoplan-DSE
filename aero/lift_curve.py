@@ -14,7 +14,7 @@ class lift_curve():
     def __init__(self):
         self.aircraft_data = Data("design3.json")
 
-        self.AR=self.aircraft_data.data['outputs']['wing_design']['aspect_ratio']
+        self.AR=self.aircraft_data.data['outputs']['wing_design']['aspect_ratio']*(1 + 1.9*(5.8/75))
         self.taper=self.aircraft_data.data['outputs']['wing_design']['taper_ratio']
         self.cD_0=self.aircraft_data.data['inputs']['Cd0']
         self.e=self.aircraft_data.data['inputs']['oswald_factor']
@@ -431,10 +431,10 @@ class lift_curve():
         
         # ax[0][0].plot(self.alpha[0:self.idx_cl_max], self.ind_lst[:self.idx_cl_max], label='h_b=0.050(old)') # Add a label
         # ax[0][0].plot(self.alpha[0:self.idx_cl_max], self.ind_lst2[:self.idx_cl_max], label='out GE(old)') # Add a label
-        ax[0][0].plot(self.cl_lst_GE[:self.idx_cl_max], self.ind_lst3[:self.idx_cl_max], label='h_b=0.050') # Add a label
-        ax[0][0].plot(self.cl_lst[:self.idx_cl_max], self.ind_lst4[:self.idx_cl_max], label='out GE') # Add a label
+        ax[0][0].plot(self.cl_lst_GE[:self.idx_cl_max], self.ind_lst3[:self.idx_cl_max], label='h/b=0.050') # Add a label
+        ax[0][0].plot(self.cl_lst[:self.idx_cl_max], self.ind_lst4[:self.idx_cl_max], label='Out GE') # Add a label
         ax[0][0].set_xlabel('Cl')
-        # ax[0][0].set_ylabel('Cd')
+        ax[0][0].set_ylabel('CD')
         ax[0][0].legend() # Call legend() to display the labels
 
 
@@ -442,8 +442,8 @@ class lift_curve():
         # ax[0][1].set_title('lift curve')
         ax[0][1].set_xlabel('α (degrees)')
         ax[0][1].set_ylabel('Cl')
-        ax[0][1].plot(self.alpha[:self.idx_cl_max],self.cl_lst[:self.idx_cl_max], label='No GE')
-        ax[0][1].plot(self.alpha[:self.idx_cl_max],self.cl_lst_GE[:self.idx_cl_max], label='GE')
+        ax[0][1].plot(self.alpha[:self.idx_cl_max],self.cl_lst_GE[:self.idx_cl_max], label='h/b=0.050')
+        ax[0][1].plot(self.alpha[:self.idx_cl_max],self.cl_lst[:self.idx_cl_max], label='Out GE')
         # ax[0][1].plot(self.alpha[:self.idx_cl_max],self.cl_fit_no_WIG[:self.idx_cl_max], '--r', label='no GE fit')
         ax[0][1].legend()
 
@@ -452,10 +452,10 @@ class lift_curve():
         ax[1][0].set_xlabel('α (degrees)')
         ax[1][0].set_ylabel('L/D')
         ax[1][0].set_ylim(0,70)
-        ax[1][0].plot(self.alpha[:self.idx_cl_max],self.L_D_lst[:self.idx_cl_max], label='No GE')
-
         #L/D WIG
-        ax[1][0].plot(self.alpha[:self.idx_cl_max],self.L_D_GE_lst[:self.idx_cl_max], label='GE')
+        ax[1][0].plot(self.alpha[:self.idx_cl_max],self.L_D_GE_lst[:self.idx_cl_max], label='h/b=0.050')
+        #L/D no WIG
+        ax[1][0].plot(self.alpha[:self.idx_cl_max],self.L_D_lst[:self.idx_cl_max], label='Out GE')
         ax[1][0].legend()
 
 
@@ -466,7 +466,21 @@ class lift_curve():
         ax[1][1].set_xlim(-40,40)
         ax[1][1].vlines([min(self.span),max(self.span)],0,self.Cl_array_span[0])
 
+
+        # plt.show()
+
+        fig2 = plt.figure()
+        ax3 = fig2.add_subplot()
+
+        ax3.plot(self.alpha[:self.idx_cl_max], self.ind_lst3[:self.idx_cl_max], label='h_b=0.050')
+        ax3.plot(self.alpha[:self.idx_cl_max], self.ind_lst4[:self.idx_cl_max], label='Out GE')
+
+        ax3.set_xlabel('α (degrees)')
+        ax3.set_ylabel("CD")
+
+        ax3.legend()
         plt.show()
+
 
     def printing(self):
         self.make_plot_data()
@@ -488,6 +502,9 @@ class lift_curve():
                 
                 break
         print('\t')
+
+        print(f'max Cl oGE: {max(self.cl_lst)}')
+        print(f'max Cl GE: {max(self.cl_lst_GE)}')
 
         #spanwise distr this is not prety but well coding
         CL = self.cL_max

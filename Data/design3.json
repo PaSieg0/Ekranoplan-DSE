@@ -680,24 +680,24 @@
             "I_yz": 0.0
         },
         "aerodynamics": {
-            "Cl_alpha": 0.10468652020130526,
-            "Cl_max": 1.689500505804675,
+            "Cl_alpha": 0.11726817015477352,
+            "Cl_max": 1.6786629928947625,
             "t/c": 0.1426,
             "seg1_alpha": [
                 -4.5,
                 3
             ],
-            "cmac_seg1": -0.09592994511847697,
-            "xac_seg1": 0.32077209379938315,
+            "cmac_seg1": -0.0958720287418447,
+            "xac_seg1": 0.3204502918879507,
             "seg2_alpha": [
                 6,
                 11
             ],
-            "cmac_seg2": -0.26085803908052024,
-            "xac_seg2": 0.40156481338033767,
+            "cmac_seg2": -0.25947744795674804,
+            "xac_seg2": 0.3995027103220751,
             "oswald_factor": 0.8380800245928491,
-            "vertical/horizontal stab cl_alpha": 0.11888999999999995,
-            "downwash_grad": 0.2627444119186623
+            "vertical/horizontal stab cl_alpha": 0.11889000000000001,
+            "downwash_grad": 0.2300804496769218
         }
     },
     "kinematic_viscosity": 1.006e-06,
