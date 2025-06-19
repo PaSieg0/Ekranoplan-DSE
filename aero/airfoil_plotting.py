@@ -32,11 +32,12 @@ def plot_all_airfoils(folder_path):
             axs[i].set_xlim(0, 1)
             axs[i].set_ylim(-0.1, 0.2)
             axs[i].set_aspect('auto')
-            axs[i].grid(True)
+            # axs[i].grid(True)
             axs[i].set_title(os.path.splitext(filename)[0])
         else:
             axs[i].text(0.5, 0.5, "Failed to load", ha="center", va="center")
             axs[i].set_title("Error")
+        axs[i].set_axis_off()
 
     # Remove unused subplots (if any)
     for j in range(num_files, len(axs)):
@@ -46,4 +47,4 @@ def plot_all_airfoils(folder_path):
     plt.show()
 
 if __name__ == "__main__":
-    plot_all_airfoils(r"C:\Users\Martin\Downloads\DSE\DSE_code\Ekranoplan-DSE\aero\airfoils_points")
+    plot_all_airfoils(r"aero\\airfoils_points")
