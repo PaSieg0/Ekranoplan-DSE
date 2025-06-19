@@ -136,7 +136,7 @@ class ElevatorRudder:
         CNe = self.calculate_engine_OEI_yaw()
         CNe_dr = -CNe/np.deg2rad(self.rudder_deflection)
         self.b_test = np.arange(self.rudder_start, self.b_v+0.001, 0.001)
-        tolerance = 0.000001
+        tolerance = 0.001
         for b in self.b_test:
             integral_test, _ = quad(self.chord_v,self.rudder_start, b)
             cndr_test = integral_test * -(np.rad2deg(self.airfoil_cl_alpha) * self.control_surface_effectiveness(self.rudder_chord_ratio)*self.l_v) / (self.S * self.b)
@@ -178,7 +178,7 @@ class ElevatorRudder:
         #TODO account for double vertical tail
         for b in self.b_test:
             ratio = self.calculate_Cmde_Cmq(b)
-            # print(ratio, self.required_Cmde_Cmq)
+            print(ratio, self.required_Cmde_Cmq)
             if abs(ratio - self.required_Cmde_Cmq) < tolerance:
                 if (b + self.vertical_tail_thickness) < self.b_h/2:
                     self.elevator_end = b
@@ -349,8 +349,8 @@ class ElevatorRudder:
 
         # Final touches
         # plt.title('Horizontal Tail and Elevator Planform')
-        plt.xlabel('Lateral Position (m)')
-        plt.ylabel('Longitudinal Position (m)')
+        # plt.xlabel('Lateral Position (m)')
+        # plt.ylabel('Longitudinal Position (m)')
         plt.ylim(-5, 5)
         plt.xlim(-self.b_h/2 - 1, self.b_h/2 + 1)
         plt.gca().set_aspect('equal')
@@ -358,7 +358,7 @@ class ElevatorRudder:
         # Only show elevator and vertical tail in legend
         handles = [elevator_le1, vt1]
         labels = [h.get_label() for h in handles]
-        plt.legend(handles, labels)
+        # plt.legend(handles, labels)
         plt.show()
 
 

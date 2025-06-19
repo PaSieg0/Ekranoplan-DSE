@@ -824,7 +824,7 @@ def main(all=True):
             flutter_analysis.main(plot=False)
 
     else:
-        stress_analysis = StressAnalysisWing(aircraft_data=Data("design3.json"), wingbox_mat=wingbox_material, wing_mat=wing_material, stringer_mat=stringer_material, evaluate=EvaluateType.WING, 
+        stress_analysis = StressAnalysisWing(aircraft_data=Data("final_design.json"), wingbox_mat=wingbox_material, wing_mat=wing_material, stringer_mat=stringer_material, evaluate=EvaluateType.WING, 
                                              PLOT=True)
         stress_analysis.main_analysis(run_all=True)
 

@@ -8,6 +8,7 @@ from Class_II.Modified_Class_I import ModifiedClassI
 import matplotlib.pyplot as plt
 from utils import Data, ISA, MissionType, AircraftType, WingType
 from Optimum_Performance.Optimum_speeds import OptimumSpeeds
+import matplotlib
 
 def solve_hb(target_A_A):
     h_b = np.arange(0, 2, 0.00001)
@@ -21,15 +22,23 @@ def solve_hb(target_A_A):
     raise ValueError
 
 def Ainf_Ah(h, b, endplante_height=0):
-    # HB = np.arange(0,1.5,0.001)
-    # A_A = 1 - np.exp(-4.74*HB**0.814) - HB**2*np.exp(-3.88*HB**0.758)
-    # plt.plot(HB, A_A)
-    # plt.xlabel('h_b')
-    # plt.ylabel('Aeinf_Aeh')
-    # plt.xlim(-0.0001,1)
-    # plt.title('Aeinf_Aeh vs h_b')
-    # plt.grid()
-    # plt.show()
+    matplotlib.rcParams['font.family'] = 'Arial'
+    HB = np.arange(0,1.5,0.001)
+    A_A = 1 - np.exp(-4.74*HB**0.814) - HB**2*np.exp(-3.88*HB**0.758)
+    fig, ax = plt.subplots()
+    fig.patch.set_facecolor('#222222')  # dark grey background
+    ax.set_facecolor('#222222')
+    ax.plot(HB, A_A, color='yellow')
+    ax.set_xlabel('h/b', color='white', fontname='Arial')
+    ax.set_ylabel('CDi_out/CDi_in', color='white', fontname='Arial')
+    ax.set_xlim(-0.0001,1)
+    ax.set_title('Induced Drag Variation in Ground Effect', color='white', fontname='Arial')
+    ax.grid(color='grey', linestyle='--', linewidth=0.5)
+    # Set axes spines and tick params to white for contrast
+    for spine in ax.spines.values():
+        spine.set_edgecolor('white')
+    ax.tick_params(colors='white')
+    plt.show()
     k = 1
 
     h_b = h/b

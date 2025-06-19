@@ -100,11 +100,11 @@ class ClassII:
         self.S_n = msq2ftsq(cdest.nacelle_wet()) # nacelle wetted area
         # self.S_r = # rudder area
         # self.S_vt = msq2ftsq(self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['S']) # vertical tail surface area
-        # self.S_w = msq2ftsq(self.aircraft_data.data['outputs']['wing_design']['S']) # wing surface area
+        self.S_w = msq2ftsq(self.aircraft_data.data['outputs']['wing_design']['S']) # wing surface area
         # self.SFC = kgpJ2lbsphrphp(self.aircraft_data.data['inputs']['prop_consumption']) # specific fuel consumption
         # self.T = # total engine thrust
         # self.T_e = # engine thrust
-        # self.t_c_root = 0.1426 # root chord thickness
+        self.t_c_root = 0.1426 # root chord thickness
         self.V_p = 0 # self-sealing tanks volume
         self.V_pr = 0 # volume of pressurized section
         self.V_t = L2gal(self.aircraft_data.data['outputs']['max']['max_fuel_L']) # total fuel volume
@@ -123,8 +123,9 @@ class ClassII:
 
 
     def wing_weight(self) -> float:
-        # W_wing_lbs = 0.0051 * (self.W_dg*self.N_z)**0.557 * self.S_w**0.649 * self.A**0.5 * self.t_c_root**-0.4 * (1+self.taper_ratio)**0.1 * np.cos(deg2rad(self.sweep_c_4))**-1.0 * self.S_csw**0.1
-        # return lbs2kg(W_wing_lbs)*9.81
+        W_wing_lbs = 0.0051 * (self.W_dg*self.N_z)**0.557 * self.S_w**0.649 * self.A**0.5 * self.t_c_root**-0.4 * (1+self.taper_ratio)**0.1 * np.cos(deg2rad(self.sweep_c_4))**-1.0 * self.S_csw**0.1
+        print(lbs2kg(W_wing_lbs))
+        print(self.aircraft_data.data['outputs']['component_weights']['wing']/9.81)
         return self.aircraft_data.data['outputs']['component_weights']['wing']
 
     def horizontal_tail(self) -> float:
