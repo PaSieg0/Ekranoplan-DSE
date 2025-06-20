@@ -13,20 +13,20 @@ y2lst_flipped = y2lst[::-1]
 x2lst_flipped = x2lst[::-1]
 
 # First horizontal bar chart
-fig = plt.figure()
-ax = fig.add_subplot()
+fig, ax = plt.subplots(figsize=(10, 6))  # width=6 inches, height=6 inches
 ax.set_title('Fuel Economy', fontsize=16)
 ax.set_xlabel('Fuel economy (L/km/tonnes)')
-ax.barh(xlst_flipped, ylst_flipped, color=['orange', 'blue'])
+ax.barh(xlst_flipped, ylst_flipped, color=['tab:orange', 'tab:blue'])
 plt.tight_layout()
 plt.show()
 
 # Second horizontal bar chart
-fig2 = plt.figure()
-ax2 = fig2.add_subplot()
+fig2, ax2 = plt.subplots(figsize=(6, 6))  # width=6 inches, height=6 inches
 ax2.set_title('Fuel Economy', fontsize=16)
 ax2.set_xlabel('Fuel economy (L/km/tonnes)')
 ax2.barh(x2lst_flipped, y2lst_flipped, color=['tab:green', 'tab:orange', 'tab:blue'])
+fig2.patch.set_alpha(0.0)  # Set figure background to transparent
+ax2.patch.set_alpha(0.0)  # Set axes background to transparent
 plt.tight_layout()
 plt.xlim(0, 0.2)
 plt.show()

@@ -147,7 +147,7 @@ class FinalIteration:
 
         plt.figure()
         plt.plot(iterations, self.MTOM, marker='o')
-        # plt.title("MTOM vs Iteration")
+        plt.title("MTOM vs Iteration")
         plt.xlabel("Iteration")
         plt.ylabel("MTOM (kg)")
         plt.grid(True)
@@ -155,7 +155,7 @@ class FinalIteration:
 
         plt.figure()
         plt.plot(iterations, self.fuel_economy, marker='o', color='green')
-        # plt.title("Fuel Economy vs Iteration")
+        plt.title("Fuel Economy vs Iteration")
         plt.xlabel("Iteration")
         plt.ylabel("Fuel Economy (L/tonne/km)")
         plt.grid(True)
@@ -163,7 +163,7 @@ class FinalIteration:
 
         plt.figure()
         plt.plot(iterations, self.cruise_speeds, marker='o', color='red')
-        # plt.title("Cruise Speeds vs Iteration")
+        plt.title("Cruise Speeds vs Iteration")
         plt.xlabel("Iteration")
         plt.ylabel("Cruise Speed (m/s)")
         plt.grid(True)
@@ -171,7 +171,7 @@ class FinalIteration:
 
         plt.figure()
         plt.plot(iterations, self.unit_cost, marker='o', color='purple')
-        # plt.title("Unit Cost vs Iteration")
+        plt.title("Unit Cost vs Iteration")
         plt.xlabel("Iteration")
         plt.ylabel("Unit Cost (M$)")
         plt.grid(True)
@@ -179,7 +179,7 @@ class FinalIteration:
 
         plt.figure()
         plt.plot(iterations, self.operational_cost, marker='o', color='orange')
-        # plt.title("Operational Cost vs Iteration")
+        plt.title("Operational Cost vs Iteration")
         plt.xlabel("Iteration")
         plt.ylabel("Operational Cost ($/tonne/km)")
         plt.grid(True)
