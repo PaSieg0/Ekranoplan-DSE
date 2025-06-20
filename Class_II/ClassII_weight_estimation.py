@@ -124,8 +124,7 @@ class ClassII:
 
     def wing_weight(self) -> float:
         W_wing_lbs = 0.0051 * (self.W_dg*self.N_z)**0.557 * self.S_w**0.649 * self.A**0.5 * self.t_c_root**-0.4 * (1+self.taper_ratio)**0.1 * np.cos(deg2rad(self.sweep_c_4))**-1.0 * self.S_csw**0.1
-        print(lbs2kg(W_wing_lbs))
-        print(self.aircraft_data.data['outputs']['component_weights']['wing']/9.81)
+        print(lbs2kg(W_wing_lbs)/2)
         return self.aircraft_data.data['outputs']['component_weights']['wing']
 
     def horizontal_tail(self) -> float:

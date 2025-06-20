@@ -61,8 +61,8 @@ class WingStructure:
             self.cutout_spacing = self.aircraft_data.data['inputs']['structures']['wing_box']['cutout_spacing']
 
             self.fuel_wing = (1- self.fuselage_fuel)/2*self.fuel_volume
-            print(self.fuel_wing)
             self.engine_positions = self.aircraft_data.data['outputs']['engine_positions']['y_engines']
+            print(self.engine_positions)
             self.engine_weight = self.aircraft_data.data['inputs']['engine']['engine_weight']
             self.fuel_tank_thickness = self.aircraft_data.data['inputs']['fuel_tank_thickness']/1000
             self.bottom_spar_margin = 0.05
@@ -1339,8 +1339,7 @@ class WingStructure:
         ax.set_xlabel('Lateral Position (m)', fontsize=20)
         ax.set_ylabel('Longitudinal Position (m)', fontsize=20)
         ax.set_aspect('equal')
-        ax.grid()
-
+        ax.grid(False)
         plt.show()
 
     def plot_thickness_distribution(self):

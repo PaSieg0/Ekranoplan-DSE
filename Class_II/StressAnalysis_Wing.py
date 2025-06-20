@@ -774,6 +774,7 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
         references = output['references']
         labels = output['labels']
         unit = output['unit']
+        plt.figure(figsize=(10, 6))
         if self.evaluate == EvaluateType.WING:
             color = {'max': 'tab:blue', 'min': 'tab:orange'}
             n_dict = {'max': f'n={self.max_load_factor}', 'min': 'Buoy Slam'}
@@ -789,21 +790,24 @@ class StressAnalysisWing(AerodynamicForces, WingStructure):
 
         plt.xlabel('Spanwise Position [m]')
         if self.evaluate != EvaluateType.VERTICAL:
-            plt.ylabel(f'{output_type.name.lower().capitalize().replace('_',' ')} {unit}')
+            plt.ylabel(f'{output_type.name.lower().capitalize().replace("_"," ")} {unit}')
         else:
             if output_type == StressOutput.RESULTANT_VERTICAL:
-                plt.ylabel('Resultant lateral [N/m]') 
+                plt.ylabel('Resultant lateral [N/m]')
             else:
                 plt.ylabel(f'{output_type.name.lower().capitalize().replace("_"," ")} [N/m]')
         plt.grid()
         if output_type == StressOutput.DEFLECTION:
             plt.gca().set_aspect('equal')
         plt.tight_layout()
-        # plt.legend(loc='best') 
+        # plt.legend(loc='best')
         title = ' '.join([word.capitalize() for word in output_type.name.replace("_", " ").split(' ')])
         plt.title(f'{title} for {self.evaluate.name.lower().capitalize()}')
         plt.grid(True)
-        plt.show()
+        if output_type == StressOutput.RESULTANT_VERTICAL:
+            plt.savefig(f'{self.evaluate.name.lower()}_resultant_vertical.png', dpi=300, transparent=True)
+        else:
+            plt.show()
 
 def main(all=True):
     stringer_material = Materials.Al7075

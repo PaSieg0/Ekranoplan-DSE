@@ -30,7 +30,7 @@ def Ainf_Ah(h, b, endplante_height=0):
     ax.set_facecolor('none')  # transparent axes background
     ax.plot(HB, A_A, color='yellow')
     ax.set_xlabel(r'$h/b$', color='white', fontname='Arial')
-    ax.set_ylabel(r'$\frac{C_{D_{i,\mathrm{out}}}}{C_{D_{i,\mathrm{in}}}}$', color='white', fontname='Arial')
+    ax.set_ylabel(r'$\frac{C_{D_{i,\mathrm{out}}}}{C_{D_{i,\mathrm{in}}}}$', color='white', fontname='Arial', rotation=90)
     ax.set_xlim(-0.0001, 1)
     ax.set_title('Induced Drag Variation in Ground Effect', color='white', fontname='Arial')
     ax.grid(color='grey', linestyle='--', linewidth=0.5)
