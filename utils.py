@@ -526,7 +526,11 @@ plt.rcParams.update({
     'axes.linewidth': 1.2,
     'xtick.major.width': 1.2,
     'ytick.major.width': 1.2,
-    'axes.titleweight': 'bold'
+    'axes.titleweight': 'bold',
+    'figure.facecolor': 'none',
+    'axes.facecolor': 'none',
+    'savefig.transparent': True,
+    'savefig.facecolor': 'none'
 })
 
 class ISA:
