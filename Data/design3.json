@@ -25,8 +25,8 @@
         "fuel_fuselage": 0,
         "n_engines": 7.0,
         "endplate_height": 5.8,
-        "CLmax_clean": 1.75,
-        "CLmax_takeoff": 2.02,
+        "CLmax_clean": 1.69,
+        "CLmax_takeoff": 1.996,
         "CLmax_landing": 2.2,
         "max_sideslip": 8,
         "CL_hydro": 0.5,
@@ -538,7 +538,7 @@
             "aileron": {
                 "b1": 27.795,
                 "b2": 37.01084788835442,
-                "area_single": 28.642946156913304,
+                "area_single": 14.92038408244128,
                 "roll_rate": 17.4435995387039,
                 "bank_angle": 54.163086327842564,
                 "turn_radius": 460.4124952686556,
@@ -581,10 +581,10 @@
         },
         "HLD": {
             "b1": 3.85,
-            "b2": 23.205313274697765,
+            "b2": 26.56257551351098,
             "flapped_area_single": 170.34351328250182,
-            "flap_area": 65.8796885282748,
-            "Swf_single": 203.63082830929034,
+            "flap_area": 74.85584406475267,
+            "Swf_single": 230.78160541719572,
             "LE_flap_area": 1.3959432648045387,
             "Swf_LE_single": 13.09398714701037
         },
