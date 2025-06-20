@@ -36,7 +36,7 @@ class WingStructure:
             self.min_spar_thickness = self.aircraft_data.data['inputs']['structures']['wing_box']['min_spar_thickness']/1000
             self.thickness_threshold = int(self.aircraft_data.data['inputs']['structures']['wing_box']['thickness_threshold']*self.b/2*100)
             self.n_cells = self.aircraft_data.data['inputs']['structures']['wing_box']['n_cells']
-            self.fuel_volume = self.aircraft_data.data['outputs']['max']['max_fuel_L']/1000
+            self.fuel_volume = self.aircraft_data.data['outputs']['max']['max_fuel_L']/1000*1.1
             self.flap_start = self.aircraft_data.data['outputs']['HLD']['b1']
             self.flap_end = self.aircraft_data.data['outputs']['HLD']['b2']
             self.y_MAC = self.aircraft_data.data['outputs']['wing_design']['y_MAC']
@@ -241,20 +241,20 @@ class WingStructure:
         top_flange = patches.Rectangle(
             (x - top_w / 2, top_y - thickness),
             top_w,
-            thickness*20,
+            thickness*15,
             facecolor=color
         )
 
         bottom_flange = patches.Rectangle(
             (x - bottom_w / 2, bottom_y),
             bottom_w,
-            thickness*20,
+            thickness*15,
             facecolor=color
         )
 
         web = patches.Rectangle(
             (x - thickness / 2, bottom_y + thickness),
-            thickness*20,
+            thickness*15,
             web_h - 2 * thickness,
             facecolor=color
         )
@@ -1251,12 +1251,14 @@ class WingStructure:
             self.tank_mass = (mid_panel_area + front_panel_area + rear_panel_area + TE_panel_area + LE_panel_area)*self.fuel_tank_thickness*self.rho_wingbox
         else:
             self.tank_mass = 0
+        print(self.fuel_start, self.fuel_length)
         return self.fuel_mass_distribution
 
     def gaussian_peak(self,x, x0, A, sigma=0.1):
         return A * np.exp(-((x - x0)**2) / (2 * sigma**2)) / (sigma * np.sqrt(2 * np.pi))
     
     def wing_weight_dist(self):
+        
         if self.evaluate == EvaluateType.WING:
             fuel_dist = self.get_fuel_mass_distribution()
         else:
@@ -1334,8 +1336,8 @@ class WingStructure:
             ax.plot([self.fuel_start, self.fuel_length], [fuel_tank_start_LE, fuel_tank_rear_LE], color='red')
             ax.plot([self.fuel_start, self.fuel_length], [fuel_tank_start_TE, fuel_tank_rear_TE], color='red')
             ax.axvline(self.w_fuselage/2, color='red', linestyle='--')
-        ax.set_xlabel('Lateral Position (m)', fontsize=25)
-        ax.set_ylabel('Longitudinal Position (m)', fontsize=25)
+        ax.set_xlabel('Lateral Position (m)', fontsize=20)
+        ax.set_ylabel('Longitudinal Position (m)', fontsize=20)
         ax.set_aspect('equal')
         ax.grid()
 
@@ -1486,31 +1488,31 @@ class WingStructure:
             self.draw_I_beam(x, y, self.L_stringer/1000, self.t_stringer/1000, top=False, color='purple',angle=0)
 
         plt.scatter(centroid[0], centroid[1], color='green', label='Centroid')
-        plt.scatter(0.25*chord,centroid[1], color='orange', label='Quarter Chord Point')
+        # plt.scatter(0.25*chord,centroid[1], color='orange', label='Quarter Chord Point')
         centroid_x, centroid_z = centroid
         arrow_length = 0.05 * chord
-        plt.arrow(centroid_x, centroid_z, 0, arrow_length,
+        plt.arrow(centroid_x, centroid_z, 0, -arrow_length,
                 head_width=0.05 * arrow_length, head_length=0.05 * arrow_length,
                 fc='black', ec='black', linewidth=2, zorder=20)
-        plt.text(centroid_x, centroid_z + arrow_length + 0.02 * arrow_length,
+        plt.text(centroid_x, centroid_z - arrow_length-0.75*arrow_length,
                 'z', fontsize=10, ha='center', va='bottom')
 
         # Arrow: Left in X (negative X direction)
         plt.arrow(centroid_x, centroid_z, -arrow_length, 0,
                 head_width=0.05 * arrow_length, head_length=0.05 * arrow_length,
                 fc='black', ec='black', linewidth=2, zorder=20)
-        plt.text(centroid_x - arrow_length - 0.08 * arrow_length, centroid_z,
+        plt.text(centroid_x - arrow_length - 0.2 * arrow_length, centroid_z,
                 'x', fontsize=10, ha='right', va='center')
-        # plt.title(f"Airfoil with Spar Positions, Wing Box and Stringers, chord = {chord:.2f} m")
+        plt.title(f"Wing Box at MAC")
         plt.xlabel("x (m)")
         plt.ylabel("z (m)")
         plt.axis("equal")
-        plt.grid(True)
+        plt.grid(False)
         plt.show()
 
 
 if __name__ == "__main__":
-    aircraft_data = Data("design3.json")
+    aircraft_data = Data("final_design.json")
     stringer_material = Materials.Al7075
     wingbox_material = Materials.Al7075
     wing_material = Materials.Al5052

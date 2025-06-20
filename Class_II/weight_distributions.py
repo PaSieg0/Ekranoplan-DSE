@@ -255,6 +255,7 @@ class load_diagram:
             for i in range(len(section_boundaries)-1):
                 mid = (section_boundaries[i] + section_boundaries[i+1]) / 2
             plt.text(mid, ylim_ax1[1]*0.95, section_labels[i], ha='center', va='top', fontsize=11, color='gray')
+            plt.title('Load Distribution along the Fuselage')
             plt.show()
 
             # Plot 2: Shear Force

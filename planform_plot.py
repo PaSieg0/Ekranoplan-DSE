@@ -155,7 +155,7 @@ class PlanformPlot:
 
 if __name__ == "__main__":
     # Assuming aircraft_data is already defined and contains the necessary data
-    aircraft_data = Data('design3.json')  # Load your aircraft data here
+    aircraft_data = Data('final_design.json')  # Load your aircraft data here
     planform_plot = PlanformPlot(aircraft_data)
     planform_plot.plot_init()
     planform_plot.plot_wing()

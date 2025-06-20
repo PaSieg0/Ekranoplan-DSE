@@ -26,7 +26,7 @@ class ClassII:
         self.A_v = self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['aspect_ratio'] # vertical tail aspect ratio
         self.B_h = m2ft(aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['b']) # horizontal tail span
         self.B_w = m2ft(aircraft_data.data['outputs']['wing_design']['b']) # wing span
-        # self.D = m2ft(self.aircraft_data.data['outputs']['fuselage_dimensions']['d_fuselage_equivalent_station2']) # fuselage structural depth
+        self.D = m2ft(self.aircraft_data.data['outputs']['fuselage_dimensions']['d_fuselage_equivalent_station2']) # fuselage structural depth
         # self.D_e = m2ft(5.3) # engine diameter
         # self.F_w = m2ft(aircraft_data.data['outputs']['fuselage_dimensions']['w_fuselage']) # fuselage width at horizontal tail
         # self.H_t = m2ft(self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['tail_height']) - m2ft(self.aircraft_data.data['outputs']['fuselage_dimensions']['d_fuselage_equivalent_station3']) # horizontal tail height
@@ -34,10 +34,10 @@ class ClassII:
         self.I_y = kgmsq2lbsftsq(10000) # Yawing moment of interia
         # self.K_cb = 1 # landging gear so 0???
         # self.K_d = # Duct constant from figure
-        # self.K_door = 1.12 # door constant from Raymer
+        self.K_door = 1.12 # door constant from Raymer
         # self.K_dw = 1 # door constant from Raymer for delta wing
         # self.K_dwf = 1 # door constant from Raymer for delta wing
-        # self.K_Lg = 1 # landing gear constant from Raymer maybe 0???
+        self.K_Lg = 1 # landing gear constant from Raymer maybe 0???
         # self.K_mc = 1.45 # mission completed after failure
         # self.K_mp = 1 # landing gear constant from Raymer maybe 0???
         self.K_ng = 1.017 # Pylon mounted nacelle
@@ -52,13 +52,13 @@ class ClassII:
         # self.K_vg = 1 # For variable geometry
         # self.K_vs = 1 # Variable sweep
         # self.K_vsh = 1 # Variable sweep
-        # self.taper_ratio = self.aircraft_data.data['outputs']['wing_design']['taper_ratio'] # wing taper ratio
+        self.taper_ratio = self.aircraft_data.data['outputs']['wing_design']['taper_ratio'] # wing taper ratio
         self.L_f = m2ft(self.aircraft_data.data['outputs']['fuselage_dimensions']['l_fuselage']) # total fuselage length
-        # self.sweep_c_4 = self.aircraft_data.data['outputs']['wing_design']['sweep_c_4'] # wing sweep at 25% MAC
+        self.sweep_c_4 = self.aircraft_data.data['outputs']['wing_design']['sweep_c_4'] # wing sweep at 25% MAC
         # self.sweep_c_4_ht = self.aircraft_data.data['outputs']['empennage_design']['horizontal_tail']['sweep_c_4'] # horizontal tail sweep at 25% MAC
         # self.sweep_c_4_vt = self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['sweep_c_4'] # vertical tail sweep at 25% MAC
-        # self.K_ws = 0.75*((1 + 2 * self.taper_ratio) / (1 + self.taper_ratio)) * self.B_w * np.tan(deg2rad(self.sweep_c_4)) / self.L_f # fuselage constant
-        # self.L = m2ft(aircraft_data.data['outputs']['fuselage_dimensions']['l_fuselage']) # structural length
+        self.K_ws = 0.75*((1 + 2 * self.taper_ratio) / (1 + self.taper_ratio)) * self.B_w * np.tan(deg2rad(self.sweep_c_4)) / self.L_f # fuselage constant
+        self.L = m2ft(aircraft_data.data['outputs']['fuselage_dimensions']['l_fuselage']) # structural length
         self.L_a = m2ft(2*self.aircraft_data.data['outputs']['wing_design']['b'] + self.aircraft_data.data['outputs']['wing_design']['X_LE'] + 2*self.aircraft_data.data['outputs']['fuselage_dimensions']['l_fuselage']) # electrical routing distance, generators to avionics to cockpit
         # self.L_d = # duct length
         # self.L_m = 0 # landing gear
@@ -100,11 +100,11 @@ class ClassII:
         self.S_n = msq2ftsq(cdest.nacelle_wet()) # nacelle wetted area
         # self.S_r = # rudder area
         # self.S_vt = msq2ftsq(self.aircraft_data.data['outputs']['empennage_design']['vertical_tail']['S']) # vertical tail surface area
-        # self.S_w = msq2ftsq(self.aircraft_data.data['outputs']['wing_design']['S']) # wing surface area
+        self.S_w = msq2ftsq(self.aircraft_data.data['outputs']['wing_design']['S']) # wing surface area
         # self.SFC = kgpJ2lbsphrphp(self.aircraft_data.data['inputs']['prop_consumption']) # specific fuel consumption
         # self.T = # total engine thrust
         # self.T_e = # engine thrust
-        # self.t_c_root = 0.1426 # root chord thickness
+        self.t_c_root = 0.1426 # root chord thickness
         self.V_p = 0 # self-sealing tanks volume
         self.V_pr = 0 # volume of pressurized section
         self.V_t = L2gal(self.aircraft_data.data['outputs']['max']['max_fuel_L']) # total fuel volume
@@ -123,8 +123,9 @@ class ClassII:
 
 
     def wing_weight(self) -> float:
-        # W_wing_lbs = 0.0051 * (self.W_dg*self.N_z)**0.557 * self.S_w**0.649 * self.A**0.5 * self.t_c_root**-0.4 * (1+self.taper_ratio)**0.1 * np.cos(deg2rad(self.sweep_c_4))**-1.0 * self.S_csw**0.1
-        # return lbs2kg(W_wing_lbs)*9.81
+        W_wing_lbs = 0.0051 * (self.W_dg*self.N_z)**0.557 * self.S_w**0.649 * self.A**0.5 * self.t_c_root**-0.4 * (1+self.taper_ratio)**0.1 * np.cos(deg2rad(self.sweep_c_4))**-1.0 * self.S_csw**0.1
+        print(lbs2kg(W_wing_lbs))
+        print(self.aircraft_data.data['outputs']['component_weights']['wing']/9.81)
         return self.aircraft_data.data['outputs']['component_weights']['wing']
 
     def horizontal_tail(self) -> float:
@@ -138,8 +139,9 @@ class ClassII:
         return self.aircraft_data.data['outputs']['component_weights']['vertical_tail']
 
     def fuselage(self) -> float:
-        # W_fuselage_lbs = 0.3280 * self.K_door * self.K_Lg * (self.W_dg*self.N_z)**0.5 * self.L**0.25 * self.S_f**0.302 * (1 + self.K_ws)**0.4 * (self.L/self.D)**0.10
-        # W_fuselage_lbs *= self.fudge_factor
+        W_fuselage_lbs = 0.3280 * self.K_door * self.K_Lg * (self.W_dg*self.N_z)**0.5 * self.L**0.25 * self.S_f**0.302 * (1 + self.K_ws)**0.4 * (self.L/self.D)**0.10
+        W_fuselage_lbs *= self.fudge_factor
+        print(f"Fuselage weight estimation: {lbs2kg(W_fuselage_lbs)}kg")
         # return lbs2kg(W_fuselage_lbs)*9.81
         return self.aircraft_data.data['outputs']['component_weights']['fuselage']
     

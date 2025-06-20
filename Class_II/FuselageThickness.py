@@ -423,7 +423,7 @@ class FuselageThickness:
             final_thickness_list.append(thickness)
 
         self.final_thicknesses = final_thickness_list
-
+        print(self.final_thicknesses)
     def calculate_critical_buckling_stress(self):
         factor = self.C * ((np.pi**2 * self.E) / (12 * (1 - self.poisson_ratio**2)))
 
@@ -887,6 +887,7 @@ class FuselageThickness:
         # --- Legend and layout ---
         ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
         plt.tight_layout()
+        plt.title("Idealized Fuselage Cross-Section at Station " + str(station_idx + 1))
         plt.show()
 
         return fig, ax

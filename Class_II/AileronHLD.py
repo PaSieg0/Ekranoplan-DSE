@@ -58,6 +58,7 @@ class AileronHLD:
         self.CLMax_clean = self.aircraft_data.data['inputs']['CLmax_clean']
         self.required_CLmax_increase = (self.CLMax_landing - self.CLMax_clean)*1.5
         print(self.required_CLmax_increase)
+        
         self.Clp = self.aircraft_data.data['outputs']['aerodynamic_stability_coefficients_asym']['Clp']
 
         self.LE_flap = False

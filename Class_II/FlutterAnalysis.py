@@ -85,6 +85,7 @@ class FlutterAnalysis:
     def initialize_analysis(self,beta,n):
         self.omega_h = 2*np.pi*self.get_bending_fn(beta)
         self.omega_th = 2*np.pi*self.get_torsion_fn(n)
+        print(self.omega_h, self.omega_th)
         self.omega_bt = 2*np.pi*10
         self.constant = ts3.get_constant(self.aircraft_data, self.wing_box_string)
 

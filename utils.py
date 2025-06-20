@@ -389,6 +389,16 @@ def hp2W(hp):
     """
     return hp / 0.00134102
 
+def kts2ms(kts):
+    """ Convert knots to meters per second
+    """
+    return kts * 0.514444
+
+def ms2kts(ms):
+    """ Convert meters per second to knots
+    """
+    return ms / 0.514444
+
 def apply_number_format(cell, value):
     if isinstance(value, (int, float)):
         if abs(value) >= 0.001:
