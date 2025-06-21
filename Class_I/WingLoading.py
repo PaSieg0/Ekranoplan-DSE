@@ -344,8 +344,8 @@ def __plot_prop(WL, PLOT_OUTPUT: bool=False):
     plt.xticks(fontsize=12)
     ax.set_xlim(0, 8000)
     ax.set_ylim(0, 0.3)
-    ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=12)
-    plt.tight_layout()
+    ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15), ncol=2, fontsize=12)
+    plt.tight_layout(rect=[0, 0.05, 1, 1])
     if PLOT_OUTPUT:
         plt.show()
 
@@ -382,8 +382,8 @@ def __plot_jet(WL, PLOT_OUTPUT: bool=False):
     plt.suptitle("Wing Loading Requirements")
     ax.set_xlim(0, 8000)
     ax.set_ylim(0, 0.6)
-    ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
-    plt.tight_layout()
+    ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15), ncol=2)
+    plt.tight_layout(rect=[0, 0.05, 1, 1])
     if PLOT_OUTPUT:
         plt.show()
 
@@ -445,9 +445,9 @@ def __plot_mixed(WL_prop, WL_jet, PLOT_OUTPUT: bool=False):
     ax[1].set_title("Jet Aircraft")
     ax[1].set_xlim(0, 8000)
     ax[1].set_ylim(0, 0.6)
-    ax[0].legend(bbox_to_anchor=(1.05, 1), loc='upper left')
-    ax[1].legend(bbox_to_anchor=(1.05, 1), loc='upper left')
-    plt.tight_layout()
+    ax[0].legend(loc='upper center', bbox_to_anchor=(0.5, -0.15), ncol=2)
+    ax[1].legend(loc='upper center', bbox_to_anchor=(0.5, -0.15), ncol=2)
+    plt.tight_layout(rect=[0, 0.05, 1, 1])
     if PLOT_OUTPUT:
         plt.show()
     
