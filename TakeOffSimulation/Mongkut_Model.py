@@ -18,7 +18,7 @@ class Simulation:
         self.t = 0.0
         self.sea_state_factor = 1.7
         self.sea_state = 0 if self.sea_state_factor == 1 else 4
-        self.t_end = 80 if self.sea_state_factor == 1 else 180
+        self.t_end = 80 if self.sea_state_factor == 1 else 150
 
         self.lift_curve = lift_curve()
 
