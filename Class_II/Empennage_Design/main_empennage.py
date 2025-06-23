@@ -80,7 +80,7 @@ class EmpennageOptimizer:
 
 
 if __name__ == "__main__":
-    design_file = "design3.json"
+    design_file = "final_design.json"
     aircraft_data = Data(design_file)
     optimizer = EmpennageOptimizer(aircraft_data)
     best_placement = optimizer.run()
