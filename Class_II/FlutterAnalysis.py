@@ -167,21 +167,18 @@ class FlutterAnalysis:
         linestyles = ['-', '--', 'dashdot']  # Solid for h, dashed for alpha0
 
         for i in range(2):  # h and alpha0
-            ax[0].plot(self.U, self.w_n[:, i],
+            ax.plot(self.U, self.zeta[:, i],
                     label=f'{self.legend_entries[i]} mode {self.idx+1}',
                     color=color, linestyle=linestyles[i])
-            ax[1].plot(self.U, self.zeta[:, i],
-                    color=color, linestyle=linestyles[i])  # No legend for ax[1]
 
-        ax[0].set_ylabel('omega_n [rad/s]')
-        ax[1].set_xlabel('U [m/s]')
-        ax[1].set_ylabel('zeta [-]')
+        ax.set_xlabel('U [m/s]')
+        ax.set_ylabel('zeta [-]')
         plt.title(f'Flutter Analysis Results for the {self.evaluate.name.lower().capitalize()}')
     
     def main(self, plot=True):
         self.idx = 0
         if plot:
-            fig, ax = plt.subplots(2, 1, sharex=True, figsize=(10, 6))
+            fig, ax = plt.subplots(1, 1, figsize=(10, 4))
 
         self.global_min_zeta = np.inf
         self.global_min_zeta_velocity = None
@@ -203,18 +200,15 @@ class FlutterAnalysis:
                 self.global_min_zeta_velocity = min_velocity
                 self.global_min_zeta_mode = f"Mode {self.idx+1}, DOF {self.legend_entries[min_idx[1]]}"
             self.idx += 1
-        # print(f"Global minimum zeta: {self.global_min_zeta:.4f} at U = {self.global_min_zeta_velocity:.2f} m/s ({self.global_min_zeta_mode})")
 
         if plot:
-            ax[0].set_xlim([0, self.u_max])
-            ax[0].axis('tight') 
-            ax[1].axis('tight')
+            ax.set_xlim([0, self.u_max])
+            ax.axis('tight') 
 
-            # Legend on top subplot, positioned to the right
-            ax[0].legend(loc='center left', bbox_to_anchor=(1, 0.5), title='Modes')
+            # Legend positioned to the right
+            ax.legend(loc='center left', bbox_to_anchor=(1, 0.5), title='Modes')
             
-            ax[0].grid(True)
-            ax[1].grid(True)
+            ax.grid(True)
 
             plt.tight_layout()
             plt.show()

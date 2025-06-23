@@ -364,7 +364,11 @@ class AileronHLD:
         ax.set_ylim(-10,10)
         ax.grid(True)
         # ax.set_axis_off()
+        ticks = ax.get_yticks()
 
+        # Reverse the labels (but not the positions)
+        ax.set_yticks(ticks)  # Keep tick positions
+        ax.set_yticklabels(ticks[::-1])  # Flip the displayed labels
         plt.show()
 
 if __name__ == "__main__":
