@@ -330,7 +330,7 @@ def __plot_prop(WL, PLOT_OUTPUT: bool=False):
     for i, stall in enumerate(prop_stall_high):
         ax.axvline(x=stall, label=f"Stall high: CL={WL.CLmax_clean[i]}", linestyle=linestyles[i], color='tab:brown')
 
-    WP, WS = 0.95*WL.WP, 0.98*WL.max_WS
+    WP, WS = WL.WP, WL.max_WS
     print(WP, WS)
     ax.scatter(WS, WP, label=f"Design Point", color='red', marker='o', s = 20, zorder = 10)
 
