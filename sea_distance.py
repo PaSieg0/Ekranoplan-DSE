@@ -1,14 +1,14 @@
 import searoute as sr
-import folium
 import numpy as np
+import matplotlib.pyplot as plt
+import cartopy.crs as ccrs
+import cartopy.feature as cfeature
 from shapely.geometry import Point, LineString
 from cartopy.io import shapereader
 import time
 from tqdm import tqdm
 from functools import lru_cache
 import math
-import webbrowser
-import os
 
 # Read land geometries
 land_shp = shapereader.natural_earth(resolution='110m',
@@ -34,6 +34,14 @@ def great_circle_distance(lat1, lon1, lat2, lon2):
     r = 3440.065  # Radius of earth in nautical miles
     return c * r
 
+def normalize_longitude(lon):
+    """Normalize longitude to [-180, 180] range"""
+    while lon > 180:
+        lon -= 360
+    while lon < -180:
+        lon += 360
+    return lon
+
 @lru_cache(maxsize=10000)
 def is_on_land(lon, lat):
     """Check if a point is on land (cached for performance)"""
@@ -43,13 +51,14 @@ def is_on_land(lon, lat):
 # Define the origin port
 origin = [153.6, -28]  
 max_distance_nm = 2000  # Maximum distance in nautical miles
+margin = 100  # Margin in nautical miles
 
 # Create a lat/lon grid with finer resolution
 resolution = 1  # Grid resolution in degrees (smaller = finer mesh)
 start_lon = origin[0]
-lons = np.arange(start_lon - 90, start_lon + 91, resolution) % 360
-lons = np.where(lons > 180, lons - 360, lons)  # Adjust to [-180, 180] range
-lats = np.arange(-80, 80, resolution)
+lons = np.arange(start_lon - 90, start_lon + 91, resolution)
+lons = np.array([normalize_longitude(lon) for lon in lons])
+lats = np.arange(-90, 90, resolution)
 
 # Function to get a more detailed route by breaking it into segments
 @lru_cache(maxsize=500)
@@ -102,73 +111,106 @@ for lon, lat, gc_dist in tqdm(pre_filtered_points):
         
         if route:
             distance = route.properties['length'] * 0.539957  # Convert km to nautical miles
-            if distance <= max_distance_nm:
+            if distance <= (max_distance_nm):
                 reachable_points.append((lat, lon, distance, route))
     except Exception as e:
         continue
+
+# Create the plot with Cartopy
+fig = plt.figure(figsize=(20, 12))
+
+# Use PlateCarree projection which handles dateline crossing well
+ax = plt.axes(projection=ccrs.PlateCarree())
+
+# Set global extent
+ax.set_global()
+
+# Add map features
+ax.add_feature(cfeature.LAND, color='lightgray', alpha=0.8)
+ax.add_feature(cfeature.OCEAN, color='lightblue', alpha=0.3)
+ax.add_feature(cfeature.COASTLINE, linewidth=0.5)
+ax.add_feature(cfeature.BORDERS, linewidth=0.3)
+
+# Add gridlines
+gl = ax.gridlines(draw_labels=True, dms=True, x_inline=False, y_inline=False,
+                  linewidth=0.5, color='gray', alpha=0.5)
+gl.top_labels = False
+gl.right_labels = False
+
+# Plot the origin point
+ax.plot(origin_lon, origin_lat, 'go', markersize=12, 
+        transform=ccrs.PlateCarree(), label='Origin Port', zorder=5)
+
+# Prepare data for scatter plot
+if reachable_points:
+    lats_plot = [point[0] for point in reachable_points]
+    lons_plot = [point[1] for point in reachable_points]
+    distances = [point[2] for point in reachable_points]
     
-    # Add a small delay to avoid potential API rate limits
-    time.sleep(0.05)  # Reduced delay since we're processing fewer points
-
-# Plot the result with enhanced visualization
-m = folium.Map(location=[origin[1], origin[0]], zoom_start=3, tiles='CartoDB positron')
-
-# Add the origin marker
-folium.Marker(
-    [origin[1], origin[0]], 
-    popup="Start Port", 
-    icon=folium.Icon(color='green', icon='play')
-).add_to(m)
-
-# Create a custom colorscale for distances
-def get_color(distance):
-    # Color gradient from blue (closer) to red (farther)
-    ratio = min(distance / max_distance_nm, 1.0)
-    r = min(255, int(255 * ratio))
-    b = min(255, int(255 * (1 - ratio)))
-    return f'#{r:02x}00{b:02x}'
-
-# Add destination points with color-coded markers
-for lat, lon, dist, route in reachable_points:
-    # Add the point
-    folium.CircleMarker(
-        [lat, lon], 
-        radius=3,
-        color=get_color(dist),
-        fill=True,
-        fill_opacity=0.7,
-        popup=f"Distance: {dist:.0f} NM"
-    ).add_to(m)
+    # Create scatter plot with color-coded distances
+    scatter = ax.scatter(lons_plot, lats_plot, c=distances, cmap='coolwarm_r', 
+                        s=20, alpha=0.7, transform=ccrs.PlateCarree(), zorder=3)
     
-    # Add route lines for select points (to avoid cluttering the map)
-    if route and dist % 400 < 50:  # Only show some routes for clarity
-        coords = [(y, x) for x, y in route.geometry.coordinates]  # Swap lat/lon for folium
-        folium.PolyLine(
-            coords, 
-            color=get_color(dist), 
-            weight=2, 
-            opacity=0.7,
-            popup=f"Route: {dist:.0f} NM"
-        ).add_to(m)
+    # Add colorbar
+    cbar = plt.colorbar(scatter, ax=ax, shrink=0.8, pad=0.02)
+    cbar.set_label('Distance (Nautical Miles)', rotation=270, labelpad=20)
 
-# Add a legend
-legend_html = '''
-<div style="position: fixed; bottom: 50px; left: 50px; z-index: 1000; background-color: white; 
-padding: 10px; border: 2px solid grey; border-radius: 5px;">
-<p><strong>Distance (NM)</strong></p>
-'''
+# Add title
+plt.title(f'Reachable Destinations within {max_distance_nm} NM from Origin\n'
+         f'Found {len(reachable_points)} reachable points', fontsize=16, pad=20)
 
-# Add color gradient to legend
-steps = 5
-for i in range(steps):
-    dist = i * (max_distance_nm / steps)
-    color = get_color(dist)
-    legend_html += f'<p><span style="color:{color};">●</span> {dist:.0f}</p>'
+# Add legend
+ax.legend(loc='upper left', bbox_to_anchor=(0, 1))
 
-legend_html += '</div>'
-m.get_root().html.add_child(folium.Element(legend_html))
+# For better dateline handling, we can also create a version with shifted longitude
+fig2 = plt.figure(figsize=(20, 12))
+ax2 = plt.axes(projection=ccrs.PlateCarree(central_longitude=180))
 
-# Save the map
-m.save("refined_sea_routes_map.html")
-print(f"Map saved with {len(reachable_points)} reachable destinations")
-webbrowser.open('file://' + os.path.realpath("refined_sea_routes_map.html"))
+# Set global extent
+ax2.set_global()
+
+# Add map features
+ax2.add_feature(cfeature.LAND, color='lightgray', alpha=0.8)
+ax2.add_feature(cfeature.OCEAN, color='lightblue', alpha=0.3)
+ax2.add_feature(cfeature.COASTLINE, linewidth=0.5)
+ax2.add_feature(cfeature.BORDERS, linewidth=0.3)
+
+# Add gridlines
+gl2 = ax2.gridlines(draw_labels=True, dms=True, x_inline=False, y_inline=False,
+                   linewidth=0.5, color='gray', alpha=0.5)
+gl2.top_labels = False
+gl2.right_labels = False
+
+# Plot the origin point (transformed for centered view)
+ax2.plot(origin_lon, origin_lat, 'go', markersize=12, 
+         transform=ccrs.PlateCarree(), label='Origin Port', zorder=5)
+
+# Plot reachable points
+if reachable_points:
+    scatter2 = ax2.scatter(lons_plot, lats_plot, c=distances, cmap='coolwarm_r', 
+                          s=20, alpha=0.7, transform=ccrs.PlateCarree(), zorder=3)
+    
+    # Add colorbar
+    cbar2 = plt.colorbar(scatter2, ax=ax2, shrink=0.8, pad=0.02)
+    cbar2.set_label('Distance (Nautical Miles)', rotation=270, labelpad=20)
+
+# Add title
+plt.title(f'Reachable Destinations (Pacific-Centered View)\n'
+         f'Found {len(reachable_points)} reachable points', fontsize=16, pad=20)
+
+# Add legend
+ax2.legend(loc='upper left', bbox_to_anchor=(0, 1))
+
+# Save both figures
+plt.figure(fig.number)
+plt.savefig('sea_routes_global.png', dpi=300, bbox_inches='tight')
+plt.figure(fig2.number)
+plt.savefig('sea_routes_pacific_centered.png', dpi=300, bbox_inches='tight')
+
+# Show the plots
+plt.show()
+
+print(f"Maps saved with {len(reachable_points)} reachable destinations")
+print("Saved two versions:")
+print("1. sea_routes_global.png - Standard global view")
+print("2. sea_routes_pacific_centered.png - Pacific-centered view for better dateline handling")
